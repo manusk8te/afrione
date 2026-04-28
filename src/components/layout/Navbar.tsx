@@ -1,13 +1,22 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Menu, X, Zap } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Menu, X, Zap, User, LogOut, LayoutDashboard } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -15,79 +24,145 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setDropdownOpen(false)
+    router.push('/')
+  }
+
   const links = [
     { href: '/artisans', label: 'Services' },
-    { href: '/comment-ca-marche', label: 'Comment ça marche' },
+    { href: '/diagnostic', label: 'Diagnostic IA' },
     { href: '/artisan-space/register', label: 'Devenir artisan' },
   ]
 
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Mon compte'
+  const userRole = user?.user_metadata?.role || 'client'
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled ? 'bg-cream/95 backdrop-blur-md shadow-sm border-b border-border' : 'bg-transparent'
-    }`}>
+    <nav style={{
+      position:'fixed',top:0,left:0,right:0,zIndex:999,
+      transition:'all 0.3s',
+      background: scrolled ? 'rgba(245,240,232,0.97)' : 'transparent',
+      backdropFilter: scrolled ? 'blur(12px)' : 'none',
+      borderBottom: scrolled ? '1px solid #D8D2C4' : 'none',
+    }}>
       <div className="page-container">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <Zap size={16} className="text-white fill-white" />
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',height:'64px'}}>
+          
+          <Link href="/" style={{display:'flex',alignItems:'center',gap:'8px',textDecoration:'none'}}>
+            <div style={{width:'32px',height:'32px',background:'#E85D26',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <Zap size={16} color="white" />
             </div>
-            <span className="font-display font-bold text-xl text-dark">
+            <span className="font-display font-bold text-dark" style={{fontSize:'20px'}}>
               AFRI<span className="text-accent">ONE</span>
             </span>
           </Link>
 
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-8">
+          <div style={{display:'none'}} className="nav-desktop">
             {links.map(l => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`text-sm font-medium transition-colors hover:text-accent ${
-                  pathname === l.href ? 'text-accent' : 'text-muted'
-                }`}
-              >
+              <Link key={l.href} href={l.href} style={{
+                fontSize:'14px',fontWeight:500,padding:'8px 16px',borderRadius:'8px',
+                textDecoration:'none',transition:'all 0.2s',
+                color: pathname === l.href ? '#E85D26' : '#7A7A6E',
+              }}>
                 {l.label}
               </Link>
             ))}
           </div>
 
-          {/* CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link href="/auth" className="btn-outline text-sm py-2 px-4">
-              Connexion
-            </Link>
-            <Link href="/diagnostic" className="btn-primary text-sm py-2 px-4">
-              Décrire mon besoin
-            </Link>
-          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            {user ? (
+              <div style={{position:'relative'}}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  style={{display:'flex',alignItems:'center',gap:'8px',background:'#0F1410',color:'#FAFAF5',border:'none',borderRadius:'10px',padding:'8px 16px',cursor:'pointer',fontSize:'14px',fontWeight:600}}
+                >
+                  <div style={{width:'28px',height:'28px',background:'#E85D26',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',fontWeight:700}}>
+                    {userName[0].toUpperCase()}
+                  </div>
+                  {userName}
+                </button>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-bg2 transition-colors"
-          >
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+                {dropdownOpen && (
+                  <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'8px',minWidth:'200px',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',zIndex:1000}}>
+                    <div style={{padding:'8px 12px',borderBottom:'1px solid #D8D2C4',marginBottom:'8px'}}>
+                      <div style={{fontSize:'13px',fontWeight:600,color:'#0F1410'}}>{userName}</div>
+                      <div style={{fontSize:'12px',color:'#7A7A6E'}}>{user.email}</div>
+                    </div>
+                    <Link href={userRole === 'artisan' ? '/artisan-space/dashboard' : '/dashboard'}
+                      onClick={() => setDropdownOpen(false)}
+                      style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px',transition:'background 0.2s'}}
+                      onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
+                      onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                      <LayoutDashboard size={14} /> Mon espace
+                    </Link>
+                    <Link href="/diagnostic"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
+                      onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
+                      onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                      <Zap size={14} /> Nouvelle mission
+                    </Link>
+                    <button onClick={handleLogout}
+                      style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',color:'#E85D26',fontSize:'14px',background:'none',border:'none',cursor:'pointer',width:'100%',textAlign:'left',marginTop:'4px',borderTop:'1px solid #D8D2C4',paddingTop:'12px'}}
+                      onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.background='none')}>
+                      <LogOut size={14} /> Se déconnecter
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link href="/auth" style={{border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'8px 16px',borderRadius:'10px',textDecoration:'none',fontSize:'14px',transition:'all 0.2s'}}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='#0F1410'; (e.currentTarget as HTMLElement).style.color='white' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; (e.currentTarget as HTMLElement).style.color='#0F1410' }}>
+                  Connexion
+                </Link>
+                <Link href="/diagnostic" className="btn-primary" style={{padding:'8px 16px',fontSize:'14px'}}>
+                  Décrire mon besoin
+                </Link>
+              </>
+            )}
+
+            <button onClick={() => setMenuOpen(!menuOpen)} style={{background:'none',border:'none',cursor:'pointer',padding:'8px',display:'flex'}}>
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile menu */}
         {menuOpen && (
-          <div className="md:hidden bg-cream border-t border-border py-4 space-y-2">
+          <div style={{background:'#FAFAF5',borderTop:'1px solid #D8D2C4',padding:'16px 0'}}>
             {links.map(l => (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setMenuOpen(false)}
-                className="block px-4 py-3 text-sm font-medium text-dark hover:bg-bg2 rounded-xl"
-              >
+              <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
+                style={{display:'block',padding:'12px 16px',fontSize:'14px',fontWeight:500,color:'#0F1410',textDecoration:'none',borderRadius:'8px'}}
+                onMouseEnter={e => (e.currentTarget.style.background='#EDE8DE')}
+                onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
                 {l.label}
               </Link>
             ))}
-            <div className="px-4 pt-2 space-y-2">
-              <Link href="/auth" className="block btn-outline text-sm text-center">Connexion</Link>
-              <Link href="/diagnostic" className="block btn-primary text-sm text-center">Décrire mon besoin</Link>
-            </div>
+            {!user && (
+              <div style={{padding:'8px 16px',display:'flex',flexDirection:'column',gap:'8px',marginTop:'8px'}}>
+                <Link href="/auth" style={{display:'block',textAlign:'center',border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'10px',borderRadius:'10px',textDecoration:'none',fontSize:'14px'}}>Connexion</Link>
+                <Link href="/diagnostic" className="btn-primary" style={{display:'block',textAlign:'center',padding:'10px',fontSize:'14px'}}>Décrire mon besoin</Link>
+              </div>
+            )}
+            {user && (
+              <div style={{padding:'8px 16px',marginTop:'8px',borderTop:'1px solid #D8D2C4',paddingTop:'16px'}}>
+                <Link href="/dashboard" style={{display:'block',padding:'10px',textAlign:'center',background:'#0F1410',color:'white',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:600}}>Mon espace</Link>
+              </div>
+            )}
           </div>
         )}
       </div>
