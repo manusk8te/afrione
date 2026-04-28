@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #F5F0E8;
+  --bg2: #EDE8DE;
+  --dark: #0F1410;
+  --dark2: #1A2018;
+  --accent: #E85D26;
+  --accent2: #2B6B3E;
+  --gold: #C9A84C;
+  --text: #1A1A1A;
+  --muted: #7A7A6E;
+  --white: #FAFAF5;
+  --card: #FFFFFF;
+  --border: #D8D2C4;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Bricolage Grotesque', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Clash Display', sans-serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent text-white font-semibold px-6 py-3 rounded-xl hover:bg-orange-600 transition-all duration-200 active:scale-95 font-body;
+  }
+  .btn-secondary {
+    @apply bg-dark text-cream font-semibold px-6 py-3 rounded-xl hover:bg-dark2 transition-all duration-200 active:scale-95 font-body;
+  }
+  .btn-outline {
+    @apply border-2 border-dark text-dark font-semibold px-6 py-3 rounded-xl hover:bg-dark hover:text-cream transition-all duration-200 font-body;
+  }
+  .card {
+    @apply bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+  .input {
+    @apply w-full bg-white border border-border rounded-xl px-4 py-3 text-dark placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all font-body;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold font-mono;
+  }
+  .badge-green {
+    @apply badge bg-accent2/10 text-accent2;
+  }
+  .badge-orange {
+    @apply badge bg-accent/10 text-accent;
+  }
+  .badge-gold {
+    @apply badge bg-gold/10 text-yellow-700;
+  }
+  .section-label {
+    @apply font-mono text-xs tracking-widest uppercase text-muted;
+  }
+  .page-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* Selection */
+::selection { background: var(--accent); color: white; }
