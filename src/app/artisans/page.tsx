@@ -2,165 +2,149 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
-import { Search, Star, CheckCircle, MapPin, Filter, Zap } from 'lucide-react'
+import { Search, Star, CheckCircle, MapPin, Clock, Zap } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const METIERS = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Serrurerie', 'Carrelage']
-const QUARTIERS = ['Tous les quartiers', 'Cocody', 'Plateau', 'Marcory', 'Treichville', 'Yopougon', 'Adjamé', 'Abobo']
-
-// Mock data — remplacer par requête Supabase
-const MOCK_ARTISANS = [
-  { id: '1', name: 'Kouadio Brou Emmanuel', metier: 'Plomberie', quartier: 'Cocody', rating: 4.9, missions: 184, tarif: 8000, exp: 12, badge: 'Vérifié', icon: '🔧', available: true, response_time: 10 },
-  { id: '2', name: 'Diallo Mamadou', metier: 'Électricité', quartier: 'Plateau', rating: 4.8, missions: 132, tarif: 12000, exp: 8, badge: 'Top 10', icon: '⚡', available: true, response_time: 15 },
-  { id: '3', name: 'Koné Adama', metier: 'Peinture', quartier: 'Marcory', rating: 4.6, missions: 98, tarif: 6000, exp: 5, badge: 'Vérifié', icon: '🎨', available: true, response_time: 20 },
-  { id: '4', name: 'Traoré Sékou', metier: 'Plomberie', quartier: 'Plateau', rating: 4.5, missions: 97, tarif: 6500, exp: 8, badge: 'Vérifié', icon: '🔧', available: false, response_time: 30 },
-  { id: '5', name: 'Coulibaly Ibrahim', metier: 'Plomberie', quartier: 'Marcory', rating: 4.7, missions: 61, tarif: 7000, exp: 5, badge: 'Nouveau', icon: '🔧', available: true, response_time: 25 },
-  { id: '6', name: 'Bamba Seydou', metier: 'Électricité', quartier: 'Cocody', rating: 4.4, missions: 44, tarif: 10000, exp: 3, badge: 'Vérifié', icon: '⚡', available: true, response_time: 18 },
-  { id: '7', name: 'Touré Moussa', metier: 'Maçonnerie', quartier: 'Yopougon', rating: 4.3, missions: 78, tarif: 9000, exp: 10, badge: 'Vérifié', icon: '🏗️', available: true, response_time: 40 },
-  { id: '8', name: 'Sanogo Cheick', metier: 'Menuiserie', quartier: 'Adjamé', rating: 4.6, missions: 53, tarif: 7500, exp: 7, badge: 'Vérifié', icon: '🪵', available: true, response_time: 30 },
-]
+const METIER_ICONS: Record<string, string> = {
+  'Plomberie': '🔧', 'Électricité': '⚡', 'Peinture': '🎨',
+  'Maçonnerie': '🏗️', 'Menuiserie': '🪵', 'Climatisation': '❄️',
+  'Serrurerie': '🔑', 'Carrelage': '🪟',
+}
 
 export default function ArtisansPage() {
+  const [artisans, setArtisans] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [metier, setMetier] = useState('Tous')
-  const [quartier, setQuartier] = useState('Tous les quartiers')
-  const [sort, setSort] = useState('rating')
-  const [artisans, setArtisans] = useState(MOCK_ARTISANS)
 
   useEffect(() => {
-    // TODO: remplacer par requête Supabase
-    let filtered = MOCK_ARTISANS.filter(a => {
-      const matchSearch = !search || a.name.toLowerCase().includes(search.toLowerCase())
-      const matchMetier = metier === 'Tous' || a.metier === metier
-      const matchQuartier = quartier === 'Tous les quartiers' || a.quartier === quartier
-      return matchSearch && matchMetier && matchQuartier
-    })
-    if (sort === 'rating') filtered.sort((a, b) => b.rating - a.rating)
-    if (sort === 'price') filtered.sort((a, b) => a.tarif - b.tarif)
-    if (sort === 'missions') filtered.sort((a, b) => b.missions - a.missions)
-    setArtisans(filtered)
-  }, [search, metier, quartier, sort])
+    const fetchArtisans = async () => {
+      const { data, error } = await supabase
+        .from('artisan_pros')
+        .select(`*, users(name, quartier, email)`)
+        .eq('kyc_status', 'approved')
+        .order('rating_avg', { ascending: false })
+
+      if (!error) setArtisans(data || [])
+      setLoading(false)
+    }
+    fetchArtisans()
+  }, [])
+
+  const filtered = artisans.filter(a => {
+    const name = a.users?.name?.toLowerCase() || ''
+    const matchSearch = !search || name.includes(search.toLowerCase())
+    const matchMetier = metier === 'Tous' || a.metier === metier
+    return matchSearch && matchMetier
+  })
 
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
-      <div className="pt-24 pb-16 px-4">
+      <div style={{paddingTop:'96px',paddingBottom:'64px',padding:'96px 16px 64px'}}>
         <div className="page-container">
-          {/* Header */}
-          <div className="mb-8">
+          <div style={{marginBottom:'32px'}}>
             <span className="section-label">ANNUAIRE</span>
-            <h1 className="font-display text-4xl font-bold text-dark mt-2">
+            <h1 className="font-display" style={{fontSize:'36px',fontWeight:700,color:'#0F1410',marginTop:'8px'}}>
               Trouver un artisan
             </h1>
-            <p className="text-muted mt-2">{artisans.length} professionnels vérifiés à Abidjan</p>
+            <p style={{color:'#7A7A6E',marginTop:'8px'}}>
+              {loading ? 'Chargement...' : `${filtered.length} professionnel${filtered.length > 1 ? 's' : ''} vérifié${filtered.length > 1 ? 's' : ''} à Abidjan`}
+            </p>
           </div>
 
-          {/* Filters */}
-          <div className="bg-white border border-border rounded-2xl p-4 mb-8 space-y-4">
-            <div className="relative">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Rechercher par nom..."
-                className="input pl-12"
-              />
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="flex-1 min-w-40">
-                <select value={metier} onChange={e => setMetier(e.target.value)} className="input">
-                  {METIERS.map(m => <option key={m}>{m}</option>)}
-                </select>
-              </div>
-              <div className="flex-1 min-w-40">
-                <select value={quartier} onChange={e => setQuartier(e.target.value)} className="input">
-                  {QUARTIERS.map(q => <option key={q}>{q}</option>)}
-                </select>
-              </div>
-              <div className="flex-1 min-w-40">
-                <select value={sort} onChange={e => setSort(e.target.value)} className="input">
-                  <option value="rating">⭐ Mieux notés</option>
-                  <option value="price">💰 Prix croissant</option>
-                  <option value="missions">🏆 Plus de missions</option>
-                </select>
-              </div>
+          {/* Search */}
+          <div style={{background:'white',border:'1px solid #D8D2C4',borderRadius:'16px',padding:'16px',marginBottom:'24px'}}>
+            <div style={{position:'relative',marginBottom:'12px'}}>
+              <Search size={18} style={{position:'absolute',left:'16px',top:'50%',transform:'translateY(-50%)',color:'#7A7A6E'}} />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Rechercher par nom..." className="input" style={{paddingLeft:'48px'}} />
             </div>
           </div>
 
           {/* Metier tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
+          <div style={{display:'flex',gap:'8px',overflowX:'auto',paddingBottom:'8px',marginBottom:'24px'}}>
             {METIERS.map(m => (
-              <button
-                key={m}
-                onClick={() => setMetier(m)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  metier === m
-                    ? 'bg-dark text-cream'
-                    : 'bg-white border border-border text-muted hover:border-dark hover:text-dark'
-                }`}
-              >
-                {m}
+              <button key={m} onClick={() => setMetier(m)} style={{
+                flexShrink:0,padding:'8px 16px',borderRadius:'20px',fontSize:'14px',fontWeight:500,
+                cursor:'pointer',transition:'all 0.2s',border:'none',
+                background: metier === m ? '#0F1410' : 'white',
+                color: metier === m ? '#FAFAF5' : '#7A7A6E',
+                boxShadow: metier === m ? 'none' : '0 0 0 1px #D8D2C4',
+              }}>
+                {m !== 'Tous' && METIER_ICONS[m]} {m}
               </button>
             ))}
           </div>
 
-          {/* Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {artisans.map(a => (
-              <Link key={a.id} href={`/artisans/${a.id}`} className="card group hover:-translate-y-1 transition-all duration-200 cursor-pointer">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 bg-bg2 rounded-xl flex items-center justify-center text-2xl">{a.icon}</div>
-                  <div className="flex flex-col items-end gap-1">
-                    {a.badge === 'Top 10' && <span className="badge bg-gold/20 text-yellow-700">Top 10</span>}
-                    {a.badge === 'Vérifié' && <span className="badge-green">✓ Vérifié</span>}
-                    {a.badge === 'Nouveau' && <span className="badge bg-accent2/10 text-accent2">Nouveau</span>}
-                    {a.available
-                      ? <span className="flex items-center gap-1 text-xs text-accent2"><span className="w-1.5 h-1.5 bg-accent2 rounded-full" />Disponible</span>
-                      : <span className="flex items-center gap-1 text-xs text-muted"><span className="w-1.5 h-1.5 bg-muted rounded-full" />Occupé</span>
-                    }
-                  </div>
-                </div>
+          {loading ? (
+            <div style={{display:'flex',justifyContent:'center',padding:'80px 0'}}>
+              <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{textAlign:'center',padding:'80px 0'}}>
+              <p style={{fontSize:'48px',marginBottom:'16px'}}>🔍</p>
+              <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#0F1410'}}>Aucun artisan trouvé</h3>
+              <p style={{color:'#7A7A6E',marginTop:'8px'}}>Essayez avec d'autres critères</p>
+            </div>
+          ) : (
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:'20px'}}>
+              {filtered.map(a => (
+                <Link key={a.id} href={`/artisans/${a.id}`} style={{textDecoration:'none'}}>
+                  <div className="card" style={{cursor:'pointer',transition:'all 0.2s',height:'100%'}}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-4px)'; (e.currentTarget as HTMLElement).style.boxShadow='0 8px 24px rgba(0,0,0,0.1)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform='translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow='0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'16px'}}>
+                      <div style={{width:'48px',height:'48px',background:'#EDE8DE',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px'}}>
+                        {METIER_ICONS[a.metier] || '🔧'}
+                      </div>
+                      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'4px'}}>
+                        <span className="badge-green">✓ Vérifié</span>
+                        <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'12px',color:'#2B6B3E'}}>
+                          <span style={{width:'6px',height:'6px',background:'#2B6B3E',borderRadius:'50%',display:'inline-block'}} />
+                          Disponible
+                        </span>
+                      </div>
+                    </div>
 
-                <h3 className="font-display font-bold text-dark group-hover:text-accent transition-colors leading-tight">{a.name}</h3>
-                <div className="flex items-center gap-1 mt-1 text-sm text-muted">
-                  <MapPin size={12} />
-                  {a.metier} · {a.quartier}
-                </div>
+                    <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'4px'}}>
+                      {a.users?.name}
+                    </h3>
+                    <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#7A7A6E',marginBottom:'16px'}}>
+                      <MapPin size={12} /> {a.metier} · {a.users?.quartier}
+                    </div>
 
-                <div className="grid grid-cols-3 gap-2 mt-4 text-center">
-                  <div className="bg-bg2 rounded-lg p-2">
-                    <div className="font-bold text-sm text-dark">{a.rating}</div>
-                    <div className="text-xs text-muted">Note</div>
-                  </div>
-                  <div className="bg-bg2 rounded-lg p-2">
-                    <div className="font-bold text-sm text-dark">{a.missions}</div>
-                    <div className="text-xs text-muted">Missions</div>
-                  </div>
-                  <div className="bg-bg2 rounded-lg p-2">
-                    <div className="font-bold text-sm text-dark">{a.exp}ans</div>
-                    <div className="text-xs text-muted">Exp.</div>
-                  </div>
-                </div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'16px'}}>
+                      {[
+                        { value: a.rating_avg?.toFixed(1), label: 'Note' },
+                        { value: a.mission_count, label: 'Missions' },
+                        { value: `${a.years_experience}ans`, label: 'Exp.' },
+                      ].map(s => (
+                        <div key={s.label} style={{background:'#F5F0E8',borderRadius:'8px',padding:'8px',textAlign:'center'}}>
+                          <div style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>{s.value}</div>
+                          <div style={{fontSize:'11px',color:'#7A7A6E'}}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
 
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-                  <div>
-                    <span className="font-bold text-dark">{a.tarif.toLocaleString()}</span>
-                    <span className="text-xs text-muted"> FCFA min</span>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',paddingTop:'16px',borderTop:'1px solid #D8D2C4'}}>
+                      <div>
+                        <span style={{fontWeight:700,color:'#0F1410'}}>{a.tarif_min?.toLocaleString()}</span>
+                        <span style={{fontSize:'12px',color:'#7A7A6E'}}> FCFA min</span>
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'12px',color:'#7A7A6E'}}>
+                        <Clock size={12} /> ~{a.response_time_min} min
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-muted">
-                    <Zap size={10} className="text-accent" />
-                    Répond en {a.response_time} min
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {artisans.length === 0 && (
-            <div className="text-center py-16">
-              <div className="text-4xl mb-4">🔍</div>
-              <h3 className="font-display text-xl font-bold text-dark mb-2">Aucun artisan trouvé</h3>
-              <p className="text-muted">Essayez d'autres filtres</p>
+                </Link>
+              ))}
             </div>
           )}
         </div>
