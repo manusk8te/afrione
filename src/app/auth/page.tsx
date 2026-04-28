@@ -1,64 +1,65 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Zap, Phone, ArrowRight, ArrowLeft, Shield } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Zap, ArrowRight, ArrowLeft, Shield, Mail, Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
 
-type Step = 'phone' | 'otp' | 'role'
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+type Step = 'choice' | 'login' | 'register' | 'verify'
 
 export default function AuthPage() {
-  const [step, setStep] = useState<Step>('phone')
-  const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
+  const router = useRouter()
+  const [step, setStep] = useState<Step>('choice')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
+  const [role, setRole] = useState<'client' | 'artisan'>('client')
+  const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handlePhone = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (phone.length < 8) return
     setLoading(true)
-    // TODO: appel API Twilio OTP
-    setTimeout(() => { setLoading(false); setStep('otp') }, 1500)
+    setError('')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setError('Email ou mot de passe incorrect'); setLoading(false); return }
+    router.push('/dashboard')
   }
 
-  const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) return
-    const newOtp = [...otp]
-    newOtp[index] = value
-    setOtp(newOtp)
-    if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`)?.focus()
-    }
-  }
-
-  const handleOtp = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    const code = otp.join('')
-    if (code.length < 6) return
     setLoading(true)
-    // TODO: vérifier OTP via Supabase
-    setTimeout(() => { setLoading(false); setStep('role') }, 1500)
+    setError('')
+    const { error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { name, role } }
+    })
+    if (error) { setError(error.message); setLoading(false); return }
+    setStep('verify')
+    setLoading(false)
   }
 
   return (
     <div className="min-h-screen bg-bg flex">
-      {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-dark flex-col justify-between p-12">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
             <Zap size={16} className="text-white" />
           </div>
-          <span className="font-display font-bold text-xl text-cream">
-            AFRI<span className="text-accent">ONE</span>
-          </span>
+          <span className="font-display font-bold text-xl text-cream">AFRI<span className="text-accent">ONE</span></span>
         </Link>
-
         <div>
           <blockquote className="font-display text-3xl font-bold text-cream leading-tight mb-6">
-            "Trouver le bon artisan,<br />
-            au bon prix,<br />
-            <span className="text-accent">au bon moment."</span>
+            "Trouver le bon artisan,<br />au bon prix,<br /><span className="text-accent">au bon moment."</span>
           </blockquote>
           <div className="flex gap-8">
-            {[['500+', 'Artisans'], ['4.8★', 'Note moy.'], ['2400+', 'Missions']].map(([v, l]) => (
+            {[['500+','Artisans'],['4.8★','Note moy.'],['2400+','Missions']].map(([v,l]) => (
               <div key={l}>
                 <div className="font-display text-2xl font-bold text-accent">{v}</div>
                 <div className="font-mono text-xs text-muted">{l}</div>
@@ -66,122 +67,129 @@ export default function AuthPage() {
             ))}
           </div>
         </div>
-
         <div className="flex items-center gap-2 text-sm text-muted">
           <Shield size={14} className="text-accent2" />
-          <span>Connexion sécurisée par OTP SMS</span>
+          <span>Connexion sécurisée</span>
         </div>
       </div>
 
-      {/* Right panel */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <Link href="/" className="flex items-center gap-2 mb-10 lg:hidden">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <Zap size={16} className="text-white" />
-            </div>
-            <span className="font-display font-bold text-xl text-dark">
-              AFRI<span className="text-accent">ONE</span>
-            </span>
-          </Link>
 
-          {/* Step: Phone */}
-          {step === 'phone' && (
+          {step === 'choice' && (
             <div className="animate-fade-up">
-              <h1 className="font-display text-3xl font-bold text-dark mb-2">Connexion</h1>
-              <p className="text-muted mb-8">Entrez votre numéro pour recevoir un code SMS</p>
-              <form onSubmit={handlePhone} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Numéro de téléphone</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-mono text-sm">🇨🇮 +225</span>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-                      placeholder="07 00 00 00 00"
-                      className="input pl-24"
-                      maxLength={10}
-                    />
-                  </div>
-                </div>
-                <button type="submit" disabled={loading || phone.length < 8} className="btn-primary w-full flex items-center justify-center gap-2">
-                  {loading ? (
-                    <span className="animate-pulse-soft">Envoi du code...</span>
-                  ) : (
-                    <>Recevoir mon code <ArrowRight size={16} /></>
-                  )}
+              <Link href="/" className="flex items-center gap-2 mb-10 lg:hidden">
+                <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center"><Zap size={16} className="text-white" /></div>
+                <span className="font-display font-bold text-xl text-dark">AFRI<span className="text-accent">ONE</span></span>
+              </Link>
+              <h1 className="font-display text-3xl font-bold text-dark mb-2">Bienvenue</h1>
+              <p className="text-muted mb-8">Connectez-vous ou créez votre compte</p>
+              <div className="space-y-3">
+                <button onClick={() => setStep('login')} className="btn-primary w-full flex items-center justify-center gap-2 py-4">
+                  Se connecter <ArrowRight size={16} />
                 </button>
-              </form>
-              <p className="text-xs text-muted mt-6 text-center">
-                En continuant, vous acceptez nos{' '}
-                <Link href="/cgu" className="text-accent hover:underline">CGU</Link>
-              </p>
-            </div>
-          )}
-
-          {/* Step: OTP */}
-          {step === 'otp' && (
-            <div className="animate-fade-up">
-              <button onClick={() => setStep('phone')} className="flex items-center gap-2 text-sm text-muted mb-8 hover:text-dark transition-colors">
-                <ArrowLeft size={16} /> Retour
-              </button>
-              <h1 className="font-display text-3xl font-bold text-dark mb-2">Code de vérification</h1>
-              <p className="text-muted mb-8">
-                Entrez le code à 6 chiffres envoyé au <strong className="text-dark">+225 {phone}</strong>
-              </p>
-              <form onSubmit={handleOtp} className="space-y-6">
-                <div className="flex gap-3 justify-center">
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      id={`otp-${i}`}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={e => handleOtpChange(i, e.target.value)}
-                      className="w-12 h-14 text-center text-xl font-bold border-2 border-border rounded-xl focus:border-accent focus:outline-none bg-white transition-colors"
-                    />
-                  ))}
-                </div>
-                <button type="submit" disabled={loading || otp.join('').length < 6} className="btn-primary w-full flex items-center justify-center gap-2">
-                  {loading ? <span className="animate-pulse-soft">Vérification...</span> : <>Vérifier <ArrowRight size={16} /></>}
+                <button onClick={() => setStep('register')} className="btn-outline w-full flex items-center justify-center gap-2 py-4">
+                  Créer un compte <ArrowRight size={16} />
                 </button>
-              </form>
-              <p className="text-xs text-muted mt-4 text-center">
-                Pas reçu ?{' '}
-                <button className="text-accent hover:underline">Renvoyer le code</button>
-              </p>
-            </div>
-          )}
-
-          {/* Step: Role */}
-          {step === 'role' && (
-            <div className="animate-fade-up">
-              <h1 className="font-display text-3xl font-bold text-dark mb-2">Vous êtes ?</h1>
-              <p className="text-muted mb-8">Choisissez votre profil pour continuer</p>
-              <div className="space-y-4">
-                <Link href="/dashboard" className="card flex items-center gap-4 hover:border-accent/30 hover:-translate-y-1 group cursor-pointer transition-all">
-                  <div className="text-3xl">👤</div>
-                  <div className="flex-1">
-                    <div className="font-display font-bold text-dark group-hover:text-accent transition-colors">Je suis client</div>
-                    <div className="text-sm text-muted">Je cherche un artisan pour une mission</div>
-                  </div>
-                  <ArrowRight size={16} className="text-muted group-hover:text-accent transition-colors" />
-                </Link>
-                <Link href="/artisan-space/dashboard" className="card flex items-center gap-4 hover:border-accent2/30 hover:-translate-y-1 group cursor-pointer transition-all">
-                  <div className="text-3xl">🔧</div>
-                  <div className="flex-1">
-                    <div className="font-display font-bold text-dark group-hover:text-accent2 transition-colors">Je suis artisan</div>
-                    <div className="text-sm text-muted">Je propose mes services sur AfriOne</div>
-                  </div>
-                  <ArrowRight size={16} className="text-muted group-hover:text-accent2 transition-colors" />
-                </Link>
               </div>
             </div>
           )}
+
+          {step === 'login' && (
+            <div className="animate-fade-up">
+              <button onClick={() => setStep('choice')} className="flex items-center gap-2 text-sm text-muted mb-8 hover:text-dark transition-colors">
+                <ArrowLeft size={16} /> Retour
+              </button>
+              <h1 className="font-display text-3xl font-bold text-dark mb-2">Connexion</h1>
+              <p className="text-muted mb-8">Accédez à votre espace AfriOne</p>
+              {error && <div className="mb-4 p-4 rounded-xl text-sm" style={{background:'rgba(232,93,38,0.1)',color:'#E85D26'}}>{error}</div>}
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="section-label block mb-2">Email</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" className="input" required />
+                </div>
+                <div>
+                  <label className="section-label block mb-2">Mot de passe</label>
+                  <div style={{position:'relative'}}>
+                    <input type={showPass?'text':'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Votre mot de passe" className="input" style={{paddingRight:'44px'}} required />
+                    <button type="button" onClick={() => setShowPass(!showPass)} style={{position:'absolute',right:'16px',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}>
+                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4" style={{opacity:loading?0.6:1}}>
+                  {loading ? 'Connexion...' : <>Se connecter <ArrowRight size={16} /></>}
+                </button>
+              </form>
+              <p className="text-sm text-center mt-4 text-muted">
+                Pas de compte ? <button onClick={() => setStep('register')} className="text-accent font-medium" style={{background:'none',border:'none',cursor:'pointer'}}>S'inscrire</button>
+              </p>
+            </div>
+          )}
+
+          {step === 'register' && (
+            <div className="animate-fade-up">
+              <button onClick={() => setStep('choice')} className="flex items-center gap-2 text-sm text-muted mb-8 hover:text-dark transition-colors">
+                <ArrowLeft size={16} /> Retour
+              </button>
+              <h1 className="font-display text-3xl font-bold text-dark mb-2">Créer un compte</h1>
+              <p className="text-muted mb-8">Rejoignez AfriOne gratuitement</p>
+              {error && <div className="mb-4 p-4 rounded-xl text-sm" style={{background:'rgba(232,93,38,0.1)',color:'#E85D26'}}>{error}</div>}
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="section-label block mb-2">Nom complet</label>
+                  <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Aya Konaté" className="input" required />
+                </div>
+                <div>
+                  <label className="section-label block mb-2">Email</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" className="input" required />
+                </div>
+                <div>
+                  <label className="section-label block mb-2">Mot de passe</label>
+                  <div style={{position:'relative'}}>
+                    <input type={showPass?'text':'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 caractères" className="input" style={{paddingRight:'44px'}} required minLength={6} />
+                    <button type="button" onClick={() => setShowPass(!showPass)} style={{position:'absolute',right:'16px',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}>
+                      {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="section-label block mb-2">Vous êtes</label>
+                  <div style={{display:'flex',gap:'12px'}}>
+                    {[{id:'client',icon:'🏠',label:'Client'},{id:'artisan',icon:'🔧',label:'Artisan'}].map(r => (
+                      <button key={r.id} type="button" onClick={() => setRole(r.id as any)}
+                        style={{flex:1,padding:'16px',borderRadius:'12px',border:role===r.id?'2px solid #E85D26':'2px solid #D8D2C4',background:role===r.id?'rgba(232,93,38,0.05)':'white',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
+                        <span style={{fontSize:'24px'}}>{r.icon}</span>
+                        <span style={{fontSize:'13px',fontWeight:600,color:role===r.id?'#E85D26':'#0F1410'}}>{r.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4" style={{opacity:loading?0.6:1}}>
+                  {loading ? 'Création...' : <>Créer mon compte <ArrowRight size={16} /></>}
+                </button>
+              </form>
+              <p className="text-sm text-center mt-4 text-muted">
+                Déjà un compte ? <button onClick={() => setStep('login')} className="text-accent font-medium" style={{background:'none',border:'none',cursor:'pointer'}}>Se connecter</button>
+              </p>
+            </div>
+          )}
+
+          {step === 'verify' && (
+            <div className="animate-fade-up text-center">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{background:'rgba(43,107,62,0.1)'}}>
+                <CheckCircle size={40} color="#2B6B3E" />
+              </div>
+              <h1 className="font-display text-3xl font-bold text-dark mb-3">Vérifiez votre email</h1>
+              <p className="text-muted mb-2">Un lien de confirmation envoyé à</p>
+              <p className="font-bold text-dark mb-8">{email}</p>
+              <p className="text-sm text-muted mb-6">Cliquez sur le lien pour activer votre compte.</p>
+              <button onClick={() => setStep('login')} className="btn-outline w-full flex items-center justify-center gap-2">
+                Retour à la connexion
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
