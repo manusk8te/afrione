@@ -21,7 +21,7 @@ const config: Config = {
         border: '#D8D2C4',
       },
       fontFamily: {
-        display: ['Clash Display', 'sans-serif'],
+        display: ['Syne', 'sans-serif'],
         body: ['Bricolage Grotesque', 'sans-serif'],
         mono: ['Space Mono', 'monospace'],
       },
