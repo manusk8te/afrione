@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Send, Phone, Shield } from 'lucide-react'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -20,6 +21,7 @@ export default function WarRoomPage() {
   const [mission, setMission] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
+  usePushNotifications(user?.id || null)
 
   useEffect(() => {
     const init = async () => {
@@ -52,6 +54,25 @@ export default function WarRoomPage() {
       mission_id: missionId, sender_id: user.id,
       sender_role: user.user_metadata?.role || 'client', text, type: 'text',
     })
+
+    // Notifier l'autre partie
+    if (mission) {
+      const recipientId = user.id === mission.client_id
+        ? mission.artisan_pros?.user_id
+        : mission.client_id
+      if (recipientId) {
+        fetch('/api/push-send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: recipientId,
+            title: 'Nouveau message AfriOne',
+            body: text.length > 50 ? text.substring(0, 50) + '...' : text,
+            url: `https://afrione-sepia.vercel.app/warroom/${missionId}`,
+          }),
+        }).catch(() => {})
+      }
+    }
   }
 
   return (
