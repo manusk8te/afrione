@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, X, Zap, User, LogOut, LayoutDashboard } from 'lucide-react'
+import { Menu, X, Zap, LogOut, LayoutDashboard } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -15,47 +15,55 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [userRole, setUserRole] = useState<string>('client')
+  const [userName, setUserName] = useState<string>('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
 
   useEffect(() => {
+    setMounted(true)
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        const { data } = await supabase.from('users').select('role').eq('id', session.user.id).single()
-        if (data?.role) setUserRole(data.role)
+    const loadUser = async (session: any) => {
+      if (!session) { setUser(null); setUserRole('client'); setUserName(''); return }
+      setUser(session.user)
+      const { data } = await supabase
+        .from('users')
+        .select('role, name')
+        .eq('id', session.user.id)
+        .single()
+      if (data) {
+        setUserRole(data.role || 'client')
+        setUserName(data.name || session.user.email?.split('@')[0] || 'Mon compte')
+      } else {
+        setUserName(session.user.email?.split('@')[0] || 'Mon compte')
       }
-    })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        const { data } = await supabase.from('users').select('role').eq('id', session.user.id).single()
-        if (data?.role) setUserRole(data.role)
-      }
-    })
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => loadUser(session))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => loadUser(session))
     return () => subscription.unsubscribe()
   }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setDropdownOpen(false)
+    setMenuOpen(false)
     router.push('/')
   }
+
+  const dashboardLink = userRole === 'artisan' ? '/artisan-space/dashboard' : userRole === 'admin' ? '/admin' : '/dashboard'
 
   const links = [
     { href: '/artisans', label: 'Services' },
     { href: '/diagnostic', label: 'Diagnostic IA' },
     { href: '/artisan-space/register', label: 'Devenir artisan' },
   ]
-
-  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Mon compte'
 
   return (
     <nav style={{
@@ -67,7 +75,7 @@ export default function Navbar() {
     }}>
       <div className="page-container">
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',height:'64px'}}>
-          
+
           <Link href="/" style={{display:'flex',alignItems:'center',gap:'8px',textDecoration:'none'}}>
             <div style={{width:'32px',height:'32px',background:'#E85D26',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Zap size={16} color="white" />
@@ -77,54 +85,57 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <div style={{display:'none'}} className="nav-desktop">
+          {/* Links desktop */}
+          <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
             {links.map(l => (
               <Link key={l.href} href={l.href} style={{
                 fontSize:'14px',fontWeight:500,padding:'8px 16px',borderRadius:'8px',
                 textDecoration:'none',transition:'all 0.2s',
                 color: pathname === l.href ? '#E85D26' : '#7A7A6E',
-              }}>
-                {l.label}
-              </Link>
+              }}>{l.label}</Link>
             ))}
           </div>
 
+          {/* Right side */}
           <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-            {user ? (
+            {!mounted ? (
+              <div style={{width:'80px',height:'36px',background:'#EDE8DE',borderRadius:'10px'}} />
+            ) : user ? (
               <div style={{position:'relative'}}>
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  style={{display:'flex',alignItems:'center',gap:'8px',background:'#0F1410',color:'#FAFAF5',border:'none',borderRadius:'10px',padding:'8px 16px',cursor:'pointer',fontSize:'14px',fontWeight:600}}
-                >
+                <button onClick={() => setDropdownOpen(!dropdownOpen)} style={{
+                  display:'flex',alignItems:'center',gap:'8px',background:'#0F1410',
+                  color:'#FAFAF5',border:'none',borderRadius:'10px',padding:'8px 16px',
+                  cursor:'pointer',fontSize:'14px',fontWeight:600
+                }}>
                   <div style={{width:'28px',height:'28px',background:'#E85D26',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',fontWeight:700}}>
-                    {userName[0].toUpperCase()}
+                    {userName ? userName[0].toUpperCase() : '?'}
                   </div>
                   {userName}
                 </button>
 
                 {dropdownOpen && (
-                  <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'8px',minWidth:'200px',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',zIndex:1000}}>
+                  <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'8px',minWidth:'220px',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',zIndex:1000}}>
                     <div style={{padding:'8px 12px',borderBottom:'1px solid #D8D2C4',marginBottom:'8px'}}>
                       <div style={{fontSize:'13px',fontWeight:600,color:'#0F1410'}}>{userName}</div>
                       <div style={{fontSize:'12px',color:'#7A7A6E'}}>{user.email}</div>
+                      <div style={{fontSize:'11px',color:'#E85D26',marginTop:'2px',textTransform:'capitalize'}}>{userRole}</div>
                     </div>
-                    <Link href={userRole === 'artisan' ? '/artisan-space/dashboard' : '/dashboard'}
-                      onClick={() => setDropdownOpen(false)}
-                      style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px',transition:'background 0.2s'}}
+                    <Link href={dashboardLink} onClick={() => setDropdownOpen(false)}
+                      style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
                       onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
                       onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
                       <LayoutDashboard size={14} /> Mon espace
                     </Link>
-                    <Link href="/diagnostic"
-                      onClick={() => setDropdownOpen(false)}
-                      style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
-                      onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
-                      onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
-                      <Zap size={14} /> Nouvelle mission
-                    </Link>
+                    {userRole !== 'artisan' && (
+                      <Link href="/diagnostic" onClick={() => setDropdownOpen(false)}
+                        style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
+                        onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
+                        onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                        <Zap size={14} /> Nouvelle mission
+                      </Link>
+                    )}
                     {userRole === 'admin' && (
-                      <Link href="/admin"
-                        onClick={() => setDropdownOpen(false)}
+                      <Link href="/admin" onClick={() => setDropdownOpen(false)}
                         style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#E85D26',fontSize:'14px',fontWeight:600}}
                         onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
                         onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
@@ -142,7 +153,7 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <Link href="/auth" style={{border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'8px 16px',borderRadius:'10px',textDecoration:'none',fontSize:'14px',transition:'all 0.2s'}}
+                <Link href="/auth" style={{border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'8px 16px',borderRadius:'10px',textDecoration:'none',fontSize:'14px'}}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='#0F1410'; (e.currentTarget as HTMLElement).style.color='white' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; (e.currentTarget as HTMLElement).style.color='#0F1410' }}>
                   Connexion
@@ -159,6 +170,7 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* Menu mobile */}
         {menuOpen && (
           <div style={{background:'#FAFAF5',borderTop:'1px solid #D8D2C4',padding:'16px 0'}}>
             {links.map(l => (
@@ -169,17 +181,35 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
-            {!user && (
-              <div style={{padding:'8px 16px',display:'flex',flexDirection:'column',gap:'8px',marginTop:'8px'}}>
-                <Link href="/auth" style={{display:'block',textAlign:'center',border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'10px',borderRadius:'10px',textDecoration:'none',fontSize:'14px'}}>Connexion</Link>
-                <Link href="/diagnostic" className="btn-primary" style={{display:'block',textAlign:'center',padding:'10px',fontSize:'14px'}}>Décrire mon besoin</Link>
-              </div>
-            )}
-            {user && (
-              <div style={{padding:'8px 16px',marginTop:'8px',borderTop:'1px solid #D8D2C4',paddingTop:'16px'}}>
-                <Link href="/dashboard" style={{display:'block',padding:'10px',textAlign:'center',background:'#0F1410',color:'white',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:600}}>Mon espace</Link>
-              </div>
-            )}
+            <div style={{padding:'8px 16px',marginTop:'8px',borderTop:'1px solid #D8D2C4',paddingTop:'16px',display:'flex',flexDirection:'column',gap:'8px'}}>
+              {user ? (
+                <>
+                  <Link href={dashboardLink} onClick={() => setMenuOpen(false)}
+                    style={{display:'block',padding:'10px',textAlign:'center',background:'#0F1410',color:'white',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:600}}>
+                    Mon espace ({userRole})
+                  </Link>
+                  {userRole === 'admin' && (
+                    <Link href="/admin" onClick={() => setMenuOpen(false)}
+                      style={{display:'block',padding:'10px',textAlign:'center',background:'rgba(232,93,38,0.1)',color:'#E85D26',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:600}}>
+                      ⚙️ Admin
+                    </Link>
+                  )}
+                  <button onClick={handleLogout}
+                    style={{display:'block',padding:'10px',textAlign:'center',background:'none',border:'2px solid #E85D26',color:'#E85D26',borderRadius:'10px',fontSize:'14px',fontWeight:600,cursor:'pointer',width:'100%'}}>
+                    Se déconnecter
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth" style={{display:'block',textAlign:'center',border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'10px',borderRadius:'10px',textDecoration:'none',fontSize:'14px'}}>
+                    Connexion
+                  </Link>
+                  <Link href="/diagnostic" className="btn-primary" style={{display:'block',textAlign:'center',padding:'10px',fontSize:'14px'}}>
+                    Décrire mon besoin
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
