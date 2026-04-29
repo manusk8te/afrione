@@ -1,27 +1,99 @@
 'use client'
-import { Suspense } from 'react'
-import { useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
 
-const MOCK_MATCHES = [
-  { id: '1', name: 'Kouadio Brou Emmanuel', metier: 'Plomberie', quartier: 'Cocody', rating: 4.9, missions: 184, tarif: 8000, exp: 12, response_time: 10, distance: '2.3 km', available: true, icon: '🔧', score: 98, why: ['Le plus proche', 'Spécialiste fuites', '184 missions'] },
-  { id: '4', name: 'Traoré Sékou', metier: 'Plomberie', quartier: 'Plateau', rating: 4.5, missions: 97, tarif: 6500, exp: 8, response_time: 20, distance: '4.1 km', available: true, icon: '🔧', score: 87, why: ['Meilleur prix', '8 ans exp.'] },
-  { id: '5', name: 'Coulibaly Ibrahim', metier: 'Plomberie', quartier: 'Marcory', rating: 4.7, missions: 61, tarif: 7000, exp: 5, response_time: 25, distance: '5.8 km', available: true, icon: '🔧', score: 82, why: ['Très bien noté'] },
-]
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 function MatchingContent() {
   const searchParams = useSearchParams()
-  const [selected, setSelected] = useState<string | null>(null)
-  const [confirming, setConfirming] = useState(false)
+  const router = useRouter()
+  const missionId = searchParams.get('mission')
   const category = searchParams.get('category') || 'Plomberie'
 
-  const confirm = () => {
+  const [artisans, setArtisans] = useState<any[]>([])
+  const [selected, setSelected] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) setUserId(session.user.id)
+
+      // Chercher artisans disponibles pour cette catégorie
+      const { data } = await supabase
+        .from('artisan_pros')
+        .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
+        .eq('kyc_status', 'approved')
+        .eq('is_available', true)
+        .ilike('metier', `%${category.split(' ')[0]}%`)
+        .order('rating_avg', { ascending: false })
+        .limit(5)
+
+      // Si pas d'artisans pour cette catégorie exacte → prendre les meilleurs dispo
+      if (!data || data.length === 0) {
+        const { data: fallback } = await supabase
+          .from('artisan_pros')
+          .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
+          .eq('kyc_status', 'approved')
+          .eq('is_available', true)
+          .order('rating_avg', { ascending: false })
+          .limit(5)
+        setArtisans(fallback || [])
+      } else {
+        setArtisans(data)
+      }
+      setLoading(false)
+    }
+    load()
+  }, [category])
+
+  const confirm = async () => {
     if (!selected) return
     setConfirming(true)
-    setTimeout(() => { window.location.href = `/warroom/${selected}` }, 1000)
+
+    try {
+      if (missionId) {
+        // Lier l'artisan à la mission existante
+        await supabase
+          .from('missions')
+          .update({ artisan_id: selected, status: 'negotiation' })
+          .eq('id', missionId)
+
+        router.push(`/warroom/${missionId}`)
+      } else {
+        // Créer une nouvelle mission si pas de diagnostic préalable
+        const { data: mission } = await supabase
+          .from('missions')
+          .insert({
+            client_id: userId,
+            artisan_id: selected,
+            status: 'negotiation',
+            category,
+            quartier: 'Abidjan',
+          })
+          .select()
+          .single()
+
+        if (mission) router.push(`/warroom/${mission.id}`)
+      }
+    } catch (err) {
+      setConfirming(false)
+    }
+  }
+
+  const METIER_ICONS: Record<string, string> = {
+    'Plomberie': '🔧', 'Électricité': '⚡', 'Maçonnerie': '🏗️',
+    'Peinture': '🎨', 'Menuiserie': '🪵', 'Climatisation': '❄️',
+    'Serrurerie': '🔑', 'Carrelage': '🪟',
   }
 
   return (
@@ -34,49 +106,120 @@ function MatchingContent() {
               <ArrowLeft size={16} /> Retour
             </Link>
             <span className="section-label block mb-2">MATCHING IA</span>
-            <h1 className="font-display text-4xl font-bold text-dark">3 artisans disponibles</h1>
-            <p className="text-muted mt-2">Sélectionnés selon votre zone et vos notes</p>
+            <h1 className="font-display text-4xl font-bold text-dark">
+              {loading ? 'Recherche...' : `${artisans.length} artisan${artisans.length > 1 ? 's' : ''} disponible${artisans.length > 1 ? 's' : ''}`}
+            </h1>
+            <p className="text-muted mt-2">{category} · Sélectionnés selon disponibilité et notes</p>
           </div>
-          <div className="space-y-4 mb-8">
-            {MOCK_MATCHES.map((a, idx) => (
-              <button key={a.id} onClick={() => setSelected(a.id)}
-                className={`w-full text-left rounded-2xl border-2 transition-all duration-200 p-6 ${selected === a.id ? 'border-accent bg-accent/5' : 'border-border bg-white hover:border-dark/30'}`}>
-                <div className="flex items-start gap-4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1 ${idx === 0 ? 'bg-gold/20 text-yellow-700' : 'bg-bg2 text-muted'}`}>{idx + 1}</div>
-                  <div className="w-14 h-14 bg-bg2 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">{a.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <div>
-                        <h3 className="font-display font-bold text-dark">{a.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-muted mt-0.5">
-                          <MapPin size={12} /> {a.quartier} · <span className="text-accent font-medium">{a.distance}</span>
+
+          {loading ? (
+            <div style={{textAlign:'center',padding:'64px 0'}}>
+              <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'0 auto 16px'}} />
+              <p style={{color:'#7A7A6E',fontSize:'14px'}}>Recherche des meilleurs artisans...</p>
+            </div>
+          ) : artisans.length === 0 ? (
+            <div className="card" style={{textAlign:'center',padding:'48px'}}>
+              <p style={{fontSize:'48px',marginBottom:'16px'}}>😔</p>
+              <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#0F1410',marginBottom:'8px'}}>Aucun artisan disponible</h3>
+              <p style={{color:'#7A7A6E',fontSize:'14px',marginBottom:'24px'}}>Tous nos artisans {category} sont actuellement occupés.</p>
+              <Link href="/artisans" className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
+                Voir tous les artisans
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 mb-8">
+                {artisans.map((a, idx) => (
+                  <button key={a.id} onClick={() => setSelected(a.id)}
+                    style={{
+                      width:'100%',textAlign:'left',borderRadius:'16px',padding:'24px',cursor:'pointer',transition:'all 0.2s',
+                      border: selected === a.id ? '2px solid #E85D26' : '2px solid #D8D2C4',
+                      background: selected === a.id ? 'rgba(232,93,38,0.03)' : 'white',
+                    }}>
+                    <div style={{display:'flex',alignItems:'flex-start',gap:'16px'}}>
+                      {/* Rang */}
+                      <div style={{
+                        width:'28px',height:'28px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
+                        fontSize:'12px',fontWeight:700,flexShrink:0,marginTop:'4px',
+                        background: idx === 0 ? 'rgba(201,168,76,0.2)' : '#F5F3EE',
+                        color: idx === 0 ? '#C9A84C' : '#7A7A6E',
+                      }}>{idx + 1}</div>
+
+                      {/* Avatar */}
+                      <div style={{width:'56px',height:'56px',borderRadius:'14px',overflow:'hidden',flexShrink:0,background:'#EDE8DE',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px'}}>
+                        {a.users?.avatar_url
+                          ? <img src={a.users.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                          : METIER_ICONS[a.metier] || '👷'
+                        }
+                      </div>
+
+                      <div style={{flex:1}}>
+                        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}}>
+                          <div>
+                            <h3 className="font-display" style={{fontWeight:700,color:'#0F1410',fontSize:'16px'}}>{a.users?.name || 'Artisan'}</h3>
+                            <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#7A7A6E',marginTop:'2px'}}>
+                              <MapPin size={12} /> {a.users?.quartier || 'Abidjan'}
+                            </div>
+                          </div>
+                          <div style={{textAlign:'right',flexShrink:0}}>
+                            <div className="font-display" style={{fontWeight:700,color:'#0F1410',fontSize:'16px'}}>{(a.tarif_min || 0).toLocaleString()} FCFA</div>
+                            <div style={{fontSize:'11px',color:'#7A7A6E'}}>tarif min</div>
+                          </div>
                         </div>
+
+                        <div style={{display:'flex',flexWrap:'wrap',gap:'16px',marginTop:'12px'}}>
+                          <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px'}}>
+                            <Star size={13} style={{color:'#C9A84C',fill:'#C9A84C'}} />
+                            <span style={{fontWeight:600,color:'#0F1410'}}>{(a.rating_avg || 0).toFixed(1)}</span>
+                            <span style={{color:'#7A7A6E'}}>({a.rating_count || 0})</span>
+                          </div>
+                          <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#7A7A6E'}}>
+                            <CheckCircle size={13} /> {a.mission_count || 0} missions
+                          </div>
+                          <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#7A7A6E'}}>
+                            <Clock size={13} /> ~{a.response_time_min || 30} min
+                          </div>
+                        </div>
+
+                        {a.specialties?.length > 0 && (
+                          <div style={{display:'flex',flexWrap:'wrap',gap:'6px',marginTop:'10px'}}>
+                            {a.specialties.slice(0,3).map((s: string) => (
+                              <span key={s} style={{fontSize:'11px',background:'#F5F3EE',border:'1px solid #D8D2C4',padding:'3px 10px',borderRadius:'20px',color:'#7A7A6E'}}>{s}</span>
+                            ))}
+                          </div>
+                        )}
+
+                        {idx === 0 && (
+                          <div style={{display:'inline-flex',alignItems:'center',gap:'4px',marginTop:'10px',fontSize:'11px',color:'#C9A84C',background:'rgba(201,168,76,0.1)',padding:'3px 10px',borderRadius:'20px',fontWeight:600}}>
+                            ⭐ Meilleur match
+                          </div>
+                        )}
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-display font-bold text-dark">{a.tarif.toLocaleString()} FCFA</div>
+                    </div>
+
+                    {selected === a.id && (
+                      <div style={{display:'flex',alignItems:'center',gap:'6px',marginTop:'16px',fontSize:'13px',color:'#E85D26',fontWeight:500}}>
+                        <CheckCircle size={14} /> Sélectionné
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-4 mt-3">
-                      <div className="flex items-center gap-1 text-sm"><Star size={13} className="text-gold fill-gold" /><span className="font-semibold">{a.rating}</span></div>
-                      <div className="flex items-center gap-1 text-sm text-muted"><Clock size={13} /> ~{a.response_time} min</div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {a.why.map(w => <span key={w} className="text-xs bg-bg2 text-muted px-3 py-1 rounded-full border border-border">{w}</span>)}
-                    </div>
-                  </div>
-                </div>
-                {selected === a.id && <div className="mt-4 flex items-center gap-2 text-sm text-accent font-medium"><CheckCircle size={16} /> Sélectionné</div>}
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{display:'flex',alignItems:'flex-start',gap:'12px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'12px',padding:'16px',marginBottom:'24px'}}>
+                <Shield size={16} style={{color:'#2B6B3E',flexShrink:0,marginTop:'2px'}} />
+                <p style={{fontSize:'13px',color:'#7A7A6E'}}>Paiement sécurisé en séquestre Wave jusqu'à la fin des travaux. Remboursement garanti si insatisfait.</p>
+              </div>
+
+              <button onClick={confirm} disabled={!selected || confirming} className="btn-primary"
+                style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',padding:'16px',fontSize:'15px',opacity: (!selected || confirming) ? 0.4 : 1}}>
+                {confirming
+                  ? <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Connexion en cours...</>
+                  : <><Zap size={18} /> Contacter cet artisan <ChevronRight size={16} /></>
+                }
               </button>
-            ))}
-          </div>
-          <div className="flex items-start gap-3 bg-accent2/5 border border-accent2/20 rounded-xl p-4 mb-6">
-            <Shield size={16} className="text-accent2 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-muted">Paiement sécurisé en séquestre Wave jusqu'à la fin des travaux.</p>
-          </div>
-          <button onClick={confirm} disabled={!selected || confirming}
-            className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base disabled:opacity-40">
-            {confirming ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Connexion...</> : <><Zap size={18} /> Contacter cet artisan <ChevronRight size={16} /></>}
-          </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -84,5 +227,13 @@ function MatchingContent() {
 }
 
 export default function MatchingPage() {
-  return <Suspense fallback={<div className="min-h-screen bg-bg flex items-center justify-center"><div className="w-8 h-8 border-4 border-accent/30 border-t-accent rounded-full animate-spin" /></div>}><MatchingContent /></Suspense>
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+      </div>
+    }>
+      <MatchingContent />
+    </Suspense>
+  )
 }
