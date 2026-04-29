@@ -1,199 +1,275 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
-import {
-  ArrowLeft, Star, CheckCircle, MapPin, Clock, Shield,
-  Phone, MessageCircle, Zap, Award, ThumbsUp, Calendar,
-  ChevronRight
-} from 'lucide-react'
+import { ArrowLeft, Star, CheckCircle, MapPin, Clock, Shield, Phone, MessageCircle, Zap, Award, ThumbsUp, ChevronRight, Camera, Briefcase } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
 
-// Mock data — remplacer par requête Supabase : select from artisan_pros join users where id = params.id
-const MOCK_ARTISANS: Record<string, {
-  id: string; name: string; metier: string; quartier: string; rating: number;
-  missions: number; tarif: number; exp: number; badge: string; icon: string;
-  available: boolean; response_time: number; bio: string; specialties: string[];
-  certifications: string[]; quartiers: string[]; success_rate: number;
-  reviews: { author: string; note: number; date: string; text: string }[];
-}> = {
-  '1': {
-    id: '1', name: 'Kouadio Brou Emmanuel', metier: 'Plomberie', quartier: 'Cocody',
-    rating: 4.9, missions: 184, tarif: 8000, exp: 12, badge: 'Vérifié',
-    icon: '🔧', available: true, response_time: 10, success_rate: 98,
-    bio: 'Plombier professionnel avec 12 ans d\'expérience à Abidjan. Spécialisé dans les installations sanitaires, réparations de fuites et pose de carrelage. Travail soigné, rapide et au bon prix.',
-    specialties: ['Fuite d\'eau', 'Pose sanitaire', 'Siphon', 'Chauffe-eau', 'WC bouché'],
-    certifications: ['CAP Plomberie', 'Habilitation Travaux sous pression'],
-    quartiers: ['Cocody', 'Plateau', 'Marcory', 'Treichville'],
-    reviews: [
-      { author: 'Aya K.', note: 5, date: '05 Mar 2025', text: 'Excellent travail ! Très rapide et propre. Je recommande vivement.' },
-      { author: 'Jean M.', note: 5, date: '28 Fév 2025', text: 'Arrivé en 15 minutes, fuite réparée en une heure. Parfait !' },
-      { author: 'Fatou D.', note: 4, date: '12 Fév 2025', text: 'Bon travail, prix correct. Reviendra si besoin.' },
-    ],
-  },
-  '2': {
-    id: '2', name: 'Diallo Mamadou', metier: 'Électricité', quartier: 'Plateau',
-    rating: 4.8, missions: 132, tarif: 12000, exp: 8, badge: 'Top 10',
-    icon: '⚡', available: true, response_time: 15, success_rate: 97,
-    bio: 'Électricien certifié, 8 ans d\'expérience en installation et dépannage électrique à Abidjan. Maison, bureau, commerce. Devis gratuit sur place.',
-    specialties: ['Tableau électrique', 'Câblage', 'Prises & interrupteurs', 'Éclairage', 'Climatiseur'],
-    certifications: ['Habilitation Électrique B2V', 'CAP Électricité'],
-    quartiers: ['Plateau', 'Cocody', 'Adjamé', 'Abobo'],
-    reviews: [
-      { author: 'Moussa T.', note: 5, date: '03 Mar 2025', text: 'Très professionnel, a résolu mon problème de disjoncteur en 30 min.' },
-      { author: 'Inès B.', note: 5, date: '20 Fév 2025', text: 'Ponctuel, honnête sur le prix. Rien à redire.' },
-    ],
-  },
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function ArtisanProfilePage() {
   const params = useParams()
   const id = params.id as string
-  const artisan = MOCK_ARTISANS[id] ?? MOCK_ARTISANS['1']
-  const [activeTab, setActiveTab] = useState<'avis' | 'infos'>('avis')
+  const [artisan, setArtisan] = useState<any>(null)
+  const [user, setUser] = useState<any>(null)
+  const [missions, setMissions] = useState<any[]>([])
+  const [reviews, setReviews] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'missions'|'avis'|'certifs'>('missions')
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: artisanData } = await supabase
+        .from('artisan_pros')
+        .select('*, users!artisan_pros_user_id_fkey(id, name, avatar_url, quartier, phone)')
+        .eq('id', id)
+        .single()
+      if (!artisanData) { setLoading(false); return }
+      setArtisan(artisanData)
+      setUser(artisanData.users)
+
+      const { data: missionsData } = await supabase
+        .from('missions')
+        .select('*, proof_of_work(photo_before_urls, photo_after_urls, artisan_notes), diagnostics(ai_summary, category_detected)')
+        .eq('artisan_id', id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false })
+        .limit(12)
+      setMissions(missionsData || [])
+
+      const { data: reviewsData } = await supabase
+        .from('sentiment_logs')
+        .select('*, missions(client_id, users!missions_client_id_fkey(name))')
+        .eq('artisan_id', id)
+        .eq('source', 'review')
+        .order('created_at', { ascending: false })
+        .limit(20)
+      setReviews(reviewsData || [])
+      setLoading(false)
+    }
+    load()
+  }, [id])
+
+  if (loading) return (
+    <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+    </div>
+  )
+
+  if (!artisan) return (
+    <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="text-center">
+        <p style={{fontSize:'48px'}}>404</p>
+        <Link href="/artisans" style={{color:'#E85D26'}}>← Retour</Link>
+      </div>
+    </div>
+  )
+
+  const name = user?.name || 'Artisan'
+  const avatarUrl = user?.avatar_url
+  const rating = artisan.rating_avg || 0
+  const stars = Math.round(rating)
+
+  const missionPhotos = missions.flatMap((m: any) =>
+    (m.proof_of_work?.[0]?.photo_after_urls || []).map((url: string) => ({
+      url, category: m.category || m.diagnostics?.[0]?.category_detected || 'Intervention', date: m.completed_at,
+    }))
+  ).filter((p: any) => p.url).slice(0, 9)
+
+  const manualPhotos = (artisan.portfolio || []).map((url: string) => ({
+    url, category: 'Portfolio', date: null,
+  }))
+
+  const allPhotos = [...missionPhotos, ...manualPhotos]
 
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
-      <div className="pt-20 pb-16">
+      <div style={{paddingTop:'80px',paddingBottom:'64px'}}>
 
-        {/* Hero card */}
-        <div className="bg-dark text-cream">
-          <div className="page-container py-8 max-w-4xl">
-            <Link href="/artisans" className="inline-flex items-center gap-2 text-sm text-muted hover:text-cream mb-6 transition-colors">
+        <div style={{background:'#0F1410',color:'#FAFAF5'}}>
+          <div className="page-container" style={{padding:'32px',maxWidth:'896px'}}>
+            <Link href="/artisans" style={{display:'inline-flex',alignItems:'center',gap:'8px',fontSize:'14px',color:'#7A7A6E',textDecoration:'none',marginBottom:'24px'}}>
               <ArrowLeft size={16} /> Retour aux artisans
             </Link>
-
-            <div className="flex flex-col sm:flex-row items-start gap-6">
-              <div className="w-20 h-20 bg-dark2 rounded-2xl flex items-center justify-center text-4xl flex-shrink-0 border border-border">
-                {artisan.icon}
+            <div style={{display:'flex',alignItems:'flex-start',gap:'24px'}}>
+              <div style={{width:'96px',height:'96px',borderRadius:'20px',flexShrink:0,border:'2px solid rgba(232,93,38,0.4)',overflow:'hidden',background:'#1A1F1B',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                {avatarUrl ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : <span style={{fontSize:'40px'}}>👷</span>}
               </div>
-
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-3 mb-2">
-                  {artisan.badge === 'Top 10' && (
-                    <span className="badge bg-gold/20 text-yellow-400 border border-gold/30">🏆 Top 10</span>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'8px'}}>
+                  {artisan.kyc_status === 'approved' && (
+                    <span style={{fontSize:'11px',color:'#2B6B3E',background:'rgba(43,107,62,0.15)',border:'1px solid rgba(43,107,62,0.3)',padding:'3px 10px',borderRadius:'20px'}}>✓ KYC Vérifié</span>
                   )}
-                  {artisan.badge === 'Vérifié' && (
-                    <span className="badge bg-accent2/20 text-green-400 border border-accent2/30">✓ KYC Vérifié</span>
+                  {artisan.is_available && (
+                    <span style={{display:'inline-flex',alignItems:'center',gap:'4px',fontSize:'11px',color:'#2B6B3E',background:'rgba(43,107,62,0.1)',border:'1px solid rgba(43,107,62,0.2)',padding:'3px 10px',borderRadius:'20px'}}>
+                      <span style={{width:'6px',height:'6px',background:'#2B6B3E',borderRadius:'50%'}} /> Disponible
+                    </span>
                   )}
-                  {artisan.available
-                    ? <span className="flex items-center gap-1 text-xs text-accent2 bg-accent2/10 border border-accent2/20 px-3 py-1 rounded-full"><span className="w-1.5 h-1.5 bg-accent2 rounded-full animate-pulse-soft" />Disponible</span>
-                    : <span className="flex items-center gap-1 text-xs text-muted bg-muted/10 px-3 py-1 rounded-full"><span className="w-1.5 h-1.5 bg-muted rounded-full" />Occupé</span>
-                  }
                 </div>
-
-                <h1 className="font-display text-3xl font-bold text-cream">{artisan.name}</h1>
-                <p className="text-muted mt-1 flex items-center gap-1">
-                  <MapPin size={14} /> {artisan.metier} · {artisan.quartier}
-                </p>
-
-                <div className="grid grid-cols-4 gap-4 mt-6">
-                  {[
-                    { value: artisan.rating, label: 'Note', icon: Star },
-                    { value: artisan.missions, label: 'Missions', icon: CheckCircle },
-                    { value: `${artisan.exp}ans`, label: 'Expérience', icon: Award },
-                    { value: `${artisan.response_time}min`, label: 'Réponse', icon: Clock },
-                  ].map(stat => (
-                    <div key={stat.label} className="text-center">
-                      <div className="font-display text-xl font-bold text-cream">{stat.value}</div>
-                      <div className="text-xs text-muted font-mono mt-0.5">{stat.label}</div>
-                    </div>
-                  ))}
+                <div className="font-display" style={{fontSize:'32px',fontWeight:800,color:'#FAFAF5',lineHeight:1.1}}>{artisan.metier}</div>
+                <div style={{fontSize:'15px',color:'#7A7A6E',marginTop:'4px',display:'flex',alignItems:'center',gap:'8px'}}>
+                  <span>{name}</span><span>·</span>
+                  <span style={{display:'inline-flex',alignItems:'center',gap:'4px'}}><MapPin size={12}/> {user?.quartier || 'Abidjan'}</span>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'12px'}}>
+                  <div style={{display:'flex',gap:'2px'}}>
+                    {Array.from({length:5}).map((_,i) => (
+                      <Star key={i} size={16} style={{color: i < stars ? '#C9A84C' : '#3A3A30'}} fill={i < stars ? '#C9A84C' : 'none'} />
+                    ))}
+                  </div>
+                  <span className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#FAFAF5'}}>{rating.toFixed(1)}</span>
+                  <span style={{fontSize:'13px',color:'#7A7A6E'}}>({artisan.rating_count || 0} avis)</span>
                 </div>
               </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'16px',borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:'24px',marginTop:'24px'}}>
+              {[
+                {value: artisan.mission_count || missions.length, label:'Missions'},
+                {value: `${artisan.years_experience||0}ans`, label:'Expérience'},
+                {value: `${artisan.success_rate||0}%`, label:'Satisfaction'},
+                {value: `${artisan.response_time_min||30}min`, label:'Réponse'},
+              ].map(s => (
+                <div key={s.label} style={{textAlign:'center'}}>
+                  <div className="font-display" style={{fontSize:'22px',fontWeight:700,color:'#FAFAF5'}}>{s.value}</div>
+                  <div style={{fontSize:'11px',color:'#7A7A6E',fontFamily:'Space Mono'}}>{s.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="page-container max-w-4xl py-8">
-          <div className="grid lg:grid-cols-3 gap-6">
+        <div className="page-container" style={{padding:'32px',maxWidth:'896px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 320px',gap:'24px',alignItems:'start'}}>
+            <div style={{display:'flex',flexDirection:'column',gap:'24px'}}>
 
-            {/* Left col — info */}
-            <div className="lg:col-span-2 space-y-6">
-
-              {/* Bio */}
-              <div className="card">
-                <h2 className="font-display text-lg font-bold text-dark mb-3">À propos</h2>
-                <p className="text-muted leading-relaxed text-sm">{artisan.bio}</p>
-              </div>
-
-              {/* Spécialités */}
-              <div className="card">
-                <h2 className="font-display text-lg font-bold text-dark mb-3">Spécialités</h2>
-                <div className="flex flex-wrap gap-2">
-                  {artisan.specialties.map(s => (
-                    <span key={s} className="badge-orange">{s}</span>
-                  ))}
+              {artisan.bio && (
+                <div className="card">
+                  <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',marginBottom:'12px'}}>À propos</h2>
+                  <p style={{fontSize:'14px',color:'#7A7A6E',lineHeight:'1.7'}}>{artisan.bio}</p>
                 </div>
-              </div>
+              )}
 
-              {/* Zones */}
-              <div className="card">
-                <h2 className="font-display text-lg font-bold text-dark mb-3 flex items-center gap-2">
-                  <MapPin size={16} className="text-accent" /> Zones d'intervention
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {artisan.quartiers.map(q => (
-                    <span key={q} className="badge bg-bg2 text-dark border border-border">{q}</span>
-                  ))}
+              {artisan.specialties?.length > 0 && (
+                <div className="card">
+                  <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',marginBottom:'12px'}}>Spécialités</h2>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
+                    {artisan.specialties.map((s: string) => (
+                      <span key={s} style={{padding:'6px 14px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'20px',fontSize:'13px',color:'#E85D26',fontWeight:500}}>{s}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Tabs avis / certifs */}
+              {artisan.quartiers?.length > 0 && (
+                <div className="card">
+                  <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',marginBottom:'12px',display:'flex',alignItems:'center',gap:'8px'}}>
+                    <MapPin size={16} style={{color:'#E85D26'}}/> Zones d'intervention
+                  </h2>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
+                    {artisan.quartiers.map((q: string) => (
+                      <span key={q} style={{padding:'6px 14px',background:'#F5F3EE',border:'1px solid #D8D2C4',borderRadius:'20px',fontSize:'13px',color:'#0F1410'}}>{q}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="card">
-                <div className="flex border-b border-border mb-6">
+                <div style={{display:'flex',borderBottom:'1px solid #EDE8DE',marginBottom:'24px'}}>
                   {[
-                    { id: 'avis' as const, label: `Avis (${artisan.reviews.length})` },
-                    { id: 'infos' as const, label: 'Certifications' },
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`pb-3 px-1 mr-6 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === tab.id
-                          ? 'border-accent text-dark'
-                          : 'border-transparent text-muted hover:text-dark'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
+                    {id:'missions' as const, label:`Réalisations (${allPhotos.length || missions.length})`},
+                    {id:'avis' as const, label:`Avis (${reviews.length})`},
+                    {id:'certifs' as const, label:'Certifications'},
+                  ].map(t => (
+                    <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+                      padding:'0 4px',paddingBottom:'12px',marginRight:'24px',fontSize:'14px',fontWeight:500,
+                      border:'none',background:'none',cursor:'pointer',
+                      borderBottom: activeTab===t.id ? '2px solid #E85D26' : '2px solid transparent',
+                      color: activeTab===t.id ? '#0F1410' : '#7A7A6E',
+                    }}>{t.label}</button>
                   ))}
                 </div>
+
+                {activeTab === 'missions' && (
+                  <div>
+                    {allPhotos.length > 0 ? (
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
+                        {allPhotos.map((p: any, i: number) => (
+                          <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'12px',overflow:'hidden',background:'#EDE8DE'}}>
+                            <img src={p.url} alt={p.category} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                            <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(15,20,16,0.8))',padding:'8px'}}>
+                              <div style={{fontSize:'11px',color:'#FAFAF5',fontWeight:600}}>{p.category}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : missions.length > 0 ? (
+                      <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                        {missions.map((m: any) => (
+                          <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px',background:'#F5F3EE',borderRadius:'12px'}}>
+                            <div style={{width:'40px',height:'40px',background:'rgba(232,93,38,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                              <Briefcase size={18} style={{color:'#E85D26'}} />
+                            </div>
+                            <div style={{flex:1}}>
+                              <div style={{fontWeight:600,fontSize:'14px',color:'#0F1410'}}>{m.category || m.diagnostics?.[0]?.category_detected || 'Intervention'}</div>
+                              <div style={{fontSize:'12px',color:'#7A7A6E'}}>{m.quartier||'Abidjan'} · {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''}</div>
+                            </div>
+                            <CheckCircle size={16} style={{color:'#2B6B3E'}} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{textAlign:'center',padding:'48px 0',color:'#7A7A6E'}}>
+                        <Camera size={32} style={{margin:'0 auto 12px',opacity:0.3}} />
+                        <p style={{fontSize:'14px'}}>Les réalisations apparaîtront au fil des missions</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {activeTab === 'avis' && (
-                  <div className="space-y-4">
-                    {artisan.reviews.map((r, i) => (
-                      <div key={i} className="pb-4 border-b border-border last:border-0 last:pb-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-bg2 rounded-full flex items-center justify-center font-bold text-sm text-dark">
-                              {r.author[0]}
+                  <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+                    {reviews.length === 0 ? (
+                      <div style={{textAlign:'center',padding:'48px 0',color:'#7A7A6E'}}>
+                        <Star size={32} style={{margin:'0 auto 12px',opacity:0.3}} />
+                        <p style={{fontSize:'14px'}}>Aucun avis pour l'instant</p>
+                      </div>
+                    ) : reviews.map((r: any, i: number) => (
+                      <div key={i} style={{paddingBottom:'16px',borderBottom:'1px solid #EDE8DE'}}>
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
+                          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                            <div style={{width:'32px',height:'32px',background:'#EDE8DE',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:'13px'}}>
+                              {(r.missions?.users?.name||'C')[0]}
                             </div>
-                            <span className="font-medium text-sm text-dark">{r.author}</span>
+                            <span style={{fontWeight:500,fontSize:'14px',color:'#0F1410'}}>{r.missions?.users?.name||'Client'}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex">
-                              {Array.from({ length: 5 }).map((_, j) => (
-                                <Star key={j} size={12} className={j < r.note ? 'text-gold fill-gold' : 'text-border'} />
-                              ))}
-                            </div>
-                            <span className="text-xs text-muted font-mono">{r.date}</span>
+                          <div style={{display:'flex',gap:'2px'}}>
+                            {Array.from({length:5}).map((_,j) => (
+                              <Star key={j} size={12} style={{color: r.sentiment_score && j < Math.round(r.sentiment_score*5) ? '#C9A84C' : '#D8D2C4'}} fill={r.sentiment_score && j < Math.round(r.sentiment_score*5) ? '#C9A84C' : 'none'} />
+                            ))}
                           </div>
                         </div>
-                        <p className="text-sm text-muted">{r.text}</p>
+                        <p style={{fontSize:'14px',color:'#7A7A6E',lineHeight:'1.6'}}>{r.raw_text}</p>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {activeTab === 'infos' && (
-                  <div className="space-y-3">
-                    {artisan.certifications.map(c => (
-                      <div key={c} className="flex items-center gap-3 p-3 bg-accent2/5 border border-accent2/20 rounded-xl">
-                        <Shield size={16} className="text-accent2 flex-shrink-0" />
-                        <span className="text-sm text-dark font-medium">{c}</span>
+                {activeTab === 'certifs' && (
+                  <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                    {(artisan.certifications||[]).length === 0 ? (
+                      <div style={{textAlign:'center',padding:'48px 0',color:'#7A7A6E'}}>
+                        <Shield size={32} style={{margin:'0 auto 12px',opacity:0.3}} />
+                        <p style={{fontSize:'14px'}}>Aucune certification renseignée</p>
+                      </div>
+                    ) : artisan.certifications.map((c: string) => (
+                      <div key={c} style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'12px'}}>
+                        <Shield size={16} style={{color:'#2B6B3E'}} />
+                        <span style={{fontSize:'14px',color:'#0F1410',fontWeight:500}}>{c}</span>
                       </div>
                     ))}
                   </div>
@@ -201,50 +277,36 @@ export default function ArtisanProfilePage() {
               </div>
             </div>
 
-            {/* Right col — sticky CTA */}
-            <div className="space-y-4">
-              <div className="card sticky top-24">
-                <div className="text-center mb-6">
-                  <p className="font-mono text-xs text-muted uppercase tracking-wider mb-1">Tarif minimum</p>
-                  <p className="font-display text-4xl font-bold text-dark">{artisan.tarif.toLocaleString()}</p>
-                  <p className="text-sm text-muted">FCFA / intervention</p>
+            <div>
+              <div className="card" style={{position:'sticky',top:'96px'}}>
+                <div style={{textAlign:'center',marginBottom:'24px'}}>
+                  <p style={{fontFamily:'Space Mono',fontSize:'11px',color:'#7A7A6E',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'4px'}}>Tarif minimum</p>
+                  <p className="font-display" style={{fontSize:'40px',fontWeight:700,color:'#0F1410'}}>{(artisan.tarif_min||0).toLocaleString()}</p>
+                  <p style={{fontSize:'13px',color:'#7A7A6E'}}>FCFA / intervention</p>
                 </div>
-
-                <div className="space-y-3 mb-6">
+                <div style={{display:'flex',flexDirection:'column',gap:'10px',marginBottom:'24px'}}>
                   {[
-                    { icon: Clock, text: `Réponse en ${artisan.response_time} min en moyenne` },
-                    { icon: ThumbsUp, text: `${artisan.success_rate}% de taux de satisfaction` },
-                    { icon: Shield, text: 'Paiement 100% sécurisé via Wave' },
+                    {icon:Clock, text:`Réponse en ${artisan.response_time_min||30} min`},
+                    {icon:ThumbsUp, text:`${artisan.success_rate||0}% de satisfaction`},
+                    {icon:Shield, text:'Paiement sécurisé via Wave'},
                   ].map(item => (
-                    <div key={item.text} className="flex items-center gap-2 text-sm text-muted">
-                      <item.icon size={14} className="text-accent2 flex-shrink-0" />
-                      {item.text}
+                    <div key={item.text} style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'13px',color:'#7A7A6E'}}>
+                      <item.icon size={14} style={{color:'#2B6B3E',flexShrink:0}} /> {item.text}
                     </div>
                   ))}
                 </div>
-
-                <Link
-                  href={`/matching?artisan=${artisan.id}`}
-                  className="btn-primary w-full flex items-center justify-center gap-2 mb-3"
-                >
-                  <Zap size={16} />
-                  Réserver cet artisan
+                <Link href={`/matching?artisan=${id}`} className="btn-primary" style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginBottom:'12px'}}>
+                  <Zap size={16}/> Réserver cet artisan
                 </Link>
-
-                <Link
-                  href="/diagnostic"
-                  className="btn-outline w-full flex items-center justify-center gap-2 text-sm"
-                >
-                  Faire un diagnostic d'abord
-                  <ChevronRight size={14} />
+                <Link href="/diagnostic" className="btn-outline" style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',fontSize:'13px'}}>
+                  Diagnostic d'abord <ChevronRight size={14}/>
                 </Link>
-
-                <div className="mt-4 pt-4 border-t border-border flex gap-3">
-                  <button className="flex-1 flex items-center justify-center gap-1 text-xs text-muted hover:text-dark transition-colors py-2 rounded-lg hover:bg-bg2">
-                    <Phone size={14} /> Appeler
+                <div style={{marginTop:'16px',paddingTop:'16px',borderTop:'1px solid #EDE8DE',display:'flex',gap:'8px'}}>
+                  <button style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontSize:'12px',color:'#7A7A6E',background:'none',border:'none',cursor:'pointer',padding:'8px',borderRadius:'8px'}}>
+                    <Phone size={14}/> Appeler
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-1 text-xs text-muted hover:text-dark transition-colors py-2 rounded-lg hover:bg-bg2">
-                    <MessageCircle size={14} /> Message
+                  <button style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontSize:'12px',color:'#7A7A6E',background:'none',border:'none',cursor:'pointer',padding:'8px',borderRadius:'8px'}}>
+                    <MessageCircle size={14}/> Message
                   </button>
                 </div>
               </div>
