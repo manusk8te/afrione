@@ -14,6 +14,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [userRole, setUserRole] = useState<string>('client')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -25,11 +26,19 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        const { data } = await supabase.from('users').select('role').eq('id', session.user.id).single()
+        if (data?.role) setUserRole(data.role)
+      }
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        const { data } = await supabase.from('users').select('role').eq('id', session.user.id).single()
+        if (data?.role) setUserRole(data.role)
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -47,7 +56,6 @@ export default function Navbar() {
   ]
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Mon compte'
-  const userRole = user?.user_metadata?.role || 'client'
 
   return (
     <nav style={{
@@ -114,6 +122,15 @@ export default function Navbar() {
                       onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
                       <Zap size={14} /> Nouvelle mission
                     </Link>
+                    {userRole === 'admin' && (
+                      <Link href="/admin"
+                        onClick={() => setDropdownOpen(false)}
+                        style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#E85D26',fontSize:'14px',fontWeight:600}}
+                        onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
+                        onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                        ⚙️ Dashboard Admin
+                      </Link>
+                    )}
                     <button onClick={handleLogout}
                       style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',color:'#E85D26',fontSize:'14px',background:'none',border:'none',cursor:'pointer',width:'100%',textAlign:'left',marginTop:'4px',borderTop:'1px solid #D8D2C4',paddingTop:'12px'}}
                       onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
