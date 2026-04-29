@@ -1,94 +1,102 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, mission_id } = await req.json()
-    if (!text || text.length < 5) {
-      return NextResponse.json({ error: 'Texte trop court' }, { status: 400 })
-    }
+    const { text, user_id, quartier } = await req.json()
 
-    // 1. Appel GPT-4o pour analyser le problème
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `Tu es AfriOne-Brain, l'IA de diagnostic de la plateforme AfriOne à Abidjan (Côte d'Ivoire).
-          
-Ton rôle : analyser la description d'un problème client et retourner une analyse structurée en JSON.
+    let result: any
 
-Base de référence des tarifs à Abidjan :
-- Plombier : 3000 FCFA/h + matériaux
-- Électricien : 3500 FCFA/h + matériaux  
-- Peintre : 2500 FCFA/h + matériaux
-- Maçon : 2800 FCFA/h
-- Menuisier : 3000 FCFA/h
-- Climaticien : 4000 FCFA/h
-
-Réponds UNIQUEMENT en JSON valide, sans markdown, sans texte autour.`,
+    if (process.env.ANTHROPIC_API_KEY) {
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'anthropic-version': '2023-06-01',
         },
-        {
-          role: 'user',
-          content: `Analyse ce problème et retourne un JSON avec exactement ces champs :
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          messages: [
+            {
+              role: 'user',
+              content: `Tu es un expert en artisanat à Abidjan, Côte d'Ivoire.
+Analyse ce problème et réponds UNIQUEMENT en JSON valide, sans texte avant ou après:
 {
-  "summary": "résumé technique précis en 1-2 phrases",
-  "category": "Plomberie|Électricité|Peinture|Maçonnerie|Menuiserie|Climatisation|Serrurerie|Carrelage",
+  "summary": "résumé du problème en 1-2 phrases",
+  "category": "Plomberie|Électricité|Maçonnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage",
   "urgency": "low|medium|high|emergency",
-  "price_min": <nombre entier en FCFA>,
-  "price_max": <nombre entier en FCFA>,
-  "items_needed": ["liste", "des", "matériaux"],
-  "duration_estimate": "ex: 1 à 2 heures",
-  "artisan_tips": "conseils pour le client avant l'arrivée de l'artisan"
+  "price_min": nombre en FCFA,
+  "price_max": nombre en FCFA,
+  "items_needed": ["matériel1", "matériel2"],
+  "duration_estimate": "X à Y heures"
 }
+Prix réalistes pour Abidjan en FCFA.
 
-Problème client : "${text}"`,
-        },
-      ],
-      max_tokens: 600,
-      temperature: 0.3,
-    })
-
-    const rawJson = completion.choices[0].message.content || '{}'
-    const diagResult = JSON.parse(rawJson)
-
-    // 2. Générer l'embedding pour pgvector
-    const embedding = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text,
-    })
-
-    // 3. Sauvegarder en base si mission_id fourni
-    if (mission_id) {
-      await supabaseAdmin.from('diagnostics').insert({
-        mission_id,
-        raw_text: text,
-        ai_summary: diagResult.summary,
-        category_detected: diagResult.category,
-        estimated_price_min: diagResult.price_min,
-        estimated_price_max: diagResult.price_max,
-        items_needed: diagResult.items_needed,
-        urgency_level: diagResult.urgency,
-        embedding: embedding.data[0].embedding,
+Problème: ${text}`
+            }
+          ],
+        }),
       })
+      const claudeData = await claudeRes.json()
+      const content = claudeData.content?.[0]?.text || '{}'
+      const clean = content.replace(/```json|```/g, '').trim()
+      result = JSON.parse(clean)
+    } else {
+      // Fallback intelligent sans clé
+      const lower = text.toLowerCase()
+      const isPlomberie = lower.includes('fuite') || lower.includes('eau') || lower.includes('robinet') || lower.includes('tuyau') || lower.includes('wc') || lower.includes('évier')
+      const isElec = lower.includes('électr') || lower.includes('courant') || lower.includes('disjoncteur') || lower.includes('prise') || lower.includes('lumière') || lower.includes('clim')
+      const isPeinture = lower.includes('peinture') || lower.includes('peindre') || lower.includes('mur') || lower.includes('salon')
+      const isUrgent = lower.includes('urgent') || lower.includes('plus en plus') || lower.includes('inondation')
 
-      // Mettre à jour le statut de la mission
-      await supabaseAdmin
-        .from('missions')
-        .update({ status: 'matching', category: diagResult.category })
-        .eq('id', mission_id)
+      if (isPlomberie) {
+        result = { summary: 'Problème de plomberie nécessitant l\'intervention d\'un plombier qualifié.', category: 'Plomberie', urgency: isUrgent ? 'high' : 'medium', price_min: 8000, price_max: 35000, items_needed: ['Joint d\'étanchéité', 'Siphon PVC', 'Clé à molette'], duration_estimate: '1 à 3 heures' }
+      } else if (isElec) {
+        result = { summary: 'Problème électrique nécessitant un électricien certifié.', category: 'Électricité', urgency: isUrgent ? 'high' : 'medium', price_min: 10000, price_max: 45000, items_needed: ['Disjoncteur', 'Câble électrique', 'Gaine'], duration_estimate: '1 à 4 heures' }
+      } else if (isPeinture) {
+        result = { summary: 'Travaux de peinture nécessitant un peintre expérimenté.', category: 'Peinture', urgency: 'low', price_min: 15000, price_max: 80000, items_needed: ['Peinture acrylique', 'Rouleau', 'Bâche'], duration_estimate: '4 à 8 heures' }
+      } else {
+        result = { summary: 'Problème artisanal nécessitant une intervention professionnelle.', category: 'Maçonnerie', urgency: 'medium', price_min: 10000, price_max: 50000, items_needed: ['Matériaux selon devis'], duration_estimate: '2 à 6 heures' }
+      }
     }
 
-    return NextResponse.json(diagResult)
+    // Créer la mission en BDD si user connecté
+    if (user_id) {
+      const { data: mission } = await supabase
+        .from('missions')
+        .insert({
+          client_id: user_id,
+          status: 'diagnostic',
+          category: result.category,
+          quartier: quartier || 'Abidjan',
+        })
+        .select()
+        .single()
 
-  } catch (error) {
-    console.error('Diagnostic API error:', error)
-    return NextResponse.json(
-      { error: 'Erreur lors de l\'analyse' },
-      { status: 500 }
-    )
+      if (mission) {
+        await supabase.from('diagnostics').insert({
+          mission_id: mission.id,
+          raw_text: text,
+          ai_summary: result.summary,
+          category_detected: result.category,
+          estimated_price_min: result.price_min,
+          estimated_price_max: result.price_max,
+          items_needed: result.items_needed,
+          urgency_level: result.urgency,
+        })
+        return NextResponse.json({ ...result, mission_id: mission.id })
+      }
+    }
+
+    return NextResponse.json(result)
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

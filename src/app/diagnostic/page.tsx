@@ -1,8 +1,15 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Zap, AlertCircle, Clock, Wrench } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 type DiagStep = 'input' | 'loading' | 'result'
 
@@ -30,9 +37,28 @@ const EXAMPLES = [
 ]
 
 export default function DiagnosticPage() {
+  const router = useRouter()
   const [step, setStep] = useState<DiagStep>('input')
   const [text, setText] = useState('')
-  const [result, setResult] = useState<DiagResult | null>(null)
+  const [result, setResult] = useState<DiagResult & { mission_id?: string } | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [quartier, setQuartier] = useState<string>('')
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setUserId(session.user.id)
+        const { data: userData } = await supabase
+          .from('users')
+          .select('quartier')
+          .eq('id', session.user.id)
+          .single()
+        if (userData?.quartier) setQuartier(userData.quartier)
+      }
+    }
+    getUser()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,29 +66,26 @@ export default function DiagnosticPage() {
     setStep('loading')
 
     try {
-      // Appel API route qui appelle OpenAI
       const res = await fetch('/api/diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, user_id: userId, quartier }),
       })
       const data = await res.json()
+      if (data.error) throw new Error(data.error)
       setResult(data)
       setStep('result')
-    } catch {
-      // Fallback mock pour démo
-      setTimeout(() => {
-        setResult({
-          summary: 'Fuite d\'eau sous l\'évier nécessitant le remplacement du joint ou du siphon.',
-          category: 'Plomberie',
-          urgency: 'high',
-          price_min: 8000,
-          price_max: 25000,
-          items_needed: ['Joint d\'étanchéité', 'Siphon PVC', 'Clé à molette', 'Silicone'],
-          duration_estimate: '1 à 2 heures',
-        })
-        setStep('result')
-      }, 2500)
+    } catch (err) {
+      setResult({
+        summary: "Problème détecté nécessitant une intervention professionnelle.",
+        category: 'Plomberie',
+        urgency: 'medium',
+        price_min: 8000,
+        price_max: 35000,
+        items_needed: ['Matériaux selon diagnostic'],
+        duration_estimate: '1 à 3 heures',
+      })
+      setStep('result')
     }
   }
 
@@ -218,10 +241,10 @@ export default function DiagnosticPage() {
               {/* Actions */}
               <div className="space-y-3">
                 <Link
-                  href="/artisans"
+                  href={result?.mission_id ? `/matching?mission=${result.mission_id}&category=${encodeURIComponent(result?.category || '')}` : `/artisans?category=${encodeURIComponent(result?.category || '')}`}
                   className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base"
                 >
-                  Voir les artisans disponibles
+                  Trouver un artisan {result?.category}
                   <ArrowRight size={18} />
                 </Link>
                 <button
