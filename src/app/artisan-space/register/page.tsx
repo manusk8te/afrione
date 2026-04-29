@@ -1,43 +1,112 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, ArrowLeft, CheckCircle, Zap, MapPin, User } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const METIERS = [
-  { id: 'plomberie', label: 'Plomberie', icon: '🔧' },
-  { id: 'electricite', label: 'Électricité', icon: '⚡' },
-  { id: 'maconnerie', label: 'Maçonnerie', icon: '🏗️' },
-  { id: 'peinture', label: 'Peinture', icon: '🎨' },
-  { id: 'menuiserie', label: 'Menuiserie', icon: '🪵' },
-  { id: 'climatisation', label: 'Climatisation', icon: '❄️' },
-  { id: 'serrurerie', label: 'Serrurerie', icon: '🔑' },
-  { id: 'carrelage', label: 'Carrelage', icon: '🪟' },
+  { id: 'Plomberie', label: 'Plomberie', icon: '🔧' },
+  { id: 'Électricité', label: 'Électricité', icon: '⚡' },
+  { id: 'Maçonnerie', label: 'Maçonnerie', icon: '🏗️' },
+  { id: 'Peinture', label: 'Peinture', icon: '🎨' },
+  { id: 'Menuiserie', label: 'Menuiserie', icon: '🪵' },
+  { id: 'Climatisation', label: 'Climatisation', icon: '❄️' },
+  { id: 'Serrurerie', label: 'Serrurerie', icon: '🔑' },
+  { id: 'Carrelage', label: 'Carrelage', icon: '🪟' },
 ]
 
-const QUARTIERS = ['Cocody', 'Plateau', 'Marcory', 'Treichville', 'Yopougon', 'Adjamé', 'Abobo', 'Port-Bouët', 'Koumassi']
-
+const QUARTIERS = ['Cocody','Plateau','Marcory','Treichville','Yopougon','Adjamé','Abobo','Port-Bouët','Koumassi']
 const STEPS = ['Téléphone', 'Profil', 'Métier', 'Terminé']
 
 export default function ArtisanRegisterPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     phone: '', name: '', quartier: '', exp: '', bio: '',
     metier: '', tarif: '', rayon: '10',
   })
 
+  useEffect(() => {
+    // Si déjà un profil artisan → redirect dashboard
+    const check = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data } = await supabase
+        .from('artisan_pros')
+        .select('id, kyc_status')
+        .eq('user_id', session.user.id)
+        .single()
+      if (data) {
+        router.push(data.kyc_status === 'approved' ? '/artisan-space/dashboard' : '/artisan-space/kyc')
+      }
+    }
+    check()
+  }, [])
+
   const update = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  const next = () => {
-    setLoading(true)
-    setTimeout(() => { setLoading(false); setStep(s => s + 1) }, 600)
-  }
+  const next = () => setStep(s => s + 1)
 
-  const finish = () => {
+  const finish = async () => {
     setLoading(true)
-    setTimeout(() => router.push('/artisan-space/kyc'), 1000)
+    setError('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.push('/auth'); return }
+
+      // 1. Mettre à jour le nom + quartier dans users
+      await supabase.from('users').update({
+        name: form.name,
+        quartier: form.quartier,
+        phone: form.phone || session.user.phone || '00000000',
+        role: 'artisan',
+      }).eq('id', session.user.id)
+
+      // 2. Créer le profil artisan
+      const { data: artisanData, error: artisanErr } = await supabase
+        .from('artisan_pros')
+        .insert({
+          user_id: session.user.id,
+          metier: form.metier,
+          bio: form.bio || '',
+          years_experience: parseInt(form.exp) || 0,
+          tarif_min: parseInt(form.tarif) || 0,
+          quartiers: [form.quartier],
+          kyc_status: 'pending',
+          is_available: false,
+          rating_avg: 0,
+          rating_count: 0,
+          mission_count: 0,
+          success_rate: 0,
+          response_time_min: 30,
+        })
+        .select()
+        .single()
+
+      if (artisanErr) throw artisanErr
+
+      // 3. Créer le wallet
+      await supabase.from('wallets').insert({
+        artisan_id: artisanData.id,
+        balance_available: 0,
+        balance_escrow: 0,
+        total_earned: 0,
+        total_withdrawn: 0,
+      })
+
+      setStep(3)
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la création du compte')
+    }
+    setLoading(false)
   }
 
   return (
@@ -56,7 +125,7 @@ export default function ArtisanRegisterPage() {
             Rejoignez<br /><span className="text-accent">500+</span><br />artisans.
           </h1>
           <div className="space-y-3">
-            {['Missions qualifiées près de chez vous', 'Paiement Wave sous 24h', 'Construisez votre réputation', 'Assurance SAV incluse'].map(t => (
+            {['Missions qualifiées près de chez vous','Paiement Wave sous 24h','Construisez votre réputation','Assurance SAV incluse'].map(t => (
               <div key={t} className="flex items-center gap-2 text-sm text-muted">
                 <CheckCircle size={14} className="text-accent2 flex-shrink-0" /> {t}
               </div>
@@ -85,20 +154,26 @@ export default function ArtisanRegisterPage() {
           ))}
         </div>
 
+        {error && (
+          <div style={{background:'rgba(220,38,38,0.1)',border:'1px solid rgba(220,38,38,0.3)',borderRadius:'12px',padding:'12px 16px',marginBottom:'16px',fontSize:'13px',color:'#dc2626'}}>
+            {error}
+          </div>
+        )}
+
         {/* Step 0 — Phone */}
         {step === 0 && (
-          <div className="animate-fade-up">
+          <div>
             <h2 className="font-display text-3xl font-bold text-dark mb-2">Votre numéro</h2>
-            <p className="text-muted text-sm mb-8">Nous vous enverrons un SMS de vérification</p>
+            <p className="text-muted text-sm mb-8">Votre numéro Wave pour recevoir vos paiements</p>
             <div className="space-y-4">
               <div className="flex gap-3">
                 <div className="flex items-center bg-white border border-border rounded-xl px-4 py-3 text-sm font-mono flex-shrink-0">🇨🇮 +225</div>
                 <input type="tel" value={form.phone} onChange={e => update('phone', e.target.value)}
                   placeholder="07 00 00 00 00" className="input flex-1 font-mono" />
               </div>
-              <button onClick={next} disabled={form.phone.length < 8 || loading}
+              <button onClick={next} disabled={form.phone.length < 8}
                 className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40">
-                {loading ? 'Envoi...' : <> Continuer <ArrowRight size={16} /></>}
+                Continuer <ArrowRight size={16} />
               </button>
               <p className="text-xs text-center text-muted">
                 En continuant, vous acceptez nos <Link href="/aide" className="text-accent">CGU</Link>
@@ -109,7 +184,7 @@ export default function ArtisanRegisterPage() {
 
         {/* Step 1 — Profil */}
         {step === 1 && (
-          <div className="animate-fade-up">
+          <div>
             <button onClick={() => setStep(0)} className="inline-flex items-center gap-2 text-sm text-muted hover:text-dark mb-6 transition-colors">
               <ArrowLeft size={16} /> Retour
             </button>
@@ -151,9 +226,9 @@ export default function ArtisanRegisterPage() {
                 <textarea value={form.bio} onChange={e => update('bio', e.target.value)}
                   placeholder="Décrivez votre expertise en quelques mots..." className="input resize-none min-h-20" />
               </div>
-              <button onClick={next} disabled={!form.name || !form.quartier || loading}
+              <button onClick={next} disabled={!form.name || !form.quartier}
                 className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40">
-                {loading ? 'Enregistrement...' : <>Continuer <ArrowRight size={16} /></>}
+                Continuer <ArrowRight size={16} />
               </button>
             </div>
           </div>
@@ -161,7 +236,7 @@ export default function ArtisanRegisterPage() {
 
         {/* Step 2 — Métier */}
         {step === 2 && (
-          <div className="animate-fade-up">
+          <div>
             <button onClick={() => setStep(1)} className="inline-flex items-center gap-2 text-sm text-muted hover:text-dark mb-6 transition-colors">
               <ArrowLeft size={16} /> Retour
             </button>
@@ -181,18 +256,21 @@ export default function ArtisanRegisterPage() {
             </div>
             <button onClick={finish} disabled={!form.metier || loading}
               className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40">
-              {loading ? 'Création du compte...' : <><CheckCircle size={16} /> Créer mon compte</>}
+              {loading
+                ? <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Création en cours...</>
+                : <><CheckCircle size={16} /> Créer mon compte</>
+              }
             </button>
           </div>
         )}
 
         {/* Step 3 — Done */}
         {step === 3 && (
-          <div className="animate-fade-up text-center">
+          <div className="text-center">
             <div className="w-20 h-20 bg-accent2/10 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle size={40} className="text-accent2" />
             </div>
-            <h2 className="font-display text-3xl font-bold text-dark mb-3">Compte créé !</h2>
+            <h2 className="font-display text-3xl font-bold text-dark mb-3">Compte créé ! 🎉</h2>
             <p className="text-muted mb-8">Il ne reste plus qu'à vérifier votre identité pour activer votre profil</p>
             <Link href="/artisan-space/kyc" className="btn-primary w-full flex items-center justify-center gap-2 py-4">
               <Zap size={16} /> Envoyer mes documents KYC
