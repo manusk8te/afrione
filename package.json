@@ -23,6 +23,7 @@
     "react-onesignal": "^3.5.1",
     "recharts": "^2.12.0",
     "tailwind-merge": "^2.2.1",
+    "web-push": "^3.6.7",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
