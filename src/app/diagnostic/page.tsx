@@ -197,9 +197,9 @@ export default function DiagnosticPage() {
                   <div className="font-mono text-xs text-muted">Catégorie</div>
                 </div>
                 <div className="card text-center">
-                  <div className={`text-2xl mb-1`}>{URGENCY_CONFIG[result.urgency].icon}</div>
-                  <div className={`font-display font-bold ${URGENCY_CONFIG[result.urgency].color}`}>
-                    {URGENCY_CONFIG[result.urgency].label}
+                  <div className={`text-2xl mb-1`}>{URGENCY_CONFIG[(result.urgency as keyof typeof URGENCY_CONFIG) || "medium"] || URGENCY_CONFIG["medium"].icon}</div>
+                  <div className={`font-display font-bold ${URGENCY_CONFIG[(result.urgency as keyof typeof URGENCY_CONFIG) || "medium"] || URGENCY_CONFIG["medium"].color}`}>
+                    {URGENCY_CONFIG[(result.urgency as keyof typeof URGENCY_CONFIG) || "medium"] || URGENCY_CONFIG["medium"].label}
                   </div>
                   <div className="font-mono text-xs text-muted">Urgence</div>
                 </div>
