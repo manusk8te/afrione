@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Zap, Star, Clock, CheckCircle, Wallet, Camera, Calendar,
   Edit3, Save, X, Plus, Trash2, MapPin, Briefcase, Upload,
-  Image as ImageIcon
+  Image as ImageIcon, MessageCircle, Bell
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
@@ -16,6 +16,7 @@ const supabase = createClient(
 
 const TABS = [
   { id: 'missions', label: 'Missions', icon: Clock },
+  { id: 'messages', label: 'Messages', icon: MessageCircle },
   { id: 'profile', label: 'Mon Profil', icon: Edit3 },
   { id: 'portfolio', label: 'Portfolio', icon: ImageIcon },
   { id: 'wallet', label: 'Portefeuille', icon: Wallet },
@@ -35,6 +36,8 @@ export default function ArtisanDashboardPage() {
   const [completedMissions, setCompletedMissions] = useState<any[]>([])
   const [wallet, setWallet] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [conversations, setConversations] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
@@ -81,6 +84,31 @@ export default function ArtisanDashboardPage() {
           .order('created_at', { ascending: false })
         setMissions(allMissions || [])
         setCompletedMissions((allMissions || []).filter((m: any) => m.status === 'completed'))
+
+        // Charger conversations avec dernier message
+        const activeMissions = (allMissions || []).filter((m: any) => 
+          ['negotiation','en_cours','payment','matching'].includes(m.status)
+        )
+        const convos = await Promise.all(activeMissions.map(async (m: any) => {
+          const { data: lastMsg } = await supabase
+            .from('chat_history')
+            .select('text, created_at, sender_id, read_at')
+            .eq('mission_id', m.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+          return { ...m, lastMessage: lastMsg }
+        }))
+        setConversations(convos)
+
+        // Compter messages non lus
+        const { count } = await supabase
+          .from('chat_history')
+          .select('*', { count: 'exact', head: true })
+          .in('mission_id', activeMissions.map((m: any) => m.id))
+          .is('read_at', null)
+          .neq('sender_id', artisanData.user_id)
+        setUnreadCount(count || 0)
 
         const { data: walletData } = await supabase
           .from('wallets')
@@ -287,11 +315,16 @@ export default function ArtisanDashboardPage() {
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               flex:1,padding:'10px',borderRadius:'8px',border:'none',cursor:'pointer',
               display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
-              fontSize:'13px',fontWeight:500,transition:'all 0.2s',
+              fontSize:'13px',fontWeight:500,transition:'all 0.2s',position:'relative',
               background: tab === t.id ? '#0F1410' : 'transparent',
               color: tab === t.id ? '#FAFAF5' : '#7A7A6E',
             }}>
               <t.icon size={14} /> {t.label}
+              {t.id === 'messages' && unreadCount > 0 && (
+                <span style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',background:'#E85D26',borderRadius:'50%',fontSize:'10px',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -340,6 +373,45 @@ export default function ArtisanDashboardPage() {
         )}
 
         {/* ===== ONGLET PROFIL ===== */}
+        {tab === 'messages' && (
+          <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+            {conversations.length === 0 ? (
+              <div className="card" style={{textAlign:'center',padding:'48px'}}>
+                <MessageCircle size={40} style={{margin:'0 auto 16px',color:'#D8D2C4'}} />
+                <h3 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',marginBottom:'8px'}}>Aucune conversation</h3>
+                <p style={{color:'#7A7A6E',fontSize:'14px'}}>Les messages de vos clients apparaîtront ici</p>
+              </div>
+            ) : conversations.map(c => {
+              const hasUnread = c.lastMessage && !c.lastMessage.read_at && c.lastMessage.sender_id !== artisan?.user_id
+              return (
+                <Link key={c.id} href={`/warroom/${c.id}`} style={{textDecoration:'none'}}>
+                  <div className="card" style={{display:'flex',alignItems:'center',gap:'16px',cursor:'pointer',border: hasUnread ? '2px solid #E85D26' : '1px solid #D8D2C4',transition:'all 0.2s'}}>
+                    <div style={{width:'48px',height:'48px',background:'rgba(232,93,38,0.1)',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
+                      💬
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}}>
+                        <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>{c.users?.name || 'Client'}</span>
+                        <span style={{fontSize:'11px',color:'#7A7A6E',fontFamily:'Space Mono'}}>
+                          {c.lastMessage ? new Date(c.lastMessage.created_at).toLocaleDateString('fr-FR') : ''}
+                        </span>
+                      </div>
+                      <div style={{fontSize:'13px',color:'#7A7A6E',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                        {c.lastMessage?.text || 'Nouvelle mission — ' + (c.category || '')}
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'6px'}}>
+                        <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:'rgba(232,93,38,0.1)',color:'#E85D26'}}>{c.status}</span>
+                        <span style={{fontSize:'11px',color:'#7A7A6E'}}>{c.category || ''}</span>
+                      </div>
+                    </div>
+                    {hasUnread && <div style={{width:'10px',height:'10px',background:'#E85D26',borderRadius:'50%',flexShrink:0}} />}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
+
         {tab === 'profile' && (
           <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
 
