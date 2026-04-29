@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, CheckCircle, MapPin, Clock, Shield, Phone, MessageCircle, Zap, Award, ThumbsUp, ChevronRight, Camera, Briefcase } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
@@ -20,6 +20,10 @@ export default function ArtisanProfilePage() {
   const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'missions'|'avis'|'certifs'>('missions')
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [existingMission, setExistingMission] = useState<any>(null)
+  const [reserving, setReserving] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const load = async () => {
@@ -49,6 +53,21 @@ export default function ArtisanProfilePage() {
         .order('created_at', { ascending: false })
         .limit(20)
       setReviews(reviewsData || [])
+      // Charger user connecté
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setCurrentUserId(session.user.id)
+        // Vérifier si mission en cours avec cet artisan
+        const { data: existingM } = await supabase
+          .from('missions')
+          .select('id, status')
+          .eq('client_id', session.user.id)
+          .eq('artisan_id', id)
+          .in('status', ['negotiation', 'en_cours', 'payment', 'matching'])
+          .single()
+        if (existingM) setExistingMission(existingM)
+      }
+
       setLoading(false)
     }
     load()
@@ -68,6 +87,25 @@ export default function ArtisanProfilePage() {
       </div>
     </div>
   )
+
+  const handleReserver = async () => {
+    if (!currentUserId) { router.push('/auth'); return }
+    if (existingMission) { router.push(`/warroom/${existingMission.id}`); return }
+    setReserving(true)
+    const { data: mission } = await supabase
+      .from('missions')
+      .insert({
+        client_id: currentUserId,
+        artisan_id: id,
+        status: 'negotiation',
+        category: artisan?.metier || 'Intervention',
+        quartier: 'Abidjan',
+      })
+      .select()
+      .single()
+    if (mission) router.push(`/warroom/${mission.id}`)
+    setReserving(false)
+  }
 
   const name = user?.name || 'Artisan'
   const avatarUrl = user?.avatar_url
@@ -295,18 +333,30 @@ export default function ArtisanProfilePage() {
                     </div>
                   ))}
                 </div>
-                <Link href={`/matching?artisan=${id}`} className="btn-primary" style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginBottom:'12px'}}>
-                  <Zap size={16}/> Réserver cet artisan
-                </Link>
-                <Link href="/diagnostic" className="btn-outline" style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',fontSize:'13px'}}>
-                  Diagnostic d'abord <ChevronRight size={14}/>
-                </Link>
+                <button onClick={handleReserver} disabled={reserving} style={{
+                  width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+                  padding:'14px',background: reserving ? '#D8D2C4' : '#E85D26',color:'white',
+                  border:'none',borderRadius:'12px',fontSize:'15px',fontWeight:700,cursor:'pointer',marginBottom:'12px'
+                }}>
+                  {reserving
+                    ? <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> En cours...</>
+                    : existingMission
+                    ? <><MessageCircle size={16}/> Continuer la conversation</>
+                    : <><Zap size={16}/> Réserver cet artisan</>
+                  }
+                </button>
+                {!existingMission && (
+                  <Link href={`/diagnostic?artisan=${id}`} className="btn-outline" style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',fontSize:'13px'}}>
+                    Faire un diagnostic d'abord <ChevronRight size={14}/>
+                  </Link>
+                )}
                 <div style={{marginTop:'16px',paddingTop:'16px',borderTop:'1px solid #EDE8DE',display:'flex',gap:'8px'}}>
                   <button style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontSize:'12px',color:'#7A7A6E',background:'none',border:'none',cursor:'pointer',padding:'8px',borderRadius:'8px'}}>
                     <Phone size={14}/> Appeler
                   </button>
-                  <button style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontSize:'12px',color:'#7A7A6E',background:'none',border:'none',cursor:'pointer',padding:'8px',borderRadius:'8px'}}>
-                    <MessageCircle size={14}/> Message
+                  <button onClick={() => existingMission ? router.push(`/warroom/${existingMission.id}`) : handleReserver()}
+                    style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontSize:'12px',color: existingMission ? '#E85D26' : '#7A7A6E',background:'none',border:'none',cursor:'pointer',padding:'8px',borderRadius:'8px',fontWeight: existingMission ? 600 : 400}}>
+                    <MessageCircle size={14}/> {existingMission ? 'Ouvrir le chat' : 'Message'}
                   </button>
                 </div>
               </div>
