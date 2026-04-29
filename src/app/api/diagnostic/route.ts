@@ -6,25 +6,28 @@ export async function POST(req: NextRequest) {
     const { text, user_id, quartier } = await req.json()
     let result: any
 
-    if (process.env.ANTHROPIC_API_KEY) {
-      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    if (process.env.OPENAI_API_KEY) {
+      const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'gpt-4o',
           max_tokens: 1024,
+          temperature: 0.3,
           messages: [{
+            role: 'system',
+            content: `Tu es un expert en artisanat a Abidjan, Cote d'Ivoire. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres: {"summary":"resume 1-2 phrases","category":"Plomberie|Electricite|Maconnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage","urgency":"low|medium|high|emergency","price_min":nombre,"price_max":nombre,"items_needed":["item1","item2"],"duration_estimate":"X a Y heures"}. Prix realistes en FCFA pour Abidjan.`
+          }, {
             role: 'user',
-            content: `Tu es un expert en artisanat a Abidjan, Cote d'Ivoire. Analyse ce probleme et reponds UNIQUEMENT en JSON valide sans texte avant ou apres: {"summary":"resume 1-2 phrases","category":"Plomberie|Electricite|Maconnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage","urgency":"low|medium|high|emergency","price_min":nombre,"price_max":nombre,"items_needed":["item1","item2"],"duration_estimate":"X a Y heures"}. Prix realistes en FCFA pour Abidjan. Probleme: ${text}`
+            content: text
           }],
         }),
       })
-      const claudeData = await claudeRes.json()
-      const content = claudeData.content?.[0]?.text || '{}'
+      const openaiData = await openaiRes.json()
+      const content = openaiData.choices?.[0]?.message?.content || '{}'
       const clean = content.replace(/```json|```/g, '').trim()
       result = JSON.parse(clean)
     } else {
