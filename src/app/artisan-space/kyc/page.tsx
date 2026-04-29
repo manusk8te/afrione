@@ -53,11 +53,19 @@ export default function KYCPage() {
   }, [])
 
   const uploadDoc = async (field: 'cni_front' | 'cni_back' | 'diplome' | 'photo', file: File) => {
-    if (!artisan) return
     setUploading(field)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { setMsg('Non connecté'); setUploading(null); return }
+      let currentArtisan = artisan
+      if (!currentArtisan) {
+        const { data } = await supabase.from('artisan_pros').select('*').eq('user_id', session.user.id).single()
+        if (!data) { setMsg('Profil artisan introuvable'); setUploading(null); return }
+        currentArtisan = data
+        setArtisan(data)
+      }
       const ext = file.name.split('.').pop()
-      const path = `kyc/${artisan.id}/${field}.${ext}`
+      const path = `kyc/${currentArtisan.id}/${field}.${ext}`
       const { error: upErr } = await supabase.storage
         .from('kyc-documents')
         .upload(path, file, { upsert: true })
