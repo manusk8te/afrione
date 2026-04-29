@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Zap, AlertCircle, Clock, Wrench } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import { createClient } from '@supabase/supabase-js'
@@ -21,6 +20,7 @@ interface DiagResult {
   price_max: number
   items_needed: string[]
   duration_estimate: string
+  mission_id?: string
 }
 
 const URGENCY_CONFIG = {
@@ -37,10 +37,9 @@ const EXAMPLES = [
 ]
 
 export default function DiagnosticPage() {
-  const router = useRouter()
   const [step, setStep] = useState<DiagStep>('input')
   const [text, setText] = useState('')
-  const [result, setResult] = useState<DiagResult & { mission_id?: string } | null>(null)
+  const [result, setResult] = useState<DiagResult | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [quartier, setQuartier] = useState<string>('')
 
@@ -60,11 +59,20 @@ export default function DiagnosticPage() {
     getUser()
   }, [])
 
+  const safeUrgency = (u: string): keyof typeof URGENCY_CONFIG => {
+    const map: Record<string, keyof typeof URGENCY_CONFIG> = {
+      low: 'low', faible: 'low', bas: 'low',
+      medium: 'medium', moyen: 'medium', normal: 'medium',
+      high: 'high', haute: 'high', urgent: 'high',
+      emergency: 'emergency', urgence: 'emergency',
+    }
+    return map[u?.toLowerCase()] || 'medium'
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!text.trim()) return
     setStep('loading')
-
     try {
       const res = await fetch('/api/diagnostic', {
         method: 'POST',
@@ -73,11 +81,11 @@ export default function DiagnosticPage() {
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
-      setResult(data)
+      setResult({ ...data, urgency: safeUrgency(data.urgency) })
       setStep('result')
-    } catch (err) {
+    } catch {
       setResult({
-        summary: "Problème détecté nécessitant une intervention professionnelle.",
+        summary: 'Problème détecté nécessitant une intervention professionnelle.',
         category: 'Plomberie',
         urgency: 'medium',
         price_min: 8000,
@@ -89,25 +97,22 @@ export default function DiagnosticPage() {
     }
   }
 
+  const urgencyConf = result ? URGENCY_CONFIG[result.urgency] : URGENCY_CONFIG.medium
+
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-2xl mx-auto">
-
-          {/* Header */}
           <div className="mb-10">
             <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted hover:text-dark mb-6 transition-colors">
               <ArrowLeft size={16} /> Retour à l'accueil
             </Link>
             <span className="section-label block mb-2">DIAGNOSTIC IA</span>
-            <h1 className="font-display text-4xl font-bold text-dark">
-              Décrivez votre problème
-            </h1>
+            <h1 className="font-display text-4xl font-bold text-dark">Décrivez votre problème</h1>
             <p className="text-muted mt-2">Notre IA analyse votre besoin et estime le prix en quelques secondes</p>
           </div>
 
-          {/* STEP: INPUT */}
           {step === 'input' && (
             <div className="animate-fade-up">
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -124,37 +129,25 @@ export default function DiagnosticPage() {
                     <span className="text-xs text-muted font-mono">{text.length}/1000</span>
                   </div>
                 </div>
-
-                {/* Examples */}
                 <div>
                   <p className="text-xs font-mono text-muted uppercase tracking-wider mb-3">EXEMPLES</p>
                   <div className="space-y-2">
                     {EXAMPLES.map(ex => (
-                      <button
-                        key={ex}
-                        type="button"
-                        onClick={() => setText(ex)}
-                        className="w-full text-left text-sm text-muted bg-bg2 hover:bg-border px-4 py-3 rounded-xl transition-colors border border-border hover:border-accent/30"
-                      >
+                      <button key={ex} type="button" onClick={() => setText(ex)}
+                        className="w-full text-left text-sm text-muted bg-bg2 hover:bg-border px-4 py-3 rounded-xl transition-colors border border-border hover:border-accent/30">
                         "{ex}"
                       </button>
                     ))}
                   </div>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={text.length < 10}
-                  className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <Zap size={18} />
-                  Analyser avec l'IA
+                <button type="submit" disabled={text.length < 10}
+                  className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base disabled:opacity-40 disabled:cursor-not-allowed">
+                  <Zap size={18} /> Analyser avec l'IA
                 </button>
               </form>
             </div>
           )}
 
-          {/* STEP: LOADING */}
           {step === 'loading' && (
             <div className="animate-fade-in text-center py-16">
               <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse-soft">
@@ -165,18 +158,15 @@ export default function DiagnosticPage() {
               <div className="flex justify-center gap-2 mt-8">
                 {['Lecture du problème', 'Estimation du prix', 'Préparation du devis'].map((label, i) => (
                   <div key={label} className="flex items-center gap-2 text-xs text-muted bg-bg2 px-3 py-2 rounded-full animate-pulse-soft" style={{ animationDelay: `${i * 0.3}s` }}>
-                    <div className="w-1.5 h-1.5 bg-accent rounded-full" />
-                    {label}
+                    <div className="w-1.5 h-1.5 bg-accent rounded-full" /> {label}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* STEP: RESULT */}
           {step === 'result' && result && (
             <div className="animate-fade-up space-y-6">
-              {/* Summary card */}
               <div className="card border-l-4 border-accent2">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-accent2/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -189,7 +179,6 @@ export default function DiagnosticPage() {
                 </div>
               </div>
 
-              {/* Metrics row */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="card text-center">
                   <Wrench size={20} className="text-accent mx-auto mb-2" />
@@ -197,10 +186,8 @@ export default function DiagnosticPage() {
                   <div className="font-mono text-xs text-muted">Catégorie</div>
                 </div>
                 <div className="card text-center">
-                  <div className={`text-2xl mb-1`}>{URGENCY_CONFIG[(result.urgency as keyof typeof URGENCY_CONFIG) || "medium"] || URGENCY_CONFIG["medium"].icon}</div>
-                  <div className={`font-display font-bold ${URGENCY_CONFIG[(result.urgency as keyof typeof URGENCY_CONFIG) || "medium"] || URGENCY_CONFIG["medium"].color}`}>
-                    {URGENCY_CONFIG[(result.urgency as keyof typeof URGENCY_CONFIG) || "medium"] || URGENCY_CONFIG["medium"].label}
-                  </div>
+                  <div className="text-2xl mb-1">{urgencyConf.icon}</div>
+                  <div className={`font-display font-bold ${urgencyConf.color}`}>{urgencyConf.label}</div>
                   <div className="font-mono text-xs text-muted">Urgence</div>
                 </div>
                 <div className="card text-center">
@@ -210,23 +197,17 @@ export default function DiagnosticPage() {
                 </div>
               </div>
 
-              {/* Price estimate */}
               <div className="card bg-dark text-cream">
                 <p className="font-mono text-xs text-muted uppercase tracking-wider mb-3">ESTIMATION DE PRIX</p>
                 <div className="flex items-end gap-2">
-                  <span className="font-display text-4xl font-bold text-accent">
-                    {result.price_min.toLocaleString()}
-                  </span>
+                  <span className="font-display text-4xl font-bold text-accent">{result.price_min.toLocaleString()}</span>
                   <span className="text-muted mb-1">–</span>
-                  <span className="font-display text-4xl font-bold text-cream">
-                    {result.price_max.toLocaleString()}
-                  </span>
+                  <span className="font-display text-4xl font-bold text-cream">{result.price_max.toLocaleString()}</span>
                   <span className="text-muted mb-1 font-mono text-sm">FCFA</span>
                 </div>
                 <p className="text-xs text-muted mt-2">Prix final confirmé par l'artisan après diagnostic sur place</p>
               </div>
 
-              {/* Items needed */}
               {result.items_needed.length > 0 && (
                 <div className="card">
                   <p className="font-mono text-xs text-muted uppercase tracking-wider mb-3">MATÉRIEL PROBABLE</p>
@@ -238,19 +219,14 @@ export default function DiagnosticPage() {
                 </div>
               )}
 
-              {/* Actions */}
               <div className="space-y-3">
                 <Link
-                  href={result?.mission_id ? `/matching?mission=${result.mission_id}&category=${encodeURIComponent(result?.category || '')}` : `/artisans?category=${encodeURIComponent(result?.category || '')}`}
+                  href={result.mission_id ? `/matching?mission=${result.mission_id}&category=${encodeURIComponent(result.category)}` : `/artisans?category=${encodeURIComponent(result.category)}`}
                   className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base"
                 >
-                  Trouver un artisan {result?.category}
-                  <ArrowRight size={18} />
+                  Trouver un artisan {result.category} <ArrowRight size={18} />
                 </Link>
-                <button
-                  onClick={() => { setStep('input'); setResult(null) }}
-                  className="btn-outline w-full text-center py-3"
-                >
+                <button onClick={() => { setStep('input'); setResult(null) }} className="btn-outline w-full text-center py-3">
                   Recommencer
                 </button>
               </div>
@@ -258,13 +234,12 @@ export default function DiagnosticPage() {
               <div className="flex items-start gap-2 bg-gold/10 border border-gold/20 rounded-xl p-4">
                 <AlertCircle size={16} className="text-gold flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-muted">
-                  Cette estimation est indicative. Le prix final sera confirmé par l'artisan après diagnostic sur place. 
+                  Cette estimation est indicative. Le prix final sera confirmé par l'artisan après diagnostic sur place.
                   Votre paiement sera sécurisé en séquestre jusqu'à la fin des travaux.
                 </p>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>
