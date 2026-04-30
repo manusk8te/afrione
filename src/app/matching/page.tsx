@@ -4,12 +4,7 @@ import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 function MatchingContent() {
   const searchParams = useSearchParams()

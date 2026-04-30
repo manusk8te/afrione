@@ -3,12 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Zap, AlertCircle, Clock, Wrench } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 type DiagStep = 'input' | 'loading' | 'result'
 

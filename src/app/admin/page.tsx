@@ -3,12 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Zap, TrendingUp, Users, CheckCircle, AlertCircle, DollarSign, Activity, Clock, Shield, X } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 const STATUS_COLORS: Record<string, string> = {
   en_cours: 'text-green-400 bg-green-400/10',

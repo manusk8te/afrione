@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,19 +43,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (user_id && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      )
-      const { data: mission } = await supabase
+    if (user_id && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const { data: mission } = await supabaseAdmin
         .from('missions')
         .insert({ client_id: user_id, status: 'diagnostic', category: result.category, quartier: quartier || 'Abidjan' })
         .select()
         .single()
 
       if (mission) {
-        await supabase.from('diagnostics').insert({
+        await supabaseAdmin.from('diagnostics').insert({
           mission_id: mission.id,
           raw_text: text,
           ai_summary: result.summary,

@@ -4,12 +4,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, CheckCircle, MapPin, Clock, Shield, Phone, MessageCircle, Zap, Award, ThumbsUp, ChevronRight, Camera, Briefcase } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 export default function ArtisanProfilePage() {
   const params = useParams()

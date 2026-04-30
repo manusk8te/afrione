@@ -7,12 +7,7 @@ import {
   Edit3, Save, X, Plus, Trash2, MapPin, Briefcase, Upload,
   Image as ImageIcon, MessageCircle, Bell
 } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 const TABS = [
   { id: 'missions', label: 'Missions', icon: Clock },
