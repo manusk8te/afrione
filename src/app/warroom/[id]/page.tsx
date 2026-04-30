@@ -134,7 +134,7 @@ export default function WarRoomPage() {
     const payload = JSON.stringify({ amount, description: devisDesc.trim() })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: payload, type: 'devis',
+      sender_role: userRole, text: payload, type: 'quotation',
     })
     if (error) { toast.error('Erreur envoi devis.'); setActing(false); return }
     const rid = getRecipientId(mission, user.id)
