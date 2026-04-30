@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, CheckCircle, MapPin, Clock, Shield, Phone, MessageCircle, Zap, Award, ThumbsUp, ChevronRight, Camera, Briefcase } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
 
 export default function ArtisanProfilePage() {
   const params = useParams()
@@ -87,7 +88,7 @@ export default function ArtisanProfilePage() {
     if (!currentUserId) { router.push('/auth'); return }
     if (existingMission) { router.push(`/warroom/${existingMission.id}`); return }
     setReserving(true)
-    const { data: mission } = await supabase
+    const { data: mission, error } = await supabase
       .from('missions')
       .insert({
         client_id: currentUserId,
@@ -98,6 +99,12 @@ export default function ArtisanProfilePage() {
       })
       .select()
       .single()
+    if (error) {
+      console.error('Erreur création mission:', error)
+      toast.error('Impossible de créer la mission. Veuillez réessayer.')
+      setReserving(false)
+      return
+    }
     if (mission) router.push(`/warroom/${mission.id}`)
     setReserving(false)
   }
