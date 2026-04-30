@@ -1,11 +1,13 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
-import { ArrowLeft, Star, CheckCircle, MapPin, Clock, Shield, Phone, MessageCircle, Zap, Award, ThumbsUp, ChevronRight, Camera, Briefcase } from 'lucide-react'
+import { ArrowLeft, Star, CheckCircle, MapPin, Clock, Shield, Phone, MessageCircle, Zap, ThumbsUp, ChevronRight, Camera, Briefcase, X, ChevronLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+
+type Photo = { url: string; category: string; date: string | null; notes?: string }
 
 export default function ArtisanProfilePage() {
   const params = useParams()
@@ -15,10 +17,11 @@ export default function ArtisanProfilePage() {
   const [missions, setMissions] = useState<any[]>([])
   const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'missions'|'avis'|'certifs'>('missions')
+  const [activeTab, setActiveTab] = useState<'avis'|'certifs'>('avis')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [existingMission, setExistingMission] = useState<any>(null)
   const [reserving, setReserving] = useState(false)
+  const [lightbox, setLightbox] = useState<{ photos: Photo[]; index: number } | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -49,11 +52,10 @@ export default function ArtisanProfilePage() {
         .order('created_at', { ascending: false })
         .limit(20)
       setReviews(reviewsData || [])
-      // Charger user connecté
+
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         setCurrentUserId(session.user.id)
-        // Vérifier si mission en cours avec cet artisan
         const { data: existingM } = await supabase
           .from('missions')
           .select('id, status')
@@ -68,6 +70,21 @@ export default function ArtisanProfilePage() {
     }
     load()
   }, [id])
+
+  const closeLightbox = useCallback(() => setLightbox(null), [])
+  const prevPhoto = useCallback(() => setLightbox(l => l && l.index > 0 ? { ...l, index: l.index - 1 } : l), [])
+  const nextPhoto = useCallback(() => setLightbox(l => l && l.index < l.photos.length - 1 ? { ...l, index: l.index + 1 } : l), [])
+
+  useEffect(() => {
+    if (!lightbox) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox()
+      if (e.key === 'ArrowLeft') prevPhoto()
+      if (e.key === 'ArrowRight') nextPhoto()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [lightbox, closeLightbox, prevPhoto, nextPhoto])
 
   if (loading) return (
     <div className="min-h-screen bg-bg flex items-center justify-center">
@@ -100,7 +117,6 @@ export default function ArtisanProfilePage() {
       .select()
       .single()
     if (error) {
-      console.error('Erreur création mission:', error)
       toast.error('Impossible de créer la mission. Veuillez réessayer.')
       setReserving(false)
       return
@@ -114,23 +130,111 @@ export default function ArtisanProfilePage() {
   const rating = artisan.rating_avg || 0
   const stars = Math.round(rating)
 
-  const missionPhotos = missions.flatMap((m: any) =>
+  // Toutes les photos : missions (avant/après) + portfolio manuel
+  const missionPhotos: Photo[] = missions.flatMap((m: any) =>
     (m.proof_of_work?.[0]?.photo_after_urls || []).map((url: string) => ({
-      url, category: m.category || m.diagnostics?.[0]?.category_detected || 'Intervention', date: m.completed_at,
+      url,
+      category: m.category || m.diagnostics?.[0]?.category_detected || 'Intervention',
+      date: m.completed_at,
+      notes: m.proof_of_work?.[0]?.artisan_notes || '',
     }))
-  ).filter((p: any) => p.url).slice(0, 9)
+  ).filter((p: any) => p.url)
 
-  const manualPhotos = (artisan.portfolio || []).map((url: string) => ({
-    url, category: 'Portfolio', date: null,
+  const portfolioPhotos: Photo[] = (artisan.portfolio || []).map((url: string) => ({
+    url, category: artisan.metier || 'Portfolio', date: null,
   }))
 
-  const allPhotos = [...missionPhotos, ...manualPhotos]
+  const allPhotos: Photo[] = [...portfolioPhotos, ...missionPhotos].slice(0, 18)
 
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div onClick={closeLightbox} style={{
+          position:'fixed',inset:0,zIndex:9999,background:'rgba(10,14,11,0.95)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+        }}>
+          {/* Bouton fermer */}
+          <button onClick={closeLightbox} style={{position:'absolute',top:'20px',right:'20px',background:'rgba(255,255,255,0.1)',border:'none',borderRadius:'50%',width:'44px',height:'44px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'white'}}>
+            <X size={20} />
+          </button>
+
+          {/* Compteur */}
+          <div style={{position:'absolute',top:'24px',left:'50%',transform:'translateX(-50%)',fontSize:'13px',color:'rgba(255,255,255,0.5)',fontFamily:'Space Mono'}}>
+            {lightbox.index + 1} / {lightbox.photos.length}
+          </div>
+
+          {/* Prev */}
+          {lightbox.index > 0 && (
+            <button onClick={e => { e.stopPropagation(); prevPhoto() }} style={{
+              position:'absolute',left:'20px',background:'rgba(255,255,255,0.1)',border:'none',
+              borderRadius:'50%',width:'48px',height:'48px',display:'flex',alignItems:'center',
+              justifyContent:'center',cursor:'pointer',color:'white',
+            }}>
+              <ChevronLeft size={24} />
+            </button>
+          )}
+
+          {/* Next */}
+          {lightbox.index < lightbox.photos.length - 1 && (
+            <button onClick={e => { e.stopPropagation(); nextPhoto() }} style={{
+              position:'absolute',right:'20px',background:'rgba(255,255,255,0.1)',border:'none',
+              borderRadius:'50%',width:'48px',height:'48px',display:'flex',alignItems:'center',
+              justifyContent:'center',cursor:'pointer',color:'white',
+            }}>
+              <ChevronRight size={24} />
+            </button>
+          )}
+
+          {/* Image */}
+          <div onClick={e => e.stopPropagation()} style={{maxWidth:'90vw',maxHeight:'80vh',display:'flex',flexDirection:'column',alignItems:'center',gap:'16px'}}>
+            <img
+              src={lightbox.photos[lightbox.index].url}
+              alt={lightbox.photos[lightbox.index].category}
+              style={{maxWidth:'100%',maxHeight:'70vh',objectFit:'contain',borderRadius:'12px'}}
+            />
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'14px',fontWeight:600,color:'white'}}>{lightbox.photos[lightbox.index].category}</div>
+              {lightbox.photos[lightbox.index].date && (
+                <div style={{fontSize:'12px',color:'rgba(255,255,255,0.5)',marginTop:'4px'}}>
+                  {new Date(lightbox.photos[lightbox.index].date!).toLocaleDateString('fr-FR', { month:'long', year:'numeric' })}
+                </div>
+              )}
+              {lightbox.photos[lightbox.index].notes && (
+                <div style={{fontSize:'13px',color:'rgba(255,255,255,0.7)',marginTop:'8px',maxWidth:'480px',lineHeight:'1.5'}}>
+                  {lightbox.photos[lightbox.index].notes}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Thumbnails */}
+          {lightbox.photos.length > 1 && (
+            <div onClick={e => e.stopPropagation()} style={{
+              position:'absolute',bottom:'20px',left:'50%',transform:'translateX(-50%)',
+              display:'flex',gap:'6px',overflowX:'auto',maxWidth:'80vw',padding:'4px',
+            }}>
+              {lightbox.photos.map((p, i) => (
+                <div key={i} onClick={() => setLightbox(l => l ? {...l, index:i} : l)} style={{
+                  width:'48px',height:'48px',borderRadius:'8px',overflow:'hidden',
+                  flexShrink:0,cursor:'pointer',
+                  border: i === lightbox.index ? '2px solid #E85D26' : '2px solid transparent',
+                  opacity: i === lightbox.index ? 1 : 0.5,
+                  transition:'all 0.15s',
+                }}>
+                  <img src={p.url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{paddingTop:'80px',paddingBottom:'64px'}}>
 
+        {/* Hero sombre */}
         <div style={{background:'#0F1410',color:'#FAFAF5'}}>
           <div className="page-container" style={{padding:'32px',maxWidth:'896px'}}>
             <Link href="/artisans" style={{display:'inline-flex',alignItems:'center',gap:'8px',fontSize:'14px',color:'#7A7A6E',textDecoration:'none',marginBottom:'24px'}}>
@@ -162,7 +266,7 @@ export default function ArtisanProfilePage() {
                       <Star key={i} size={16} style={{color: i < stars ? '#C9A84C' : '#3A3A30'}} fill={i < stars ? '#C9A84C' : 'none'} />
                     ))}
                   </div>
-                  <span className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#FAFAF5'}}>{rating.toFixed(1)}</span>
+                  <span className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#FAFAF5'}}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
                   <span style={{fontSize:'13px',color:'#7A7A6E'}}>({artisan.rating_count || 0} avis)</span>
                 </div>
               </div>
@@ -186,6 +290,100 @@ export default function ArtisanProfilePage() {
         <div className="page-container" style={{padding:'32px',maxWidth:'896px'}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 320px',gap:'24px',alignItems:'start'}}>
             <div style={{display:'flex',flexDirection:'column',gap:'24px'}}>
+
+              {/* RÉALISATIONS — section mise en avant */}
+              <div className="card" style={{padding:0,overflow:'hidden'}}>
+                <div style={{padding:'20px 24px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid #EDE8DE'}}>
+                  <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',margin:0}}>
+                    Réalisations
+                    {allPhotos.length > 0 && <span style={{marginLeft:'8px',fontSize:'14px',fontWeight:400,color:'#7A7A6E'}}>({allPhotos.length} photos)</span>}
+                  </h2>
+                  {allPhotos.length > 0 && (
+                    <span style={{fontSize:'12px',color:'#7A7A6E',fontFamily:'Space Mono'}}>Cliquez pour agrandir</span>
+                  )}
+                </div>
+
+                {allPhotos.length > 0 ? (
+                  <div>
+                    {/* Grande première photo */}
+                    <div
+                      onClick={() => setLightbox({ photos: allPhotos, index: 0 })}
+                      style={{cursor:'pointer',position:'relative',height:'280px',background:'#1A1A1A',overflow:'hidden'}}
+                    >
+                      <img src={allPhotos[0].url} alt={allPhotos[0].category} style={{width:'100%',height:'100%',objectFit:'cover',transition:'transform 0.3s'}}
+                        onMouseEnter={e => (e.currentTarget.style.transform='scale(1.03)')}
+                        onMouseLeave={e => (e.currentTarget.style.transform='scale(1)')}
+                      />
+                      <div style={{position:'absolute',inset:0,background:'linear-gradient(transparent 50%,rgba(15,20,16,0.7))'}} />
+                      <div style={{position:'absolute',bottom:'16px',left:'20px',right:'20px',display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
+                        <div>
+                          <span style={{fontSize:'13px',fontWeight:600,color:'white',background:'rgba(232,93,38,0.8)',padding:'4px 12px',borderRadius:'20px'}}>{allPhotos[0].category}</span>
+                          {allPhotos[0].date && (
+                            <div style={{fontSize:'12px',color:'rgba(255,255,255,0.7)',marginTop:'6px'}}>
+                              {new Date(allPhotos[0].date).toLocaleDateString('fr-FR', { month:'long', year:'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                        <span style={{fontSize:'12px',color:'rgba(255,255,255,0.8)',background:'rgba(0,0,0,0.4)',padding:'4px 10px',borderRadius:'20px'}}>Voir en grand →</span>
+                      </div>
+                    </div>
+
+                    {/* Grille des autres photos */}
+                    {allPhotos.length > 1 && (
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'3px',padding:'3px'}}>
+                        {allPhotos.slice(1, 7).map((p, i) => {
+                          const isLast = i === 5 && allPhotos.length > 7
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => setLightbox({ photos: allPhotos, index: i + 1 })}
+                              style={{position:'relative',aspectRatio:'1',overflow:'hidden',background:'#EDE8DE',cursor:'pointer'}}
+                            >
+                              <img src={p.url} alt={p.category} style={{width:'100%',height:'100%',objectFit:'cover',transition:'transform 0.3s'}}
+                                onMouseEnter={e => (e.currentTarget.style.transform='scale(1.05)')}
+                                onMouseLeave={e => (e.currentTarget.style.transform='scale(1)')}
+                              />
+                              {/* Overlay catégorie */}
+                              <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(15,20,16,0.7))',padding:'6px 8px'}}>
+                                <div style={{fontSize:'10px',color:'#FAFAF5',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.category}</div>
+                              </div>
+                              {/* Overlay "voir plus" sur la dernière */}
+                              {isLast && (
+                                <div style={{position:'absolute',inset:0,background:'rgba(15,20,16,0.65)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                  <div style={{textAlign:'center',color:'white'}}>
+                                    <div style={{fontSize:'22px',fontWeight:700}}>+{allPhotos.length - 7}</div>
+                                    <div style={{fontSize:'11px',opacity:0.8}}>photos</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : missions.length > 0 ? (
+                  <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:'10px'}}>
+                    {missions.map((m: any) => (
+                      <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px',background:'#F5F3EE',borderRadius:'12px'}}>
+                        <div style={{width:'40px',height:'40px',background:'rgba(232,93,38,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                          <Briefcase size={18} style={{color:'#E85D26'}} />
+                        </div>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:600,fontSize:'14px',color:'#0F1410'}}>{m.category || m.diagnostics?.[0]?.category_detected || 'Intervention'}</div>
+                          <div style={{fontSize:'12px',color:'#7A7A6E'}}>{m.quartier||'Abidjan'} · {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''}</div>
+                        </div>
+                        <CheckCircle size={16} style={{color:'#2B6B3E'}} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{textAlign:'center',padding:'48px 0',color:'#7A7A6E'}}>
+                    <Camera size={32} style={{margin:'0 auto 12px',opacity:0.3}} />
+                    <p style={{fontSize:'14px'}}>Les réalisations apparaîtront au fil des missions</p>
+                  </div>
+                )}
+              </div>
 
               {artisan.bio && (
                 <div className="card">
@@ -218,10 +416,10 @@ export default function ArtisanProfilePage() {
                 </div>
               )}
 
+              {/* Avis + Certifs */}
               <div className="card">
                 <div style={{display:'flex',borderBottom:'1px solid #EDE8DE',marginBottom:'24px'}}>
                   {[
-                    {id:'missions' as const, label:`Réalisations (${allPhotos.length || missions.length})`},
                     {id:'avis' as const, label:`Avis (${reviews.length})`},
                     {id:'certifs' as const, label:'Certifications'},
                   ].map(t => (
@@ -233,43 +431,6 @@ export default function ArtisanProfilePage() {
                     }}>{t.label}</button>
                   ))}
                 </div>
-
-                {activeTab === 'missions' && (
-                  <div>
-                    {allPhotos.length > 0 ? (
-                      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
-                        {allPhotos.map((p: any, i: number) => (
-                          <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'12px',overflow:'hidden',background:'#EDE8DE'}}>
-                            <img src={p.url} alt={p.category} style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                            <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(15,20,16,0.8))',padding:'8px'}}>
-                              <div style={{fontSize:'11px',color:'#FAFAF5',fontWeight:600}}>{p.category}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : missions.length > 0 ? (
-                      <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                        {missions.map((m: any) => (
-                          <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px',background:'#F5F3EE',borderRadius:'12px'}}>
-                            <div style={{width:'40px',height:'40px',background:'rgba(232,93,38,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                              <Briefcase size={18} style={{color:'#E85D26'}} />
-                            </div>
-                            <div style={{flex:1}}>
-                              <div style={{fontWeight:600,fontSize:'14px',color:'#0F1410'}}>{m.category || m.diagnostics?.[0]?.category_detected || 'Intervention'}</div>
-                              <div style={{fontSize:'12px',color:'#7A7A6E'}}>{m.quartier||'Abidjan'} · {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''}</div>
-                            </div>
-                            <CheckCircle size={16} style={{color:'#2B6B3E'}} />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{textAlign:'center',padding:'48px 0',color:'#7A7A6E'}}>
-                        <Camera size={32} style={{margin:'0 auto 12px',opacity:0.3}} />
-                        <p style={{fontSize:'14px'}}>Les réalisations apparaîtront au fil des missions</p>
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {activeTab === 'avis' && (
                   <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
@@ -317,14 +478,25 @@ export default function ArtisanProfilePage() {
               </div>
             </div>
 
+            {/* Sidebar CTA */}
             <div>
               <div className="card" style={{position:'sticky',top:'96px'}}>
-                <div style={{textAlign:'center',marginBottom:'24px'}}>
-                  <p style={{fontFamily:'Space Mono',fontSize:'11px',color:'#7A7A6E',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'4px'}}>Tarif minimum</p>
-                  <p className="font-display" style={{fontSize:'40px',fontWeight:700,color:'#0F1410'}}>{(artisan.tarif_min||0).toLocaleString()}</p>
-                  <p style={{fontSize:'13px',color:'#7A7A6E'}}>FCFA / intervention</p>
+                <div style={{textAlign:'center',marginBottom:'20px'}}>
+                  <div style={{width:'64px',height:'64px',borderRadius:'16px',overflow:'hidden',background:'#EDE8DE',margin:'0 auto 12px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                      : <span style={{fontSize:'28px'}}>👷</span>
+                    }
+                  </div>
+                  <p style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>{name}</p>
+                  <p style={{fontSize:'13px',color:'#7A7A6E'}}>{artisan.metier}</p>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',marginTop:'6px'}}>
+                    <Star size={13} fill='#C9A84C' style={{color:'#C9A84C'}} />
+                    <span style={{fontWeight:600,fontSize:'13px',color:'#0F1410'}}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
+                    <span style={{fontSize:'12px',color:'#7A7A6E'}}>· {artisan.mission_count || 0} missions</span>
+                  </div>
                 </div>
-                <div style={{display:'flex',flexDirection:'column',gap:'10px',marginBottom:'24px'}}>
+                <div style={{display:'flex',flexDirection:'column',gap:'10px',marginBottom:'20px'}}>
                   {[
                     {icon:Clock, text:`Réponse en ${artisan.response_time_min||30} min`},
                     {icon:ThumbsUp, text:`${artisan.success_rate||0}% de satisfaction`},

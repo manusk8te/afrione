@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
-import { Search, Star, CheckCircle, MapPin, Clock, Zap } from 'lucide-react'
+import { Search, Star, MapPin, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const METIERS = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Serrurerie', 'Carrelage']
@@ -10,6 +10,11 @@ const METIER_ICONS: Record<string, string> = {
   'Plomberie': '🔧', 'Électricité': '⚡', 'Peinture': '🎨',
   'Maçonnerie': '🏗️', 'Menuiserie': '🪵', 'Climatisation': '❄️',
   'Serrurerie': '🔑', 'Carrelage': '🪟',
+}
+const METIER_COLORS: Record<string, string> = {
+  'Plomberie': '#1A4A6B', 'Électricité': '#4A3A1A', 'Peinture': '#3A1A4A',
+  'Maçonnerie': '#2A3A1A', 'Menuiserie': '#4A2A1A', 'Climatisation': '#1A3A4A',
+  'Serrurerie': '#3A3A1A', 'Carrelage': '#1A3A3A',
 }
 
 export default function ArtisansPage() {
@@ -22,7 +27,7 @@ export default function ArtisansPage() {
     const fetchArtisans = async () => {
       const { data, error } = await supabase
         .from('artisan_pros')
-        .select(`*, users(name, quartier, email)`)
+        .select(`*, users!artisan_pros_user_id_fkey(name, quartier, avatar_url)`)
         .eq('kyc_status', 'approved')
         .order('rating_avg', { ascending: false })
 
@@ -54,17 +59,17 @@ export default function ArtisansPage() {
             </p>
           </div>
 
-          {/* Search */}
+          {/* Recherche */}
           <div style={{background:'white',border:'1px solid #D8D2C4',borderRadius:'16px',padding:'16px',marginBottom:'24px'}}>
-            <div style={{position:'relative',marginBottom:'12px'}}>
+            <div style={{position:'relative'}}>
               <Search size={18} style={{position:'absolute',left:'16px',top:'50%',transform:'translateY(-50%)',color:'#7A7A6E'}} />
               <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Rechercher par nom..." className="input" style={{paddingLeft:'48px'}} />
             </div>
           </div>
 
-          {/* Metier tabs */}
-          <div style={{display:'flex',gap:'8px',overflowX:'auto',paddingBottom:'8px',marginBottom:'24px'}}>
+          {/* Filtres métier */}
+          <div style={{display:'flex',gap:'8px',overflowX:'auto',paddingBottom:'8px',marginBottom:'32px'}}>
             {METIERS.map(m => (
               <button key={m} onClick={() => setMetier(m)} style={{
                 flexShrink:0,padding:'8px 16px',borderRadius:'20px',fontSize:'14px',fontWeight:500,
@@ -89,57 +94,120 @@ export default function ArtisansPage() {
               <p style={{color:'#7A7A6E',marginTop:'8px'}}>Essayez avec d'autres critères</p>
             </div>
           ) : (
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:'20px'}}>
-              {filtered.map(a => (
-                <Link key={a.id} href={`/artisans/${a.id}`} style={{textDecoration:'none'}}>
-                  <div className="card" style={{cursor:'pointer',transition:'all 0.2s',height:'100%'}}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-4px)'; (e.currentTarget as HTMLElement).style.boxShadow='0 8px 24px rgba(0,0,0,0.1)' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform='translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow='0 1px 3px rgba(0,0,0,0.05)' }}>
-                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'16px'}}>
-                      <div style={{width:'48px',height:'48px',background:'#EDE8DE',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px'}}>
-                        {METIER_ICONS[a.metier] || '🔧'}
-                      </div>
-                      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'4px'}}>
-                        <span className="badge-green">✓ Vérifié</span>
-                        <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'12px',color:'#2B6B3E'}}>
-                          <span style={{width:'6px',height:'6px',background:'#2B6B3E',borderRadius:'50%',display:'inline-block'}} />
-                          Disponible
-                        </span>
-                      </div>
-                    </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:'20px'}}>
+              {filtered.map(a => {
+                const coverPhoto = a.portfolio?.[0] || null
+                const avatarUrl = a.users?.avatar_url || null
+                const name = a.users?.name || 'Artisan'
+                const rating = a.rating_avg || 0
+                const stars = Math.round(rating)
+                const bgColor = METIER_COLORS[a.metier] || '#1A2A1A'
 
-                    <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'4px'}}>
-                      {a.users?.name}
-                    </h3>
-                    <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#7A7A6E',marginBottom:'16px'}}>
-                      <MapPin size={12} /> {a.metier} · {a.users?.quartier}
-                    </div>
+                return (
+                  <Link key={a.id} href={`/artisans/${a.id}`} style={{textDecoration:'none'}}>
+                    <div style={{
+                      background:'white',borderRadius:'20px',overflow:'hidden',
+                      border:'1px solid #E8E2D8',cursor:'pointer',
+                      transition:'all 0.25s',
+                    }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.transform='translateY(-6px)'
+                        ;(e.currentTarget as HTMLElement).style.boxShadow='0 16px 40px rgba(0,0,0,0.12)'
+                        ;(e.currentTarget as HTMLElement).style.borderColor='#E85D26'
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.transform='translateY(0)'
+                        ;(e.currentTarget as HTMLElement).style.boxShadow='none'
+                        ;(e.currentTarget as HTMLElement).style.borderColor='#E8E2D8'
+                      }}>
 
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'16px'}}>
-                      {[
-                        { value: a.rating_avg?.toFixed(1), label: 'Note' },
-                        { value: a.mission_count, label: 'Missions' },
-                        { value: `${a.years_experience}ans`, label: 'Exp.' },
-                      ].map(s => (
-                        <div key={s.label} style={{background:'#F5F0E8',borderRadius:'8px',padding:'8px',textAlign:'center'}}>
-                          <div style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>{s.value}</div>
-                          <div style={{fontSize:'11px',color:'#7A7A6E'}}>{s.label}</div>
+                      {/* Cover photo */}
+                      <div style={{position:'relative',height:'180px',background: coverPhoto ? '#1A1A1A' : bgColor,overflow:'hidden'}}>
+                        {coverPhoto ? (
+                          <img src={coverPhoto} alt={a.metier} style={{width:'100%',height:'100%',objectFit:'cover',opacity:0.9}} />
+                        ) : (
+                          <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                            <span style={{fontSize:'64px',opacity:0.4}}>{METIER_ICONS[a.metier] || '🔧'}</span>
+                          </div>
+                        )}
+                        {/* Badges */}
+                        <div style={{position:'absolute',top:'12px',right:'12px',display:'flex',flexDirection:'column',gap:'6px',alignItems:'flex-end'}}>
+                          <span style={{fontSize:'11px',color:'#2B6B3E',background:'rgba(240,255,244,0.95)',border:'1px solid rgba(43,107,62,0.3)',padding:'3px 10px',borderRadius:'20px',fontWeight:600}}>✓ Vérifié</span>
+                          {a.is_available && (
+                            <span style={{display:'inline-flex',alignItems:'center',gap:'5px',fontSize:'11px',color:'#2B6B3E',background:'rgba(240,255,244,0.95)',border:'1px solid rgba(43,107,62,0.3)',padding:'3px 10px',borderRadius:'20px',fontWeight:600}}>
+                              <span style={{width:'6px',height:'6px',background:'#2B6B3E',borderRadius:'50%',display:'inline-block'}} /> Disponible
+                            </span>
+                          )}
                         </div>
-                      ))}
-                    </div>
 
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',paddingTop:'16px',borderTop:'1px solid #D8D2C4'}}>
-                      <div>
-                        <span style={{fontWeight:700,color:'#0F1410'}}>{a.tarif_min?.toLocaleString()}</span>
-                        <span style={{fontSize:'12px',color:'#7A7A6E'}}> FCFA min</span>
+                        {/* Avatar en bas */}
+                        <div style={{position:'absolute',bottom:'-24px',left:'20px',width:'56px',height:'56px',borderRadius:'14px',border:'3px solid white',overflow:'hidden',background:'#EDE8DE',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(0,0,0,0.15)'}}>
+                          {avatarUrl
+                            ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                            : <span style={{fontSize:'22px',fontWeight:700,color:'#7A7A6E'}}>{name[0]?.toUpperCase()}</span>
+                          }
+                        </div>
                       </div>
-                      <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'12px',color:'#7A7A6E'}}>
-                        <Clock size={12} /> ~{a.response_time_min} min
+
+                      {/* Contenu */}
+                      <div style={{padding:'16px 20px 20px',paddingTop:'36px'}}>
+                        <h3 className="font-display" style={{fontSize:'17px',fontWeight:800,color:'#0F1410',marginBottom:'2px'}}>{name}</h3>
+                        <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#7A7A6E',marginBottom:'12px'}}>
+                          <span style={{fontWeight:600,color:'#E85D26'}}>{METIER_ICONS[a.metier]} {a.metier}</span>
+                          <span>·</span>
+                          <MapPin size={11} />
+                          <span>{a.users?.quartier || 'Abidjan'}</span>
+                        </div>
+
+                        {/* Étoiles */}
+                        <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'16px'}}>
+                          <div style={{display:'flex',gap:'2px'}}>
+                            {Array.from({length:5}).map((_,i) => (
+                              <Star key={i} size={13} style={{color: i < stars ? '#C9A84C' : '#D8D2C4'}} fill={i < stars ? '#C9A84C' : 'none'} />
+                            ))}
+                          </div>
+                          <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
+                          <span style={{fontSize:'12px',color:'#7A7A6E'}}>({a.rating_count || 0} avis)</span>
+                        </div>
+
+                        {/* Stats */}
+                        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'16px'}}>
+                          {[
+                            { value: a.mission_count || 0, label: 'Missions' },
+                            { value: `${a.years_experience || 0}ans`, label: 'Exp.' },
+                            { value: `~${a.response_time_min || 30}min`, label: 'Réponse' },
+                          ].map(s => (
+                            <div key={s.label} style={{background:'#F5F0E8',borderRadius:'10px',padding:'8px',textAlign:'center'}}>
+                              <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410'}}>{s.value}</div>
+                              <div style={{fontSize:'11px',color:'#7A7A6E'}}>{s.label}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Portfolio preview (3 petites photos si dispo) */}
+                        {a.portfolio?.length > 1 && (
+                          <div style={{display:'flex',gap:'4px',marginBottom:'16px'}}>
+                            {a.portfolio.slice(1, 4).map((url: string, i: number) => (
+                              <div key={i} style={{flex:1,aspectRatio:'1',borderRadius:'8px',overflow:'hidden',background:'#EDE8DE'}}>
+                                <img src={url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                              </div>
+                            ))}
+                            {a.portfolio.length > 4 && (
+                              <div style={{flex:1,aspectRatio:'1',borderRadius:'8px',overflow:'hidden',background:'#EDE8DE',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',fontWeight:700,color:'#7A7A6E'}}>
+                                +{a.portfolio.length - 4}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div style={{display:'flex',alignItems:'center',justifyContent:'flex-end'}}>
+                          <span style={{fontSize:'13px',fontWeight:600,color:'#E85D26'}}>Voir le profil →</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                )
+              })}
             </div>
           )}
         </div>
