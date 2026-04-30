@@ -22,20 +22,38 @@ export default function AuthPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError('Email ou mot de passe incorrect'); setLoading(false); return }
-    router.push('/dashboard')
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', data.user.id)
+      .single()
+
+    const userRole = userData?.role ?? data.user.user_metadata?.role ?? 'client'
+    if (userRole === 'artisan') router.push('/artisan-space/dashboard')
+    else if (userRole === 'admin') router.push('/admin')
+    else router.push('/dashboard')
   }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { data: { name, role } }
     })
     if (error) { setError(error.message); setLoading(false); return }
+
+    // Si Supabase auto-confirme (pas d'email de vérification), rediriger directement
+    if (data.session) {
+      if (role === 'artisan') router.push('/artisan-space/register')
+      else router.push('/dashboard')
+      return
+    }
+
     setStep('verify')
     setLoading(false)
   }

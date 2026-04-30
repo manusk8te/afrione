@@ -47,8 +47,12 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+    setUser(null)
+    setUserRole('client')
+    setUserName('')
     setDropdownOpen(false)
     setMenuOpen(false)
+    router.refresh()
     router.push('/')
   }
 

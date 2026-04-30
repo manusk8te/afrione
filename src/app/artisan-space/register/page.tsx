@@ -57,13 +57,15 @@ export default function ArtisanRegisterPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth'); return }
 
-      // 1. Mettre à jour le nom + quartier dans users
-      await supabase.from('users').update({
+      // 1. Upsert dans users (crée la ligne si le trigger n'a pas encore tourné)
+      await supabase.from('users').upsert({
+        id: session.user.id,
         name: form.name,
+        email: session.user.email || '',
         quartier: form.quartier,
-        phone: form.phone || session.user.phone || '00000000',
+        phone: form.phone || null,
         role: 'artisan',
-      }).eq('id', session.user.id)
+      }, { onConflict: 'id' })
 
       // 2. Créer le profil artisan
       const { data: artisanData, error: artisanErr } = await supabase

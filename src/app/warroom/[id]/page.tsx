@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Send, Phone, Shield } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
 
 export default function WarRoomPage() {
   const params = useParams()
@@ -13,6 +14,7 @@ export default function WarRoomPage() {
   const [messages, setMessages] = useState<any[]>([])
   const [input, setInput] = useState('')
   const [user, setUser] = useState<any>(null)
+  const [userRole, setUserRole] = useState<string>('client')
   const [mission, setMission] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -23,6 +25,8 @@ export default function WarRoomPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth'); return }
       setUser(session.user)
+      const { data: userData } = await supabase.from('users').select('role').eq('id', session.user.id).single()
+      setUserRole(userData?.role ?? session.user.user_metadata?.role ?? 'client')
       const { data: missionData } = await supabase
         .from('missions').select('*, artisan_pros(*, users(name))').eq('id', missionId).single()
       setMission(missionData)
@@ -45,10 +49,16 @@ export default function WarRoomPage() {
     if (!input.trim() || !user) return
     const text = input.trim()
     setInput('')
-    await supabase.from('chat_history').insert({
+    const { error: sendError } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: user.user_metadata?.role || 'client', text, type: 'text',
+      sender_role: userRole, text, type: 'text',
     })
+    if (sendError) {
+      console.error('Erreur envoi message:', sendError)
+      toast.error('Message non envoyé. Réessayez.')
+      setInput(text)
+      return
+    }
 
     // Notifier l'autre partie
     if (mission) {
@@ -74,7 +84,7 @@ export default function WarRoomPage() {
     <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'#F5F0E8'}}>
       <div style={{background:'#0F1410',color:'#FAFAF5',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',maxWidth:'672px',margin:'0 auto'}}>
-          <Link href="/dashboard" style={{color:'#FAFAF5',display:'flex'}}><ArrowLeft size={18} /></Link>
+          <Link href={userRole === 'artisan' ? '/artisan-space/dashboard' : '/dashboard'} style={{color:'#FAFAF5',display:'flex'}}><ArrowLeft size={18} /></Link>
           <div style={{width:'40px',height:'40px',background:'#1A2018',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',border:'1px solid rgba(255,255,255,0.1)'}}>🔧</div>
           <div style={{flex:1}}>
             <div style={{fontWeight:700,fontSize:'15px'}}>{mission?.artisan_pros?.users?.name || 'Artisan'}</div>
