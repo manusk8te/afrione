@@ -62,18 +62,21 @@ export default function Navbar() {
     router.push('/')
   }
 
-  // Label et couleur du badge rôle
-  const roleBadge = hasArtisanProfile
+  // Artisan = profil créé OU rôle 'artisan' dans users
+  const isArtisan = hasArtisanProfile || userRole === 'artisan'
+  const artisanHref = hasArtisanProfile ? '/artisan-space/dashboard' : '/artisan-space/register'
+
+  const roleBadge = isArtisan
     ? { label: userRole === 'admin' ? 'Admin · Artisan' : 'Artisan', color: '#E85D26' }
     : userRole === 'admin'
     ? { label: 'Admin', color: '#C9A84C' }
     : { label: 'Client', color: '#2B6B3E' }
 
-  // Liens centre nav — "Devenir artisan" masqué si déjà artisan
+  // "Devenir artisan" masqué si déjà artisan (par rôle ou profil)
   const links = [
     { href: '/artisans', label: 'Services' },
     { href: '/diagnostic', label: 'Diagnostic IA' },
-    ...(!hasArtisanProfile ? [{ href: '/artisan-space/register', label: 'Devenir artisan' }] : []),
+    ...(!isArtisan ? [{ href: '/artisan-space/register', label: 'Devenir artisan' }] : []),
   ]
 
   return (
@@ -114,9 +117,9 @@ export default function Navbar() {
               <div style={{width:'80px',height:'36px',background:'#EDE8DE',borderRadius:'10px'}} />
             ) : user ? (
               <>
-                {/* Bouton Espace Artisan — visible directement dans la barre si artisan */}
-                {hasArtisanProfile && (
-                  <Link href="/artisan-space/dashboard" style={{
+                {/* Bouton Espace Artisan — visible si artisan (par rôle ou profil) */}
+                {isArtisan && (
+                  <Link href={artisanHref} style={{
                     display:'flex',alignItems:'center',gap:'6px',
                     padding:'8px 16px',borderRadius:'10px',textDecoration:'none',
                     background:'#E85D26',color:'white',fontSize:'14px',fontWeight:600,
@@ -213,8 +216,8 @@ export default function Navbar() {
             <div style={{padding:'8px 16px',marginTop:'8px',borderTop:'1px solid #D8D2C4',paddingTop:'16px',display:'flex',flexDirection:'column',gap:'8px'}}>
               {user ? (
                 <>
-                  {hasArtisanProfile && (
-                    <Link href="/artisan-space/dashboard" onClick={() => setMenuOpen(false)}
+                  {isArtisan && (
+                    <Link href={artisanHref} onClick={() => setMenuOpen(false)}
                       style={{display:'block',padding:'12px',textAlign:'center',background:'#E85D26',color:'white',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:700}}>
                       🔧 Espace Artisan
                     </Link>
