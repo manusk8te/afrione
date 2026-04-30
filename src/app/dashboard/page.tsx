@@ -35,12 +35,15 @@ export default function DashboardPage() {
   const totalSpent = completed.reduce((s: number, m: any) => s + (m.total_price || 0), 0)
 
   const statusConfig: Record<string, { label: string; color: string }> = {
-    diagnostic: { label: 'Diagnostic', color: '#C9A84C' },
-    matching: { label: 'Recherche artisan', color: '#E85D26' },
-    en_route: { label: 'En route', color: '#E85D26' },
-    en_cours: { label: 'En cours', color: '#2B6B3E' },
-    completed: { label: 'Terminée', color: '#2B6B3E' },
-    disputed: { label: 'Litige', color: '#ef4444' },
+    diagnostic:  { label: 'Diagnostic', color: '#C9A84C' },
+    matching:    { label: '🔔 Nouvelle demande', color: '#E85D26' },
+    negotiation: { label: '💬 En discussion', color: '#C9A84C' },
+    en_route:    { label: 'En route', color: '#E85D26' },
+    payment:     { label: '💳 Paiement', color: '#C9A84C' },
+    en_cours:    { label: '⚡ En cours', color: '#2B6B3E' },
+    completed:   { label: '✅ Terminée', color: '#2B6B3E' },
+    disputed:    { label: 'Litige', color: '#ef4444' },
+    cancelled:   { label: 'Annulée', color: '#7A7A6E' },
   }
 
   if (loading) {

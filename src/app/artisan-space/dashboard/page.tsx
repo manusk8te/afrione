@@ -390,20 +390,32 @@ export default function ArtisanDashboardPage() {
                     <div style={{fontSize:'13px',color:'#7A7A6E'}}>{m.category || m.diagnostics?.[0]?.category_detected || '—'} · {m.users?.quartier || m.quartier || 'Abidjan'}</div>
                   </div>
                   <span style={{
-                    fontSize:'11px',padding:'3px 10px',borderRadius:'20px',fontWeight:500,
+                    fontSize:'11px',padding:'3px 10px',borderRadius:'20px',fontWeight:600,
                     background: m.status === 'completed' ? 'rgba(43,107,62,0.1)' : m.status === 'en_cours' ? 'rgba(232,93,38,0.1)' : 'rgba(201,168,76,0.1)',
                     color: m.status === 'completed' ? '#2B6B3E' : m.status === 'en_cours' ? '#E85D26' : '#C9A84C',
                   }}>
-                    {m.status === 'completed' ? '✓ Terminée' : m.status === 'en_cours' ? '⚡ En cours' : m.status === 'matching' ? '🔔 Nouvelle' : m.status === 'negotiation' ? '💬 En discussion' : m.status}
+                    {m.status === 'completed' ? '✓ Terminée' : m.status === 'en_cours' ? '⚡ En cours' : m.status === 'matching' ? '🔔 Nouvelle demande' : m.status === 'negotiation' ? '💬 En discussion' : m.status}
                   </span>
                 </div>
+                {m.status === 'matching' && (
+                  <div style={{marginBottom:'8px',padding:'10px',background:'rgba(232,93,38,0.06)',borderRadius:'10px',border:'1px dashed rgba(232,93,38,0.3)'}}>
+                    <p style={{fontSize:'13px',color:'#7A7A6E',margin:0}}>Nouveau client en attente — ouvrez le chat pour discuter et envoyer un devis.</p>
+                  </div>
+                )}
                 {(m.status === 'negotiation' || m.status === 'matching') && (
-                  <Link href={`/warroom/${m.id}`} className="btn-primary" style={{width:'100%',justifyContent:'center',display:'flex'}}>
-                    💬 Ouvrir le chat →
+                  <Link href={`/warroom/${m.id}`} className="btn-primary" style={{width:'100%',justifyContent:'center',display:'flex',gap:'6px'}}>
+                    💬 Ouvrir le chat & proposer un devis →
                   </Link>
                 )}
                 {m.status === 'en_cours' && (
-                  <Link href={`/warroom/${m.id}`} className="btn-primary" style={{width:'100%',justifyContent:'center',display:'flex'}}>Voir la mission en cours →</Link>
+                  <Link href={`/warroom/${m.id}`} style={{
+                    display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
+                    width:'100%',padding:'10px',background:'rgba(43,107,62,0.1)',
+                    border:'1px solid rgba(43,107,62,0.3)',borderRadius:'10px',
+                    color:'#2B6B3E',fontWeight:700,fontSize:'13px',textDecoration:'none',
+                  }}>
+                    ⚡ Mission en cours — marquer terminée →
+                  </Link>
                 )}
                 {m.status === 'completed' && (
                   <div style={{display:'flex',alignItems:'center',gap:'6px',color:'#2B6B3E',fontSize:'13px'}}>
