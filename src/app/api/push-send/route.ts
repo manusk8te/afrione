@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import webpush from 'web-push'
 
-webpush.setVapidDetails(
-  'mailto:contact@afrione.ci',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
-
 export async function POST(req: NextRequest) {
   try {
+    const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    const vapidPrivate = process.env.VAPID_PRIVATE_KEY
+    if (!vapidPublic || !vapidPrivate) {
+      return NextResponse.json({ error: 'VAPID keys not configured' }, { status: 500 })
+    }
+
+    webpush.setVapidDetails('mailto:contact@afrione.ci', vapidPublic, vapidPrivate)
+
     const { user_id, title, body, url } = await req.json()
     const { data } = await supabaseAdmin
       .from('push_subscriptions')
