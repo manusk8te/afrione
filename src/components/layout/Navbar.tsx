@@ -11,6 +11,7 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [userRole, setUserRole] = useState<string>('client')
   const [userName, setUserName] = useState<string>('')
+  const [hasArtisanProfile, setHasArtisanProfile] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
@@ -25,7 +26,9 @@ export default function Navbar() {
 
   useEffect(() => {
     const loadUser = async (session: any) => {
-      if (!session) { setUser(null); setUserRole('client'); setUserName(''); return }
+      if (!session) {
+        setUser(null); setUserRole('client'); setUserName(''); setHasArtisanProfile(false); return
+      }
       setUser(session.user)
       const { data } = await supabase
         .from('users')
@@ -38,6 +41,13 @@ export default function Navbar() {
       } else {
         setUserName(session.user.email?.split('@')[0] || 'Mon compte')
       }
+      // Vérifie si l'utilisateur a un profil artisan (peu importe son rôle)
+      const { data: artisanData } = await supabase
+        .from('artisan_pros')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .single()
+      setHasArtisanProfile(!!artisanData)
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => loadUser(session))
@@ -56,7 +66,7 @@ export default function Navbar() {
     router.push('/')
   }
 
-  const dashboardLink = userRole === 'artisan' ? '/artisan-space/dashboard' : userRole === 'admin' ? '/admin' : '/dashboard'
+  const dashboardLink = userRole === 'admin' ? '/admin' : '/dashboard'
 
   const links = [
     { href: '/artisans', label: 'Services' },
@@ -119,26 +129,34 @@ export default function Navbar() {
                       <div style={{fontSize:'12px',color:'#7A7A6E'}}>{user.email}</div>
                       <div style={{fontSize:'11px',color:'#E85D26',marginTop:'2px',textTransform:'capitalize'}}>{userRole}</div>
                     </div>
-                    <Link href={dashboardLink} onClick={() => setDropdownOpen(false)}
+                    {/* Espace client — accessible à tous */}
+                    <Link href="/dashboard" onClick={() => setDropdownOpen(false)}
                       style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
                       onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
                       onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
-                      <LayoutDashboard size={14} /> Mon espace
+                      <LayoutDashboard size={14} /> Espace Client
                     </Link>
-                    {userRole !== 'artisan' && (
-                      <Link href="/diagnostic" onClick={() => setDropdownOpen(false)}
-                        style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
-                        onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
-                        onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
-                        <Zap size={14} /> Nouvelle mission
-                      </Link>
-                    )}
-                    {userRole === 'admin' && (
-                      <Link href="/admin" onClick={() => setDropdownOpen(false)}
+                    {/* Espace artisan — si profil artisan_pros existe */}
+                    {hasArtisanProfile && (
+                      <Link href="/artisan-space/dashboard" onClick={() => setDropdownOpen(false)}
                         style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#E85D26',fontSize:'14px',fontWeight:600}}
                         onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
                         onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
-                        ⚙️ Dashboard Admin
+                        🔧 Espace Artisan
+                      </Link>
+                    )}
+                    <Link href="/diagnostic" onClick={() => setDropdownOpen(false)}
+                      style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
+                      onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
+                      onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                      <Zap size={14} /> Nouvelle mission
+                    </Link>
+                    {userRole === 'admin' && (
+                      <Link href="/admin" onClick={() => setDropdownOpen(false)}
+                        style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#7A7A6E',fontSize:'14px'}}
+                        onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
+                        onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                        ⚙️ Admin
                       </Link>
                     )}
                     <button onClick={handleLogout}
@@ -183,13 +201,19 @@ export default function Navbar() {
             <div style={{padding:'8px 16px',marginTop:'8px',borderTop:'1px solid #D8D2C4',paddingTop:'16px',display:'flex',flexDirection:'column',gap:'8px'}}>
               {user ? (
                 <>
-                  <Link href={dashboardLink} onClick={() => setMenuOpen(false)}
+                  <Link href="/dashboard" onClick={() => setMenuOpen(false)}
                     style={{display:'block',padding:'10px',textAlign:'center',background:'#0F1410',color:'white',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:600}}>
-                    Mon espace ({userRole})
+                    Espace Client
                   </Link>
+                  {hasArtisanProfile && (
+                    <Link href="/artisan-space/dashboard" onClick={() => setMenuOpen(false)}
+                      style={{display:'block',padding:'10px',textAlign:'center',background:'rgba(232,93,38,0.1)',color:'#E85D26',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:600}}>
+                      🔧 Espace Artisan
+                    </Link>
+                  )}
                   {userRole === 'admin' && (
                     <Link href="/admin" onClick={() => setMenuOpen(false)}
-                      style={{display:'block',padding:'10px',textAlign:'center',background:'rgba(232,93,38,0.1)',color:'#E85D26',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:600}}>
+                      style={{display:'block',padding:'10px',textAlign:'center',background:'rgba(201,168,76,0.1)',color:'#C9A84C',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:600}}>
                       ⚙️ Admin
                     </Link>
                   )}

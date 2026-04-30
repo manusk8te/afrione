@@ -32,7 +32,13 @@ export default function AuthPage() {
       .single()
 
     const userRole = userData?.role ?? data.user.user_metadata?.role ?? 'client'
-    if (userRole === 'artisan') router.push('/artisan-space/dashboard')
+    // Vérifie si profil artisan existe même pour admin
+    const { data: artisanProfile } = await supabase
+      .from('artisan_pros')
+      .select('id')
+      .eq('user_id', data.user.id)
+      .single()
+    if (artisanProfile) router.push('/artisan-space/dashboard')
     else if (userRole === 'admin') router.push('/admin')
     else router.push('/dashboard')
   }
