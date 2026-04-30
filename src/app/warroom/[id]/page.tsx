@@ -294,7 +294,7 @@ export default function WarRoomPage() {
             if (msg.type === 'quotation' || msg.type === 'devis') {
               let devisData: any = {}
               try { devisData = JSON.parse(msg.text) } catch {}
-              const canAct = !isMe && !isArtisan && status === 'negotiation'
+              const canAct = !isMe && status !== 'en_cours' && status !== 'completed' && status !== 'cancelled'
               return (
                 <div key={msg.id} style={{display:'flex',justifyContent: isMe ? 'flex-end' : 'flex-start'}}>
                   <div style={{
