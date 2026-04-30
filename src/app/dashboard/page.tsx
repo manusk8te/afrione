@@ -103,33 +103,44 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
-                {missions.map((m: any) => (
-                  <div key={m.id} style={{display:'flex',alignItems:'center',gap:'16px',padding:'16px',background:'#F5F0E8',borderRadius:'12px'}}>
-                    <div style={{width:'48px',height:'48px',background:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
-                      🔧
-                    </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:600,color:'#0F1410',fontSize:'15px'}}>{m.category || 'Mission'}</div>
-                      <div style={{fontSize:'13px',color:'#7A7A6E',marginTop:'2px'}}>
-                        {new Date(m.created_at).toLocaleDateString('fr-FR')}
+                {missions.map((m: any) => {
+                  const isActive = ['negotiation','en_cours','payment','matching','en_route'].includes(m.status)
+                  return (
+                    <div key={m.id} style={{display:'flex',alignItems:'center',gap:'16px',padding:'16px',background:'#F5F0E8',borderRadius:'12px',border: isActive ? '2px solid rgba(232,93,38,0.3)' : '2px solid transparent'}}>
+                      <div style={{width:'48px',height:'48px',background:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
+                        🔧
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:600,color:'#0F1410',fontSize:'15px'}}>{m.category || 'Mission'}</div>
+                        <div style={{fontSize:'13px',color:'#7A7A6E',marginTop:'2px'}}>
+                          {new Date(m.created_at).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                        <span style={{
+                          padding:'4px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:600,
+                          background:`${statusConfig[m.status]?.color}20`,
+                          color: statusConfig[m.status]?.color || '#7A7A6E'
+                        }}>
+                          {statusConfig[m.status]?.label || m.status}
+                        </span>
+                        {isActive && (
+                          <Link href={`/warroom/${m.id}`} style={{
+                            padding:'6px 12px',background:'#E85D26',color:'white',borderRadius:'8px',
+                            fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'
+                          }}>
+                            💬 Chat
+                          </Link>
+                        )}
+                        {m.total_price && (
+                          <span style={{fontWeight:700,color:'#0F1410',fontSize:'14px'}}>
+                            {m.total_price.toLocaleString()} FCFA
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                      <span style={{
-                        padding:'4px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:600,
-                        background:`${statusConfig[m.status]?.color}20`,
-                        color: statusConfig[m.status]?.color || '#7A7A6E'
-                      }}>
-                        {statusConfig[m.status]?.label || m.status}
-                      </span>
-                      {m.total_price && (
-                        <span style={{fontWeight:700,color:'#0F1410',fontSize:'14px'}}>
-                          {m.total_price.toLocaleString()} FCFA
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

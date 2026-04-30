@@ -50,7 +50,21 @@ export default function ArtisanDashboardPage() {
   const [newCertif, setNewCertif] = useState('')
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([])
 
+  // Recalcule le nombre de messages non lus en temps réel
+  const refreshUnread = async (artisanId: string, artisanUserId: string, missionIds: string[]) => {
+    if (!missionIds.length) return
+    const { count } = await supabase
+      .from('chat_history')
+      .select('*', { count: 'exact', head: true })
+      .in('mission_id', missionIds)
+      .is('read_at', null)
+      .neq('sender_id', artisanUserId)
+    setUnreadCount(count || 0)
+  }
+
   useEffect(() => {
+    let realtimeChannel: any = null
+
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth'); return }
@@ -96,14 +110,32 @@ export default function ArtisanDashboardPage() {
         }))
         setConversations(convos)
 
+        const activeMissionIds = activeMissions.map((m: any) => m.id)
+
         // Compter messages non lus
-        const { count } = await supabase
-          .from('chat_history')
-          .select('*', { count: 'exact', head: true })
-          .in('mission_id', activeMissions.map((m: any) => m.id))
-          .is('read_at', null)
-          .neq('sender_id', artisanData.user_id)
-        setUnreadCount(count || 0)
+        await refreshUnread(artisanData.id, artisanData.user_id, activeMissionIds)
+
+        // Abonnement temps réel — nouveaux messages sur toutes les missions actives
+        if (activeMissionIds.length) {
+          realtimeChannel = supabase
+            .channel(`artisan-msgs-${artisanData.id}`)
+            .on('postgres_changes', {
+              event: 'INSERT', schema: 'public', table: 'chat_history',
+              filter: `mission_id=in.(${activeMissionIds.join(',')})`,
+            }, async (payload: any) => {
+              // Mettre à jour la conversation concernée
+              setConversations(prev => prev.map(c =>
+                c.id === payload.new.mission_id
+                  ? { ...c, lastMessage: payload.new }
+                  : c
+              ))
+              // Incrémenter le badge si c'est pas nous qui avons envoyé
+              if (payload.new.sender_id !== artisanData.user_id) {
+                setUnreadCount(n => n + 1)
+              }
+            })
+            .subscribe()
+        }
 
         const { data: walletData } = await supabase
           .from('wallets')
@@ -115,6 +147,7 @@ export default function ArtisanDashboardPage() {
       setLoading(false)
     }
     init()
+    return () => { if (realtimeChannel) supabase.removeChannel(realtimeChannel) }
   }, [])
 
   // Upload avatar

@@ -33,6 +33,15 @@ export default function WarRoomPage() {
       const { data: msgs } = await supabase
         .from('chat_history').select('*, users(name)').eq('mission_id', missionId).order('created_at', { ascending: true })
       setMessages(msgs || [])
+
+      // Marquer les messages reçus comme lus
+      await supabase
+        .from('chat_history')
+        .update({ read_at: new Date().toISOString() })
+        .eq('mission_id', missionId)
+        .neq('sender_id', session.user.id)
+        .is('read_at', null)
+
       setLoading(false)
     }
     init()
