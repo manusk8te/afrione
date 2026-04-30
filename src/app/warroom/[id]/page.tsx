@@ -290,8 +290,8 @@ export default function WarRoomPage() {
               )
             }
 
-            // Carte devis
-            if (msg.type === 'devis') {
+            // Carte devis (quotation = valeur en base, devis = legacy)
+            if (msg.type === 'quotation' || msg.type === 'devis') {
               let devisData: any = {}
               try { devisData = JSON.parse(msg.text) } catch {}
               const canAct = !isMe && !isArtisan && status === 'negotiation'
