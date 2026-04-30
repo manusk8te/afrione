@@ -8,6 +8,8 @@ import {
   Image as ImageIcon, MessageCircle, Bell
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 const TABS = [
   { id: 'missions', label: 'Missions', icon: Clock },
@@ -25,6 +27,8 @@ const QUARTIERS_ABJ = [
 export default function ArtisanDashboardPage() {
   const router = useRouter()
   const [tab, setTab] = useState('missions')
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  usePushNotifications(currentUserId)
   const [user, setUser] = useState<any>(null)
   const [artisan, setArtisan] = useState<any>(null)
   const [missions, setMissions] = useState<any[]>([])
@@ -69,6 +73,7 @@ export default function ArtisanDashboardPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth'); return }
       setUser(session.user)
+      setCurrentUserId(session.user.id)
 
       const { data: artisanData } = await supabase
         .from('artisan_pros')
@@ -115,27 +120,38 @@ export default function ArtisanDashboardPage() {
         // Compter messages non lus
         await refreshUnread(artisanData.id, artisanData.user_id, activeMissionIds)
 
-        // Abonnement temps réel — nouveaux messages sur toutes les missions actives
-        if (activeMissionIds.length) {
-          realtimeChannel = supabase
-            .channel(`artisan-msgs-${artisanData.id}`)
-            .on('postgres_changes', {
-              event: 'INSERT', schema: 'public', table: 'chat_history',
-              filter: `mission_id=in.(${activeMissionIds.join(',')})`,
-            }, async (payload: any) => {
-              // Mettre à jour la conversation concernée
-              setConversations(prev => prev.map(c =>
-                c.id === payload.new.mission_id
-                  ? { ...c, lastMessage: payload.new }
-                  : c
-              ))
-              // Incrémenter le badge si c'est pas nous qui avons envoyé
-              if (payload.new.sender_id !== artisanData.user_id) {
-                setUnreadCount(n => n + 1)
-              }
+        // Abonnement temps réel — nouvelles missions ET nouveaux messages
+        realtimeChannel = supabase
+          .channel(`artisan-realtime-${artisanData.id}`)
+          // Nouvelles missions assignées à cet artisan
+          .on('postgres_changes', {
+            event: 'INSERT', schema: 'public', table: 'missions',
+            filter: `artisan_id=eq.${artisanData.id}`,
+          }, async (payload: any) => {
+            const newM = payload.new
+            setMissions(prev => [newM, ...prev])
+            // Ajouter à conversations si statut actif
+            if (['negotiation','en_cours','payment','matching'].includes(newM.status)) {
+              setConversations(prev => [{ ...newM, lastMessage: null }, ...prev])
+            }
+            toast('🔔 Nouvelle mission reçue !', {
+              style: { background: '#0F1410', color: '#FAFAF5', fontWeight: 600 },
+              duration: 5000,
             })
-            .subscribe()
-        }
+          })
+          // Nouveaux messages sur les missions actives
+          .on('postgres_changes', {
+            event: 'INSERT', schema: 'public', table: 'chat_history',
+          }, async (payload: any) => {
+            if (!activeMissionIds.includes(payload.new.mission_id)) return
+            setConversations(prev => prev.map(c =>
+              c.id === payload.new.mission_id ? { ...c, lastMessage: payload.new } : c
+            ))
+            if (payload.new.sender_id !== artisanData.user_id) {
+              setUnreadCount(n => n + 1)
+            }
+          })
+          .subscribe()
 
         const { data: walletData } = await supabase
           .from('wallets')
@@ -378,14 +394,13 @@ export default function ArtisanDashboardPage() {
                     background: m.status === 'completed' ? 'rgba(43,107,62,0.1)' : m.status === 'en_cours' ? 'rgba(232,93,38,0.1)' : 'rgba(201,168,76,0.1)',
                     color: m.status === 'completed' ? '#2B6B3E' : m.status === 'en_cours' ? '#E85D26' : '#C9A84C',
                   }}>
-                    {m.status === 'completed' ? '✓ Terminée' : m.status === 'en_cours' ? '⚡ En cours' : m.status === 'matching' ? '🔔 Nouvelle' : m.status}
+                    {m.status === 'completed' ? '✓ Terminée' : m.status === 'en_cours' ? '⚡ En cours' : m.status === 'matching' ? '🔔 Nouvelle' : m.status === 'negotiation' ? '💬 En discussion' : m.status}
                   </span>
                 </div>
-                {m.status === 'matching' && (
-                  <div style={{display:'flex',gap:'12px'}}>
-                    <button className="btn-primary" style={{flex:1,justifyContent:'center'}}>✓ Accepter</button>
-                    <button className="btn-outline" style={{flex:1,justifyContent:'center'}}>✗ Refuser</button>
-                  </div>
+                {(m.status === 'negotiation' || m.status === 'matching') && (
+                  <Link href={`/warroom/${m.id}`} className="btn-primary" style={{width:'100%',justifyContent:'center',display:'flex'}}>
+                    💬 Ouvrir le chat →
+                  </Link>
                 )}
                 {m.status === 'en_cours' && (
                   <Link href={`/warroom/${m.id}`} className="btn-primary" style={{width:'100%',justifyContent:'center',display:'flex'}}>Voir la mission en cours →</Link>
