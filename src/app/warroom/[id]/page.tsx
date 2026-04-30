@@ -153,6 +153,8 @@ export default function WarRoomPage() {
       .update({ status: 'en_cours', started_at: new Date().toISOString() })
       .eq('id', missionId)
     if (error) { toast.error('Erreur.'); setActing(false); return }
+    // Mise à jour locale immédiate sans attendre le realtime
+    setMission((prev: any) => ({ ...prev, status: 'en_cours' }))
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
       sender_role: userRole, text: 'Devis accepté — mission démarrée ✅', type: 'system',
@@ -182,6 +184,8 @@ export default function WarRoomPage() {
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('id', missionId)
     if (error) { toast.error('Erreur.'); setActing(false); return }
+    // Mise à jour locale immédiate sans attendre le realtime
+    setMission((prev: any) => ({ ...prev, status: 'completed' }))
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
       sender_role: userRole, text: 'Mission marquée comme terminée ✅ Merci pour votre confiance !', type: 'system',
