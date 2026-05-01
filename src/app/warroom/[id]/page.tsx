@@ -8,12 +8,14 @@ import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  negotiation: { label: '💬 En discussion', color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
-  matching:    { label: '🔔 Nouvelle demande', color: '#E85D26', bg: 'rgba(232,93,38,0.1)' },
-  en_cours:    { label: '⚡ Mission en cours', color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
-  payment:     { label: '💳 En attente de paiement', color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
-  completed:   { label: '✅ Mission terminée', color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)' },
-  cancelled:   { label: '✗ Annulée', color: '#7A7A6E', bg: 'rgba(122,122,110,0.1)' },
+  negotiation: { label: '💬 En discussion',          color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
+  matching:    { label: '🔔 Nouvelle demande',        color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
+  scheduled:   { label: '📅 Intervention programmée', color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
+  en_route:    { label: '🚗 En route',                color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
+  en_cours:    { label: '⚡ Mission en cours',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
+  payment:     { label: '💳 Paiement',               color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
+  completed:   { label: '✅ Mission terminée',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)'  },
+  cancelled:   { label: '✗ Annulée',                 color: '#7A7A6E', bg: 'rgba(122,122,110,0.1)' },
 }
 
 export default function WarRoomPage() {
@@ -33,6 +35,12 @@ export default function WarRoomPage() {
   const [showDevis, setShowDevis]     = useState(false)
   const [devisAmount, setDevisAmount] = useState('')
   const [devisDesc, setDevisDesc]     = useState('')
+
+  // Modal scheduling (après acceptation devis)
+  const [showScheduling, setShowScheduling] = useState(false)
+  const [schedMode, setSchedMode]           = useState<'now' | 'later' | null>(null)
+  const [schedDate, setSchedDate]           = useState('')
+  const [schedTime, setSchedTime]           = useState('')
 
   const bottomRef = useRef<HTMLDivElement>(null)
   usePushNotifications(user?.id || null)
@@ -145,23 +153,48 @@ export default function WarRoomPage() {
     setActing(false)
   }
 
-  // Client accepte le devis
-  const acceptDevis = async () => {
+  // Client accepte le devis → ouvre le modal de scheduling
+  const acceptDevis = () => {
+    setShowScheduling(true)
+    setSchedMode(null)
+  }
+
+  // Intervention maintenant → en_route → redirect suivi
+  const confirmNow = async () => {
     setActing(true)
-    const { error } = await supabase
-      .from('missions')
-      .update({ status: 'en_cours', started_at: new Date().toISOString() })
-      .eq('id', missionId)
+    const { error } = await supabase.from('missions')
+      .update({ status: 'en_route' }).eq('id', missionId)
     if (error) { toast.error('Erreur.'); setActing(false); return }
-    // Mise à jour locale immédiate sans attendre le realtime
-    setMission((prev: any) => ({ ...prev, status: 'en_cours' }))
+    setMission((prev: any) => ({ ...prev, status: 'en_route' }))
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: 'Devis accepté — mission démarrée ✅', type: 'system',
+      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      text: 'Devis accepté — intervention maintenant 🚗 Suivi GPS activé', type: 'system',
     })
     const rid = getRecipientId(mission, user.id)
-    if (rid) notifyOther('Le client a accepté votre devis — mission démarrée !', rid)
-    toast.success('Mission démarrée !')
+    if (rid) notifyOther("C'est parti ! L'artisan arrive.", rid)
+    setShowScheduling(false)
+    setActing(false)
+    router.push(`/suivi/${missionId}`)
+  }
+
+  // Intervention programmée → scheduled + scheduled_at
+  const confirmScheduled = async () => {
+    if (!schedDate || !schedTime) { toast.error('Choisissez une date et une heure'); return }
+    setActing(true)
+    const scheduledAt = new Date(`${schedDate}T${schedTime}`).toISOString()
+    const { error } = await supabase.from('missions')
+      .update({ status: 'scheduled', scheduled_at: scheduledAt }).eq('id', missionId)
+    if (error) { toast.error('Erreur.'); setActing(false); return }
+    setMission((prev: any) => ({ ...prev, status: 'scheduled', scheduled_at: scheduledAt }))
+    const dateStr = new Date(scheduledAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+    await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      text: `Devis accepté — intervention programmée le ${dateStr} à ${schedTime} 📅`, type: 'system',
+    })
+    const rid = getRecipientId(mission, user.id)
+    if (rid) notifyOther(`Mission programmée le ${dateStr} à ${schedTime}`, rid)
+    setShowScheduling(false)
+    toast.success('Mission programmée !')
     setActing(false)
   }
 
@@ -204,6 +237,64 @@ export default function WarRoomPage() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'#F5F0E8'}}>
+
+      {/* ─── MODAL SCHEDULING ─────────────────────────────────────── */}
+      {showScheduling && (
+        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(10,14,11,0.96)',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+          <div style={{width:'100%',maxWidth:'480px',background:'#1A1F1B',borderRadius:'24px 24px 0 0',padding:'24px 20px 32px'}}>
+            <div style={{width:'40px',height:'4px',background:'rgba(255,255,255,0.15)',borderRadius:'2px',margin:'0 auto 24px'}} />
+
+            {schedMode === null && (
+              <>
+                <h2 style={{fontWeight:800,fontSize:'21px',color:'#FAFAF5',marginBottom:'6px'}}>Quand intervenir ?</h2>
+                <p style={{fontSize:'13px',color:'#7A7A6E',marginBottom:'24px'}}>Le devis est accepté. Choisissez le moment.</p>
+                <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                  <button onClick={confirmNow} disabled={acting} style={{padding:'18px 16px',background:'#E85D26',color:'white',border:'none',borderRadius:'16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'14px',textAlign:'left',opacity:acting?0.6:1}}>
+                    <span style={{fontSize:'32px',lineHeight:1}}>⚡</span>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:'15px'}}>Maintenant</div>
+                      <div style={{fontSize:'12px',opacity:0.8,marginTop:'2px'}}>L'artisan part immédiatement — suivi GPS activé</div>
+                    </div>
+                  </button>
+                  <button onClick={() => setSchedMode('later')} style={{padding:'18px 16px',background:'rgba(255,255,255,0.06)',color:'#FAFAF5',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'14px',textAlign:'left'}}>
+                    <span style={{fontSize:'32px',lineHeight:1}}>📅</span>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:'15px'}}>Programmer</div>
+                      <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>Choisir une date et une heure</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {schedMode === 'later' && (
+              <>
+                <button onClick={() => setSchedMode(null)} style={{background:'none',border:'none',color:'#7A7A6E',fontSize:'13px',cursor:'pointer',padding:'0 0 16px',display:'flex',alignItems:'center',gap:'4px'}}>
+                  ← Retour
+                </button>
+                <h2 style={{fontWeight:800,fontSize:'21px',color:'#FAFAF5',marginBottom:'20px'}}>Choisir la date</h2>
+                <div style={{display:'flex',flexDirection:'column',gap:'12px',marginBottom:'16px'}}>
+                  <div>
+                    <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'6px',letterSpacing:'0.08em'}}>DATE</label>
+                    <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]} className="input"
+                      style={{width:'100%',background:'rgba(255,255,255,0.07)',color:'#FAFAF5',border:'1px solid rgba(255,255,255,0.12)',colorScheme:'dark'}} />
+                  </div>
+                  <div>
+                    <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'6px',letterSpacing:'0.08em'}}>HEURE</label>
+                    <input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)} className="input"
+                      style={{width:'100%',background:'rgba(255,255,255,0.07)',color:'#FAFAF5',border:'1px solid rgba(255,255,255,0.12)',colorScheme:'dark'}} />
+                  </div>
+                </div>
+                <button onClick={confirmScheduled} disabled={acting || !schedDate || !schedTime} style={{width:'100%',padding:'14px',background: schedDate && schedTime ? '#E85D26' : 'rgba(255,255,255,0.08)',color:'white',border:'none',borderRadius:'14px',fontSize:'15px',fontWeight:700,cursor:'pointer',opacity:acting?0.6:1}}>
+                  {acting ? 'Confirmation…' : 'Confirmer la date →'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {/* ──────────────────────────────────────────────────────────── */}
 
       {/* Header */}
       <div style={{background:'#0F1410',color:'#FAFAF5',flexShrink:0}}>
@@ -380,6 +471,59 @@ export default function WarRoomPage() {
                 }}>
                   💰 Proposer un devis
                 </button>
+              </div>
+            )}
+
+            {/* Artisan : Démarrer le suivi (scheduled) */}
+            {isArtisan && status === 'scheduled' && (
+              <div style={{marginBottom:'8px'}}>
+                <button onClick={async () => {
+                  setActing(true)
+                  const { error } = await supabase.from('missions').update({ status: 'en_route' }).eq('id', missionId)
+                  if (error) { toast.error('Erreur.'); setActing(false); return }
+                  setMission((prev: any) => ({ ...prev, status: 'en_route' }))
+                  await supabase.from('chat_history').insert({
+                    mission_id: missionId, sender_id: user.id, sender_role: userRole,
+                    text: "L'artisan est en route 🚗 Suivi GPS activé", type: 'system',
+                  })
+                  const rid = getRecipientId(mission, user.id)
+                  if (rid) notifyOther("L'artisan arrive ! Suivez-le en temps réel.", rid)
+                  setActing(false)
+                  router.push(`/suivi/${missionId}`)
+                }} disabled={acting} style={{
+                  width:'100%',padding:'12px',background:'#E85D26',color:'white',
+                  border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',
+                  display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+                  opacity: acting ? 0.6 : 1,
+                }}>
+                  🚗 {acting ? 'Démarrage…' : "Démarrer le suivi →"}
+                </button>
+              </div>
+            )}
+
+            {/* Client : voir date programmée (scheduled) */}
+            {!isArtisan && status === 'scheduled' && mission?.scheduled_at && (
+              <div style={{marginBottom:'8px',padding:'12px 14px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
+                <span style={{fontSize:'20px'}}>📅</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410'}}>Intervention programmée</div>
+                  <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>
+                    {new Date(mission.scheduled_at).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à {new Date(mission.scheduled_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Les deux : Voir le suivi (en_route) */}
+            {status === 'en_route' && (
+              <div style={{marginBottom:'8px'}}>
+                <Link href={`/suivi/${missionId}`} style={{
+                  display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+                  width:'100%',padding:'12px',background:'#E85D26',color:'white',
+                  borderRadius:'12px',fontWeight:700,fontSize:'14px',textDecoration:'none',
+                }}>
+                  🚗 Voir le suivi en direct →
+                </Link>
               </div>
             )}
 
