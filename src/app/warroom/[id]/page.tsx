@@ -76,7 +76,7 @@ export default function WarRoomPage() {
 
       const { data: missionData } = await supabase
         .from('missions')
-        .select('*, artisan_pros(id, user_id, metier, users(name, avatar_url))')
+        .select('*, scheduled_at, artisan_pros(id, user_id, metier, users(name, avatar_url))')
         .eq('id', missionId)
         .single()
       setMission(missionData)
@@ -182,11 +182,22 @@ export default function WarRoomPage() {
     if (!schedDate || !schedTime) { toast.error('Choisissez une date et une heure'); return }
     setActing(true)
     const scheduledAt = new Date(`${schedDate}T${schedTime}`).toISOString()
-    const { error } = await supabase.from('missions')
-      .update({ status: 'scheduled', scheduled_at: scheduledAt }).eq('id', missionId)
-    if (error) { toast.error('Erreur.'); setActing(false); return }
-    setMission((prev: any) => ({ ...prev, status: 'scheduled', scheduled_at: scheduledAt }))
     const dateStr = new Date(scheduledAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+
+    // Essai avec scheduled_at, fallback sans si la colonne n'existe pas encore
+    let error: any = null
+    const res1 = await supabase.from('missions')
+      .update({ status: 'scheduled', scheduled_at: scheduledAt }).eq('id', missionId)
+    error = res1.error
+    if (error) {
+      // Fallback : mise à jour sans scheduled_at (colonne peut-être absente en base)
+      const res2 = await supabase.from('missions')
+        .update({ status: 'scheduled' }).eq('id', missionId)
+      error = res2.error
+    }
+    if (error) { toast.error('Erreur lors de la programmation.'); setActing(false); return }
+
+    setMission((prev: any) => ({ ...prev, status: 'scheduled', scheduled_at: scheduledAt }))
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id, sender_role: userRole,
       text: `Devis accepté — intervention programmée le ${dateStr} à ${schedTime} 📅`, type: 'system',
@@ -474,6 +485,21 @@ export default function WarRoomPage() {
               </div>
             )}
 
+            {/* Les deux : bandeau date programmée (scheduled) */}
+            {status === 'scheduled' && (
+              <div style={{marginBottom:'8px',padding:'12px 14px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.35)',borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
+                <span style={{fontSize:'20px'}}>📅</span>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410'}}>Intervention programmée</div>
+                  <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>
+                    {mission?.scheduled_at
+                      ? `${new Date(mission.scheduled_at).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${new Date(mission.scheduled_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`
+                      : 'Date en cours de chargement…'}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Artisan : Démarrer le suivi (scheduled) */}
             {isArtisan && status === 'scheduled' && (
               <div style={{marginBottom:'8px'}}>
@@ -498,19 +524,6 @@ export default function WarRoomPage() {
                 }}>
                   🚗 {acting ? 'Démarrage…' : "Démarrer le suivi →"}
                 </button>
-              </div>
-            )}
-
-            {/* Client : voir date programmée (scheduled) */}
-            {!isArtisan && status === 'scheduled' && mission?.scheduled_at && (
-              <div style={{marginBottom:'8px',padding:'12px 14px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
-                <span style={{fontSize:'20px'}}>📅</span>
-                <div>
-                  <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410'}}>Intervention programmée</div>
-                  <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>
-                    {new Date(mission.scheduled_at).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à {new Date(mission.scheduled_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
-                  </div>
-                </div>
               </div>
             )}
 
