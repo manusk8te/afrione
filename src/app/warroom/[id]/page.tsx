@@ -192,14 +192,13 @@ export default function WarRoomPage() {
     await new Promise(r => setTimeout(r, 2000))
 
     // RPC SECURITY DEFINER — vérifie que l'appelant est bien le client de la mission
-    // Met à jour mission.total_price, mission.status et wallets.balance_escrow atomiquement
     const { error: rpcError } = await supabase.rpc('credit_escrow', {
       p_mission_id: missionId,
       p_amount: pendingAmount,
     })
     if (rpcError) {
-      console.error('[credit_escrow]', rpcError)
-      toast.error('Erreur de paiement.')
+      console.error('[credit_escrow] code:', rpcError.code, '| message:', rpcError.message, '| details:', rpcError.details)
+      toast.error(`Erreur: ${rpcError.message || rpcError.code || 'inconnue'}`)
       setPayStep('form')
       return
     }
@@ -356,9 +355,9 @@ export default function WarRoomPage() {
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'#F5F0E8'}}>
 
-      {/* ─── MODAL WAVE PAIEMENT (design fidèle Wave CI) ─────────── */}
+      {/* ─── MODAL WAVE PAIEMENT (couleurs officielles Wave CI) ──── */}
       {showPayment && (
-        <div style={{position:'fixed',inset:0,zIndex:9999,background:'#0B1628',display:'flex',flexDirection:'column'}}>
+        <div style={{position:'fixed',inset:0,zIndex:9999,background:'#0A0B2E',display:'flex',flexDirection:'column'}}>
 
           {/* Status bar simulé */}
           <div style={{height:'44px',flexShrink:0,display:'flex',alignItems:'center',padding:'0 20px',justifyContent:'space-between'}}>
@@ -375,23 +374,23 @@ export default function WarRoomPage() {
           {/* Header Wave app */}
           <div style={{display:'flex',alignItems:'center',padding:'8px 20px 20px',gap:'16px',flexShrink:0}}>
             {payStep === 'form' && (
-              <button onClick={() => setShowPayment(false)} style={{background:'rgba(255,255,255,0.08)',border:'none',borderRadius:'50%',width:'36px',height:'36px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'white',fontSize:'18px',flexShrink:0}}>
+              <button onClick={() => setShowPayment(false)} style={{background:'rgba(255,255,255,0.07)',border:'none',borderRadius:'50%',width:'36px',height:'36px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'white',fontSize:'18px',flexShrink:0}}>
                 ←
               </button>
             )}
             <div style={{flex:1,display:'flex',alignItems:'center',gap:'10px'}}>
-              {/* Logo Wave W */}
+              {/* Logo Wave — W blanc sur gradient bleu officiel */}
               <div style={{
-                width:'36px',height:'36px',borderRadius:'10px',flexShrink:0,
-                background:'linear-gradient(135deg,#1FBDB3,#0FA89E)',
+                width:'38px',height:'38px',borderRadius:'10px',flexShrink:0,
+                background:'linear-gradient(135deg,#4144FF,#1DC6FF)',
                 display:'flex',alignItems:'center',justifyContent:'center',
-                boxShadow:'0 4px 12px rgba(31,189,179,0.4)',
+                boxShadow:'0 4px 16px rgba(29,198,255,0.35)',
               }}>
-                <span style={{color:'white',fontWeight:900,fontSize:'18px',letterSpacing:'-1px'}}>W</span>
+                <span style={{color:'white',fontWeight:900,fontSize:'20px',letterSpacing:'-1px',fontFamily:'Arial Black,sans-serif'}}>W</span>
               </div>
               <div>
-                <div style={{color:'white',fontWeight:700,fontSize:'15px',letterSpacing:'0.01em'}}>Wave</div>
-                <div style={{color:'rgba(255,255,255,0.45)',fontSize:'11px'}}>Paiement sécurisé</div>
+                <div style={{color:'white',fontWeight:800,fontSize:'16px',letterSpacing:'-0.3px'}}>Wave</div>
+                <div style={{color:'rgba(255,255,255,0.4)',fontSize:'11px'}}>Paiement sécurisé</div>
               </div>
             </div>
           </div>
@@ -403,40 +402,42 @@ export default function WarRoomPage() {
             {payStep === 'form' && (
               <div>
                 {/* Bénéficiaire */}
-                <div style={{background:'rgba(255,255,255,0.05)',borderRadius:'16px',padding:'16px 20px',marginBottom:'12px',display:'flex',alignItems:'center',gap:'14px'}}>
-                  <div style={{width:'44px',height:'44px',borderRadius:'12px',background:'#E85D26',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <Zap size={20} color="white" />
+                <div style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'16px',padding:'14px 18px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'14px'}}>
+                  <div style={{width:'42px',height:'42px',borderRadius:'11px',background:'linear-gradient(135deg,#E85D26,#F87900)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                    <Zap size={18} color="white" />
                   </div>
                   <div>
-                    <div style={{color:'rgba(255,255,255,0.5)',fontSize:'11px',letterSpacing:'0.06em',marginBottom:'2px'}}>BÉNÉFICIAIRE</div>
-                    <div style={{color:'white',fontWeight:700,fontSize:'15px'}}>AfriOne — Escrow Mission</div>
-                    <div style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Fonds libérés à la fin de la mission</div>
+                    <div style={{color:'rgba(255,255,255,0.4)',fontSize:'10px',letterSpacing:'0.08em',marginBottom:'2px',textTransform:'uppercase'}}>Bénéficiaire</div>
+                    <div style={{color:'white',fontWeight:700,fontSize:'14px'}}>AfriOne — Mission Escrow</div>
+                    <div style={{color:'rgba(255,255,255,0.35)',fontSize:'11px'}}>Fonds libérés à la fin de la mission</div>
                   </div>
                 </div>
 
-                {/* Montant */}
-                <div style={{textAlign:'center',padding:'32px 0 24px'}}>
-                  <div style={{color:'rgba(255,255,255,0.45)',fontSize:'12px',letterSpacing:'0.08em',marginBottom:'10px'}}>MONTANT</div>
-                  <div style={{color:'white',fontSize:'52px',fontWeight:800,letterSpacing:'-2px',fontFamily:'Space Mono',lineHeight:1}}>
-                    {pendingAmount.toLocaleString()}
+                {/* Montant — style Wave : grand, blanc, centré */}
+                <div style={{textAlign:'center',padding:'28px 0 20px'}}>
+                  <div style={{color:'rgba(255,255,255,0.35)',fontSize:'11px',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'12px'}}>Montant total</div>
+                  <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'8px'}}>
+                    <span style={{color:'white',fontSize:'56px',fontWeight:900,letterSpacing:'-2px',lineHeight:1,fontFamily:'Space Mono'}}>
+                      {pendingAmount.toLocaleString()}
+                    </span>
+                    <span style={{color:'#1DC6FF',fontSize:'18px',fontWeight:700}}>FCFA</span>
                   </div>
-                  <div style={{color:'#1FBDB3',fontSize:'16px',fontWeight:600,marginTop:'6px'}}>FCFA</div>
                 </div>
 
-                {/* Ligne séparatrice */}
-                <div style={{height:'1px',background:'rgba(255,255,255,0.07)',margin:'0 0 20px'}} />
+                {/* Séparateur */}
+                <div style={{height:'1px',background:'rgba(255,255,255,0.06)',margin:'0 0 20px'}} />
 
                 {/* Numéro Wave */}
                 <div style={{marginBottom:'12px'}}>
-                  <div style={{color:'rgba(255,255,255,0.45)',fontSize:'11px',letterSpacing:'0.08em',marginBottom:'10px'}}>VOTRE NUMÉRO WAVE</div>
+                  <div style={{color:'rgba(255,255,255,0.4)',fontSize:'10px',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'10px'}}>Votre numéro Wave</div>
                   <div style={{
                     display:'flex',alignItems:'center',
-                    background:'rgba(255,255,255,0.06)',
-                    border:`1.5px solid ${wavePhone.trim() ? '#1FBDB3' : 'rgba(255,255,255,0.1)'}`,
+                    background:'rgba(255,255,255,0.05)',
+                    border:`1.5px solid ${wavePhone.trim() ? '#1DC6FF' : 'rgba(255,255,255,0.08)'}`,
                     borderRadius:'14px',overflow:'hidden',
                     transition:'border-color 0.2s',
                   }}>
-                    <div style={{padding:'14px 16px',borderRight:'1.5px solid rgba(255,255,255,0.08)',fontSize:'14px',color:'rgba(255,255,255,0.6)',whiteSpace:'nowrap',flexShrink:0}}>
+                    <div style={{padding:'15px 16px',borderRight:'1px solid rgba(255,255,255,0.08)',fontSize:'14px',color:'rgba(255,255,255,0.5)',whiteSpace:'nowrap',flexShrink:0}}>
                       🇨🇮 +225
                     </div>
                     <input
@@ -446,64 +447,64 @@ export default function WarRoomPage() {
                       value={wavePhone}
                       onChange={e => setWavePhone(e.target.value)}
                       style={{
-                        flex:1,padding:'14px 16px',background:'transparent',
-                        border:'none',outline:'none',fontSize:'16px',
-                        color:'white',fontFamily:'Space Mono',letterSpacing:'0.05em',
+                        flex:1,padding:'15px 16px',background:'transparent',
+                        border:'none',outline:'none',fontSize:'17px',
+                        color:'white',fontFamily:'Space Mono',letterSpacing:'0.06em',
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Info escrow */}
-                <div style={{padding:'12px 14px',background:'rgba(31,189,179,0.08)',borderRadius:'12px',display:'flex',gap:'10px',alignItems:'flex-start',marginBottom:'24px'}}>
-                  <span style={{fontSize:'16px',flexShrink:0}}>🔒</span>
-                  <div style={{fontSize:'12px',color:'rgba(255,255,255,0.5)',lineHeight:'1.6'}}>
-                    En confirmant, les fonds sont sécurisés par AfriOne et transférés à l'artisan uniquement à la fin de la mission validée.
+                {/* Info escrow — orange Wave */}
+                <div style={{padding:'12px 14px',background:'rgba(248,121,0,0.08)',border:'1px solid rgba(248,121,0,0.2)',borderRadius:'12px',display:'flex',gap:'10px',alignItems:'flex-start',marginBottom:'24px'}}>
+                  <span style={{fontSize:'15px',flexShrink:0}}>🔒</span>
+                  <div style={{fontSize:'12px',color:'rgba(255,255,255,0.45)',lineHeight:'1.6'}}>
+                    Les fonds sont sécurisés par AfriOne et transférés à l'artisan uniquement après validation de la mission.
                   </div>
                 </div>
 
-                {/* Bouton confirmer */}
+                {/* Bouton — gradient bleu officiel Wave */}
                 <button
                   onClick={confirmPayment}
                   disabled={!wavePhone.trim()}
                   style={{
                     width:'100%',padding:'18px',
                     background: wavePhone.trim()
-                      ? 'linear-gradient(135deg,#1FBDB3,#0FA89E)'
-                      : 'rgba(255,255,255,0.1)',
+                      ? 'linear-gradient(135deg,#4144FF,#0D99FF)'
+                      : 'rgba(255,255,255,0.08)',
                     color:'white',border:'none',borderRadius:'16px',
-                    fontSize:'16px',fontWeight:800,
+                    fontSize:'16px',fontWeight:800,letterSpacing:'-0.2px',
                     cursor: wavePhone.trim() ? 'pointer' : 'default',
-                    boxShadow: wavePhone.trim() ? '0 8px 24px rgba(31,189,179,0.35)' : 'none',
+                    boxShadow: wavePhone.trim() ? '0 8px 28px rgba(65,68,255,0.45)' : 'none',
                     transition:'all 0.2s',
                   }}
                 >
-                  Confirmer le paiement
+                  Payer avec Wave
                 </button>
 
-                <div style={{textAlign:'center',marginTop:'14px',fontSize:'11px',color:'rgba(255,255,255,0.3)'}}>
-                  Propulsé par <strong style={{color:'#1FBDB3'}}>Wave</strong> · Paiement crypté TLS 1.3
+                <div style={{textAlign:'center',marginTop:'14px',fontSize:'11px',color:'rgba(255,255,255,0.2)'}}>
+                  Sécurisé par <strong style={{color:'#1DC6FF'}}>Wave</strong> · Chiffrement TLS 1.3
                 </div>
               </div>
             )}
 
             {/* ── ÉTAPE 2 : Processing ── */}
             {payStep === 'processing' && (
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'300px',gap:'20px'}}>
-                <div style={{position:'relative',width:'72px',height:'72px'}}>
-                  <div style={{position:'absolute',inset:0,border:'3px solid rgba(31,189,179,0.15)',borderRadius:'50%'}} />
-                  <div style={{position:'absolute',inset:0,border:'3px solid transparent',borderTopColor:'#1FBDB3',borderRadius:'50%',animation:'spin 0.9s linear infinite'}} />
-                  <div style={{position:'absolute',inset:'12px',background:'linear-gradient(135deg,#1FBDB3,#0FA89E)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    <span style={{color:'white',fontWeight:900,fontSize:'18px'}}>W</span>
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'320px',gap:'24px'}}>
+                <div style={{position:'relative',width:'80px',height:'80px'}}>
+                  <div style={{position:'absolute',inset:0,border:'3px solid rgba(13,153,255,0.12)',borderRadius:'50%'}} />
+                  <div style={{position:'absolute',inset:0,border:'3px solid transparent',borderTopColor:'#0D99FF',borderRadius:'50%',animation:'spin 0.85s linear infinite'}} />
+                  <div style={{position:'absolute',inset:'10px',background:'linear-gradient(135deg,#4144FF,#1DC6FF)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px rgba(29,198,255,0.3)'}}>
+                    <span style={{color:'white',fontWeight:900,fontSize:'22px',fontFamily:'Arial Black,sans-serif'}}>W</span>
                   </div>
                 </div>
-                <div>
-                  <div style={{color:'white',fontWeight:700,fontSize:'17px',textAlign:'center',marginBottom:'8px'}}>Vérification en cours…</div>
-                  <div style={{color:'rgba(255,255,255,0.4)',fontSize:'13px',textAlign:'center'}}>Sécurisation de votre paiement Wave</div>
+                <div style={{textAlign:'center'}}>
+                  <div style={{color:'white',fontWeight:700,fontSize:'18px',marginBottom:'8px'}}>Traitement en cours…</div>
+                  <div style={{color:'rgba(255,255,255,0.35)',fontSize:'13px'}}>Vérification via Wave sécurisée</div>
                 </div>
-                <div style={{display:'flex',gap:'6px',marginTop:'8px'}}>
+                <div style={{display:'flex',gap:'8px'}}>
                   {[0,1,2].map(i => (
-                    <div key={i} style={{width:'6px',height:'6px',borderRadius:'50%',background:'#1FBDB3',animation:`pulse 1.2s ease-in-out ${i*0.4}s infinite`}} />
+                    <div key={i} style={{width:'7px',height:'7px',borderRadius:'50%',background:'#1DC6FF',opacity: 0.4,animation:`pulse 1.2s ease-in-out ${i*0.35}s infinite`}} />
                   ))}
                 </div>
               </div>
@@ -511,40 +512,38 @@ export default function WarRoomPage() {
 
             {/* ── ÉTAPE 3 : Succès ── */}
             {payStep === 'success' && (
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',paddingTop:'20px'}}>
-                {/* Cercle de succès animé */}
+              <div style={{display:'flex',flexDirection:'column',alignItems:'center',paddingTop:'16px'}}>
+                {/* Cercle succès — cyan Wave */}
                 <div style={{
-                  width:'88px',height:'88px',borderRadius:'50%',
-                  background:'linear-gradient(135deg,#1FBDB3,#0FA89E)',
+                  width:'90px',height:'90px',borderRadius:'50%',
+                  background:'linear-gradient(135deg,#4144FF,#1DC6FF)',
                   display:'flex',alignItems:'center',justifyContent:'center',
-                  marginBottom:'24px',
-                  boxShadow:'0 0 0 16px rgba(31,189,179,0.08), 0 0 0 32px rgba(31,189,179,0.04)',
+                  marginBottom:'20px',
+                  boxShadow:'0 0 0 14px rgba(29,198,255,0.07), 0 0 0 28px rgba(29,198,255,0.03)',
                 }}>
-                  <CheckCircle size={44} color="white" strokeWidth={2.5} />
+                  <CheckCircle size={46} color="white" strokeWidth={2.5} />
                 </div>
 
-                <div style={{color:'white',fontSize:'22px',fontWeight:800,marginBottom:'6px'}}>Paiement réussi !</div>
-                <div style={{color:'rgba(255,255,255,0.45)',fontSize:'13px',marginBottom:'28px'}}>Votre transaction a été sécurisée</div>
+                <div style={{color:'white',fontSize:'24px',fontWeight:900,marginBottom:'4px',letterSpacing:'-0.5px'}}>Paiement réussi !</div>
+                <div style={{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginBottom:'28px'}}>Transaction sécurisée par Wave</div>
 
-                {/* Reçu */}
-                <div style={{width:'100%',background:'rgba(255,255,255,0.05)',borderRadius:'20px',overflow:'hidden',marginBottom:'24px'}}>
-                  <div style={{padding:'20px',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
-                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                      <span style={{color:'rgba(255,255,255,0.45)',fontSize:'12px'}}>Montant payé</span>
-                      <span style={{color:'white',fontWeight:800,fontSize:'20px',fontFamily:'Space Mono'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#1FBDB3'}}>FCFA</span></span>
-                    </div>
+                {/* Reçu style Wave */}
+                <div style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',overflow:'hidden',marginBottom:'20px'}}>
+                  <div style={{padding:'18px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Montant</span>
+                    <span style={{color:'white',fontWeight:900,fontSize:'20px',fontFamily:'Space Mono'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#1DC6FF',fontWeight:700}}>FCFA</span></span>
                   </div>
-                  <div style={{padding:'16px 20px',borderBottom:'1px solid rgba(255,255,255,0.07)',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'rgba(255,255,255,0.45)',fontSize:'12px'}}>Bénéficiaire</span>
+                  <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between'}}>
+                    <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Bénéficiaire</span>
                     <span style={{color:'rgba(255,255,255,0.8)',fontSize:'13px',fontWeight:600}}>AfriOne Escrow</span>
                   </div>
-                  <div style={{padding:'16px 20px',borderBottom:'1px solid rgba(255,255,255,0.07)',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'rgba(255,255,255,0.45)',fontSize:'12px'}}>Numéro</span>
+                  <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between'}}>
+                    <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Numéro Wave</span>
                     <span style={{color:'rgba(255,255,255,0.8)',fontSize:'13px',fontFamily:'Space Mono'}}>+225 {wavePhone}</span>
                   </div>
-                  <div style={{padding:'16px 20px',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'rgba(255,255,255,0.45)',fontSize:'12px'}}>Statut</span>
-                    <span style={{color:'#1FBDB3',fontSize:'13px',fontWeight:700}}>✓ En escrow sécurisé</span>
+                  <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between'}}>
+                    <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Statut</span>
+                    <span style={{color:'#1DC6FF',fontSize:'13px',fontWeight:700}}>✓ Escrow sécurisé</span>
                   </div>
                 </div>
 
@@ -552,16 +551,17 @@ export default function WarRoomPage() {
                   onClick={afterPayment}
                   style={{
                     width:'100%',padding:'18px',
-                    background:'linear-gradient(135deg,#1FBDB3,#0FA89E)',
+                    background:'linear-gradient(135deg,#4144FF,#0D99FF)',
                     color:'white',border:'none',borderRadius:'16px',
                     fontSize:'16px',fontWeight:800,cursor:'pointer',
-                    boxShadow:'0 8px 24px rgba(31,189,179,0.35)',
+                    boxShadow:'0 8px 28px rgba(65,68,255,0.4)',
+                    letterSpacing:'-0.2px',
                   }}
                 >
                   Choisir le moment d'intervention →
                 </button>
-                <div style={{textAlign:'center',marginTop:'12px',fontSize:'11px',color:'rgba(255,255,255,0.25)'}}>
-                  Ref: {missionId.slice(0,8).toUpperCase()}
+                <div style={{textAlign:'center',marginTop:'12px',fontSize:'11px',color:'rgba(255,255,255,0.2)'}}>
+                  Réf · {missionId.slice(0,8).toUpperCase()}
                 </div>
               </div>
             )}
