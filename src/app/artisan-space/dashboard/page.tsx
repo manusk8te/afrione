@@ -93,15 +93,15 @@ export default function ArtisanDashboardPage() {
 
         const { data: allMissions } = await supabase
           .from('missions')
-          .select('*, users!missions_client_id_fkey(name, quartier), proof_of_work(photo_after_urls, artisan_notes), diagnostics(ai_summary, category_detected)')
+          .select('*, scheduled_at, users!missions_client_id_fkey(name, quartier), proof_of_work(photo_after_urls, artisan_notes), diagnostics(ai_summary, category_detected)')
           .eq('artisan_id', artisanData.id)
           .order('created_at', { ascending: false })
         setMissions(allMissions || [])
         setCompletedMissions((allMissions || []).filter((m: any) => m.status === 'completed'))
 
         // Charger conversations avec dernier message
-        const activeMissions = (allMissions || []).filter((m: any) => 
-          ['negotiation','en_cours','payment','matching'].includes(m.status)
+        const activeMissions = (allMissions || []).filter((m: any) =>
+          ['negotiation','en_cours','payment','matching','scheduled','en_route'].includes(m.status)
         )
         const convos = await Promise.all(activeMissions.map(async (m: any) => {
           const { data: lastMsg } = await supabase
@@ -376,6 +376,53 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET MISSIONS ===== */}
         {tab === 'missions' && (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+
+            {/* Agenda — interventions programmées */}
+            {missions.filter(m => m.status === 'scheduled' && m.scheduled_at).length > 0 && (
+              <div>
+                <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}}>
+                  <Calendar size={15} color="#C9A84C" />
+                  <span className="font-display" style={{fontSize:'15px',fontWeight:700,color:'#0F1410'}}>Prochaines interventions</span>
+                </div>
+                {missions.filter(m => m.status === 'scheduled' && m.scheduled_at).map(m => {
+                  const d = new Date(m.scheduled_at)
+                  const now = new Date()
+                  const isToday = d.toDateString() === now.toDateString()
+                  const isTomorrow = new Date(now.getTime() + 86400000).toDateString() === d.toDateString()
+                  const diffDays = Math.ceil((d.getTime() - now.getTime()) / 86400000)
+                  const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                  const dateLabel = isToday ? `Aujourd'hui à ${timeStr}`
+                    : isTomorrow ? `Demain à ${timeStr}`
+                    : `${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${timeStr}`
+                  return (
+                    <div key={m.id} className="card" style={{display:'flex',alignItems:'center',gap:'14px',border:`2px solid ${isToday?'#E85D26':'rgba(201,168,76,0.4)'}`,marginBottom:'8px'}}>
+                      <div style={{
+                        width:'52px',height:'52px',flexShrink:0,borderRadius:'12px',
+                        background: isToday ? 'rgba(232,93,38,0.08)' : 'rgba(201,168,76,0.08)',
+                        display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+                      }}>
+                        <span style={{fontSize:'10px',fontWeight:700,color: isToday?'#E85D26':'#C9A84C',textTransform:'uppercase'}}>
+                          {d.toLocaleDateString('fr-FR',{month:'short'})}
+                        </span>
+                        <span style={{fontSize:'22px',fontWeight:800,color:'#0F1410',lineHeight:1}}>{d.getDate()}</span>
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>{m.users?.name || 'Client'}</div>
+                        <div style={{fontSize:'13px',fontWeight:600,color:isToday?'#E85D26':'#C9A84C',marginTop:'2px'}}>{dateLabel}</div>
+                        {!isToday && diffDays > 0 && <div style={{fontSize:'12px',color:'#7A7A6E'}}>Dans {diffDays} jour{diffDays>1?'s':''}</div>}
+                      </div>
+                      <Link href={`/suivi/${m.id}`} style={{
+                        padding:'8px 14px',background:'#E85D26',color:'white',borderRadius:'10px',
+                        fontSize:'12px',fontWeight:700,textDecoration:'none',flexShrink:0,
+                      }}>
+                        🚗 Démarrer
+                      </Link>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
             {missions.length === 0 ? (
               <div className="card" style={{textAlign:'center',padding:'48px'}}>
                 <p style={{fontSize:'48px',marginBottom:'16px'}}>📋</p>
@@ -405,6 +452,33 @@ export default function ArtisanDashboardPage() {
                 {(m.status === 'negotiation' || m.status === 'matching') && (
                   <Link href={`/warroom/${m.id}`} className="btn-primary" style={{width:'100%',justifyContent:'center',display:'flex',gap:'6px'}}>
                     💬 Ouvrir le chat & proposer un devis →
+                  </Link>
+                )}
+                {m.status === 'scheduled' && (
+                  <div style={{display:'flex',gap:'8px'}}>
+                    <Link href={`/warroom/${m.id}`} style={{
+                      flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
+                      padding:'10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.3)',
+                      borderRadius:'10px',color:'#C9A84C',fontWeight:600,fontSize:'13px',textDecoration:'none',
+                    }}>
+                      💬 Chat
+                    </Link>
+                    <Link href={`/suivi/${m.id}`} style={{
+                      flex:2,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
+                      padding:'10px',background:'#E85D26',borderRadius:'10px',
+                      color:'white',fontWeight:700,fontSize:'13px',textDecoration:'none',
+                    }}>
+                      🚗 Démarrer le suivi →
+                    </Link>
+                  </div>
+                )}
+                {m.status === 'en_route' && (
+                  <Link href={`/suivi/${m.id}`} style={{
+                    display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
+                    width:'100%',padding:'10px',background:'#E85D26',borderRadius:'10px',
+                    color:'white',fontWeight:700,fontSize:'13px',textDecoration:'none',
+                  }}>
+                    🚗 Voir le suivi en direct →
                   </Link>
                 )}
                 {m.status === 'en_cours' && (
