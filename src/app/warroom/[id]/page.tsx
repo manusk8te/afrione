@@ -296,7 +296,12 @@ export default function WarRoomPage() {
       sentiment_score: rating / 5,
       raw_text: reviewText.trim() || null,
     })
-    if (error) { toast.error('Erreur lors de la soumission.'); setSubmittingReview(false); return }
+    if (error) {
+      console.error('[review insert]', error.code, error.message, error.details)
+      toast.error(`Erreur: ${error.message || error.code}`)
+      setSubmittingReview(false)
+      return
+    }
 
     // Recalculer la note moyenne de l'artisan
     const { data: allReviews } = await supabase
