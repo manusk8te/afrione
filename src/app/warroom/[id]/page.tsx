@@ -283,22 +283,40 @@ export default function WarRoomPage() {
                 <button onClick={() => setSchedMode(null)} style={{background:'none',border:'none',color:'#7A7A6E',fontSize:'13px',cursor:'pointer',padding:'0 0 16px',display:'flex',alignItems:'center',gap:'4px'}}>
                   ← Retour
                 </button>
-                <h2 style={{fontWeight:800,fontSize:'21px',color:'#FAFAF5',marginBottom:'20px'}}>Choisir la date</h2>
-                <div style={{display:'flex',flexDirection:'column',gap:'12px',marginBottom:'16px'}}>
-                  <div>
-                    <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'6px',letterSpacing:'0.08em'}}>DATE</label>
-                    <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]} className="input"
-                      style={{width:'100%',background:'rgba(255,255,255,0.07)',color:'#FAFAF5',border:'1px solid rgba(255,255,255,0.12)',colorScheme:'dark'}} />
-                  </div>
-                  <div>
-                    <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'6px',letterSpacing:'0.08em'}}>HEURE</label>
-                    <input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)} className="input"
-                      style={{width:'100%',background:'rgba(255,255,255,0.07)',color:'#FAFAF5',border:'1px solid rgba(255,255,255,0.12)',colorScheme:'dark'}} />
-                  </div>
+                <h2 style={{fontWeight:800,fontSize:'21px',color:'#FAFAF5',marginBottom:'6px'}}>Choisir la date</h2>
+                <p style={{fontSize:'13px',color:'#7A7A6E',marginBottom:'20px'}}>Sélectionnez le jour et l'heure d'intervention.</p>
+                <div style={{marginBottom:'16px'}}>
+                  <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'8px',letterSpacing:'0.08em'}}>DATE ET HEURE</label>
+                  <input
+                    type="datetime-local"
+                    min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
+                    onChange={e => {
+                      const val = e.target.value
+                      if (val) {
+                        const [d, t] = val.split('T')
+                        setSchedDate(d)
+                        setSchedTime(t ? t.slice(0, 5) : '')
+                      }
+                    }}
+                    style={{
+                      width:'100%', padding:'14px', borderRadius:'12px', fontSize:'15px',
+                      background:'rgba(255,255,255,0.09)', color:'#FAFAF5',
+                      border: schedDate && schedTime ? '1px solid #E85D26' : '1px solid rgba(255,255,255,0.15)',
+                      outline:'none', boxSizing:'border-box' as const,
+                    }}
+                  />
+                  {schedDate && schedTime && (
+                    <div style={{marginTop:'10px',padding:'10px 14px',background:'rgba(232,93,38,0.12)',borderRadius:'10px',fontSize:'13px',color:'#E85D26',fontWeight:600}}>
+                      📅 {new Date(`${schedDate}T${schedTime}`).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à {schedTime}
+                    </div>
+                  )}
                 </div>
-                <button onClick={confirmScheduled} disabled={acting || !schedDate || !schedTime} style={{width:'100%',padding:'14px',background: schedDate && schedTime ? '#E85D26' : 'rgba(255,255,255,0.08)',color:'white',border:'none',borderRadius:'14px',fontSize:'15px',fontWeight:700,cursor:'pointer',opacity:acting?0.6:1}}>
-                  {acting ? 'Confirmation…' : 'Confirmer la date →'}
+                <button
+                  onClick={confirmScheduled}
+                  disabled={acting}
+                  style={{width:'100%',padding:'16px',background:'#E85D26',color:'white',border:'none',borderRadius:'14px',fontSize:'15px',fontWeight:700,cursor:'pointer',opacity:acting?0.6:1}}
+                >
+                  {acting ? 'Confirmation…' : 'Confirmer →'}
                 </button>
               </>
             )}
