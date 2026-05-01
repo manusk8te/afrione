@@ -43,6 +43,12 @@ export default function WarRoomPage() {
   const [hasReviewed, setHasReviewed]     = useState(false)
   const [submittingReview, setSubmittingReview] = useState(false)
 
+  // Modal paiement Wave (avant scheduling)
+  const [showPayment, setShowPayment]       = useState(false)
+  const [payStep, setPayStep]               = useState<'form'|'processing'|'success'>('form')
+  const [pendingAmount, setPendingAmount]   = useState(0)
+  const [wavePhone, setWavePhone]           = useState('')
+
   // Modal scheduling (après acceptation devis)
   const [showScheduling, setShowScheduling] = useState(false)
   const [schedMode, setSchedMode]           = useState<'now' | 'later' | null>(null)
@@ -171,8 +177,55 @@ export default function WarRoomPage() {
     setActing(false)
   }
 
-  // Client accepte le devis → ouvre le modal de scheduling
-  const acceptDevis = () => {
+  // Client accepte le devis → paiement Wave d'abord
+  const acceptDevis = (amount: number) => {
+    setPendingAmount(amount)
+    setPayStep('form')
+    setShowPayment(true)
+  }
+
+  // Paiement Wave confirmé → escrow + scheduling
+  const confirmPayment = async () => {
+    if (!wavePhone.trim()) { toast.error('Entrez votre numéro Wave'); return }
+    setPayStep('processing')
+    // Simulation délai traitement Wave (2s)
+    await new Promise(r => setTimeout(r, 2000))
+
+    // Mettre à jour mission (total_price + status payment temporaire)
+    await supabase.from('missions')
+      .update({ total_price: pendingAmount, status: 'payment' })
+      .eq('id', missionId)
+    setMission((prev: any) => ({ ...prev, total_price: pendingAmount, status: 'payment' }))
+
+    // Créditer l'escrow du wallet artisan
+    const artisanId = mission?.artisan_pros?.id
+    if (artisanId) {
+      const { data: wallet } = await supabase.from('wallets').select('*').eq('artisan_id', artisanId).maybeSingle()
+      if (wallet) {
+        await supabase.from('wallets').update({
+          balance_escrow: (wallet.balance_escrow || 0) + pendingAmount,
+        }).eq('artisan_id', artisanId)
+      } else {
+        // Créer le wallet si inexistant
+        await supabase.from('wallets').insert({ artisan_id: artisanId, balance_escrow: pendingAmount, balance_available: 0, total_earned: 0 })
+      }
+    }
+
+    // Message système dans le chat
+    await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      text: `💳 Paiement de ${pendingAmount.toLocaleString()} FCFA sécurisé via Wave. L'argent sera transféré à l'artisan à la fin de la mission.`,
+      type: 'system',
+    })
+    const rid = getRecipientId(mission, user.id)
+    if (rid) notifyOther(`Paiement reçu : ${pendingAmount.toLocaleString()} FCFA en escrow.`, rid)
+
+    setPayStep('success')
+  }
+
+  // Après succès paiement → ouvrir scheduling
+  const afterPayment = () => {
+    setShowPayment(false)
     setShowScheduling(true)
     setSchedMode(null)
   }
@@ -271,7 +324,7 @@ export default function WarRoomPage() {
     setSubmittingReview(false)
   }
 
-  // Artisan marque terminé
+  // Artisan marque terminé → libère escrow vers wallet disponible
   const markDone = async () => {
     setActing(true)
     const { error } = await supabase
@@ -279,11 +332,26 @@ export default function WarRoomPage() {
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('id', missionId)
     if (error) { toast.error('Erreur.'); setActing(false); return }
-    // Mise à jour locale immédiate sans attendre le realtime
     setMission((prev: any) => ({ ...prev, status: 'completed' }))
+
+    // Libérer l'escrow → balance_available
+    const artisanId = mission?.artisan_pros?.id
+    const amount = mission?.total_price || 0
+    if (artisanId && amount > 0) {
+      const { data: wallet } = await supabase.from('wallets').select('*').eq('artisan_id', artisanId).maybeSingle()
+      if (wallet) {
+        await supabase.from('wallets').update({
+          balance_escrow:    Math.max(0, (wallet.balance_escrow || 0) - amount),
+          balance_available: (wallet.balance_available || 0) + amount,
+          total_earned:      (wallet.total_earned || 0) + amount,
+        }).eq('artisan_id', artisanId)
+      }
+    }
+
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: 'Mission marquée comme terminée ✅ Merci pour votre confiance !', type: 'system',
+      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      text: `Mission terminée ✅ — ${amount > 0 ? `${amount.toLocaleString()} FCFA transférés sur votre wallet.` : 'Merci pour votre confiance !'}`,
+      type: 'system',
     })
     const rid = getRecipientId(mission, user.id)
     if (rid) notifyOther('Mission terminée ! Pensez à laisser un avis.', rid)
@@ -299,6 +367,99 @@ export default function WarRoomPage() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'#F5F0E8'}}>
+
+      {/* ─── MODAL WAVE PAIEMENT ──────────────────────────────────── */}
+      {showPayment && (
+        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(10,14,11,0.96)',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+          <div style={{width:'100%',maxWidth:'480px',background:'#FFFFFF',borderRadius:'24px 24px 0 0',padding:'0 0 32px',overflow:'hidden'}}>
+
+            {/* Header Wave */}
+            <div style={{background:'#1ABCAB',padding:'20px 24px 24px',display:'flex',alignItems:'center',gap:'12px'}}>
+              <div style={{width:'40px',height:'40px',background:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:'18px',color:'#1ABCAB',flexShrink:0}}>W</div>
+              <div>
+                <div style={{fontWeight:800,fontSize:'16px',color:'white'}}>Wave</div>
+                <div style={{fontSize:'12px',color:'rgba(255,255,255,0.75)'}}>Paiement sécurisé</div>
+              </div>
+              {payStep === 'form' && (
+                <button onClick={() => setShowPayment(false)} style={{marginLeft:'auto',background:'rgba(255,255,255,0.2)',border:'none',borderRadius:'8px',padding:'6px 10px',color:'white',cursor:'pointer',fontSize:'12px'}}>Annuler</button>
+              )}
+            </div>
+
+            <div style={{padding:'24px 24px 0'}}>
+
+              {payStep === 'form' && (
+                <>
+                  {/* Montant */}
+                  <div style={{textAlign:'center',marginBottom:'24px',padding:'20px',background:'#F5FFF9',borderRadius:'16px',border:'1px solid rgba(26,188,171,0.2)'}}>
+                    <div style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'6px',fontWeight:600,letterSpacing:'0.06em'}}>MONTANT À PAYER</div>
+                    <div style={{fontSize:'36px',fontWeight:800,color:'#0F1410',fontFamily:'Space Mono'}}>{pendingAmount.toLocaleString()}</div>
+                    <div style={{fontSize:'14px',color:'#7A7A6E'}}>FCFA</div>
+                    <div style={{marginTop:'10px',fontSize:'12px',color:'#1ABCAB',fontWeight:600}}>🔒 Sécurisé en escrow jusqu'à la fin de la mission</div>
+                  </div>
+
+                  {/* Numéro Wave */}
+                  <div style={{marginBottom:'16px'}}>
+                    <label style={{fontSize:'12px',fontWeight:700,color:'#0F1410',display:'block',marginBottom:'8px'}}>NUMÉRO WAVE</label>
+                    <div style={{display:'flex',alignItems:'center',border:'2px solid #1ABCAB',borderRadius:'12px',overflow:'hidden'}}>
+                      <div style={{padding:'12px 14px',background:'rgba(26,188,171,0.06)',borderRight:'2px solid #1ABCAB',fontSize:'14px',fontWeight:600,color:'#0F1410',whiteSpace:'nowrap'}}>🇨🇮 +225</div>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="07 00 00 00 00"
+                        value={wavePhone}
+                        onChange={e => setWavePhone(e.target.value)}
+                        style={{flex:1,padding:'12px 14px',border:'none',outline:'none',fontSize:'15px',color:'#0F1410',fontFamily:'Space Mono'}}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{marginBottom:'20px',padding:'12px',background:'rgba(201,168,76,0.08)',borderRadius:'10px',fontSize:'12px',color:'#7A7A6E',lineHeight:'1.5'}}>
+                    ℹ️ En confirmant, vous acceptez que les fonds soient gardés en sécurité par AfriOne et transférés à l'artisan uniquement après validation de la mission.
+                  </div>
+
+                  <button
+                    onClick={confirmPayment}
+                    disabled={!wavePhone.trim()}
+                    style={{width:'100%',padding:'16px',background: wavePhone.trim() ? '#1ABCAB' : '#D8D2C4',color:'white',border:'none',borderRadius:'14px',fontSize:'16px',fontWeight:800,cursor: wavePhone.trim() ? 'pointer' : 'default'}}
+                  >
+                    Confirmer le paiement →
+                  </button>
+                </>
+              )}
+
+              {payStep === 'processing' && (
+                <div style={{textAlign:'center',padding:'32px 0'}}>
+                  <div style={{width:'56px',height:'56px',border:'5px solid rgba(26,188,171,0.2)',borderTop:'5px solid #1ABCAB',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'0 auto 20px'}} />
+                  <div style={{fontWeight:700,fontSize:'16px',color:'#0F1410',marginBottom:'8px'}}>Traitement en cours…</div>
+                  <div style={{fontSize:'13px',color:'#7A7A6E'}}>Vérification du paiement Wave</div>
+                </div>
+              )}
+
+              {payStep === 'success' && (
+                <div style={{textAlign:'center',padding:'24px 0'}}>
+                  <div style={{width:'64px',height:'64px',background:'rgba(26,188,171,0.1)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
+                    <CheckCircle size={32} color="#1ABCAB" fill="rgba(26,188,171,0.2)" />
+                  </div>
+                  <div style={{fontWeight:800,fontSize:'18px',color:'#0F1410',marginBottom:'6px'}}>Paiement confirmé !</div>
+                  <div style={{fontSize:'28px',fontWeight:800,color:'#1ABCAB',fontFamily:'Space Mono',marginBottom:'4px'}}>{pendingAmount.toLocaleString()} FCFA</div>
+                  <div style={{fontSize:'13px',color:'#7A7A6E',marginBottom:'24px',lineHeight:'1.5'}}>
+                    Fonds sécurisés en escrow.<br />
+                    L'artisan recevra l'argent à la fin de la mission.
+                  </div>
+                  <button
+                    onClick={afterPayment}
+                    style={{width:'100%',padding:'16px',background:'#0F1410',color:'white',border:'none',borderRadius:'14px',fontSize:'15px',fontWeight:700,cursor:'pointer'}}
+                  >
+                    Choisir le moment d'intervention →
+                  </button>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ──────────────────────────────────────────────────────────── */}
 
       {/* ─── MODAL SCHEDULING ─────────────────────────────────────── */}
       {showScheduling && (
@@ -489,8 +650,8 @@ export default function WarRoomPage() {
                       </div>
                       {canAct && !acting && (
                         <div style={{display:'flex',gap:'8px'}}>
-                          <button onClick={acceptDevis} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
-                            <CheckCircle size={14}/> Accepter
+                          <button onClick={() => acceptDevis(devisData.amount)} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                            <CheckCircle size={14}/> Accepter & Payer
                           </button>
                           <button onClick={refuseDevis} style={{flex:1,padding:'10px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
                             <X size={14}/> Refuser
