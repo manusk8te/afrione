@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -10,6 +11,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const TABS = [
   { id: 'missions', label: 'Missions', icon: Clock },
@@ -26,6 +28,7 @@ const QUARTIERS_ABJ = [
 
 export default function ArtisanDashboardPage() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [tab, setTab] = useState('missions')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   usePushNotifications(currentUserId)
@@ -280,7 +283,7 @@ export default function ArtisanDashboardPage() {
     <div className="min-h-screen bg-bg">
       {/* Navbar */}
       <div style={{background:'#0F1410',color:'#FAFAF5',position:'sticky',top:0,zIndex:50}}>
-        <div className="page-container" style={{padding:'16px 32px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div className="page-container" style={{padding:isMobile?'12px 16px':'16px 32px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <Link href="/" style={{display:'flex',alignItems:'center',gap:'8px',textDecoration:'none'}}>
             <div style={{width:'28px',height:'28px',background:'#E85D26',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Zap size={14} color="white" />
@@ -310,9 +313,9 @@ export default function ArtisanDashboardPage() {
         </div>
       </div>
 
-      <div className="page-container" style={{padding:'32px',maxWidth:'896px'}}>
+      <div className="page-container" style={{padding:isMobile?'16px':'32px',maxWidth:'896px'}}>
         {/* Header card */}
-        <div className="card" style={{marginBottom:'24px',display:'flex',alignItems:'center',gap:'16px'}}>
+        <div className="card" style={{marginBottom:'20px',display:'flex',alignItems:'center',gap:'14px',flexWrap:isMobile?'wrap':'nowrap'}}>
           <div
             onClick={() => fileInputRef.current?.click()}
             style={{width:'72px',height:'72px',borderRadius:'16px',overflow:'hidden',cursor:'pointer',border:'2px dashed #D8D2C4',flexShrink:0,background:'#F5F3EE',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
@@ -345,7 +348,7 @@ export default function ArtisanDashboardPage() {
               </div>
             )}
           </div>
-          <div style={{textAlign:'right'}}>
+          <div style={{textAlign:isMobile?'left':'right',borderTop:isMobile?'1px solid #EDE8DE':'none',paddingTop:isMobile?'12px':'0',width:isMobile?'100%':'auto'}}>
             <div className="font-display" style={{fontSize:'28px',fontWeight:700,color:'#E85D26'}}>
               {(wallet?.balance_available || 0).toLocaleString()}
             </div>
@@ -354,16 +357,16 @@ export default function ArtisanDashboardPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{display:'flex',background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'4px',marginBottom:'24px',gap:'4px'}}>
+        <div style={{display:'flex',background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'4px',marginBottom:'20px',gap:'4px',overflowX:'auto'}}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
-              flex:1,padding:'10px',borderRadius:'8px',border:'none',cursor:'pointer',
-              display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
-              fontSize:'13px',fontWeight:500,transition:'all 0.2s',position:'relative',
+              flexShrink:0,padding:isMobile?'10px 12px':'10px',borderRadius:'8px',border:'none',cursor:'pointer',
+              display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
+              fontSize:isMobile?'12px':'13px',fontWeight:500,transition:'all 0.2s',position:'relative',
               background: tab === t.id ? '#0F1410' : 'transparent',
               color: tab === t.id ? '#FAFAF5' : '#7A7A6E',
             }}>
-              <t.icon size={14} /> {t.label}
+              <t.icon size={13} /> {isMobile ? t.label.split(' ')[0] : t.label}
               {t.id === 'messages' && unreadCount > 0 && (
                 <span style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',background:'#E85D26',borderRadius:'50%',fontSize:'10px',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
                   {unreadCount > 9 ? '9+' : unreadCount}

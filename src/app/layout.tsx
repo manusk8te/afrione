@@ -1,10 +1,16 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
   title: 'AfriOne — Trouver le bon artisan, au bon prix',
   description: 'Plateforme de mise en relation entre artisans qualifiés et clients à Abidjan.',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

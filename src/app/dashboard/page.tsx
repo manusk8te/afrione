@@ -1,18 +1,22 @@
 'use client'
+export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Clock, CheckCircle, AlertCircle, Star, ArrowRight, Zap, LogOut, Calendar } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [user, setUser] = useState<any>(null)
   const [missions, setMissions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let channel: any = null
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth'); return }
@@ -26,8 +30,24 @@ export default function DashboardPage() {
 
       setMissions(data || [])
       setLoading(false)
+
+      // Realtime — mise à jour statut missions
+      channel = supabase
+        .channel(`dashboard-client-${session.user.id}`)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'missions',
+          filter: `client_id=eq.${session.user.id}`,
+        }, payload => {
+          if (payload.eventType === 'INSERT') {
+            setMissions(prev => [payload.new as any, ...prev])
+          } else if (payload.eventType === 'UPDATE') {
+            setMissions(prev => prev.map(m => m.id === (payload.new as any).id ? { ...m, ...payload.new } : m))
+          }
+        })
+        .subscribe()
     }
     init()
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Utilisateur'
@@ -60,10 +80,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
-      <div style={{paddingTop:'96px',paddingBottom:'64px',padding:'96px 16px 64px'}}>
+      <div style={{padding:isMobile?'80px 12px 48px':'96px 16px 64px'}}>
         <div className="page-container" style={{maxWidth:'896px'}}>
 
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'32px',flexWrap:'wrap',gap:'16px'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'24px',flexWrap:'wrap',gap:'12px'}}>
             <div>
               <span className="section-label">MON ESPACE CLIENT</span>
               <h1 className="font-display" style={{fontSize:'28px',fontWeight:700,color:'#0F1410',marginTop:'4px'}}>
@@ -76,7 +96,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'16px',marginBottom:'32px'}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:'12px',marginBottom:'24px'}}>
             {[
               { label: 'Missions totales', value: missions.length, icon: '📋' },
               { label: 'Missions terminées', value: completed.length, icon: '✅' },
@@ -167,7 +187,7 @@ export default function DashboardPage() {
                 {missions.map((m: any) => {
                   const isActive = ['negotiation','en_cours','payment','matching','en_route','scheduled'].includes(m.status)
                   return (
-                    <div key={m.id} style={{display:'flex',alignItems:'center',gap:'16px',padding:'16px',background:'#F5F0E8',borderRadius:'12px',border: isActive ? '2px solid rgba(232,93,38,0.3)' : '2px solid transparent'}}>
+                    <div key={m.id} style={{display:'flex',alignItems:isMobile?'flex-start':'center',gap:'12px',padding:'12px 14px',background:'#F5F0E8',borderRadius:'12px',border: isActive ? '2px solid rgba(232,93,38,0.3)' : '2px solid transparent',flexWrap:isMobile?'wrap':'nowrap'}}>
                       <div style={{width:'48px',height:'48px',background:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
                         🔧
                       </div>

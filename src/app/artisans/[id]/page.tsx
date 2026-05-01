@@ -6,11 +6,13 @@ import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, CheckCircle, MapPin, Clock, Shield, Phone, MessageCircle, Zap, ThumbsUp, ChevronRight, Camera, Briefcase, X, ChevronLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 type Photo = { url: string; category: string; date: string | null; notes?: string }
 
 export default function ArtisanProfilePage() {
   const params = useParams()
+  const isMobile = useIsMobile()
   const id = params.id as string
   const [artisan, setArtisan] = useState<any>(null)
   const [user, setUser] = useState<any>(null)
@@ -236,11 +238,11 @@ export default function ArtisanProfilePage() {
 
         {/* Hero sombre */}
         <div style={{background:'#0F1410',color:'#FAFAF5'}}>
-          <div className="page-container" style={{padding:'32px',maxWidth:'896px'}}>
+          <div className="page-container" style={{padding:isMobile?'16px':'32px',maxWidth:'896px'}}>
             <Link href="/artisans" style={{display:'inline-flex',alignItems:'center',gap:'8px',fontSize:'14px',color:'#7A7A6E',textDecoration:'none',marginBottom:'24px'}}>
               <ArrowLeft size={16} /> Retour aux artisans
             </Link>
-            <div style={{display:'flex',alignItems:'flex-start',gap:'24px'}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:isMobile?'14px':'24px'}}>
               <div style={{width:'96px',height:'96px',borderRadius:'20px',flexShrink:0,border:'2px solid rgba(232,93,38,0.4)',overflow:'hidden',background:'#1A1F1B',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 {avatarUrl ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : <span style={{fontSize:'40px'}}>👷</span>}
               </div>
@@ -271,7 +273,7 @@ export default function ArtisanProfilePage() {
                 </div>
               </div>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'16px',borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:'24px',marginTop:'24px'}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:'12px',borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:'20px',marginTop:'20px'}}>
               {[
                 {value: artisan.mission_count || missions.length, label:'Missions'},
                 {value: `${artisan.years_experience||0}ans`, label:'Expérience'},
@@ -287,8 +289,8 @@ export default function ArtisanProfilePage() {
           </div>
         </div>
 
-        <div className="page-container" style={{padding:'32px',maxWidth:'896px'}}>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 320px',gap:'24px',alignItems:'start'}}>
+        <div className="page-container" style={{padding:isMobile?'16px':'32px',maxWidth:'896px'}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 320px',gap:'20px',alignItems:'start'}}>
             <div style={{display:'flex',flexDirection:'column',gap:'24px'}}>
 
               {/* RÉALISATIONS — section mise en avant */}
@@ -480,7 +482,7 @@ export default function ArtisanProfilePage() {
 
             {/* Sidebar CTA */}
             <div>
-              <div className="card" style={{position:'sticky',top:'96px'}}>
+              <div className="card" style={isMobile?{}:{position:'sticky',top:'96px'}}>
                 <div style={{textAlign:'center',marginBottom:'20px'}}>
                   <div style={{width:'64px',height:'64px',borderRadius:'16px',overflow:'hidden',background:'#EDE8DE',margin:'0 auto 12px',display:'flex',alignItems:'center',justifyContent:'center'}}>
                     {avatarUrl

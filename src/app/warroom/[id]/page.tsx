@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -654,21 +655,21 @@ export default function WarRoomPage() {
 
       {/* Header */}
       <div style={{background:'#0F1410',color:'#FAFAF5',flexShrink:0}}>
-        <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',maxWidth:'672px',margin:'0 auto'}}>
-          <Link href={isArtisan ? '/artisan-space/dashboard' : '/dashboard'} style={{color:'#FAFAF5',display:'flex',alignItems:'center'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',maxWidth:'672px',margin:'0 auto'}}>
+          <Link href={isArtisan ? '/artisan-space/dashboard' : '/dashboard'} style={{color:'#FAFAF5',display:'flex',alignItems:'center',flexShrink:0}}>
             <ArrowLeft size={18} />
           </Link>
-          <div style={{width:'40px',height:'40px',background:'#1A2018',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',border:'1px solid rgba(255,255,255,0.1)',overflow:'hidden',flexShrink:0}}>
+          <div style={{width:'36px',height:'36px',background:'#1A2018',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',border:'1px solid rgba(255,255,255,0.1)',overflow:'hidden',flexShrink:0}}>
             {mission?.artisan_pros?.users?.avatar_url
               ? <img src={mission.artisan_pros.users.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
               : '🔧'}
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,fontSize:'15px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{artisanName}</div>
-            <div style={{fontSize:'12px',color:'#7A7A6E'}}>{artisanMetier}</div>
+            <div style={{fontWeight:700,fontSize:'14px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{artisanName}</div>
+            <div style={{fontSize:'11px',color:'#7A7A6E'}}>{artisanMetier}</div>
           </div>
           {/* Badge statut */}
-          <span style={{fontSize:'11px',fontWeight:600,color:statusInfo.color,background:statusInfo.bg,padding:'4px 10px',borderRadius:'20px',flexShrink:0,border:`1px solid ${statusInfo.color}33`}}>
+          <span style={{fontSize:'10px',fontWeight:600,color:statusInfo.color,background:statusInfo.bg,padding:'3px 8px',borderRadius:'20px',flexShrink:0,border:`1px solid ${statusInfo.color}33`,whiteSpace:'nowrap',maxWidth:'130px',overflow:'hidden',textOverflow:'ellipsis'}}>
             {statusInfo.label}
           </span>
         </div>

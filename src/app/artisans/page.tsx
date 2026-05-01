@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import { Search, Star, MapPin, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const METIERS = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Serrurerie', 'Carrelage']
 const METIER_ICONS: Record<string, string> = {
@@ -18,6 +19,7 @@ const METIER_COLORS: Record<string, string> = {
 }
 
 export default function ArtisansPage() {
+  const isMobile = useIsMobile()
   const [artisans, setArtisans] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -47,11 +49,11 @@ export default function ArtisansPage() {
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
-      <div style={{paddingTop:'96px',paddingBottom:'64px',padding:'96px 16px 64px'}}>
+      <div style={{padding:isMobile?'80px 12px 48px':'96px 16px 64px'}}>
         <div className="page-container">
-          <div style={{marginBottom:'32px'}}>
+          <div style={{marginBottom:'24px'}}>
             <span className="section-label">ANNUAIRE</span>
-            <h1 className="font-display" style={{fontSize:'36px',fontWeight:700,color:'#0F1410',marginTop:'8px'}}>
+            <h1 className="font-display" style={{fontSize:isMobile?'26px':'36px',fontWeight:700,color:'#0F1410',marginTop:'8px'}}>
               Trouver un artisan
             </h1>
             <p style={{color:'#7A7A6E',marginTop:'8px'}}>
@@ -94,7 +96,7 @@ export default function ArtisansPage() {
               <p style={{color:'#7A7A6E',marginTop:'8px'}}>Essayez avec d'autres critères</p>
             </div>
           ) : (
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:'20px'}}>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill,minmax(300px,1fr))',gap:'16px'}}>
               {filtered.map(a => {
                 const coverPhoto = a.portfolio?.[0] || null
                 const avatarUrl = a.users?.avatar_url || null

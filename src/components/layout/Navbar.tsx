@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X, Zap, LogOut, LayoutDashboard, Wrench, ShieldCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 export default function Navbar() {
+  const isMobile = useIsMobile()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
@@ -100,22 +102,24 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Liens centre */}
-          <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
-            {links.map(l => (
-              <Link key={l.href} href={l.href} style={{
-                fontSize:'14px',fontWeight:500,padding:'8px 16px',borderRadius:'8px',
-                textDecoration:'none',transition:'all 0.2s',
-                color: pathname === l.href ? '#E85D26' : '#7A7A6E',
-              }}>{l.label}</Link>
-            ))}
-          </div>
+          {/* Liens centre — masqués sur mobile */}
+          {!isMobile && (
+            <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
+              {links.map(l => (
+                <Link key={l.href} href={l.href} style={{
+                  fontSize:'14px',fontWeight:500,padding:'8px 16px',borderRadius:'8px',
+                  textDecoration:'none',transition:'all 0.2s',
+                  color: pathname === l.href ? '#E85D26' : '#7A7A6E',
+                }}>{l.label}</Link>
+              ))}
+            </div>
+          )}
 
           {/* Droite */}
-          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-            {!mounted ? (
+          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            {!isMobile && !mounted ? (
               <div style={{width:'80px',height:'36px',background:'#EDE8DE',borderRadius:'10px'}} />
-            ) : user ? (
+            ) : !isMobile && user ? (
               <>
                 {/* Bouton Espace Artisan — visible si artisan (par rôle ou profil) */}
                 {isArtisan && (
@@ -155,7 +159,6 @@ export default function Navbar() {
 
                   {dropdownOpen && (
                     <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'8px',minWidth:'220px',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',zIndex:1000}}>
-                      {/* En-tête profil avec badge rôle */}
                       <div style={{padding:'10px 12px',borderBottom:'1px solid #D8D2C4',marginBottom:'8px'}}>
                         <div style={{fontSize:'13px',fontWeight:700,color:'#0F1410'}}>{userName}</div>
                         <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'1px'}}>{user.email}</div>
@@ -163,16 +166,12 @@ export default function Navbar() {
                           {roleBadge.label}
                         </span>
                       </div>
-
-                      {/* Espace Client — accessible à tous */}
                       <Link href="/dashboard" onClick={() => setDropdownOpen(false)}
                         style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
                         onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
                         onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
                         <LayoutDashboard size={14} /> Espace Client
                       </Link>
-
-                      {/* Se déconnecter */}
                       <button onClick={handleLogout}
                         style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',color:'#E85D26',fontSize:'14px',background:'none',border:'none',cursor:'pointer',width:'100%',textAlign:'left',marginTop:'4px',borderTop:'1px solid #EDE8DE',paddingTop:'12px'}}
                         onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
@@ -183,7 +182,7 @@ export default function Navbar() {
                   )}
                 </div>
               </>
-            ) : (
+            ) : !isMobile && (
               <>
                 <Link href="/auth" style={{border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'8px 16px',borderRadius:'10px',textDecoration:'none',fontSize:'14px'}}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='#0F1410'; (e.currentTarget as HTMLElement).style.color='white' }}
