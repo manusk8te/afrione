@@ -191,25 +191,19 @@ export default function WarRoomPage() {
     // Simulation délai traitement Wave (2s)
     await new Promise(r => setTimeout(r, 2000))
 
-    // Mettre à jour mission (total_price + status payment temporaire)
-    await supabase.from('missions')
-      .update({ total_price: pendingAmount, status: 'payment' })
-      .eq('id', missionId)
-    setMission((prev: any) => ({ ...prev, total_price: pendingAmount, status: 'payment' }))
-
-    // Créditer l'escrow du wallet artisan
-    const artisanId = mission?.artisan_pros?.id
-    if (artisanId) {
-      const { data: wallet } = await supabase.from('wallets').select('*').eq('artisan_id', artisanId).maybeSingle()
-      if (wallet) {
-        await supabase.from('wallets').update({
-          balance_escrow: (wallet.balance_escrow || 0) + pendingAmount,
-        }).eq('artisan_id', artisanId)
-      } else {
-        // Créer le wallet si inexistant
-        await supabase.from('wallets').insert({ artisan_id: artisanId, balance_escrow: pendingAmount, balance_available: 0, total_earned: 0 })
-      }
+    // RPC SECURITY DEFINER — vérifie que l'appelant est bien le client de la mission
+    // Met à jour mission.total_price, mission.status et wallets.balance_escrow atomiquement
+    const { error: rpcError } = await supabase.rpc('credit_escrow', {
+      p_mission_id: missionId,
+      p_amount: pendingAmount,
+    })
+    if (rpcError) {
+      console.error('[credit_escrow]', rpcError)
+      toast.error('Erreur de paiement.')
+      setPayStep('form')
+      return
     }
+    setMission((prev: any) => ({ ...prev, total_price: pendingAmount, status: 'payment' }))
 
     // Message système dans le chat
     await supabase.from('chat_history').insert({
@@ -334,18 +328,12 @@ export default function WarRoomPage() {
     if (error) { toast.error('Erreur.'); setActing(false); return }
     setMission((prev: any) => ({ ...prev, status: 'completed' }))
 
-    // Libérer l'escrow → balance_available
-    const artisanId = mission?.artisan_pros?.id
+    // RPC SECURITY DEFINER — vérifie que l'appelant est bien l'artisan de la mission
+    // Transfère escrow → balance_available + total_earned atomiquement
     const amount = mission?.total_price || 0
-    if (artisanId && amount > 0) {
-      const { data: wallet } = await supabase.from('wallets').select('*').eq('artisan_id', artisanId).maybeSingle()
-      if (wallet) {
-        await supabase.from('wallets').update({
-          balance_escrow:    Math.max(0, (wallet.balance_escrow || 0) - amount),
-          balance_available: (wallet.balance_available || 0) + amount,
-          total_earned:      (wallet.total_earned || 0) + amount,
-        }).eq('artisan_id', artisanId)
-      }
+    if (amount > 0) {
+      const { error: rpcError } = await supabase.rpc('release_escrow', { p_mission_id: missionId })
+      if (rpcError) console.error('[release_escrow]', rpcError)
     }
 
     await supabase.from('chat_history').insert({
