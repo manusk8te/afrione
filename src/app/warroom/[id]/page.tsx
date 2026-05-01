@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, AlertCircle, Star } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, AlertCircle, Star, Camera, Upload } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -16,6 +16,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   en_cours:    { label: '⚡ Mission en cours',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
   payment:     { label: '💳 Paiement',               color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
   completed:   { label: '✅ Mission terminée',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)'  },
+  disputed:    { label: '⚠️ Litige en cours',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)'  },
   cancelled:   { label: '✗ Annulée',                 color: '#7A7A6E', bg: 'rgba(122,122,110,0.1)' },
 }
 
@@ -49,6 +50,18 @@ export default function WarRoomPage() {
   const [payStep, setPayStep]               = useState<'form'|'processing'|'success'>('form')
   const [pendingAmount, setPendingAmount]   = useState(0)
   const [wavePhone, setWavePhone]           = useState('')
+
+  // Photos de chantier (proof of work)
+  const [showProof, setShowProof]           = useState(false)
+  const [proofAfterUrls, setProofAfterUrls] = useState<string[]>([])
+  const [proofNotes, setProofNotes]         = useState('')
+  const [uploadingProof, setUploadingProof] = useState(false)
+  const proofInputRef = useRef<HTMLInputElement>(null)
+
+  // Litige
+  const [showLitige, setShowLitige]   = useState(false)
+  const [litigeText, setLitigeText]   = useState('')
+  const [submittingLitige, setSubmittingLitige] = useState(false)
 
   // Modal scheduling (après acceptation devis)
   const [showScheduling, setShowScheduling] = useState(false)
@@ -283,6 +296,65 @@ export default function WarRoomPage() {
     })
     toast('Devis refusé.')
     setActing(false)
+  }
+
+  // Upload une photo de chantier
+  const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    setUploadingProof(true)
+    const urls: string[] = []
+    for (const file of files) {
+      const ext = file.name.split('.').pop()
+      const path = `proof/${missionId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage.from('portfolio').upload(path, file, { upsert: false })
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
+        urls.push(publicUrl)
+      }
+    }
+    setProofAfterUrls(prev => [...prev, ...urls])
+    setUploadingProof(false)
+  }
+
+  // Sauvegarder les photos de chantier
+  const saveProof = async () => {
+    if (!proofAfterUrls.length) { toast.error('Ajoutez au moins une photo'); return }
+    const { data: existing } = await supabase.from('proof_of_work').select('id').eq('mission_id', missionId).maybeSingle()
+    const payload = { mission_id: missionId, photo_after_urls: proofAfterUrls, artisan_notes: proofNotes.trim() || null }
+    if (existing) {
+      await supabase.from('proof_of_work').update(payload).eq('mission_id', missionId)
+    } else {
+      await supabase.from('proof_of_work').insert(payload)
+    }
+    await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      text: JSON.stringify({ urls: proofAfterUrls, notes: proofNotes.trim() }),
+      type: 'proof',
+    })
+    const rid = getRecipientId(mission, user.id)
+    if (rid) notifyOther(`📸 L'artisan a ajouté ${proofAfterUrls.length} photo(s) de chantier.`, rid)
+    setShowProof(false)
+    toast.success('Photos de chantier enregistrées !')
+  }
+
+  // Client ouvre un litige
+  const submitLitige = async () => {
+    if (!litigeText.trim()) { toast.error('Décrivez le problème'); return }
+    setSubmittingLitige(true)
+    await supabase.from('missions').update({ status: 'disputed' }).eq('id', missionId)
+    setMission((prev: any) => ({ ...prev, status: 'disputed' }))
+    await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      text: `⚠️ Litige signalé : ${litigeText.trim()}`,
+      type: 'system',
+    })
+    const rid = getRecipientId(mission, user.id)
+    if (rid) notifyOther('Un litige a été ouvert sur cette mission.', rid)
+    setShowLitige(false)
+    setLitigeText('')
+    setSubmittingLitige(false)
+    toast('Litige signalé. Notre équipe va examiner le cas.', { icon: '⚠️', duration: 5000 })
   }
 
   // Client soumet un avis
@@ -653,6 +725,38 @@ export default function WarRoomPage() {
       )}
       {/* ──────────────────────────────────────────────────────────── */}
 
+      {/* ─── MODAL LITIGE ──────────────────────────────────────── */}
+      {showLitige && (
+        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(10,14,11,0.92)',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
+          <div style={{width:'100%',maxWidth:'420px',background:'white',borderRadius:'20px',padding:'24px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
+              <div style={{width:'36px',height:'36px',background:'rgba(239,68,68,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <AlertCircle size={18} color="#ef4444" />
+              </div>
+              <div>
+                <div style={{fontWeight:700,fontSize:'16px',color:'#0F1410'}}>Signaler un problème</div>
+                <div style={{fontSize:'12px',color:'#7A7A6E'}}>Notre équipe examinera la situation</div>
+              </div>
+            </div>
+            <textarea
+              value={litigeText}
+              onChange={e => setLitigeText(e.target.value)}
+              placeholder="Décrivez le problème en détail : ce qui ne va pas, ce qui était attendu..."
+              rows={4}
+              style={{width:'100%',padding:'12px',border:'1.5px solid #D8D2C4',borderRadius:'12px',fontSize:'14px',resize:'none',fontFamily:'inherit',outline:'none',boxSizing:'border-box',marginBottom:'16px',color:'#0F1410'}}
+            />
+            <div style={{display:'flex',gap:'10px'}}>
+              <button onClick={() => setShowLitige(false)} style={{flex:1,padding:'12px',background:'none',border:'1.5px solid #D8D2C4',borderRadius:'12px',fontWeight:600,fontSize:'14px',cursor:'pointer',color:'#7A7A6E'}}>
+                Annuler
+              </button>
+              <button onClick={submitLitige} disabled={submittingLitige || !litigeText.trim()} style={{flex:2,padding:'12px',background:'#ef4444',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',opacity:submittingLitige?0.6:1}}>
+                {submittingLitige ? 'Envoi…' : '⚠️ Ouvrir le litige →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{background:'#0F1410',color:'#FAFAF5',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',maxWidth:'672px',margin:'0 auto'}}>
@@ -738,6 +842,30 @@ export default function WarRoomPage() {
                   <span style={{fontSize:'12px',color:'#7A7A6E',background:'rgba(122,122,110,0.1)',padding:'6px 14px',borderRadius:'20px',display:'inline-block'}}>
                     {msg.text}
                   </span>
+                </div>
+              )
+            }
+
+            // Photos de chantier
+            if (msg.type === 'proof') {
+              let proofData: any = {}
+              try { proofData = JSON.parse(msg.text) } catch {}
+              return (
+                <div key={msg.id} style={{textAlign:'center',padding:'8px 0'}}>
+                  <div style={{display:'inline-block',background:'white',border:'1px solid #D8D2C4',borderRadius:'16px',padding:'14px',maxWidth:'85%',textAlign:'left'}}>
+                    <div style={{fontSize:'11px',fontWeight:700,color:'#2B6B3E',marginBottom:'10px',display:'flex',alignItems:'center',gap:'5px'}}>
+                      <Camera size={12}/> PHOTOS DE CHANTIER
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'6px',marginBottom: proofData.notes ? '10px' : '0'}}>
+                      {(proofData.urls || []).map((url: string, i: number) => (
+                        <a key={i} href={url} target="_blank" rel="noreferrer" style={{display:'block',aspectRatio:'1',borderRadius:'8px',overflow:'hidden',background:'#EDE8DE'}}>
+                          <img src={url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                        </a>
+                      ))}
+                    </div>
+                    {proofData.notes && <div style={{fontSize:'12px',color:'#7A7A6E',fontStyle:'italic'}}>{proofData.notes}</div>}
+                    <div style={{fontSize:'10px',color:'#7A7A6E',marginTop:'6px'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                  </div>
                 </div>
               )
             }
@@ -886,6 +1014,50 @@ export default function WarRoomPage() {
               </div>
             )}
 
+            {/* Artisan en_cours : photos de chantier */}
+            {isArtisan && status === 'en_cours' && (
+              <div style={{marginBottom:'8px'}}>
+                <button onClick={() => setShowProof(p => !p)} style={{
+                  width:'100%',padding:'10px',background: showProof ? '#0F1410' : 'rgba(43,107,62,0.08)',
+                  border:'1px dashed rgba(43,107,62,0.4)',borderRadius:'10px',
+                  color: showProof ? 'white' : '#2B6B3E',
+                  fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
+                }}>
+                  <Camera size={14}/> {showProof ? 'Fermer' : `📸 Photos de chantier${proofAfterUrls.length > 0 ? ` (${proofAfterUrls.length})` : ''}`}
+                </button>
+              </div>
+            )}
+
+            {/* Drawer upload photos */}
+            {isArtisan && status === 'en_cours' && showProof && (
+              <div style={{background:'#F5F0E8',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'14px',marginBottom:'8px'}}>
+                <input ref={proofInputRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={handleProofUpload} />
+                {proofAfterUrls.length > 0 && (
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'6px',marginBottom:'10px'}}>
+                    {proofAfterUrls.map((url, i) => (
+                      <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'8px',overflow:'hidden',background:'#EDE8DE'}}>
+                        <img src={url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                        <button onClick={() => setProofAfterUrls(prev => prev.filter((_,j) => j !== i))} style={{position:'absolute',top:'4px',right:'4px',width:'20px',height:'20px',background:'rgba(0,0,0,0.6)',border:'none',borderRadius:'50%',cursor:'pointer',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'10px'}}>✕</button>
+                      </div>
+                    ))}
+                    <button onClick={() => proofInputRef.current?.click()} disabled={uploadingProof} style={{aspectRatio:'1',borderRadius:'8px',border:'2px dashed #D8D2C4',background:'white',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'4px',fontSize:'11px',color:'#7A7A6E'}}>
+                      {uploadingProof ? <div style={{width:'16px',height:'16px',border:'2px solid rgba(232,93,38,0.3)',borderTop:'2px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> : <><Upload size={16}/><span>Ajouter</span></>}
+                    </button>
+                  </div>
+                )}
+                {proofAfterUrls.length === 0 && (
+                  <button onClick={() => proofInputRef.current?.click()} disabled={uploadingProof} style={{width:'100%',padding:'20px',border:'2px dashed #D8D2C4',borderRadius:'10px',background:'white',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:'6px',marginBottom:'10px'}}>
+                    {uploadingProof ? <div style={{width:'20px',height:'20px',border:'2px solid rgba(232,93,38,0.3)',borderTop:'2px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> : <Camera size={24} color="#D8D2C4" />}
+                    <span style={{fontSize:'13px',color:'#7A7A6E'}}>Appuyer pour ajouter des photos</span>
+                  </button>
+                )}
+                <input type="text" value={proofNotes} onChange={e => setProofNotes(e.target.value)} placeholder="Notes sur le chantier (optionnel)…" className="input" style={{marginBottom:'8px',fontSize:'13px'}} />
+                <button onClick={saveProof} disabled={!proofAfterUrls.length || uploadingProof} style={{width:'100%',padding:'11px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',opacity:proofAfterUrls.length?1:0.4}}>
+                  Enregistrer les photos →
+                </button>
+              </div>
+            )}
+
             {/* Bouton artisan : Marquer terminé (en_cours) */}
             {isArtisan && status === 'en_cours' && (
               <div style={{marginBottom:'8px'}}>
@@ -896,6 +1068,19 @@ export default function WarRoomPage() {
                   opacity: acting ? 0.6 : 1,
                 }}>
                   <CheckCircle size={15}/> {acting ? 'En cours…' : 'Marquer la mission comme terminée'}
+                </button>
+              </div>
+            )}
+
+            {/* Client : signaler un problème (en_cours ou payment) */}
+            {!isArtisan && (status === 'en_cours' || status === 'payment') && (
+              <div style={{marginBottom:'8px'}}>
+                <button onClick={() => setShowLitige(true)} style={{
+                  width:'100%',padding:'9px',background:'none',
+                  border:'1px solid rgba(239,68,68,0.35)',borderRadius:'10px',color:'#ef4444',
+                  fontWeight:600,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
+                }}>
+                  <AlertCircle size={13}/> Signaler un problème
                 </button>
               </div>
             )}
