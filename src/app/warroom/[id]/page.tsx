@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, AlertCircle, Star } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -35,6 +35,13 @@ export default function WarRoomPage() {
   const [showDevis, setShowDevis]     = useState(false)
   const [devisAmount, setDevisAmount] = useState('')
   const [devisDesc, setDevisDesc]     = useState('')
+
+  // Avis post-mission
+  const [rating, setRating]               = useState(0)
+  const [hoverRating, setHoverRating]     = useState(0)
+  const [reviewText, setReviewText]       = useState('')
+  const [hasReviewed, setHasReviewed]     = useState(false)
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   // Modal scheduling (après acceptation devis)
   const [showScheduling, setShowScheduling] = useState(false)
@@ -95,6 +102,17 @@ export default function WarRoomPage() {
         .eq('mission_id', missionId)
         .neq('sender_id', session.user.id)
         .is('read_at', null)
+
+      // Vérifier si le client a déjà laissé un avis pour cette mission
+      if ((userData?.role ?? 'client') !== 'artisan') {
+        const { data: existingReview } = await supabase
+          .from('sentiment_logs')
+          .select('id')
+          .eq('mission_id', missionId)
+          .eq('source', 'review')
+          .maybeSingle()
+        if (existingReview) setHasReviewed(true)
+      }
 
       setLoading(false)
     }
@@ -218,6 +236,39 @@ export default function WarRoomPage() {
     })
     toast('Devis refusé.')
     setActing(false)
+  }
+
+  // Client soumet un avis
+  const submitReview = async () => {
+    if (rating === 0) { toast.error('Choisissez une note'); return }
+    setSubmittingReview(true)
+    const artisanId = mission?.artisan_pros?.id
+    const { error } = await supabase.from('sentiment_logs').insert({
+      mission_id: missionId,
+      artisan_id: artisanId,
+      source: 'review',
+      sentiment_score: rating / 5,
+      raw_text: reviewText.trim() || null,
+    })
+    if (error) { toast.error('Erreur lors de la soumission.'); setSubmittingReview(false); return }
+
+    // Recalculer la note moyenne de l'artisan
+    const { data: allReviews } = await supabase
+      .from('sentiment_logs')
+      .select('sentiment_score')
+      .eq('artisan_id', artisanId)
+      .eq('source', 'review')
+    if (allReviews && allReviews.length > 0) {
+      const avg5 = allReviews.reduce((s: number, r: any) => s + r.sentiment_score * 5, 0) / allReviews.length
+      await supabase.from('artisan_pros').update({
+        rating_avg: Math.round(avg5 * 10) / 10,
+        rating_count: allReviews.length,
+      }).eq('id', artisanId)
+    }
+
+    setHasReviewed(true)
+    toast.success('Merci pour votre avis !')
+    setSubmittingReview(false)
   }
 
   // Artisan marque terminé
@@ -585,15 +636,75 @@ export default function WarRoomPage() {
           </div>
         </div>
       ) : (
-        /* Mission terminée — écran de clôture */
-        <div style={{background:'rgba(43,107,62,0.08)',borderTop:'1px solid rgba(43,107,62,0.2)',padding:'16px',flexShrink:0,textAlign:'center'}}>
+        /* Mission terminée — avis client */
+        <div style={{background:'#F5F0E8',borderTop:'1px solid #D8D2C4',padding:'16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginBottom:'8px'}}>
-              <CheckCircle size={18} color="#2B6B3E" />
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginBottom:'16px'}}>
+              <CheckCircle size={16} color="#2B6B3E" />
               <span style={{fontWeight:700,color:'#2B6B3E',fontSize:'14px'}}>Mission terminée</span>
             </div>
-            {!isArtisan && (
-              <p style={{fontSize:'13px',color:'#7A7A6E'}}>Vous pouvez laisser un avis sur le profil de l'artisan.</p>
+
+            {isArtisan ? (
+              <p style={{textAlign:'center',fontSize:'13px',color:'#7A7A6E'}}>Bravo ! La mission est bouclée.</p>
+            ) : hasReviewed ? (
+              <div style={{textAlign:'center',padding:'16px',background:'white',borderRadius:'14px',border:'1px solid #D8D2C4'}}>
+                <div style={{display:'flex',justifyContent:'center',gap:'4px',marginBottom:'8px'}}>
+                  {[1,2,3,4,5].map(s => (
+                    <Star key={s} size={18} fill={s <= rating ? '#C9A84C' : 'none'} color={s <= rating ? '#C9A84C' : '#D8D2C4'} />
+                  ))}
+                </div>
+                <p style={{fontSize:'14px',fontWeight:600,color:'#0F1410',marginBottom:'4px'}}>Merci pour votre avis !</p>
+                <p style={{fontSize:'12px',color:'#7A7A6E'}}>Votre retour est visible sur le profil de l'artisan.</p>
+              </div>
+            ) : (
+              <div style={{background:'white',borderRadius:'16px',padding:'16px',border:'1px solid #D8D2C4'}}>
+                <div style={{fontWeight:700,fontSize:'15px',color:'#0F1410',marginBottom:'4px'}}>Comment s'est passée la mission ?</div>
+                <p style={{fontSize:'13px',color:'#7A7A6E',marginBottom:'16px'}}>Votre avis aide l'artisan et les futurs clients.</p>
+
+                {/* Étoiles */}
+                <div style={{display:'flex',gap:'6px',justifyContent:'center',marginBottom:'8px'}}>
+                  {[1,2,3,4,5].map(s => (
+                    <button key={s}
+                      onClick={() => setRating(s)}
+                      onMouseEnter={() => setHoverRating(s)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      style={{background:'none',border:'none',cursor:'pointer',padding:'4px',lineHeight:0}}
+                    >
+                      <Star size={36}
+                        fill={(hoverRating || rating) >= s ? '#C9A84C' : 'none'}
+                        color={(hoverRating || rating) >= s ? '#C9A84C' : '#D8D2C4'}
+                      />
+                    </button>
+                  ))}
+                </div>
+                {rating > 0 && (
+                  <div style={{textAlign:'center',fontSize:'13px',fontWeight:600,color:'#C9A84C',marginBottom:'14px'}}>
+                    {['','😞 Décevant','😐 Peut mieux faire','🙂 Correct','😊 Très bien','🤩 Excellent !'][rating]}
+                  </div>
+                )}
+
+                <textarea
+                  value={reviewText}
+                  onChange={e => setReviewText(e.target.value)}
+                  placeholder="Décrivez votre expérience (optionnel)…"
+                  rows={3}
+                  style={{width:'100%',padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',
+                    fontSize:'14px',resize:'none',fontFamily:'inherit',outline:'none',
+                    boxSizing:'border-box',marginBottom:'12px',color:'#0F1410'}}
+                />
+                <button
+                  onClick={submitReview}
+                  disabled={submittingReview || rating === 0}
+                  style={{width:'100%',padding:'13px',
+                    background: rating > 0 ? '#E85D26' : '#D8D2C4',
+                    color:'white',border:'none',borderRadius:'12px',
+                    fontWeight:700,fontSize:'14px',
+                    cursor: rating > 0 ? 'pointer' : 'default',
+                    opacity: submittingReview ? 0.6 : 1}}
+                >
+                  {submittingReview ? 'Envoi…' : 'Publier mon avis →'}
+                </button>
+              </div>
             )}
           </div>
         </div>
