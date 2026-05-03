@@ -101,7 +101,65 @@ export default function WarRoomPage() {
         .select('*, users(name, avatar_url)')
         .eq('mission_id', missionId)
         .order('created_at', { ascending: true })
-      setMessages(msgs || [])
+
+      // Auto-brief : envoie la fiche technique au 1er chargement si diagnostic existe
+      const hasBrief = (msgs || []).some((m: any) => m.type === 'brief')
+      if (!hasBrief) {
+        const { data: diag } = await supabase
+          .from('diagnostics')
+          .select('*')
+          .eq('mission_id', missionId)
+          .maybeSingle()
+
+        if (diag && missionData) {
+          const artisanPrenom = (missionData.artisan_pros?.users?.name || 'Artisan').split(' ')[0]
+          let rawCtx: any = {}
+          try { rawCtx = JSON.parse(diag.raw_text || '{}') } catch {}
+          const photos: string[] = rawCtx.photos || []
+          const techNotes: string = rawCtx.technical_notes || ''
+
+          // Message d'accueil
+          await supabase.from('chat_history').insert({
+            mission_id: missionId,
+            sender_id: session.user.id,
+            sender_role: 'client',
+            text: `Bonjour ${artisanPrenom} 👋\n\n${diag.ai_summary}`,
+            type: 'text',
+          })
+
+          // Fiche technique
+          const briefPayload = JSON.stringify({
+            summary: diag.ai_summary,
+            technical_notes: techNotes,
+            category: diag.category_detected,
+            urgency: diag.urgency_level,
+            price_min: diag.estimated_price_min,
+            price_max: diag.estimated_price_max,
+            items_needed: diag.items_needed || [],
+            duration_estimate: '',
+            photos,
+          })
+          await supabase.from('chat_history').insert({
+            mission_id: missionId,
+            sender_id: session.user.id,
+            sender_role: 'client',
+            text: briefPayload,
+            type: 'brief',
+          })
+
+          // Recharger les messages avec le brief
+          const { data: freshMsgs } = await supabase
+            .from('chat_history')
+            .select('*, users(name, avatar_url)')
+            .eq('mission_id', missionId)
+            .order('created_at', { ascending: true })
+          setMessages(freshMsgs || [])
+        } else {
+          setMessages(msgs || [])
+        }
+      } else {
+        setMessages(msgs || [])
+      }
 
       // Marquer lus
       await supabase
@@ -794,6 +852,95 @@ export default function WarRoomPage() {
                     </div>
                     <div style={{padding:'4px 16px 10px',fontSize:'11px',color:'#7A7A6E'}}>
                       {new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            // Fiche technique (brief de diagnostic)
+            if (msg.type === 'brief') {
+              let brief: any = {}
+              try { brief = JSON.parse(msg.text) } catch {}
+              const urgencyColor: Record<string, string> = { low:'#2B6B3E', medium:'#C9A84C', high:'#E85D26', emergency:'#ef4444' }
+              const urgencyIcon: Record<string, string> = { low:'🟢', medium:'🟡', high:'🟠', emergency:'🔴' }
+              const urg = brief.urgency || 'medium'
+              return (
+                <div key={msg.id} style={{padding:'4px 0'}}>
+                  <div style={{
+                    background:'white',border:'1.5px solid #D8D2C4',borderRadius:'20px',
+                    overflow:'hidden',boxShadow:'0 2px 12px rgba(0,0,0,0.06)',
+                    maxWidth:'92%',
+                  }}>
+                    {/* En-tête fiche */}
+                    <div style={{background:'#0F1410',padding:'14px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
+                      <div style={{width:'32px',height:'32px',background:'rgba(232,93,38,0.2)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        <span style={{fontSize:'16px'}}>📋</span>
+                      </div>
+                      <div>
+                        <div style={{fontSize:'11px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily:'Space Mono'}}>FICHE TECHNIQUE</div>
+                        <div style={{fontSize:'12px',color:'rgba(255,255,255,0.5)',marginTop:'1px'}}>Diagnostic IA · Transmis automatiquement</div>
+                      </div>
+                    </div>
+
+                    <div style={{padding:'16px 18px',display:'flex',flexDirection:'column',gap:'12px'}}>
+                      {/* Infos clés */}
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
+                        <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
+                          <div style={{fontSize:'11px',fontWeight:700,color:'#0F1410',marginBottom:'2px'}}>{brief.category || '—'}</div>
+                          <div style={{fontSize:'9px',color:'#7A7A6E',fontFamily:'Space Mono'}}>CATÉGORIE</div>
+                        </div>
+                        <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
+                          <div style={{fontSize:'11px',fontWeight:700,color:urgencyColor[urg],marginBottom:'2px'}}>{urgencyIcon[urg]} {urg === 'low' ? 'Normal' : urg === 'medium' ? 'Modéré' : urg === 'high' ? 'Urgent' : 'URGENCE'}</div>
+                          <div style={{fontSize:'9px',color:'#7A7A6E',fontFamily:'Space Mono'}}>URGENCE</div>
+                        </div>
+                        {(brief.price_min || brief.price_max) ? (
+                          <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
+                            <div style={{fontSize:'10px',fontWeight:700,color:'#0F1410',marginBottom:'2px',fontFamily:'Space Mono'}}>
+                              {(brief.price_min||0).toLocaleString()}–{(brief.price_max||0).toLocaleString()}
+                            </div>
+                            <div style={{fontSize:'9px',color:'#7A7A6E',fontFamily:'Space Mono'}}>FCFA EST.</div>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Notes techniques */}
+                      {brief.technical_notes && (
+                        <div style={{background:'rgba(232,93,38,0.04)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',padding:'12px 14px'}}>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>NOTES POUR L'ARTISAN</div>
+                          <p style={{fontSize:'13px',color:'#0F1410',lineHeight:'1.5',margin:0}}>{brief.technical_notes}</p>
+                        </div>
+                      )}
+
+                      {/* Matériel */}
+                      {(brief.items_needed||[]).length > 0 && (
+                        <div>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>MATÉRIEL PROBABLE</div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
+                            {brief.items_needed.map((item: string) => (
+                              <span key={item} style={{fontSize:'11px',background:'rgba(232,93,38,0.07)',border:'1px solid rgba(232,93,38,0.2)',padding:'3px 10px',borderRadius:'20px',color:'#E85D26',fontWeight:500}}>{item}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Photos client */}
+                      {(brief.photos||[]).length > 0 && (
+                        <div>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>📸 PHOTOS DU CLIENT</div>
+                          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'5px'}}>
+                            {brief.photos.map((url: string, i: number) => (
+                              <a key={i} href={url} target="_blank" rel="noreferrer" style={{display:'block',aspectRatio:'1',borderRadius:'8px',overflow:'hidden',background:'#EDE8DE'}}>
+                                <img src={url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{fontSize:'10px',color:'#7A7A6E',textAlign:'right'}}>
+                        {new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+                      </div>
                     </div>
                   </div>
                 </div>
