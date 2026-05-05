@@ -33,6 +33,9 @@ interface PricingData {
     premium:   { median: number; std: number; pct: number }
   }
   artisan_share: number
+  savings_vs_market?: number
+  below_market?: boolean
+  market_reference_fcfa?: number
 }
 
 function parseDuration(str: string): number {
@@ -70,6 +73,9 @@ export default function DiagnosticPage() {
   const [loading, setLoading]         = useState(false)
   const [pricing, setPricing]         = useState<PricingData | null>(null)
   const [pricingLoading, setPricingLoading] = useState(false)
+  const [materialTiers, setMaterialTiers]   = useState<any[]>([])
+  const [selectedTiers, setSelectedTiers]   = useState<Record<string, 'economique'|'standard'|'premium'>>({})
+  const [marketRef, setMarketRef]           = useState<number | null>(null)
   const [refineText, setRefineText]   = useState('')
   const [refining, setRefining]       = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -174,6 +180,44 @@ export default function DiagnosticPage() {
     setPricing(null)
     setPricingLoading(true)
     try {
+      // Pricing MC + tiers en parallèle
+      const [pricingRes, tiersRes] = await Promise.all([
+        fetch('/api/pricing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            metier:         CATEGORY_TO_METIER[diagResult.category] || 'Maçon',
+            category:       diagResult.category,
+            urgency:        diagResult.urgency,
+            duration_hours: parseDuration(diagResult.duration_estimate),
+            quartier:       quartier || 'Cocody',
+            items_needed:   diagResult.items_needed,
+          }),
+        }),
+        diagResult.items_needed.length > 0
+          ? fetch(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(diagResult.items_needed.join(','))}`)
+          : Promise.resolve(null),
+      ])
+      if (pricingRes.ok) {
+        const pd = await pricingRes.json()
+        setPricing(pd)
+        if (pd.market_reference_fcfa) setMarketRef(pd.market_reference_fcfa)
+      }
+      if (tiersRes?.ok) {
+        const td = await tiersRes.json()
+        setMaterialTiers(td.materials || [])
+        if (td.market_reference_fcfa) setMarketRef(td.market_reference_fcfa)
+        const defaults: Record<string, 'economique'|'standard'|'premium'> = {}
+        for (const m of td.materials || []) defaults[m.name] = 'standard'
+        setSelectedTiers(defaults)
+      }
+    } catch {}
+    setPricingLoading(false)
+  }
+
+  // Recalcule le prix quand le client change un tier
+  const updatePricingForTier = async (diagResult: DiagResult, tiers: Record<string, 'economique'|'standard'|'premium'>) => {
+    try {
       const res = await fetch('/api/pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,11 +228,11 @@ export default function DiagnosticPage() {
           duration_hours: parseDuration(diagResult.duration_estimate),
           quartier:       quartier || 'Cocody',
           items_needed:   diagResult.items_needed,
+          selected_tiers: tiers,
         }),
       })
       if (res.ok) setPricing(await res.json())
     } catch {}
-    setPricingLoading(false)
   }
 
   // ── Génère le résumé final ──
@@ -576,6 +620,65 @@ export default function DiagnosticPage() {
                   : "Indicatif · Prix exact confirmé par l'artisan"}
               </p>
             </div>
+
+            {/* Sélecteur qualité matériaux — client choisit son tier */}
+            {materialTiers.length > 0 && (
+              <div style={{ background: 'white', borderRadius: '20px', border: '1px solid #D8D2C4', padding: '20px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#7A7A6E', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'Space Mono' }}>
+                  QUALITÉ DES MATÉRIAUX
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {materialTiers.slice(0, 4).map((mat: any) => {
+                    const TIER_COLORS = { economique: '#2B6B3E', standard: '#C9A84C', premium: '#E85D26' } as const
+                    const TIER_LABELS = { economique: 'Éco', standard: 'Standard', premium: 'Premium' } as const
+                    return (
+                      <div key={mat.name}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#0F1410', marginBottom: '7px' }}>{mat.name}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                          {(['economique', 'standard', 'premium'] as const).map(tier => {
+                            const t = mat.tiers[tier]
+                            const active = selectedTiers[mat.name] === tier
+                            const color = TIER_COLORS[tier]
+                            return (
+                              <button key={tier} onClick={() => {
+                                const next = { ...selectedTiers, [mat.name]: tier }
+                                setSelectedTiers(next)
+                                updatePricingForTier(result!, next)
+                              }} style={{
+                                padding: '9px 4px', borderRadius: '12px', cursor: 'pointer', textAlign: 'center',
+                                border: `1.5px solid ${active ? color : '#D8D2C4'}`,
+                                background: active ? `${color}12` : '#FAFAF8',
+                                transition: 'all 0.14s',
+                              }}>
+                                <div style={{ fontSize: '9px', fontWeight: 700, color: active ? color : '#7A7A6E', letterSpacing: '0.06em' }}>{TIER_LABELS[tier]}</div>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: active ? color : '#0F1410', marginTop: '3px', fontFamily: 'Space Mono' }}>
+                                  {t?.price_market?.toLocaleString('fr') ?? '—'}
+                                </div>
+                                {t?.brand && (
+                                  <div style={{ fontSize: '8px', color: '#A09A8E', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.brand}</div>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Badge économies vs marché traditionnel */}
+                {pricing?.below_market && pricing.savings_vs_market != null && pricing.savings_vs_market > 0 && (
+                  <div style={{ marginTop: '14px', background: 'rgba(43,107,62,0.07)', border: '1px solid rgba(43,107,62,0.2)', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>💰</span>
+                    <div style={{ fontSize: '12px', color: '#2B6B3E', fontWeight: 600 }}>
+                      Vous économisez{' '}
+                      <span style={{ fontFamily: 'Space Mono' }}>{pricing.savings_vs_market.toLocaleString('fr')} FCFA</span>
+                      {' '}vs le marché traditionnel
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Matériel probable */}
             {result.items_needed.length > 0 && (
