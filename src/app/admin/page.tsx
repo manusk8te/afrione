@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { id: 'missions',      label: 'Missions',         icon: '📋' },
   { id: 'artisans',      label: 'Artisans',         icon: '🔧' },
   { id: 'transactions',  label: 'Transactions',     icon: '💳' },
+  { id: 'prix',          label: 'Prix matériaux',   icon: '💰', href: '/admin/prix' },
 ]
 
 export default function AdminDashboard() {
@@ -235,7 +236,19 @@ export default function AdminDashboard() {
         </Link>
 
         <nav style={{display:'flex',flexDirection:'column',gap:'4px',flex:1}}>
-          {NAV_ITEMS.map(item => (
+          {NAV_ITEMS.map(item => item.href ? (
+            <Link key={item.id} href={item.href} style={{
+              display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',borderRadius:'12px',
+              textDecoration:'none',fontSize:'14px',fontWeight:500,transition:'all 0.15s',
+              color:'#7A7A6E',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <span>{item.icon}</span>
+              {item.label}
+            </Link>
+          ) : (
             <button key={item.id} onClick={() => {
               setTab(item.id)
               if (item.id === 'litiges') setLitigeNotif(false)
@@ -262,25 +275,6 @@ export default function AdminDashboard() {
             </button>
           ))}
         </nav>
-
-        {/* Liens pages séparées */}
-        <div style={{display:'flex',flexDirection:'column',gap:'4px',marginTop:'8px',paddingTop:'16px',borderTop:'1px solid rgba(255,255,255,0.07)'}}>
-          {[
-            { href: '/admin/prix',    icon: '💰', label: 'Gestionnaire de prix' },
-            { href: '/admin/kyc',     icon: '🪪', label: 'KYC détaillé' },
-            { href: '/admin/litiges', icon: '⚖️', label: 'Litiges détaillés' },
-          ].map(item => (
-            <Link key={item.href} href={item.href} style={{
-              display:'flex',alignItems:'center',gap:'12px',padding:'10px 16px',borderRadius:'12px',
-              textDecoration:'none',fontSize:'13px',fontWeight:500,color:'#7A7A6E',transition:'all 0.15s',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            >
-              <span>{item.icon}</span>{item.label}
-            </Link>
-          ))}
-        </div>
 
         <div style={{paddingTop:'24px',borderTop:'1px solid rgba(255,255,255,0.1)',display:'flex',alignItems:'center',gap:'12px'}}>
           <div style={{width:'32px',height:'32px',background:'#E85D26',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:'13px',color:'white'}}>
