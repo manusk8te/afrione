@@ -1,6 +1,8 @@
 'use client'
+import { CATEGORY_TO_METIER } from '@/lib/pricing'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Send, RotateCcw, CheckCircle, Zap, AlertCircle, Clock, Wrench, X, ChevronRight } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
@@ -21,6 +23,23 @@ interface DiagResult {
   mission_id?: string
 }
 
+interface PricingData {
+  estimate: number
+  interval: { low: number; high: number; coverage: number }
+  decomposition: {
+    labor:     { median: number; std: number; pct: number }
+    materials: { median: number; std: number; pct: number }
+    transport: { median: number; std: number; pct: number }
+    premium:   { median: number; std: number; pct: number }
+  }
+  artisan_share: number
+}
+
+function parseDuration(str: string): number {
+  const nums = str.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
+  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 2
+}
+
 const URGENCY = {
   low:       { label: 'Pas urgent', color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)',  icon: '🟢' },
   medium:    { label: 'Normal',     color: '#C9A84C', bg: 'rgba(201,168,76,0.1)', icon: '🟡' },
@@ -35,6 +54,7 @@ const EXAMPLES = [
 ]
 
 export default function DiagnosticPage() {
+  const router = useRouter()
   const [step, setStep]               = useState<Step>('input')
   const [text, setText]               = useState('')
   const [photos, setPhotos]           = useState<string[]>([])
@@ -48,6 +68,8 @@ export default function DiagnosticPage() {
   const [userId, setUserId]           = useState<string | null>(null)
   const [quartier, setQuartier]       = useState('')
   const [loading, setLoading]         = useState(false)
+  const [pricing, setPricing]         = useState<PricingData | null>(null)
+  const [pricingLoading, setPricingLoading] = useState(false)
   const [refineText, setRefineText]   = useState('')
   const [refining, setRefining]       = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -55,7 +77,10 @@ export default function DiagnosticPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) return
+      if (!session) {
+        router.push('/auth?redirect=/diagnostic')
+        return
+      }
       setUserId(session.user.id)
       supabase.from('users').select('quartier').eq('id', session.user.id).single()
         .then(({ data }) => { if (data?.quartier) setQuartier(data.quartier) })
@@ -144,6 +169,28 @@ export default function DiagnosticPage() {
     }
   }
 
+  // ── Appel moteur de pricing ──
+  const fetchPricing = async (diagResult: DiagResult) => {
+    setPricing(null)
+    setPricingLoading(true)
+    try {
+      const res = await fetch('/api/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metier:         CATEGORY_TO_METIER[diagResult.category] || 'Maçon',
+          category:       diagResult.category,
+          urgency:        diagResult.urgency,
+          duration_hours: parseDuration(diagResult.duration_estimate),
+          quartier:       quartier || 'Cocody',
+          items_needed:   diagResult.items_needed,
+        }),
+      })
+      if (res.ok) setPricing(await res.json())
+    } catch {}
+    setPricingLoading(false)
+  }
+
   // ── Génère le résumé final ──
   const finalizeWithQA = async (finalQA: QA[]) => {
     setStep('summarizing')
@@ -155,11 +202,15 @@ export default function DiagnosticPage() {
         body: JSON.stringify({ mode: 'finalize', text, photos, qa: finalQA, user_id: userId, quartier }),
       })
       const data = await res.json()
-      setResult({ ...data, urgency: safeUrgency(data.urgency) })
+      const safeResult = { ...data, urgency: safeUrgency(data.urgency) }
+      setResult(safeResult)
       setStep('confirming')
+      fetchPricing(safeResult)
     } catch {
-      setResult({ summary: 'Problème artisanal détecté, intervention professionnelle recommandée.', technical_notes: 'Diagnostic à affiner sur place.', category: 'Plomberie', urgency: 'medium', price_min: 8000, price_max: 35000, items_needed: ['Matériaux selon diagnostic'], duration_estimate: '1 à 3 heures' })
+      const fallback: DiagResult = { summary: 'Problème artisanal détecté, intervention professionnelle recommandée.', technical_notes: 'Diagnostic à affiner sur place.', category: 'Plomberie', urgency: 'medium', price_min: 8000, price_max: 35000, items_needed: ['Matériaux selon diagnostic'], duration_estimate: '1 à 3 heures' }
+      setResult(fallback)
       setStep('confirming')
+      fetchPricing(fallback)
     }
     setLoading(false)
   }
@@ -462,16 +513,68 @@ export default function DiagnosticPage() {
               ))}
             </div>
 
-            {/* Prix */}
+            {/* Prix — Moteur Monte Carlo */}
             <div style={{ background: '#0F1410', borderRadius: '20px', padding: '22px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>ESTIMATION DE PRIX</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <span style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, color: '#E85D26', lineHeight: 1 }}>{result.price_min.toLocaleString()}</span>
-                <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '20px' }}>—</span>
-                <span style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, color: '#FAFAF5', lineHeight: 1 }}>{result.price_max.toLocaleString()}</span>
-                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontFamily: 'Space Mono' }}>FCFA</span>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Space Mono', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>ESTIMATION AFRIONE</span>
+                {!pricingLoading && pricing && (
+                  <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.18)', fontFamily: 'Space Mono' }}>10 000 SIMULATIONS MC</span>
+                )}
               </div>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '8px', margin: '8px 0 0' }}>Indicatif · Prix exact confirmé par l'artisan</p>
+
+              {pricingLoading ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Calcul stochastique…</span>
+                  <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.2)', fontSize: '11px', fontFamily: 'Space Mono' }}>
+                    {result.price_min.toLocaleString()} – {result.price_max.toLocaleString()} FCFA
+                  </span>
+                </div>
+              ) : pricing ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontFamily: 'Space Mono', fontSize: '36px', fontWeight: 700, color: '#E85D26', lineHeight: 1 }}>{pricing.estimate.toLocaleString()}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', fontFamily: 'Space Mono' }}>FCFA</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', fontFamily: 'Space Mono', marginBottom: '16px' }}>
+                    [{pricing.interval.low.toLocaleString()} – {pricing.interval.high.toLocaleString()}] IC 95%
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                    {([
+                      { key: 'labor',     label: "Main-d'œuvre", color: '#E85D26' },
+                      { key: 'materials', label: 'Matériaux',    color: '#C9A84C' },
+                      { key: 'transport', label: 'Transport',    color: '#2B6B3E' },
+                      { key: 'premium',   label: 'Commission',   color: 'rgba(255,255,255,0.22)' },
+                    ] as const).map(({ key, label, color }) => {
+                      const item = pricing.decomposition[key]
+                      return (
+                        <div key={key}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.38)' }}>{label}</span>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.55)', fontFamily: 'Space Mono' }}>{item.pct}% · {item.median.toLocaleString()} FCFA</span>
+                          </div>
+                          <div style={{ height: '3px', background: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${item.pct}%`, background: color, borderRadius: '2px' }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                  <span style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, color: '#E85D26', lineHeight: 1 }}>{result.price_min.toLocaleString()}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '20px' }}>—</span>
+                  <span style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, color: '#FAFAF5', lineHeight: 1 }}>{result.price_max.toLocaleString()}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontFamily: 'Space Mono' }}>FCFA</span>
+                </div>
+              )}
+
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '12px', margin: '12px 0 0' }}>
+                {pricing
+                  ? `Artisan perçoit ~${pricing.artisan_share.toLocaleString()} FCFA · Prix exact confirmé par l'artisan`
+                  : "Indicatif · Prix exact confirmé par l'artisan"}
+              </p>
             </div>
 
             {/* Matériel probable */}

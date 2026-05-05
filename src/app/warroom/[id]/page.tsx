@@ -37,6 +37,12 @@ export default function WarRoomPage() {
   const [showDevis, setShowDevis]     = useState(false)
   const [devisAmount, setDevisAmount] = useState('')
   const [devisDesc, setDevisDesc]     = useState('')
+  const [pricingSuggestion, setPricingSuggestion] = useState<{
+    estimate: number
+    interval: { low: number; high: number }
+    decomp: { labor: number; materials: number; transport: number; premium: number }
+  } | null>(null)
+  const [pricingSugLoading, setPricingSugLoading] = useState(false)
 
   // Avis post-mission
   const [rating, setRating]               = useState(0)
@@ -44,6 +50,10 @@ export default function WarRoomPage() {
   const [reviewText, setReviewText]       = useState('')
   const [hasReviewed, setHasReviewed]     = useState(false)
   const [submittingReview, setSubmittingReview] = useState(false)
+
+  // Fiche technique diagnostic
+  const [diagData, setDiagData]           = useState<any>(null)
+  const [showDiagPanel, setShowDiagPanel] = useState(true)
 
   // Modal paiement Wave (avant scheduling)
   const [showPayment, setShowPayment]       = useState(false)
@@ -102,64 +112,21 @@ export default function WarRoomPage() {
         .eq('mission_id', missionId)
         .order('created_at', { ascending: true })
 
-      // Auto-brief : envoie la fiche technique au 1er chargement si diagnostic existe
-      const hasBrief = (msgs || []).some((m: any) => m.type === 'brief')
-      if (!hasBrief) {
-        const { data: diag } = await supabase
-          .from('diagnostics')
-          .select('*')
-          .eq('mission_id', missionId)
-          .maybeSingle()
+      setMessages(msgs || [])
 
-        if (diag && missionData) {
-          const artisanPrenom = (missionData.artisan_pros?.users?.name || 'Artisan').split(' ')[0]
-          let rawCtx: any = {}
-          try { rawCtx = JSON.parse(diag.raw_text || '{}') } catch {}
-          const photos: string[] = rawCtx.photos || []
-          const techNotes: string = rawCtx.technical_notes || ''
-
-          // Message d'accueil
-          await supabase.from('chat_history').insert({
-            mission_id: missionId,
-            sender_id: session.user.id,
-            sender_role: 'client',
-            text: `Bonjour ${artisanPrenom} 👋\n\n${diag.ai_summary}`,
-            type: 'text',
-          })
-
-          // Fiche technique
-          const briefPayload = JSON.stringify({
-            summary: diag.ai_summary,
-            technical_notes: techNotes,
-            category: diag.category_detected,
-            urgency: diag.urgency_level,
-            price_min: diag.estimated_price_min,
-            price_max: diag.estimated_price_max,
-            items_needed: diag.items_needed || [],
-            duration_estimate: '',
-            photos,
-          })
-          await supabase.from('chat_history').insert({
-            mission_id: missionId,
-            sender_id: session.user.id,
-            sender_role: 'client',
-            text: briefPayload,
-            type: 'brief',
-          })
-
-          // Recharger les messages avec le brief
-          const { data: freshMsgs } = await supabase
-            .from('chat_history')
-            .select('*, users(name, avatar_url)')
-            .eq('mission_id', missionId)
-            .order('created_at', { ascending: true })
-          setMessages(freshMsgs || [])
-        } else {
-          setMessages(msgs || [])
+      // Charger le diagnostic : fiche pour l'artisan + résumé pré-rempli pour le client
+      try {
+        const diagRes = await fetch(`/api/mission-brief?mission_id=${missionId}`)
+        if (diagRes.ok) {
+          const diagJson = await diagRes.json()
+          if (diagJson.diag) {
+            setDiagData(diagJson.diag)
+            if ((userData?.role ?? 'client') === 'client') {
+              setInput(diagJson.diag.ai_summary || '')
+            }
+          }
         }
-      } else {
-        setMessages(msgs || [])
-      }
+      } catch {}
 
       // Marquer lus
       await supabase
@@ -215,6 +182,50 @@ export default function WarRoomPage() {
     if (error) { toast.error('Message non envoyé.'); setInput(text); return }
     const rid = getRecipientId(mission, user.id)
     if (rid) notifyOther(text, rid)
+  }
+
+  // Ouvrir le formulaire devis + charger la suggestion moteur
+  const openDevis = async () => {
+    setShowDevis(true)
+    if (pricingSuggestion || pricingSugLoading || !diagData) return
+    setPricingSugLoading(true)
+    const metierMap: Record<string, string> = {
+      'Plomberie':'Plombier','Électricité':'Électricien','Peinture':'Peintre',
+      'Maçonnerie':'Maçon','Menuiserie':'Menuisier','Climatisation':'Climaticien',
+      'Serrurerie':'Serrurier','Carrelage':'Carreleur',
+    }
+    const parseDur = (s: string) => {
+      const n = s.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
+      return n.length ? n.reduce((a, b) => a + b, 0) / n.length : 2
+    }
+    try {
+      const res = await fetch('/api/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metier:         metierMap[diagData.category] || 'Maçon',
+          category:       diagData.category || 'Maçonnerie',
+          urgency:        diagData.urgency  || 'medium',
+          duration_hours: parseDur(diagData.duration_estimate || '2h'),
+          quartier:       mission?.quartier || 'Cocody',
+          items_needed:   diagData.items_needed || [],
+        }),
+      })
+      if (res.ok) {
+        const d = await res.json()
+        setPricingSuggestion({
+          estimate: d.estimate,
+          interval: d.interval,
+          decomp: {
+            labor:     d.decomposition.labor.median,
+            materials: d.decomposition.materials.median,
+            transport: d.decomposition.transport.median,
+            premium:   d.decomposition.premium.median,
+          },
+        })
+      }
+    } catch {}
+    setPricingSugLoading(false)
   }
 
   // Envoyer un devis
@@ -698,6 +709,12 @@ export default function WarRoomPage() {
             <div style={{fontWeight:700,fontSize:'14px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{artisanName}</div>
             <div style={{fontSize:'11px',color:'#7A7A6E'}}>{artisanMetier}</div>
           </div>
+          {/* Bouton rouvrir fiche technique (artisan seulement) */}
+          {isArtisan && diagData && !showDiagPanel && (
+            <button onClick={() => setShowDiagPanel(true)} style={{background:'rgba(232,93,38,0.15)',border:'1px solid rgba(232,93,38,0.4)',borderRadius:'8px',padding:'4px 8px',cursor:'pointer',color:'#E85D26',fontSize:'10px',fontWeight:700,flexShrink:0,display:'flex',alignItems:'center',gap:'4px'}}>
+              📋 Fiche
+            </button>
+          )}
           {/* Badge statut */}
           <span style={{fontSize:'10px',fontWeight:600,color:statusInfo.color,background:statusInfo.bg,padding:'3px 8px',borderRadius:'20px',flexShrink:0,border:`1px solid ${statusInfo.color}33`,whiteSpace:'nowrap',maxWidth:'130px',overflow:'hidden',textOverflow:'ellipsis'}}>
             {statusInfo.label}
@@ -730,6 +747,46 @@ export default function WarRoomPage() {
                 <X size={18} />
               </button>
             </div>
+            {/* Suggestion moteur de pricing */}
+            {pricingSugLoading && (
+              <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 14px',background:'rgba(232,93,38,0.04)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'10px',marginBottom:'10px'}}>
+                <div style={{width:'12px',height:'12px',border:'2px solid rgba(232,93,38,0.3)',borderTop:'2px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite',flexShrink:0}} />
+                <span style={{fontSize:'11px',color:'#7A7A6E'}}>Calcul du moteur AfriOne…</span>
+              </div>
+            )}
+            {!pricingSugLoading && pricingSuggestion && (
+              <div style={{background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'12px',padding:'12px 14px',marginBottom:'10px'}}>
+                <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.12em',fontFamily:'Space Mono',marginBottom:'8px'}}>SUGGESTION MOTEUR AFRIONE · MC 10K</div>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
+                  <div>
+                    <span style={{fontFamily:'Space Mono',fontSize:'22px',fontWeight:700,color:'#0F1410'}}>{pricingSuggestion.estimate.toLocaleString()}</span>
+                    <span style={{fontSize:'11px',color:'#7A7A6E',marginLeft:'4px'}}>FCFA</span>
+                    <div style={{fontSize:'10px',color:'#A09A8E',fontFamily:'Space Mono',marginTop:'1px'}}>
+                      [{pricingSuggestion.interval.low.toLocaleString()} – {pricingSuggestion.interval.high.toLocaleString()}] IC 95%
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDevisAmount(pricingSuggestion.estimate.toString())}
+                    style={{padding:'7px 14px',background:'#E85D26',color:'white',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:700,cursor:'pointer',flexShrink:0}}
+                  >
+                    Utiliser
+                  </button>
+                </div>
+                <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                  {[
+                    {label:"MO",    val: pricingSuggestion.decomp.labor},
+                    {label:"Mat.",  val: pricingSuggestion.decomp.materials},
+                    {label:"Tsp.",  val: pricingSuggestion.decomp.transport},
+                    {label:"Com.",  val: pricingSuggestion.decomp.premium},
+                  ].map(({label, val}) => (
+                    <div key={label} style={{fontSize:'10px',color:'#7A7A6E',background:'rgba(0,0,0,0.04)',padding:'3px 8px',borderRadius:'6px'}}>
+                      <span style={{color:'#0F1410',fontWeight:600}}>{label}</span> {val.toLocaleString()}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{display:'flex',gap:'10px',marginBottom:'10px'}}>
               <div style={{flex:1}}>
                 <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'4px'}}>MONTANT (FCFA)</label>
@@ -756,6 +813,76 @@ export default function WarRoomPage() {
               style={{width:'100%',padding:'12px',background:'#E85D26',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',opacity:acting?0.6:1}}>
               {acting ? 'Envoi…' : 'Envoyer le devis →'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── FICHE TECHNIQUE ARTISAN (panel, invisible pour le client) ─── */}
+      {isArtisan && diagData && showDiagPanel && (
+        <div style={{background:'#0F1410',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
+          <div style={{maxWidth:'672px',margin:'0 auto',padding:'10px 14px'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'7px'}}>
+                <span style={{fontSize:'13px'}}>📋</span>
+                <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily:'Space Mono'}}>FICHE TECHNIQUE — DIAGNOSTIC CLIENT</span>
+              </div>
+              <button onClick={() => setShowDiagPanel(false)} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.35)',padding:'2px',lineHeight:0}}>
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Infos clés */}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'5px',marginBottom:'8px'}}>
+              <div style={{background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
+                <div style={{fontSize:'11px',fontWeight:700,color:'#FAFAF5',marginBottom:'1px'}}>{diagData.category || '—'}</div>
+                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Space Mono'}}>CATÉGORIE</div>
+              </div>
+              <div style={{background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
+                <div style={{fontSize:'11px',fontWeight:700,color: diagData.urgency === 'emergency' ? '#ef4444' : diagData.urgency === 'high' ? '#E85D26' : diagData.urgency === 'medium' ? '#C9A84C' : '#2B6B3E',marginBottom:'1px'}}>
+                  {diagData.urgency === 'emergency' ? '🔴 URGENCE' : diagData.urgency === 'high' ? '🟠 Urgent' : diagData.urgency === 'medium' ? '🟡 Normal' : '🟢 Faible'}
+                </div>
+                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Space Mono'}}>URGENCE</div>
+              </div>
+              <div style={{background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
+                <div style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily:'Space Mono',marginBottom:'1px'}}>
+                  {diagData.price_min && diagData.price_max ? `${diagData.price_min.toLocaleString()}–${diagData.price_max.toLocaleString()}` : '—'}
+                </div>
+                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Space Mono'}}>FCFA EST.</div>
+              </div>
+            </div>
+
+            {/* Notes techniques */}
+            {diagData.technical_notes && (
+              <div style={{background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'9px',padding:'9px 11px',marginBottom:'7px'}}>
+                <p style={{fontSize:'12px',color:'rgba(255,255,255,0.8)',lineHeight:'1.55',margin:0}}>{diagData.technical_notes}</p>
+              </div>
+            )}
+
+            {/* Matériel probable */}
+            {diagData.items_needed?.length > 0 && (
+              <div style={{display:'flex',flexWrap:'wrap',gap:'4px',marginBottom:'6px'}}>
+                {diagData.items_needed.map((item: string) => (
+                  <span key={item} style={{fontSize:'10px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.25)',padding:'2px 8px',borderRadius:'20px',color:'#C9A84C'}}>{item}</span>
+                ))}
+              </div>
+            )}
+
+            {/* Photos client */}
+            {diagData.photos?.length > 0 && (
+              <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'4px'}}>
+                {diagData.photos.map((url: string, i: number) => (
+                  <a key={i} href={url} target="_blank" rel="noreferrer" style={{display:'block',aspectRatio:'1',borderRadius:'6px',overflow:'hidden',background:'rgba(255,255,255,0.07)'}}>
+                    <img src={url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                  </a>
+                ))}
+              </div>
+            )}
+
+            {diagData.duration_estimate && (
+              <div style={{marginTop:'6px',fontSize:'10px',color:'rgba(255,255,255,0.3)',fontFamily:'Space Mono'}}>
+                ⏱ Durée estimée : {diagData.duration_estimate}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -979,7 +1106,7 @@ export default function WarRoomPage() {
             {/* Bouton artisan : Proposer devis (negotiation/matching) */}
             {isArtisan && (status === 'negotiation' || status === 'matching') && !showDevis && (
               <div style={{marginBottom:'8px'}}>
-                <button onClick={() => setShowDevis(true)} style={{
+                <button onClick={openDevis} style={{
                   width:'100%',padding:'10px',background:'rgba(232,93,38,0.08)',
                   border:'1px dashed #E85D26',borderRadius:'10px',color:'#E85D26',
                   fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
@@ -1041,6 +1168,18 @@ export default function WarRoomPage() {
                 }}>
                   🚗 Voir le suivi en direct →
                 </Link>
+              </div>
+            )}
+
+            {/* Label résumé pré-rempli (client uniquement) */}
+            {!isArtisan && diagData && input === diagData.ai_summary && (
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px',padding:'6px 10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:'8px'}}>
+                <span style={{fontSize:'11px',color:'#C9A84C',fontWeight:600,display:'flex',alignItems:'center',gap:'5px'}}>
+                  📋 Résumé de votre diagnostic — envoyez-le ou modifiez-le
+                </span>
+                <button onClick={() => setInput('')} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E',padding:'0',lineHeight:0}}>
+                  <X size={12} />
+                </button>
               </div>
             )}
 
