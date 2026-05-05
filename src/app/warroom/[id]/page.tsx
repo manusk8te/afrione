@@ -129,7 +129,7 @@ export default function WarRoomPage() {
 
       const { data: missionData } = await supabase
         .from('missions')
-        .select('*, scheduled_at, artisan_pros(id, user_id, metier, users(name, avatar_url))')
+        .select('*, scheduled_at, artisan_pros(id, user_id, metier, users(name, avatar_url, phone))')
         .eq('id', missionId)
         .single()
       setMission(missionData)
@@ -446,8 +446,9 @@ export default function WarRoomPage() {
 
   const status = mission?.status || 'negotiation'
   const statusInfo = STATUS_CONFIG[status] || STATUS_CONFIG.negotiation
-  const artisanName = mission?.artisan_pros?.users?.name || 'Artisan'
-  const artisanMetier = mission?.artisan_pros?.metier || ''
+  const artisanName   = mission?.artisan_pros?.users?.name   || 'Artisan'
+  const artisanMetier = mission?.artisan_pros?.metier         || ''
+  const artisanPhone  = mission?.artisan_pros?.users?.phone   || null
   const isClosed = status === 'completed' || status === 'cancelled'
 
   return (
@@ -760,6 +761,12 @@ export default function WarRoomPage() {
             <div style={{fontWeight:700,fontSize:'14px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{artisanName}</div>
             <div style={{fontSize:'11px',color:'#7A7A6E'}}>{artisanMetier}</div>
           </div>
+          {/* Appel rapide artisan (client uniquement) */}
+          {!isArtisan && artisanPhone && (
+            <a href={`tel:${artisanPhone}`} style={{background:'rgba(43,107,62,0.15)',border:'1px solid rgba(43,107,62,0.4)',borderRadius:'8px',padding:'6px 10px',color:'#2B6B3E',fontSize:'18px',flexShrink:0,display:'flex',alignItems:'center',textDecoration:'none'}} title={`Appeler ${artisanName}`}>
+              📞
+            </a>
+          )}
           {/* Bouton rouvrir fiche technique (artisan seulement) */}
           {isArtisan && diagData && !showDiagPanel && (
             <button onClick={() => setShowDiagPanel(true)} style={{background:'rgba(232,93,38,0.15)',border:'1px solid rgba(232,93,38,0.4)',borderRadius:'8px',padding:'4px 8px',cursor:'pointer',color:'#E85D26',fontSize:'10px',fontWeight:700,flexShrink:0,display:'flex',alignItems:'center',gap:'4px'}}>

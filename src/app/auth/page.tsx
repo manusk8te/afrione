@@ -7,7 +7,7 @@ import { Zap, ArrowRight, ArrowLeft, Shield, Eye, EyeOff, CheckCircle, MapPin, U
 import { supabase } from '@/lib/supabase'
 
 type Step =
-  | 'choice' | 'login' | 'register' | 'verify'
+  | 'choice' | 'login' | 'register' | 'verify' | 'forgot' | 'forgot_sent'
   | 'artisan_phone' | 'artisan_profile' | 'artisan_metier' | 'artisan_done'
 
 const METIERS = [
@@ -264,12 +264,59 @@ function AuthPageInner() {
                   {loading ? 'Connexion...' : <>Se connecter <ArrowRight size={16} /></>}
                 </button>
               </form>
-              <p className="text-sm text-center mt-4 text-muted">
+              <button onClick={() => setStep('forgot')} style={{background:'none',border:'none',cursor:'pointer',fontSize:'13px',color:'#7A7A6E',display:'block',textAlign:'center',width:'100%',marginTop:'12px'}}>
+                Mot de passe oublié ?
+              </button>
+              <p className="text-sm text-center mt-3 text-muted">
                 Pas de compte ?{' '}
                 <button onClick={() => setStep('register')} className="text-accent font-medium" style={{background:'none',border:'none',cursor:'pointer'}}>
                   S'inscrire
                 </button>
               </p>
+            </div>
+          )}
+
+          {/* ── Mot de passe oublié ── */}
+          {step === 'forgot' && (
+            <div className="animate-fade-up">
+              <button onClick={() => setStep('login')} className="flex items-center gap-2 text-sm text-muted mb-8 hover:text-dark transition-colors">
+                <ArrowLeft size={16} /> Retour
+              </button>
+              <h1 className="font-display text-3xl font-bold text-dark mb-2">Mot de passe oublié</h1>
+              <p className="text-muted mb-8 text-sm">Entrez votre email — nous vous envoyons un lien de réinitialisation.</p>
+              {error && <div className="mb-4 p-4 rounded-xl text-sm" style={{background:'rgba(232,93,38,0.1)',color:'#E85D26'}}>{error}</div>}
+              <div className="space-y-4">
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" className="input" required />
+                <button
+                  onClick={async () => {
+                    if (!email.trim()) { setError('Entrez votre email'); return }
+                    setLoading(true); setError('')
+                    const { error: e } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/auth/reset`,
+                    })
+                    setLoading(false)
+                    if (e) setError(e.message)
+                    else setStep('forgot_sent')
+                  }}
+                  disabled={loading}
+                  className="btn-primary w-full flex items-center justify-center gap-2 py-4" style={{opacity:loading?0.6:1}}>
+                  {loading ? 'Envoi…' : 'Envoyer le lien →'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'forgot_sent' && (
+            <div className="animate-fade-up text-center">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{background:'rgba(43,107,62,0.1)'}}>
+                <CheckCircle size={40} color="#2B6B3E" />
+              </div>
+              <h1 className="font-display text-3xl font-bold text-dark mb-3">Email envoyé !</h1>
+              <p className="text-muted mb-2">Un lien de réinitialisation a été envoyé à</p>
+              <p className="font-bold text-dark mb-8">{email}</p>
+              <button onClick={() => setStep('login')} className="btn-outline w-full flex items-center justify-center gap-2">
+                Retour à la connexion
+              </button>
             </div>
           )}
 

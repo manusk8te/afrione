@@ -56,16 +56,15 @@ function MatchingContent() {
     setConfirming(true)
 
     try {
+      const artisan = artisans.find(a => a.id === selected)
+      let targetMissionId = missionId
+
       if (missionId) {
-        // Lier l'artisan à la mission existante
         await supabase
           .from('missions')
           .update({ artisan_id: selected, status: 'negotiation' })
           .eq('id', missionId)
-
-        router.push(`/warroom/${missionId}`)
       } else {
-        // Créer une nouvelle mission si pas de diagnostic préalable
         const { data: mission } = await supabase
           .from('missions')
           .insert({
@@ -77,10 +76,25 @@ function MatchingContent() {
           })
           .select()
           .single()
-
-        if (mission) router.push(`/warroom/${mission.id}`)
+        if (mission) targetMissionId = mission.id
       }
-    } catch (err) {
+
+      // Notifier l'artisan par push
+      if (artisan?.user_id) {
+        fetch('/api/push-send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: artisan.user_id,
+            title: 'AfriOne — Nouvelle mission !',
+            body: `Un client vous a sélectionné pour : ${category}`,
+            url: `https://afrione-sepia.vercel.app/warroom/${targetMissionId}`,
+          }),
+        }).catch(() => {})
+      }
+
+      if (targetMissionId) router.push(`/warroom/${targetMissionId}`)
+    } catch {
       setConfirming(false)
     }
   }

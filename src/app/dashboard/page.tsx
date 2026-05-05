@@ -11,6 +11,12 @@ import toast from 'react-hot-toast'
 
 const QUARTIERS = ['Cocody','Plateau','Marcory','Treichville','Adjamé','Abobo','Yopougon','Koumassi','Port-Bouët','Attécoubé','Bingerville','Anyama']
 
+const CATEGORY_ICONS: Record<string, string> = {
+  'Plomberie': '🔧', 'Électricité': '⚡', 'Peinture': '🎨',
+  'Maçonnerie': '🏗️', 'Menuiserie': '🪵', 'Climatisation': '❄️',
+  'Serrurerie': '🔑', 'Carrelage': '🪟', 'Diagnostic': '🧠',
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
@@ -216,7 +222,9 @@ export default function DashboardPage() {
                       const sc = statusConfig[m.status]
                       return (
                         <div key={m.id} style={{display:'flex',alignItems:isMobile?'flex-start':'center',gap:'12px',padding:'12px 14px',background:'#F5F0E8',borderRadius:'12px',border:isActive?'2px solid rgba(232,93,38,0.3)':m.status==='disputed'?'2px solid rgba(239,68,68,0.3)':'2px solid transparent',flexWrap:isMobile?'wrap':'nowrap'}}>
-                          <div style={{width:'44px',height:'44px',background:'white',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0}}>🔧</div>
+                          <div style={{width:'44px',height:'44px',background:'white',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
+                            {CATEGORY_ICONS[m.category] || '🔧'}
+                          </div>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontWeight:600,color:'#0F1410',fontSize:'14px'}}>{m.category || 'Mission'}</div>
                             <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>{new Date(m.created_at).toLocaleDateString('fr-FR')}</div>
@@ -225,9 +233,19 @@ export default function DashboardPage() {
                             <span style={{padding:'4px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:600,background:`${sc?.color}20`,color:sc?.color||'#7A7A6E'}}>
                               {sc?.label || m.status}
                             </span>
-                            {isActive && (
+                            {m.status === 'en_route' && (
+                              <Link href={`/suivi/${m.id}`} style={{padding:'6px 12px',background:'#E85D26',color:'white',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
+                                🗺️ Suivi GPS
+                              </Link>
+                            )}
+                            {isActive && m.status !== 'en_route' && (
                               <Link href={`/warroom/${m.id}`} style={{padding:'6px 12px',background:'#E85D26',color:'white',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
                                 💬 Chat
+                              </Link>
+                            )}
+                            {m.status === 'completed' && (
+                              <Link href={`/warroom/${m.id}`} style={{padding:'6px 12px',background:'rgba(201,168,76,0.15)',color:'#C9A84C',border:'1px solid rgba(201,168,76,0.3)',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
+                                ⭐ Avis
                               </Link>
                             )}
                             {m.status === 'disputed' && (
