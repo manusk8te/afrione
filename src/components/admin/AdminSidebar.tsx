@@ -105,7 +105,6 @@ export default function AdminSidebar({
     <>
       {/* ── DESKTOP SIDEBAR ─────────────────────────────────────── */}
       <aside style={{
-        display: 'none',
         flexDirection: 'column',
         width: '220px',
         flexShrink: 0,
@@ -117,7 +116,7 @@ export default function AdminSidebar({
         top: 0,
         height: '100vh',
         overflowY: 'auto',
-      }} className="lg:flex">
+      }} className="hidden lg:flex">
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '36px', textDecoration: 'none', padding: '0 4px' }}>
           <div style={{ width: '30px', height: '30px', background: '#E85D26', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
