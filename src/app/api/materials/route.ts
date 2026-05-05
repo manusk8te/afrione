@@ -1,9 +1,11 @@
 /**
- * GET /api/materials?category=Plomberie&items=Joint,Tuyau
+ * GET /api/materials?category=Plomberie&items=Joint,Tuyau&client_quartier=Cocody&artisan_quartier=Abobo
  * Retourne les 3 tiers (economique/standard/premium) pour chaque item
+ * + proximité vendeur physique vs client/artisan si vendor_quartier renseigné
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { quartierKm } from '@/lib/pricing'
 
 const FALLBACK_TIERS: Record<string, { economique: number; standard: number; premium: number }> = {
   'Plomberie':    { economique: 0.65, standard: 1.0, premium: 1.6 },
@@ -16,9 +18,28 @@ const FALLBACK_TIERS: Record<string, { economique: number; standard: number; pre
   'Carrelage':    { economique: 0.70, standard: 1.0, premium: 1.6 },
 }
 
+function addProximity(
+  tier: any,
+  clientQ: string | null,
+  artisanQ: string | null,
+): any {
+  if (!tier || !tier.vendor_quartier) return tier
+  const out: any = { ...tier }
+  if (clientQ)  out.km_to_client  = quartierKm(tier.vendor_quartier, clientQ)
+  if (artisanQ) out.km_to_artisan = quartierKm(tier.vendor_quartier, artisanQ)
+  if (out.km_to_client != null && out.km_to_artisan != null) {
+    out.vendor_closest = out.km_to_client <= out.km_to_artisan ? 'client' : 'artisan'
+  } else if (out.km_to_client != null) {
+    out.vendor_closest = 'client'
+  }
+  return out
+}
+
 export async function GET(req: NextRequest) {
-  const category = req.nextUrl.searchParams.get('category') || 'Plomberie'
-  const items    = req.nextUrl.searchParams.get('items')?.split(',').filter(Boolean) || []
+  const category       = req.nextUrl.searchParams.get('category')        || 'Plomberie'
+  const items          = req.nextUrl.searchParams.get('items')?.split(',').filter(Boolean) || []
+  const clientQ        = req.nextUrl.searchParams.get('client_quartier')  || null
+  const artisanQ       = req.nextUrl.searchParams.get('artisan_quartier') || null
 
   // Cherche les matériaux avec tiers dans la BDD
   const { data: dbMaterials } = await supabaseAdmin
@@ -27,7 +48,7 @@ export async function GET(req: NextRequest) {
     .eq('category', category)
     .order('tier')
 
-  // Récupère le prix de référence marché
+  // Prix de référence marché
   const { data: refData } = await supabaseAdmin
     .from('market_reference_prices')
     .select('reference_price_fcfa')
@@ -44,13 +65,10 @@ export async function GET(req: NextRequest) {
     grouped[baseName].push(m)
   }
 
-  // Pour chaque item demandé, trouve les 3 tiers
   const tierResults: any[] = []
-
   const itemsToProcess = items.length > 0 ? items : Object.keys(grouped).slice(0, 5)
 
   for (const item of itemsToProcess) {
-    // Cherche une correspondance dans les données BDD
     const matchKey = Object.keys(grouped).find(k =>
       k.toLowerCase().includes(item.toLowerCase().split(' ')[0]) ||
       item.toLowerCase().includes(k.toLowerCase().split(' ')[0])
@@ -58,16 +76,11 @@ export async function GET(req: NextRequest) {
 
     if (matchKey && grouped[matchKey]) {
       const tiers = grouped[matchKey]
-      tierResults.push({
-        name: item,
-        tiers: {
-          economique: tiers.find(t => t.tier === 'economique') || buildFallbackTier(item, category, 'economique'),
-          standard:   tiers.find(t => t.tier === 'standard')   || buildFallbackTier(item, category, 'standard'),
-          premium:    tiers.find(t => t.tier === 'premium')     || buildFallbackTier(item, category, 'premium'),
-        },
-      })
+      const eco = addProximity(tiers.find((t: any) => t.tier === 'economique') || buildFallbackTier(item, category, 'economique'), clientQ, artisanQ)
+      const std = addProximity(tiers.find((t: any) => t.tier === 'standard')   || buildFallbackTier(item, category, 'standard'),   clientQ, artisanQ)
+      const prm = addProximity(tiers.find((t: any) => t.tier === 'premium')    || buildFallbackTier(item, category, 'premium'),     clientQ, artisanQ)
+      tierResults.push({ name: item, tiers: { economique: eco, standard: std, premium: prm } })
     } else {
-      // Fallback : on génère 3 tiers depuis les multiplicateurs
       const { data: base } = await supabaseAdmin
         .from('price_materials')
         .select('*')
@@ -82,9 +95,9 @@ export async function GET(req: NextRequest) {
       tierResults.push({
         name: item,
         tiers: {
-          economique: { price_market: Math.round(basePrice * mult.economique), tier: 'economique', brand: 'Sans marque', photo_url: null },
-          standard:   { price_market: basePrice, tier: 'standard', brand: 'Standard', photo_url: base?.photo_url || null },
-          premium:    { price_market: Math.round(basePrice * mult.premium),   tier: 'premium',    brand: 'Premium',    photo_url: null },
+          economique: addProximity({ price_market: Math.round(basePrice * mult.economique), tier: 'economique', brand: 'Sans marque', photo_url: null, source: null, vendor_quartier: base?.vendor_quartier || null }, clientQ, artisanQ),
+          standard:   addProximity({ price_market: basePrice, tier: 'standard', brand: 'Standard', photo_url: base?.photo_url || null, source_url: base?.source_url || null, source: base?.source || null, vendor_quartier: base?.vendor_quartier || null }, clientQ, artisanQ),
+          premium:    addProximity({ price_market: Math.round(basePrice * mult.premium), tier: 'premium', brand: 'Premium', photo_url: null, source: null, vendor_quartier: base?.vendor_quartier || null }, clientQ, artisanQ),
         },
       })
     }
@@ -101,7 +114,9 @@ function buildFallbackTier(name: string, category: string, tier: 'economique' | 
   const mult = { economique: 0.65, standard: 1.0, premium: 1.65 }
   const base = bases[category] || 3000
   return {
-    name, tier, brand: tier === 'premium' ? 'Marque premium' : tier === 'economique' ? 'Sans marque' : 'Standard',
-    price_market: Math.round(base * mult[tier]), photo_url: null,
+    name, tier,
+    brand: tier === 'premium' ? 'Marque premium' : tier === 'economique' ? 'Sans marque' : 'Standard',
+    price_market: Math.round(base * mult[tier]),
+    photo_url: null, source_url: null, source: null, vendor_quartier: null,
   }
 }

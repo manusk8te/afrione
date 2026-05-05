@@ -296,6 +296,12 @@ export function getQuartierGPS(quartier: string): [number, number] {
   return QUARTIER_GPS[quartier] ?? QUARTIER_GPS['Cocody']
 }
 
+export function quartierKm(q1: string, q2: string): number {
+  const [lat1, lng1] = QUARTIER_GPS[q1] ?? QUARTIER_GPS['Cocody']
+  const [lat2, lng2] = QUARTIER_GPS[q2] ?? QUARTIER_GPS['Cocody']
+  return Math.round(haversine(lat1, lng1, lat2, lng2) * 10) / 10
+}
+
 export function computeDistance(
   artisanGPS: { lat: number; lng: number } | null,
   clientQuartier: string

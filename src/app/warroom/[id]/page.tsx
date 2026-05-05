@@ -47,6 +47,9 @@ export default function WarRoomPage() {
   } | null>(null)
   const [pricingSugLoading, setPricingSugLoading] = useState(false)
 
+  // Proximité vendeur physique pour les matériaux (artisan side)
+  const [materialsProximity, setMaterialsProximity] = useState<any[]>([])
+
   // Avis post-mission
   const [rating, setRating]               = useState(0)
   const [hoverRating, setHoverRating]     = useState(0)
@@ -192,6 +195,16 @@ export default function WarRoomPage() {
     setShowDevis(true)
     if (pricingSuggestion || pricingSugLoading || !diagData) return
     setPricingSugLoading(true)
+
+    // Fetch vendor proximity (photo, lien Jumia, km artisan/client) pour les matériaux
+    if (diagData.items_needed?.length && !materialsProximity.length) {
+      const clientQ  = mission?.quartier || 'Cocody'
+      // zone_gps de l'artisan est inconnu ici sans fetch supplémentaire — on passe juste le client
+      fetch(`/api/materials?category=${encodeURIComponent(diagData.category || 'Plomberie')}&items=${encodeURIComponent((diagData.items_needed || []).join(','))}&client_quartier=${encodeURIComponent(clientQ)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.materials) setMaterialsProximity(data.materials) })
+        .catch(() => {})
+    }
 
     const metierMap: Record<string, string> = {
       'Plomberie':'Plombier','Électricité':'Électricien','Peinture':'Peintre',
@@ -794,14 +807,53 @@ export default function WarRoomPage() {
               </div>
             )}
 
-            {/* Matériaux demandés par le client (lu depuis le diagnostic — tier choisi côté client) */}
+            {/* Matériaux demandés par le client + infos vendeur (photo, Jumia, proximité) */}
             {diagData?.items_needed?.length > 0 && (
-              <div style={{marginBottom:'10px',padding:'10px 12px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px'}}>
+              <div style={{marginBottom:'10px'}}>
                 <div style={{fontSize:'9px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.12em',fontFamily:'Space Mono',marginBottom:'7px'}}>MATÉRIAUX (CHOIX DU CLIENT)</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
-                  {diagData.items_needed.map((item: string) => (
-                    <span key={item} style={{fontSize:'10px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',padding:'3px 10px',borderRadius:'20px',color:'#C9A84C',fontWeight:500}}>{item}</span>
-                  ))}
+                <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+                  {diagData.items_needed.map((item: string) => {
+                    const matData = materialsProximity.find((m: any) => m.name === item)
+                    const std = matData?.tiers?.standard
+                    const hasPhoto = std?.photo_url && std?.source === 'Jumia CI'
+                    const hasVendor = !hasPhoto && std?.vendor_quartier
+                    return (
+                      <div key={item} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 10px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px'}}>
+                        {hasPhoto && (
+                          <img src={std.photo_url} alt={item} style={{width:'32px',height:'32px',borderRadius:'6px',objectFit:'cover',flexShrink:0,background:'#EDE8DE'}}
+                            onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                        )}
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:'11px',fontWeight:600,color:'#C9A84C',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item}</div>
+                          {hasPhoto && std?.source_url && (
+                            <a href={std.source_url} target="_blank" rel="noreferrer"
+                              style={{fontSize:'10px',color:'#E85D26',fontWeight:600,textDecoration:'none'}}>
+                              Jumia CI →
+                            </a>
+                          )}
+                          {hasVendor && std?.km_to_client != null && (
+                            <div style={{fontSize:'10px',color: std.km_to_client <= 3 ? '#2B6B3E' : '#7A7A6E',marginTop:'1px'}}>
+                              📍 {std.vendor_quartier} · {std.km_to_client} km du client
+                            </div>
+                          )}
+                        </div>
+                        {hasVendor && (
+                          <span style={{fontSize:'9px',fontWeight:700,padding:'2px 7px',borderRadius:'20px',flexShrink:0,
+                            background: std.km_to_client <= 3 ? 'rgba(43,107,62,0.1)' : 'rgba(201,168,76,0.1)',
+                            color: std.km_to_client <= 3 ? '#2B6B3E' : '#C9A84C',
+                            border: `1px solid ${std.km_to_client <= 3 ? 'rgba(43,107,62,0.25)' : 'rgba(201,168,76,0.25)'}`,
+                          }}>
+                            {std.km_to_client <= 3 ? 'Proche client' : 'Livraison'}
+                          </span>
+                        )}
+                        {hasPhoto && (
+                          <span style={{fontSize:'9px',fontWeight:700,padding:'2px 7px',borderRadius:'20px',flexShrink:0,background:'rgba(232,93,38,0.08)',color:'#E85D26',border:'1px solid rgba(232,93,38,0.2)'}}>
+                            Jumia
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}

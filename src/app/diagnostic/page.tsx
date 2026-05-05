@@ -195,7 +195,7 @@ export default function DiagnosticPage() {
           }),
         }),
         diagResult.items_needed.length > 0
-          ? fetch(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(diagResult.items_needed.join(','))}`)
+          ? fetch(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(diagResult.items_needed.join(','))}&client_quartier=${encodeURIComponent(quartier || 'Cocody')}`)
           : Promise.resolve(null),
       ])
       if (pricingRes.ok) {
@@ -631,13 +631,18 @@ export default function DiagnosticPage() {
                   {materialTiers.slice(0, 4).map((mat: any) => {
                     const TIER_COLORS = { economique: '#2B6B3E', standard: '#C9A84C', premium: '#E85D26' } as const
                     const TIER_LABELS = { economique: 'Éco', standard: 'Standard', premium: 'Premium' } as const
+                    const activeTierKey = selectedTiers[mat.name] || 'standard'
+                    const activeTierData = mat.tiers[activeTierKey]
+                    const isJumia = activeTierData?.source === 'Jumia CI'
+                    const hasPhoto = !!activeTierData?.photo_url
+                    const hasVendorQuartier = !isJumia && !!activeTierData?.vendor_quartier
                     return (
                       <div key={mat.name}>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: '#0F1410', marginBottom: '7px' }}>{mat.name}</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                           {(['economique', 'standard', 'premium'] as const).map(tier => {
                             const t = mat.tiers[tier]
-                            const active = selectedTiers[mat.name] === tier
+                            const active = activeTierKey === tier
                             const color = TIER_COLORS[tier]
                             return (
                               <button key={tier} onClick={() => {
@@ -661,6 +666,50 @@ export default function DiagnosticPage() {
                             )
                           })}
                         </div>
+
+                        {/* Photo Jumia + lien produit */}
+                        {hasPhoto && (
+                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #EDE8DE' }}>
+                            <img
+                              src={activeTierData.photo_url}
+                              alt={mat.name}
+                              style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0, background: '#EDE8DE' }}
+                              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '11px', fontWeight: 600, color: '#0F1410', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {activeTierData.brand || mat.name}
+                              </div>
+                              {activeTierData.source_url && (
+                                <a
+                                  href={activeTierData.source_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{ fontSize: '11px', color: '#E85D26', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}
+                                >
+                                  Voir sur Jumia CI →
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Badge proximité vendeur physique */}
+                        {hasVendorQuartier && (
+                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 10px', background: activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.07)' : 'rgba(201,168,76,0.07)', borderRadius: '10px', border: `1px solid ${activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.2)' : 'rgba(201,168,76,0.2)'}` }}>
+                            <span style={{ fontSize: '13px' }}>{activeTierData.km_to_client <= 3 ? '📍' : '🗺️'}</span>
+                            <div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: activeTierData.km_to_client <= 3 ? '#2B6B3E' : '#C9A84C' }}>
+                                {activeTierData.vendor_quartier}
+                              </span>
+                              {activeTierData.km_to_client != null && (
+                                <span style={{ fontSize: '10px', color: '#7A7A6E', marginLeft: '5px' }}>
+                                  · {activeTierData.km_to_client} km de vous
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
