@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Navigation, MapPin, CheckCircle, Clock, Navigation2, Camera, Upload, AlertCircle, MessageCircle, X, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import { useJsApiLoader, GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api'
 
 const QUARTIER_COORDS: Record<string, [number, number]> = {
   'Cocody':      [5.3600, -3.9910], 'Plateau':     [5.3190, -4.0200],
@@ -15,6 +16,26 @@ const QUARTIER_COORDS: Record<string, [number, number]> = {
   'Koumassi':    [5.2950, -3.9800],
 }
 const ABIDJAN_CENTER: [number, number] = [5.3600, -4.0083]
+
+const MAPS_LIBRARIES: Parameters<typeof useJsApiLoader>[0]['libraries'] = []
+
+const CI_BOUNDS = { north: 10.74, south: 4.34, east: -2.49, west: -8.60 }
+
+const DARK_MAP_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry',            stylers: [{ color: '#1a2018' }] },
+  { elementType: 'labels.text.stroke',  stylers: [{ color: '#0f1410' }] },
+  { elementType: 'labels.text.fill',    stylers: [{ color: '#7a7a6e' }] },
+  { featureType: 'road',          elementType: 'geometry',        stylers: [{ color: '#2b3529' }] },
+  { featureType: 'road',          elementType: 'geometry.stroke', stylers: [{ color: '#1a2318' }] },
+  { featureType: 'road.highway',  elementType: 'geometry',        stylers: [{ color: '#3d5040' }] },
+  { featureType: 'road.highway',  elementType: 'labels.text.fill',stylers: [{ color: '#9ab59e' }] },
+  { featureType: 'water',         elementType: 'geometry',        stylers: [{ color: '#0d1a14' }] },
+  { featureType: 'landscape',     elementType: 'geometry',        stylers: [{ color: '#1a2018' }] },
+  { featureType: 'poi',                                           stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit',                                       stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative', elementType: 'geometry.stroke',stylers: [{ color: '#2b3a2b' }] },
+  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#a8b8a2' }] },
+]
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371
@@ -57,6 +78,37 @@ export default function MissionLivePage() {
   const clientPosRef = useRef<[number, number]>(ABIDJAN_CENTER)
 
   const isArtisan = userRole === 'artisan' || userRole === 'admin'
+
+  // Google Maps
+  const { isLoaded: mapsLoaded } = useJsApiLoader({
+    id: 'afrione-map',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? '',
+    libraries: MAPS_LIBRARIES,
+  })
+  const mapRef   = useRef<google.maps.Map | null>(null)
+  const didFitRef = useRef(false)
+  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
+
+  useEffect(() => {
+    if (!mapsLoaded || !artisanPos) return
+    const svc = new google.maps.DirectionsService()
+    svc.route({
+      origin:      new google.maps.LatLng(artisanPos.lat, artisanPos.lng),
+      destination: new google.maps.LatLng(clientPos[0], clientPos[1]),
+      travelMode:  google.maps.TravelMode.DRIVING,
+    }, (result, status) => {
+      if (status === google.maps.DirectionsStatus.OK && result) setDirections(result)
+    })
+  }, [mapsLoaded, artisanPos, clientPos])
+
+  useEffect(() => {
+    if (!mapsLoaded || !mapRef.current || !artisanPos || didFitRef.current) return
+    const bounds = new google.maps.LatLngBounds()
+    bounds.extend({ lat: artisanPos.lat, lng: artisanPos.lng })
+    bounds.extend({ lat: clientPos[0], lng: clientPos[1] })
+    mapRef.current.fitBounds(bounds, 80)
+    didFitRef.current = true
+  }, [mapsLoaded, artisanPos])
 
   useEffect(() => {
     const init = async () => {
@@ -369,7 +421,57 @@ export default function MissionLivePage() {
         {/* GPS */}
         {tab === 'gps' && (
           <div style={{ height: '100%', position: 'relative' }}>
-            <iframe src={mapSrc} style={{ width: '100%', height: '100%', border: 'none', filter: 'brightness(0.85) saturate(0.85)' }} title="Carte" />
+            {mapsLoaded ? (
+              <GoogleMap
+                mapContainerStyle={{ width: '100%', height: '100%' }}
+                center={{ lat: clientPos[0], lng: clientPos[1] }}
+                zoom={13}
+                onLoad={map => { mapRef.current = map }}
+                options={{
+                  restriction: { latLngBounds: CI_BOUNDS, strictBounds: false },
+                  disableDefaultUI: true,
+                  zoomControl: true,
+                  styles: DARK_MAP_STYLES,
+                  clickableIcons: false,
+                }}
+              >
+                {artisanPos && (
+                  <Marker
+                    position={{ lat: artisanPos.lat, lng: artisanPos.lng }}
+                    icon={{
+                      path: google.maps.SymbolPath.CIRCLE,
+                      scale: 9,
+                      fillColor: '#E85D26',
+                      fillOpacity: 1,
+                      strokeColor: '#ffffff',
+                      strokeWeight: 2,
+                    }}
+                  />
+                )}
+                <Marker
+                  position={{ lat: clientPos[0], lng: clientPos[1] }}
+                  icon={{
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 9,
+                    fillColor: '#2B6B3E',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2,
+                  }}
+                />
+                {directions && (
+                  <DirectionsRenderer
+                    directions={directions}
+                    options={{
+                      suppressMarkers: true,
+                      polylineOptions: { strokeColor: '#E85D26', strokeWeight: 4, strokeOpacity: 0.85 },
+                    }}
+                  />
+                )}
+              </GoogleMap>
+            ) : (
+              <iframe src={mapSrc} style={{ width: '100%', height: '100%', border: 'none', filter: 'brightness(0.85) saturate(0.85)' }} title="Carte" />
+            )}
             {artisanPos && (
               <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(15,20,16,0.93)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '10px 14px', border: '1px solid rgba(232,93,38,0.35)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '3px' }}>
@@ -393,9 +495,12 @@ export default function MissionLivePage() {
                 </span>
               </div>
             )}
-            <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" style={{ position: 'absolute', bottom: '16px', right: '12px', background: '#4285F4', color: 'white', padding: '8px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-              <Navigation2 size={13} /> Google Maps
-            </a>
+            {eta !== null && (
+              <div style={{ position: 'absolute', bottom: '16px', right: '12px', background: 'rgba(15,20,16,0.93)', borderRadius: '12px', padding: '7px 12px', border: '1px solid rgba(232,93,38,0.25)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Clock size={11} color="#E85D26" />
+                <span style={{ fontFamily: 'Space Mono', fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>{eta} min</span>
+              </div>
+            )}
           </div>
         )}
 
