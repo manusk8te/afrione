@@ -126,9 +126,18 @@ export default function WarRoomPage() {
         if (diagRes.ok) {
           const diagJson = await diagRes.json()
           if (diagJson.diag) {
-            setDiagData(diagJson.diag)
+            const diag = diagJson.diag
+            setDiagData(diag)
             if ((userData?.role ?? 'client') === 'client') {
-              setInput(diagJson.diag.ai_summary || '')
+              setInput(diag.ai_summary || '')
+            }
+            // Charger les liens d'achat des matériaux dès l'init (artisan uniquement)
+            if ((userData?.role ?? 'client') !== 'client' && diag.items_needed?.length) {
+              const clientQ = missionData?.quartier || 'Cocody'
+              fetch(`/api/materials?category=${encodeURIComponent(diag.category || 'Plomberie')}&items=${encodeURIComponent(diag.items_needed.join(','))}&client_quartier=${encodeURIComponent(clientQ)}`)
+                .then(r => r.ok ? r.json() : null)
+                .then(data => { if (data?.materials) setMaterialsProximity(data.materials) })
+                .catch(() => {})
             }
           }
         }
@@ -819,10 +828,15 @@ export default function WarRoomPage() {
                     const hasVendor = !hasPhoto && std?.vendor_quartier
                     return (
                       <div key={item} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 10px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px'}}>
-                        {hasPhoto && (
-                          <img src={std.photo_url} alt={item} style={{width:'32px',height:'32px',borderRadius:'6px',objectFit:'cover',flexShrink:0,background:'#EDE8DE'}}
+                        {hasPhoto && std?.source_url ? (
+                          <a href={std.source_url} target="_blank" rel="noreferrer" style={{flexShrink:0,display:'block',lineHeight:0}}>
+                            <img src={std.photo_url} alt={item} style={{width:'36px',height:'36px',borderRadius:'6px',objectFit:'cover',background:'#EDE8DE',display:'block'}}
+                              onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                          </a>
+                        ) : hasPhoto ? (
+                          <img src={std.photo_url} alt={item} style={{width:'36px',height:'36px',borderRadius:'6px',objectFit:'cover',flexShrink:0,background:'#EDE8DE'}}
                             onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
-                        )}
+                        ) : null}
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:'11px',fontWeight:600,color:'#C9A84C',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item}</div>
                           {hasPhoto && std?.source_url && (
@@ -939,12 +953,32 @@ export default function WarRoomPage() {
               </div>
             )}
 
-            {/* Matériel probable */}
+            {/* Matériel probable + liens d'achat */}
             {diagData.items_needed?.length > 0 && (
-              <div style={{display:'flex',flexWrap:'wrap',gap:'4px',marginBottom:'6px'}}>
-                {diagData.items_needed.map((item: string) => (
-                  <span key={item} style={{fontSize:'10px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.25)',padding:'2px 8px',borderRadius:'20px',color:'#C9A84C'}}>{item}</span>
-                ))}
+              <div style={{display:'flex',flexDirection:'column',gap:'4px',marginBottom:'6px'}}>
+                {diagData.items_needed.map((item: string) => {
+                  const matData = materialsProximity.find((m: any) => m.name === item)
+                  const std = matData?.tiers?.standard
+                  const isJumia = std?.source === 'Jumia CI' && std?.source_url
+                  const isPhysical = !isJumia && std?.vendor_quartier
+                  return (
+                    <div key={item} style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}>
+                      <span style={{fontSize:'10px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.25)',padding:'2px 8px',borderRadius:'20px',color:'#C9A84C',fontWeight:600}}>
+                        {item}
+                      </span>
+                      {isJumia && (
+                        <a href={std.source_url} target="_blank" rel="noreferrer" style={{fontSize:'9px',fontWeight:700,color:'#E85D26',textDecoration:'none',background:'rgba(232,93,38,0.1)',padding:'2px 7px',borderRadius:'20px',border:'1px solid rgba(232,93,38,0.25)',display:'flex',alignItems:'center',gap:'3px'}}>
+                          🛒 Jumia CI →
+                        </a>
+                      )}
+                      {isPhysical && (
+                        <span style={{fontSize:'9px',color: std.km_to_client <= 3 ? '#2B6B3E' : 'rgba(255,255,255,0.35)',background: std.km_to_client <= 3 ? 'rgba(43,107,62,0.15)' : 'rgba(255,255,255,0.06)',padding:'2px 7px',borderRadius:'20px',border:`1px solid ${std.km_to_client <= 3 ? 'rgba(43,107,62,0.3)' : 'rgba(255,255,255,0.1)'}`}}>
+                          📍 {std.vendor_quartier}{std.km_to_client != null ? ` · ${std.km_to_client} km` : ''}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
 

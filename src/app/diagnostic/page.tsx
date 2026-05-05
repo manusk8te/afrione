@@ -669,7 +669,12 @@ export default function DiagnosticPage() {
 
                         {/* Photo Jumia + lien produit */}
                         {hasPhoto && (
-                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #EDE8DE' }}>
+                          <a
+                            href={activeTierData.source_url || '#'}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #EDE8DE', textDecoration: 'none' }}
+                          >
                             <img
                               src={activeTierData.photo_url}
                               alt={mat.name}
@@ -680,18 +685,11 @@ export default function DiagnosticPage() {
                               <div style={{ fontSize: '11px', fontWeight: 600, color: '#0F1410', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {activeTierData.brand || mat.name}
                               </div>
-                              {activeTierData.source_url && (
-                                <a
-                                  href={activeTierData.source_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  style={{ fontSize: '11px', color: '#E85D26', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}
-                                >
-                                  Voir sur Jumia CI →
-                                </a>
-                              )}
+                              <span style={{ fontSize: '11px', color: '#E85D26', fontWeight: 600 }}>
+                                Voir sur Jumia CI →
+                              </span>
                             </div>
-                          </div>
+                          </a>
                         )}
 
                         {/* Badge proximité vendeur physique */}
