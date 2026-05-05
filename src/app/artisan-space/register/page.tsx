@@ -99,7 +99,7 @@ export default function ArtisanRegisterPage() {
         total_withdrawn: 0,
       })
 
-      setStep(3)
+      router.push('/artisan-space/kyc')
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la création du compte')
     }
