@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Edit2, Save, X, RefreshCw, TrendingUp, TrendingDown, Globe } from 'lucide-react'
+import { Edit2, Save, X, RefreshCw, Globe } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import AdminSidebar from '@/components/admin/AdminSidebar'
 
 const CATEGORIES = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Carrelage']
 const TIER_LABELS: Record<string, { label: string; color: string }> = {
@@ -66,30 +66,10 @@ export default function AdminPrixPage() {
     : materials.filter(m => m.category === activeCategory)
 
   return (
-    <div className="min-h-screen bg-dark text-cream">
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="hidden lg:flex flex-col w-56 bg-dark2 border-r border-border min-h-screen p-5 flex-shrink-0">
-          <Link href="/" className="flex items-center gap-2 mb-8">
-            <div className="w-7 h-7 bg-accent rounded-lg flex items-center justify-center text-xs font-bold text-white">A</div>
-            <span className="font-display font-bold">AFRIONE</span>
-          </Link>
-          <nav className="space-y-1">
-            {[
-              { href: '/admin',      label: '📊 Vue d\'ensemble' },
-              { href: '/admin/prix', label: '💰 Prix matériaux', active: true },
-            ].map(item => (
-              <Link key={item.href} href={item.href}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                  item.active ? 'bg-accent/20 text-accent' : 'text-muted hover:text-cream hover:bg-white/5'
-                }`}>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </aside>
+    <div className="min-h-screen bg-dark text-cream flex flex-col lg:flex-row">
+      <AdminSidebar activeId="prix" />
 
-        <main className="flex-1 p-6 max-w-5xl">
+      <main className="flex-1 p-6" style={{maxWidth:'1100px',minWidth:0}}>
           <div className="flex items-center justify-between gap-3 mb-8">
             <div>
               <h1 className="font-display text-2xl font-bold text-cream">Gestionnaire de Prix</h1>
@@ -257,7 +237,6 @@ export default function AdminPrixPage() {
             </table>
           </div>
         </main>
-      </div>
     </div>
   )
 }

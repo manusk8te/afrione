@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Zap, TrendingUp, Users, CheckCircle, AlertCircle, DollarSign, Activity, Clock, Shield, X, Bell, RotateCcw, MessageSquare, ExternalLink } from 'lucide-react'
+import { TrendingUp, Users, CheckCircle, AlertCircle, DollarSign, Activity, Shield, X, Bell, RotateCcw, MessageSquare, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import AdminSidebar from '@/components/admin/AdminSidebar'
 
 const STATUS_COLORS: Record<string, string> = {
   en_cours:    'text-green-400 bg-green-400/10',
@@ -16,15 +17,6 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled:   'text-gray-400 bg-gray-400/10',
 }
 
-const NAV_ITEMS = [
-  { id: 'overview',      label: "Vue d'ensemble", icon: '📊' },
-  { id: 'litiges',       label: 'Litiges',         icon: '⚖️' },
-  { id: 'kyc',           label: 'Validations KYC', icon: '🪪' },
-  { id: 'missions',      label: 'Missions',         icon: '📋' },
-  { id: 'artisans',      label: 'Artisans',         icon: '🔧' },
-  { id: 'transactions',  label: 'Transactions',     icon: '💳' },
-  { id: 'prix',          label: 'Prix matériaux',   icon: '💰', href: '/admin/prix' },
-]
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -235,71 +227,18 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-dark text-cream flex">
+    <div className="min-h-screen bg-dark text-cream flex flex-col lg:flex-row">
 
-      {/* Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 bg-dark border-r border-white/10 min-h-screen p-6 sticky top-0 h-screen">
-        <Link href="/" style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'40px',textDecoration:'none'}}>
-          <div style={{width:'32px',height:'32px',background:'#E85D26',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <Zap size={16} color="white" />
-          </div>
-          <span style={{fontWeight:700,fontSize:'18px',color:'#FAFAF5'}}>AFRI<span style={{color:'#E85D26'}}>ONE</span></span>
-        </Link>
-
-        <nav style={{display:'flex',flexDirection:'column',gap:'4px',flex:1}}>
-          {NAV_ITEMS.map(item => item.href ? (
-            <Link key={item.id} href={item.href} style={{
-              display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',borderRadius:'12px',
-              textDecoration:'none',fontSize:'14px',fontWeight:500,transition:'all 0.15s',
-              color:'#7A7A6E',
-            }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </Link>
-          ) : (
-            <button key={item.id} onClick={() => {
-              setTab(item.id)
-              if (item.id === 'litiges') setLitigeNotif(false)
-            }} style={{
-              display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',borderRadius:'12px',
-              border:'none',cursor:'pointer',textAlign:'left',fontSize:'14px',fontWeight:500,transition:'all 0.15s',
-              background: tab === item.id ? 'rgba(232,93,38,0.15)' : 'transparent',
-              color: tab === item.id ? '#E85D26' : '#7A7A6E',
-              position:'relative',
-            }}>
-              <span>{item.icon}</span>
-              {item.label}
-              {item.id === 'litiges' && litiges.length > 0 && (
-                <span style={{
-                  marginLeft:'auto',minWidth:'20px',height:'20px',borderRadius:'10px',
-                  background: litigeNotif ? '#ef4444' : 'rgba(239,68,68,0.3)',
-                  color:'white',fontSize:'11px',fontWeight:700,
-                  display:'flex',alignItems:'center',justifyContent:'center',padding:'0 5px',
-                  animation: litigeNotif ? 'pulse 1.5s infinite' : 'none',
-                }}>
-                  {litiges.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        <div style={{paddingTop:'24px',borderTop:'1px solid rgba(255,255,255,0.1)',display:'flex',alignItems:'center',gap:'12px'}}>
-          <div style={{width:'32px',height:'32px',background:'#E85D26',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:'13px',color:'white'}}>
-            {adminName[0]}
-          </div>
-          <div>
-            <div style={{fontSize:'13px',fontWeight:500,color:'#FAFAF5'}}>{adminName}</div>
-            <div style={{fontSize:'11px',color:'#7A7A6E'}}>Admin AfriOne</div>
-          </div>
-        </div>
-      </aside>
+      <AdminSidebar
+        activeId={tab}
+        onTabChange={id => { setTab(id); if (id === 'litiges') setLitigeNotif(false) }}
+        litigeCount={litiges.length}
+        litigeNotif={litigeNotif}
+        adminName={adminName}
+      />
 
       {/* Main */}
-      <main style={{flex:1,padding:'32px',maxWidth:'1200px'}}>
+      <main style={{flex:1,padding:'24px 32px',maxWidth:'1200px',minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'32px'}}>
           <div>
             <h1 style={{fontFamily:'var(--font-display)',fontSize:'28px',fontWeight:700,color:'#FAFAF5'}}>Dashboard Admin</h1>
