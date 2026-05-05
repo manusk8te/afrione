@@ -33,7 +33,8 @@ export default function AdminDashboard() {
   // Data
   const [missions, setMissions]         = useState<any[]>([])
   const [artisans, setArtisans]         = useState<any[]>([])
-  const [kycPending, setKycPending]     = useState<any[]>([])
+  const [kycAll, setKycAll]             = useState<any[]>([])
+  const [kycFilter, setKycFilter]       = useState<'pending'|'approved'|'rejected'>('pending')
   const [transactions, setTransactions] = useState<any[]>([])
 
   // Litiges
@@ -80,10 +81,9 @@ export default function AdminDashboard() {
 
     const { data: kycData } = await supabase
       .from('artisan_pros')
-      .select('id, metier, kyc_status, created_at, users!artisan_pros_user_id_fkey(name, email, avatar_url), kyc_security(id, cni_front_url, cni_back_url, diploma_urls, status)')
-      .eq('kyc_status', 'pending')
+      .select('id, metier, kyc_status, created_at, is_available, users!artisan_pros_user_id_fkey(name, email, avatar_url), kyc_security(id, cni_front_url, cni_back_url, diploma_urls, status, reviewed_at)')
       .order('created_at', { ascending: false })
-    setKycPending(kycData || [])
+    setKycAll(kycData || [])
 
     const { data: artisansData } = await supabase
       .from('artisan_pros')
@@ -203,8 +203,14 @@ export default function AdminDashboard() {
 
   const rejectKyc = async (artisanId: string, kycId?: string) => {
     if (kycId) await supabase.from('kyc_security').update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', kycId)
-    await supabase.from('artisan_pros').update({ kyc_status: 'rejected' }).eq('id', artisanId)
+    await supabase.from('artisan_pros').update({ kyc_status: 'rejected', is_available: false }).eq('id', artisanId)
     flash('✗ Artisan rejeté')
+    loadAll()
+  }
+
+  const revokeKyc = async (artisanId: string) => {
+    await supabase.from('artisan_pros').update({ kyc_status: 'pending', is_available: false }).eq('id', artisanId)
+    flash('↩ KYC révoqué — artisan repassé en attente')
     loadAll()
   }
 
@@ -291,7 +297,7 @@ export default function AdminDashboard() {
                     { label: 'Total missions',  value: stats.missions,                icon: Activity,   color: '#E85D26' },
                     { label: 'Artisans actifs', value: stats.artisans,                icon: Users,      color: '#2B6B3E' },
                     { label: 'CA total (FCFA)', value: stats.revenue.toLocaleString(), icon: DollarSign, color: '#C9A84C' },
-                    { label: 'KYC en attente',  value: kycPending.length,             icon: Shield,     color: '#7A7A6E' },
+                    { label: 'KYC en attente',  value: kycAll.filter(k=>k.kyc_status==='pending').length, icon: Shield, color: '#7A7A6E' },
                   ].map(k => (
                     <div key={k.label} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'20px'}}>
                       <k.icon size={20} style={{color:k.color,marginBottom:'12px'}} />
@@ -339,10 +345,10 @@ export default function AdminDashboard() {
                   <div style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'24px'}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
                       <h2 style={{fontSize:'16px',fontWeight:700,color:'#FAFAF5'}}>KYC en attente</h2>
-                      <span style={{fontSize:'11px',color:'#E85D26',background:'rgba(232,93,38,0.1)',padding:'3px 10px',borderRadius:'20px'}}>{kycPending.length} en attente</span>
+                      <span style={{fontSize:'11px',color:'#E85D26',background:'rgba(232,93,38,0.1)',padding:'3px 10px',borderRadius:'20px'}}>{kycAll.filter(k=>k.kyc_status==='pending').length} en attente</span>
                     </div>
                     <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                      {kycPending.slice(0,5).map(k => (
+                      {kycAll.filter(k=>k.kyc_status==='pending').slice(0,5).map(k => (
                         <div key={k.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 12px',background:'rgba(255,255,255,0.04)',borderRadius:'10px'}}>
                           <div style={{flex:1}}>
                             <div style={{fontSize:'13px',fontWeight:500,color:'#FAFAF5'}}>{k.users?.name || '—'}</div>
@@ -358,7 +364,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ))}
-                      {kycPending.length === 0 && <p style={{fontSize:'13px',color:'#7A7A6E',textAlign:'center',padding:'24px 0'}}>Aucun KYC en attente 🎉</p>}
+                      {kycAll.filter(k=>k.kyc_status==='pending').length === 0 && <p style={{fontSize:'13px',color:'#7A7A6E',textAlign:'center',padding:'24px 0'}}>Aucun KYC en attente 🎉</p>}
                     </div>
                   </div>
                 </div>
@@ -603,78 +609,144 @@ export default function AdminDashboard() {
             )}
 
             {/* ===== KYC ===== */}
-            {tab === 'kyc' && (
-              <div>
-                <h2 style={{fontSize:'20px',fontWeight:700,color:'#FAFAF5',marginBottom:'20px'}}>Validations KYC ({kycPending.length} en attente)</h2>
-                <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                  {kycPending.length === 0 ? (
-                    <div style={{textAlign:'center',padding:'64px',color:'#7A7A6E'}}>
-                      <p style={{fontSize:'48px',marginBottom:'16px'}}>🎉</p>
-                      <p style={{fontSize:'16px'}}>Aucun KYC en attente</p>
+            {tab === 'kyc' && (() => {
+              const pending  = kycAll.filter(k => k.kyc_status === 'pending')
+              const approved = kycAll.filter(k => k.kyc_status === 'approved')
+              const rejected = kycAll.filter(k => k.kyc_status === 'rejected')
+              const shown    = kycFilter === 'pending' ? pending : kycFilter === 'approved' ? approved : rejected
+
+              const FILTERS: { id: 'pending'|'approved'|'rejected'; label: string; count: number; color: string; bg: string }[] = [
+                { id: 'pending',  label: 'À valider',  count: pending.length,  color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
+                { id: 'approved', label: 'Validés',    count: approved.length, color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)'  },
+                { id: 'rejected', label: 'Rejetés',    count: rejected.length, color: '#ef4444', bg: 'rgba(239,68,68,0.12)'  },
+              ]
+
+              return (
+                <div>
+                  {/* Header + compteurs */}
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'12px',marginBottom:'24px'}}>
+                    <h2 style={{fontSize:'20px',fontWeight:700,color:'#FAFAF5',margin:0}}>Artisans — KYC</h2>
+                    <div style={{display:'flex',gap:'8px'}}>
+                      {FILTERS.map(f => (
+                        <button key={f.id} onClick={() => setKycFilter(f.id)} style={{
+                          display:'flex',alignItems:'center',gap:'6px',
+                          padding:'6px 14px',borderRadius:'20px',cursor:'pointer',
+                          border: kycFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid rgba(255,255,255,0.08)',
+                          background: kycFilter === f.id ? f.bg : 'transparent',
+                          color: kycFilter === f.id ? f.color : '#7A7A6E',
+                          fontSize:'12px',fontWeight:600,transition:'all 0.15s',
+                        }}>
+                          {f.label}
+                          <span style={{
+                            minWidth:'18px',height:'18px',borderRadius:'9px',padding:'0 4px',
+                            background: kycFilter === f.id ? f.color : 'rgba(255,255,255,0.08)',
+                            color: kycFilter === f.id ? 'white' : '#7A7A6E',
+                            fontSize:'10px',fontWeight:700,
+                            display:'inline-flex',alignItems:'center',justifyContent:'center',
+                          }}>{f.count}</span>
+                        </button>
+                      ))}
                     </div>
-                  ) : kycPending.map(k => {
-                    const kycDoc = k.kyc_security?.[0] || null
-                    const hasCni = !!(kycDoc?.cni_front_url || kycDoc?.cni_back_url)
-                    const hasDiploma = (kycDoc?.diploma_urls || []).length > 0
-                    return (
-                      <div key={k.id} style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${hasCni ? 'rgba(232,93,38,0.25)' : 'rgba(255,255,255,0.08)'}`,borderRadius:'16px',padding:'20px'}}>
-                        <div style={{display:'flex',alignItems:'flex-start',gap:'16px',flexWrap:'wrap'}}>
-                          {/* Avatar */}
-                          <div style={{width:'48px',height:'48px',background:'rgba(232,93,38,0.1)',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0,overflow:'hidden'}}>
-                            {k.users?.avatar_url ? <img src={k.users.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" /> : '🔧'}
-                          </div>
-                          {/* Info */}
-                          <div style={{flex:1,minWidth:'180px'}}>
-                            <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px',flexWrap:'wrap'}}>
-                              <span style={{fontSize:'15px',fontWeight:600,color:'#FAFAF5'}}>{k.users?.name || '—'}</span>
-                              <span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'20px',
-                                background: hasCni ? 'rgba(232,93,38,0.12)' : 'rgba(201,168,76,0.12)',
-                                color: hasCni ? '#E85D26' : '#C9A84C',
-                                fontWeight:600,
-                              }}>
-                                {hasCni ? 'Documents envoyés' : 'En attente de documents'}
-                              </span>
+                  </div>
+
+                  {/* Liste */}
+                  <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                    {shown.length === 0 ? (
+                      <div style={{textAlign:'center',padding:'64px',color:'#7A7A6E'}}>
+                        <p style={{fontSize:'40px',marginBottom:'12px'}}>
+                          {kycFilter === 'pending' ? '🎉' : kycFilter === 'approved' ? '✅' : '📋'}
+                        </p>
+                        <p style={{fontSize:'15px'}}>
+                          {kycFilter === 'pending' ? 'Aucun artisan en attente' : kycFilter === 'approved' ? 'Aucun artisan validé' : 'Aucun artisan rejeté'}
+                        </p>
+                      </div>
+                    ) : shown.map(k => {
+                      const kycDoc = k.kyc_security?.[0] || null
+                      const hasCni = !!(kycDoc?.cni_front_url || kycDoc?.cni_back_url)
+                      const hasDiploma = (kycDoc?.diploma_urls || []).length > 0
+                      const statusColor = k.kyc_status === 'approved' ? '#2B6B3E' : k.kyc_status === 'rejected' ? '#ef4444' : '#C9A84C'
+                      const statusBg    = k.kyc_status === 'approved' ? 'rgba(43,107,62,0.12)' : k.kyc_status === 'rejected' ? 'rgba(239,68,68,0.12)' : 'rgba(201,168,76,0.12)'
+                      const statusLabel = k.kyc_status === 'approved' ? '✓ Validé' : k.kyc_status === 'rejected' ? '✗ Rejeté' : hasCni ? 'Docs envoyés' : 'Sans documents'
+                      const borderColor = k.kyc_status === 'approved' ? 'rgba(43,107,62,0.3)' : k.kyc_status === 'rejected' ? 'rgba(239,68,68,0.2)' : hasCni ? 'rgba(232,93,38,0.25)' : 'rgba(255,255,255,0.08)'
+
+                      return (
+                        <div key={k.id} style={{background:'rgba(255,255,255,0.03)',border:`1px solid ${borderColor}`,borderRadius:'16px',padding:'18px 20px'}}>
+                          <div style={{display:'flex',alignItems:'flex-start',gap:'14px',flexWrap:'wrap'}}>
+                            {/* Avatar */}
+                            <div style={{width:'44px',height:'44px',background:'rgba(232,93,38,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0,overflow:'hidden'}}>
+                              {k.users?.avatar_url ? <img src={k.users.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" /> : '🔧'}
                             </div>
-                            <div style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'10px'}}>
-                              {k.metier} · {k.users?.email || '—'} · Inscrit le {new Date(k.created_at).toLocaleDateString('fr-FR')}
+
+                            {/* Info */}
+                            <div style={{flex:1,minWidth:'180px'}}>
+                              <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'3px',flexWrap:'wrap'}}>
+                                <span style={{fontSize:'14px',fontWeight:600,color:'#FAFAF5'}}>{k.users?.name || '—'}</span>
+                                <span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'20px',background:statusBg,color:statusColor,fontWeight:700}}>
+                                  {statusLabel}
+                                </span>
+                              </div>
+                              <div style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'8px'}}>
+                                {k.metier} · {k.users?.email || '—'} · Inscrit le {new Date(k.created_at).toLocaleDateString('fr-FR')}
+                                {kycDoc?.reviewed_at && (
+                                  <span style={{marginLeft:'8px',color:'rgba(122,122,110,0.7)'}}>
+                                    · Traité le {new Date(kycDoc.reviewed_at).toLocaleDateString('fr-FR')}
+                                  </span>
+                                )}
+                              </div>
+                              {/* Documents */}
+                              <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+                                {kycDoc?.cni_front_url && (
+                                  <a href={kycDoc.cni_front_url} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#E85D26',textDecoration:'none',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',padding:'3px 10px',borderRadius:'20px'}}>
+                                    📄 CNI Recto ↗
+                                  </a>
+                                )}
+                                {kycDoc?.cni_back_url && (
+                                  <a href={kycDoc.cni_back_url} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#E85D26',textDecoration:'none',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',padding:'3px 10px',borderRadius:'20px'}}>
+                                    📄 CNI Verso ↗
+                                  </a>
+                                )}
+                                {hasDiploma && (
+                                  <a href={kycDoc.diploma_urls[0]} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#C9A84C',textDecoration:'none',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.2)',padding:'3px 10px',borderRadius:'20px'}}>
+                                    🎓 Diplôme ↗
+                                  </a>
+                                )}
+                                {!hasCni && !hasDiploma && (
+                                  <span style={{fontSize:'11px',color:'rgba(122,122,110,0.5)',fontStyle:'italic'}}>Aucun document uploadé</span>
+                                )}
+                              </div>
                             </div>
-                            <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                              {kycDoc?.cni_front_url && (
-                                <a href={kycDoc.cni_front_url} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#E85D26',textDecoration:'none',background:'rgba(232,93,38,0.1)',padding:'4px 12px',borderRadius:'20px'}}>
-                                  📄 CNI Recto ↗
-                                </a>
+
+                            {/* Actions selon statut */}
+                            <div style={{display:'flex',gap:'8px',flexShrink:0,alignSelf:'center',flexWrap:'wrap'}}>
+                              {k.kyc_status === 'pending' && (
+                                <>
+                                  <button onClick={() => approveKyc(k.id, kycDoc?.id)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 16px',background:'rgba(43,107,62,0.2)',border:'1px solid rgba(43,107,62,0.35)',borderRadius:'10px',cursor:'pointer',fontSize:'12px',fontWeight:600,color:'#2B6B3E'}}>
+                                    <CheckCircle size={13} /> Approuver
+                                  </button>
+                                  <button onClick={() => rejectKyc(k.id, kycDoc?.id)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 16px',background:'rgba(220,38,38,0.15)',border:'1px solid rgba(220,38,38,0.3)',borderRadius:'10px',cursor:'pointer',fontSize:'12px',fontWeight:600,color:'#ef4444'}}>
+                                    <X size={13} /> Rejeter
+                                  </button>
+                                </>
                               )}
-                              {kycDoc?.cni_back_url && (
-                                <a href={kycDoc.cni_back_url} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#E85D26',textDecoration:'none',background:'rgba(232,93,38,0.1)',padding:'4px 12px',borderRadius:'20px'}}>
-                                  📄 CNI Verso ↗
-                                </a>
+                              {k.kyc_status === 'approved' && (
+                                <button onClick={() => revokeKyc(k.id)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 16px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:'10px',cursor:'pointer',fontSize:'12px',fontWeight:600,color:'#7A7A6E'}}>
+                                  <RotateCcw size={13} /> Révoquer
+                                </button>
                               )}
-                              {hasDiploma && (
-                                <a href={kycDoc.diploma_urls[0]} target="_blank" rel="noreferrer" style={{fontSize:'11px',color:'#C9A84C',textDecoration:'none',background:'rgba(201,168,76,0.1)',padding:'4px 12px',borderRadius:'20px'}}>
-                                  🎓 Diplôme ↗
-                                </a>
-                              )}
-                              {!hasCni && !hasDiploma && (
-                                <span style={{fontSize:'11px',color:'rgba(122,122,110,0.5)',fontStyle:'italic'}}>Aucun document uploadé pour l'instant</span>
+                              {k.kyc_status === 'rejected' && (
+                                <button onClick={() => approveKyc(k.id, kycDoc?.id)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 16px',background:'rgba(43,107,62,0.15)',border:'1px solid rgba(43,107,62,0.3)',borderRadius:'10px',cursor:'pointer',fontSize:'12px',fontWeight:600,color:'#2B6B3E'}}>
+                                  <CheckCircle size={13} /> Réhabiliter
+                                </button>
                               )}
                             </div>
-                          </div>
-                          {/* Actions */}
-                          <div style={{display:'flex',gap:'8px',flexShrink:0,alignSelf:'center'}}>
-                            <button onClick={() => approveKyc(k.id, kycDoc?.id)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 16px',background:'rgba(43,107,62,0.2)',border:'1px solid rgba(43,107,62,0.3)',borderRadius:'10px',cursor:'pointer',fontSize:'13px',fontWeight:600,color:'#2B6B3E'}}>
-                              <CheckCircle size={14} /> Approuver
-                            </button>
-                            <button onClick={() => rejectKyc(k.id, kycDoc?.id)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 16px',background:'rgba(220,38,38,0.2)',border:'1px solid rgba(220,38,38,0.3)',borderRadius:'10px',cursor:'pointer',fontSize:'13px',fontWeight:600,color:'#ef4444'}}>
-                              <X size={14} /> Rejeter
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
             {/* ===== MISSIONS ===== */}
             {tab === 'missions' && (
