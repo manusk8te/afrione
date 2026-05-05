@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [adminName, setAdminName] = useState('Admin')
   const [adminId, setAdminId]   = useState<string | null>(null)
   const [actionMsg, setActionMsg] = useState('')
+  const [scraping, setScraping]   = useState(false)
 
   // Stats
   const [stats, setStats] = useState({ missions: 0, artisans: 0, revenue: 0 })
@@ -50,7 +51,17 @@ export default function AdminDashboard() {
   const [litigeNotif, setLitigeNotif]       = useState(false)
   const [actingLitige, setActingLitige]     = useState(false)
 
-  const flash = (msg: string) => { setActionMsg(msg); setTimeout(() => setActionMsg(''), 3000) }
+  const flash = (msg: string) => { setActionMsg(msg); setTimeout(() => setActionMsg(''), 4000) }
+
+  const triggerScrape = async () => {
+    setScraping(true)
+    try {
+      const res = await fetch('/api/admin/scrape-prices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const d = await res.json()
+      flash(`✓ ${d.updated} prix Jumia mis à jour`)
+    } catch { flash('Erreur scraping Jumia') }
+    setScraping(false)
+  }
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -345,10 +356,10 @@ export default function AdminDashboard() {
 
                 <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'16px'}}>
                   {[
-                    { label: 'Total missions',  value: stats.missions,          icon: Activity,   color: '#E85D26' },
-                    { label: 'Artisans actifs', value: stats.artisans,          icon: Users,      color: '#2B6B3E' },
+                    { label: 'Total missions',  value: stats.missions,                icon: Activity,   color: '#E85D26' },
+                    { label: 'Artisans actifs', value: stats.artisans,                icon: Users,      color: '#2B6B3E' },
                     { label: 'CA total (FCFA)', value: stats.revenue.toLocaleString(), icon: DollarSign, color: '#C9A84C' },
-                    { label: 'KYC en attente',  value: kycPending.length,       icon: Shield,     color: '#7A7A6E' },
+                    { label: 'KYC en attente',  value: kycPending.length,             icon: Shield,     color: '#7A7A6E' },
                   ].map(k => (
                     <div key={k.label} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'20px'}}>
                       <k.icon size={20} style={{color:k.color,marginBottom:'12px'}} />
@@ -357,6 +368,25 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+
+                {/* Bouton Sync Jumia */}
+                <button onClick={triggerScrape} disabled={scraping} style={{
+                  display:'flex',alignItems:'center',gap:'10px',padding:'14px 20px',width:'100%',
+                  background:'rgba(232,93,38,0.07)',border:'1.5px dashed rgba(232,93,38,0.35)',
+                  borderRadius:'16px',cursor: scraping ? 'default' : 'pointer',textAlign:'left',
+                  opacity: scraping ? 0.7 : 1, transition:'all 0.15s',
+                }}>
+                  <span style={{fontSize:'20px'}}>{scraping ? '⏳' : '🛒'}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:'14px',color:'#E85D26'}}>
+                      {scraping ? 'Synchronisation Jumia CI en cours…' : 'Synchroniser les prix Jumia CI'}
+                    </div>
+                    <div style={{fontSize:'11px',color:'rgba(232,93,38,0.55)',marginTop:'2px'}}>
+                      Met à jour les prix + photos depuis Jumia CI pour tous les matériaux
+                    </div>
+                  </div>
+                  {!scraping && <span style={{fontSize:'12px',color:'#E85D26',fontWeight:600}}>Lancer →</span>}
+                </button>
 
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'24px'}}>
                   <div style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'16px',padding:'24px'}}>

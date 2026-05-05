@@ -76,10 +76,8 @@ export default function AdminPrixPage() {
           </Link>
           <nav className="space-y-1">
             {[
-              { href: '/admin', label: '📊 Vue d\'ensemble' },
-              { href: '/admin/prix', label: '💰 Gestionnaire de prix', active: true },
-              { href: '/admin/kyc', label: '🔍 Validation KYC' },
-              { href: '/admin/litiges', label: '⚖️ Litiges' },
+              { href: '/admin',      label: '📊 Vue d\'ensemble' },
+              { href: '/admin/prix', label: '💰 Prix matériaux', active: true },
             ].map(item => (
               <Link key={item.href} href={item.href}
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors ${
