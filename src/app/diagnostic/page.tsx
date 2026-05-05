@@ -43,6 +43,30 @@ function parseDuration(str: string): number {
   return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 2
 }
 
+function materialEmoji(name: string): string {
+  const n = name.toLowerCase()
+  if (/robinet|mitigeur|mélangeur/.test(n)) return '🚿'
+  if (/tuyau|tube|pvc|flexible/.test(n)) return '🔧'
+  if (/joint|torique|plomberie/.test(n)) return '🔩'
+  if (/siphon|bonde|collecteur/.test(n)) return '🔧'
+  if (/câble|fil électrique|conducteur/.test(n)) return '⚡'
+  if (/disjoncteur|différentiel|interrupteur/.test(n)) return '🔌'
+  if (/prise|tableau|bornier/.test(n)) return '🔌'
+  if (/ampoule|led|luminaire/.test(n)) return '💡'
+  if (/ciment|béton|mortier|sac/.test(n)) return '🧱'
+  if (/carrelage|dalle|faïence/.test(n)) return '🟦'
+  if (/peinture|laque|enduit|apprêt/.test(n)) return '🎨'
+  if (/rouleau|pinceau|bâche/.test(n)) return '🖌️'
+  if (/porte|fenêtre|volet/.test(n)) return '🚪'
+  if (/serrure|cadenas|verrou|clé/.test(n)) return '🔑'
+  if (/clim|climatiseur|filtre|réfrigérant/.test(n)) return '❄️'
+  if (/sable|gravier|parpaing/.test(n)) return '🧱'
+  if (/vis|boulon|cheville|écrou/.test(n)) return '🔩'
+  if (/taloche|truelle|spatule/.test(n)) return '🧱'
+  if (/bois|planche|contreplaqué/.test(n)) return '🪵'
+  return '🔧'
+}
+
 const URGENCY = {
   low:       { label: 'Pas urgent', color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)',  icon: '🟢' },
   medium:    { label: 'Normal',     color: '#C9A84C', bg: 'rgba(201,168,76,0.1)', icon: '🟡' },
@@ -667,47 +691,55 @@ export default function DiagnosticPage() {
                           })}
                         </div>
 
-                        {/* Photo Jumia + lien produit */}
-                        {hasPhoto && (
-                          <a
-                            href={activeTierData.source_url || '#'}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #EDE8DE', textDecoration: 'none' }}
-                          >
-                            <img
-                              src={activeTierData.photo_url}
-                              alt={mat.name}
-                              style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0, background: '#EDE8DE' }}
-                              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '11px', fontWeight: 600, color: '#0F1410', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {activeTierData.brand || mat.name}
-                              </div>
-                              <span style={{ fontSize: '11px', color: '#E85D26', fontWeight: 600 }}>
-                                Voir sur Jumia CI →
-                              </span>
-                            </div>
-                          </a>
-                        )}
+                        {/* Carte produit — Jumia (photo cliquable) ou vendeur physique (emoji) */}
+                        {(hasPhoto || hasVendorQuartier) && (() => {
+                          const proximityColor = hasVendorQuartier && activeTierData.km_to_client <= 3 ? '#2B6B3E' : '#C9A84C'
+                          const proximityBg    = hasVendorQuartier && activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.07)' : 'rgba(201,168,76,0.07)'
+                          const proximityBd    = hasVendorQuartier && activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.2)' : 'rgba(201,168,76,0.2)'
+                          return (
+                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: hasPhoto ? '#FAFAF8' : proximityBg, borderRadius: '10px', border: `1px solid ${hasPhoto ? '#EDE8DE' : proximityBd}` }}>
 
-                        {/* Badge proximité vendeur physique */}
-                        {hasVendorQuartier && (
-                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 10px', background: activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.07)' : 'rgba(201,168,76,0.07)', borderRadius: '10px', border: `1px solid ${activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.2)' : 'rgba(201,168,76,0.2)'}` }}>
-                            <span style={{ fontSize: '13px' }}>{activeTierData.km_to_client <= 3 ? '📍' : '🗺️'}</span>
-                            <div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: activeTierData.km_to_client <= 3 ? '#2B6B3E' : '#C9A84C' }}>
-                                {activeTierData.vendor_quartier}
-                              </span>
-                              {activeTierData.km_to_client != null && (
-                                <span style={{ fontSize: '10px', color: '#7A7A6E', marginLeft: '5px' }}>
-                                  · {activeTierData.km_to_client} km de vous
-                                </span>
+                              {/* Visuel : photo Jumia cliquable ou emoji produit */}
+                              {hasPhoto ? (
+                                <a href={activeTierData.source_url || '#'} target="_blank" rel="noreferrer" style={{ flexShrink: 0, display: 'block', lineHeight: 0 }}>
+                                  <img
+                                    src={activeTierData.photo_url}
+                                    alt={mat.name}
+                                    style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', background: '#EDE8DE', display: 'block' }}
+                                    onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                  />
+                                </a>
+                              ) : (
+                                <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: proximityBg, border: `1px solid ${proximityBd}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
+                                  {materialEmoji(mat.name)}
+                                </div>
                               )}
+
+                              {/* Infos */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#0F1410', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {activeTierData.brand || mat.name}
+                                </div>
+                                {hasPhoto && activeTierData.source_url && (
+                                  <a href={activeTierData.source_url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#E85D26', fontWeight: 600, textDecoration: 'none' }}>
+                                    Voir sur Jumia CI →
+                                  </a>
+                                )}
+                                {hasVendorQuartier && (
+                                  <div style={{ fontSize: '10px', color: proximityColor, fontWeight: 500 }}>
+                                    📍 {activeTierData.vendor_quartier}
+                                    {activeTierData.km_to_client != null && <span style={{ color: '#7A7A6E', fontWeight: 400 }}> · {activeTierData.km_to_client} km de vous</span>}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Tag source */}
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', flexShrink: 0, whiteSpace: 'nowrap', background: hasPhoto ? 'rgba(232,93,38,0.08)' : proximityBg, color: hasPhoto ? '#E85D26' : proximityColor, border: `1px solid ${hasPhoto ? 'rgba(232,93,38,0.2)' : proximityBd}` }}>
+                                {hasPhoto ? 'Jumia CI' : activeTierData.vendor_quartier}
+                              </span>
                             </div>
-                          </div>
-                        )}
+                          )
+                        })()}
                       </div>
                     )
                   })}

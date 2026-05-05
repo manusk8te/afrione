@@ -8,6 +8,28 @@ import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
+function materialEmoji(name: string): string {
+  const n = name.toLowerCase()
+  if (/robinet|mitigeur|mélangeur/.test(n)) return '🚿'
+  if (/tuyau|tube|pvc|flexible/.test(n)) return '🔧'
+  if (/joint|torique/.test(n)) return '🔩'
+  if (/siphon|bonde/.test(n)) return '🔧'
+  if (/câble|fil électrique/.test(n)) return '⚡'
+  if (/disjoncteur|différentiel|interrupteur/.test(n)) return '🔌'
+  if (/prise|tableau/.test(n)) return '🔌'
+  if (/ampoule|led/.test(n)) return '💡'
+  if (/ciment|béton|mortier|sac/.test(n)) return '🧱'
+  if (/carrelage|dalle|faïence/.test(n)) return '🟦'
+  if (/peinture|laque|enduit|apprêt/.test(n)) return '🎨'
+  if (/rouleau|pinceau|bâche/.test(n)) return '🖌️'
+  if (/porte|fenêtre/.test(n)) return '🚪'
+  if (/serrure|cadenas|verrou/.test(n)) return '🔑'
+  if (/clim|climatiseur|filtre/.test(n)) return '❄️'
+  if (/vis|boulon|cheville/.test(n)) return '🔩'
+  if (/bois|planche/.test(n)) return '🪵'
+  return '🔧'
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   negotiation: { label: '💬 En discussion',          color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
   matching:    { label: '🔔 Nouvelle demande',        color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
@@ -828,15 +850,17 @@ export default function WarRoomPage() {
                     const hasVendor = !hasPhoto && std?.vendor_quartier
                     return (
                       <div key={item} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 10px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px'}}>
+                        {/* Visuel : photo Jumia cliquable ou emoji produit */}
                         {hasPhoto && std?.source_url ? (
                           <a href={std.source_url} target="_blank" rel="noreferrer" style={{flexShrink:0,display:'block',lineHeight:0}}>
                             <img src={std.photo_url} alt={item} style={{width:'36px',height:'36px',borderRadius:'6px',objectFit:'cover',background:'#EDE8DE',display:'block'}}
                               onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
                           </a>
-                        ) : hasPhoto ? (
-                          <img src={std.photo_url} alt={item} style={{width:'36px',height:'36px',borderRadius:'6px',objectFit:'cover',flexShrink:0,background:'#EDE8DE'}}
-                            onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
-                        ) : null}
+                        ) : (
+                          <div style={{width:'36px',height:'36px',borderRadius:'6px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0}}>
+                            {materialEmoji(item)}
+                          </div>
+                        )}
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:'11px',fontWeight:600,color:'#C9A84C',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item}</div>
                           {hasPhoto && std?.source_url && (
@@ -849,6 +873,9 @@ export default function WarRoomPage() {
                             <div style={{fontSize:'10px',color: std.km_to_client <= 3 ? '#2B6B3E' : '#7A7A6E',marginTop:'1px'}}>
                               📍 {std.vendor_quartier} · {std.km_to_client} km du client
                             </div>
+                          )}
+                          {!hasPhoto && !hasVendor && (
+                            <div style={{fontSize:'10px',color:'rgba(255,255,255,0.3)',marginTop:'1px'}}>Photo à venir</div>
                           )}
                         </div>
                         {hasVendor && (
@@ -955,26 +982,43 @@ export default function WarRoomPage() {
 
             {/* Matériel probable + liens d'achat */}
             {diagData.items_needed?.length > 0 && (
-              <div style={{display:'flex',flexDirection:'column',gap:'4px',marginBottom:'6px'}}>
+              <div style={{display:'flex',flexDirection:'column',gap:'5px',marginBottom:'6px'}}>
                 {diagData.items_needed.map((item: string) => {
                   const matData = materialsProximity.find((m: any) => m.name === item)
                   const std = matData?.tiers?.standard
                   const isJumia = std?.source === 'Jumia CI' && std?.source_url
                   const isPhysical = !isJumia && std?.vendor_quartier
+                  const proxColor = std?.km_to_client <= 3 ? '#2B6B3E' : 'rgba(255,255,255,0.4)'
+                  const proxBg    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.15)' : 'rgba(255,255,255,0.06)'
+                  const proxBd    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.3)' : 'rgba(255,255,255,0.1)'
                   return (
-                    <div key={item} style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}>
-                      <span style={{fontSize:'10px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.25)',padding:'2px 8px',borderRadius:'20px',color:'#C9A84C',fontWeight:600}}>
-                        {item}
-                      </span>
+                    <div key={item} style={{display:'flex',alignItems:'center',gap:'7px',padding:'6px 8px',background:'rgba(255,255,255,0.04)',borderRadius:'8px'}}>
+                      {/* Visuel : photo Jumia cliquable ou emoji */}
+                      {isJumia && std?.photo_url ? (
+                        <a href={std.source_url} target="_blank" rel="noreferrer" style={{flexShrink:0,display:'block',lineHeight:0}}>
+                          <img src={std.photo_url} alt={item} style={{width:'28px',height:'28px',borderRadius:'5px',objectFit:'cover',background:'rgba(255,255,255,0.1)',display:'block'}}
+                            onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                        </a>
+                      ) : (
+                        <div style={{width:'28px',height:'28px',borderRadius:'5px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',flexShrink:0}}>
+                          {materialEmoji(item)}
+                        </div>
+                      )}
+                      {/* Nom */}
+                      <span style={{fontSize:'10px',fontWeight:600,color:'#C9A84C',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item}</span>
+                      {/* Tag */}
                       {isJumia && (
-                        <a href={std.source_url} target="_blank" rel="noreferrer" style={{fontSize:'9px',fontWeight:700,color:'#E85D26',textDecoration:'none',background:'rgba(232,93,38,0.1)',padding:'2px 7px',borderRadius:'20px',border:'1px solid rgba(232,93,38,0.25)',display:'flex',alignItems:'center',gap:'3px'}}>
-                          🛒 Jumia CI →
+                        <a href={std.source_url} target="_blank" rel="noreferrer" style={{fontSize:'9px',fontWeight:700,color:'#E85D26',textDecoration:'none',background:'rgba(232,93,38,0.1)',padding:'2px 7px',borderRadius:'20px',border:'1px solid rgba(232,93,38,0.25)',flexShrink:0}}>
+                          Jumia →
                         </a>
                       )}
                       {isPhysical && (
-                        <span style={{fontSize:'9px',color: std.km_to_client <= 3 ? '#2B6B3E' : 'rgba(255,255,255,0.35)',background: std.km_to_client <= 3 ? 'rgba(43,107,62,0.15)' : 'rgba(255,255,255,0.06)',padding:'2px 7px',borderRadius:'20px',border:`1px solid ${std.km_to_client <= 3 ? 'rgba(43,107,62,0.3)' : 'rgba(255,255,255,0.1)'}`}}>
-                          📍 {std.vendor_quartier}{std.km_to_client != null ? ` · ${std.km_to_client} km` : ''}
+                        <span style={{fontSize:'9px',color:proxColor,background:proxBg,padding:'2px 7px',borderRadius:'20px',border:`1px solid ${proxBd}`,flexShrink:0,whiteSpace:'nowrap'}}>
+                          📍 {std.vendor_quartier}{std.km_to_client != null ? ` · ${std.km_to_client}km` : ''}
                         </span>
+                      )}
+                      {!isJumia && !isPhysical && (
+                        <span style={{fontSize:'9px',color:'rgba(255,255,255,0.2)',flexShrink:0}}>Photo à venir</span>
                       )}
                     </div>
                   )
