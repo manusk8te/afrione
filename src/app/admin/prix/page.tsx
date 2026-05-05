@@ -1,46 +1,69 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Edit2, Save, X, Plus, TrendingUp, TrendingDown } from 'lucide-react'
+import { Edit2, Save, X, RefreshCw, TrendingUp, TrendingDown, Globe } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
-const CATEGORIES = ['Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie']
-
-type Material = { id: string; name: string; unit: string; price: number; min: number; max: number; source: string; category: string; change: number }
-
-const INIT_MATERIALS: Material[] = [
-  { id: '1', name: 'Joint d\'étanchéité', unit: 'unité', price: 1500, min: 1200, max: 2000, source: 'Adjamé', category: 'Plomberie', change: 0 },
-  { id: '2', name: 'Siphon PVC 32mm', unit: 'unité', price: 4500, min: 3500, max: 6000, source: 'Treichville', category: 'Plomberie', change: 5 },
-  { id: '3', name: 'Tuyau PVC 20mm (m)', unit: 'mètre', price: 2800, min: 2200, max: 3500, source: 'Adjamé', category: 'Plomberie', change: -3 },
-  { id: '4', name: 'Câble électrique 2.5mm (m)', unit: 'mètre', price: 1200, min: 900, max: 1500, source: 'Adjamé', category: 'Électricité', change: 8 },
-  { id: '5', name: 'Disjoncteur 16A', unit: 'unité', price: 8500, min: 7000, max: 11000, source: 'Treichville', category: 'Électricité', change: 0 },
-  { id: '6', name: 'Peinture intérieure (L)', unit: 'litre', price: 4200, min: 3500, max: 5500, source: 'Adjamé', category: 'Peinture', change: -2 },
-  { id: '7', name: 'Enduit de lissage (kg)', unit: 'kg', price: 850, min: 700, max: 1100, source: 'Fournisseur', category: 'Peinture', change: 0 },
-]
-
-const LABOR_RATES = [
-  { metier: 'Plombier', tarif: 6000, urgence: 50, nuit: 30, weekend: 20 },
-  { metier: 'Électricien', tarif: 8000, urgence: 60, nuit: 30, weekend: 25 },
-  { metier: 'Peintre', tarif: 4500, urgence: 30, nuit: 20, weekend: 15 },
-  { metier: 'Maçon', tarif: 5500, urgence: 40, nuit: 25, weekend: 20 },
-]
+const CATEGORIES = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Carrelage']
+const TIER_LABELS: Record<string, { label: string; color: string }> = {
+  economique: { label: 'Éco',      color: '#2B6B3E' },
+  standard:   { label: 'Standard', color: '#C9A84C' },
+  premium:    { label: 'Premium',  color: '#E85D26' },
+}
 
 export default function AdminPrixPage() {
-  const [materials, setMaterials] = useState<Material[]>(INIT_MATERIALS)
+  const [materials, setMaterials] = useState<any[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editValues, setEditValues] = useState<Partial<Material>>({})
+  const [editValues, setEditValues] = useState<any>({})
   const [activeCategory, setActiveCategory] = useState('Tous')
+  const [loading, setLoading]     = useState(true)
+  const [scraping, setScraping]   = useState(false)
+  const [scrapeResult, setScrapeResult] = useState<string | null>(null)
 
-  const startEdit = (m: Material) => {
-    setEditingId(m.id)
-    setEditValues({ price: m.price, min: m.min, max: m.max })
+  useEffect(() => { loadMaterials() }, [])
+
+  const loadMaterials = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('price_materials')
+      .select('*')
+      .order('category').order('tier').order('name')
+    setMaterials(data || [])
+    setLoading(false)
   }
 
-  const saveEdit = (id: string) => {
+  const startEdit = (m: any) => {
+    setEditingId(m.id)
+    setEditValues({ price_market: m.price_market, price_min: m.price_min, price_max: m.price_max })
+  }
+
+  const saveEdit = async (id: string) => {
+    await supabase.from('price_materials').update(editValues).eq('id', id)
     setMaterials(ms => ms.map(m => m.id === id ? { ...m, ...editValues } : m))
     setEditingId(null)
   }
 
-  const filtered = activeCategory === 'Tous' ? materials : materials.filter(m => m.category === activeCategory)
+  const triggerScrape = async (category?: string) => {
+    setScraping(true)
+    setScrapeResult(null)
+    try {
+      const res = await fetch('/api/admin/scrape-prices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(category ? { category } : {}),
+      })
+      const data = await res.json()
+      setScrapeResult(`${data.updated} prix mis à jour depuis Jumia CI`)
+      await loadMaterials()
+    } catch {
+      setScrapeResult('Erreur lors du scraping')
+    }
+    setScraping(false)
+  }
+
+  const filtered = activeCategory === 'Tous'
+    ? materials
+    : materials.filter(m => m.category === activeCategory)
 
   return (
     <div className="min-h-screen bg-dark text-cream">
@@ -68,20 +91,31 @@ export default function AdminPrixPage() {
           </nav>
         </aside>
 
-        <main className="flex-1 p-6 max-w-4xl">
-          <div className="flex items-center gap-3 mb-8">
-            <Link href="/admin" className="p-1 hover:bg-white/10 rounded-lg transition-colors lg:hidden">
-              <ArrowLeft size={18} />
-            </Link>
+        <main className="flex-1 p-6 max-w-5xl">
+          <div className="flex items-center justify-between gap-3 mb-8">
             <div>
               <h1 className="font-display text-2xl font-bold text-cream">Gestionnaire de Prix</h1>
-              <p className="text-muted text-sm mt-0.5">Matériaux · Taux horaires · Marges plateforme</p>
+              <p className="text-muted text-sm mt-0.5">3 tiers par matériau · Jumia CI · Marchés physiques</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {scrapeResult && <span className="text-xs text-green-400 font-mono">{scrapeResult}</span>}
+              <button
+                onClick={() => triggerScrape(activeCategory !== 'Tous' ? activeCategory : undefined)}
+                disabled={scraping}
+                className="flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/30 rounded-xl text-accent text-sm font-semibold hover:bg-accent/20 transition-colors disabled:opacity-50"
+              >
+                <Globe size={14} className={scraping ? 'animate-spin' : ''} />
+                {scraping ? 'Scraping…' : 'Sync Jumia CI'}
+              </button>
+              <button onClick={loadMaterials} className="p-2 bg-white/5 rounded-xl text-muted hover:text-cream transition-colors">
+                <RefreshCw size={14} />
+              </button>
             </div>
           </div>
 
           {/* Category filter */}
           <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
-            {['Tous', ...CATEGORIES].map(c => (
+            {CATEGORIES.map(c => (
               <button key={c} onClick={() => setActiveCategory(c)}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   activeCategory === c ? 'bg-accent text-white' : 'bg-dark2 text-muted hover:text-cream'
@@ -94,16 +128,21 @@ export default function AdminPrixPage() {
           {/* Materials table */}
           <div className="bg-dark2 rounded-2xl border border-border/30 overflow-hidden mb-8">
             <div className="px-4 py-3 border-b border-border/30 flex items-center justify-between">
-              <span className="font-mono text-xs text-muted uppercase tracking-wider">Prix Matériaux de Référence</span>
-              <button className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors">
-                <Plus size={12} /> Ajouter
-              </button>
+              <span className="font-mono text-xs text-muted uppercase tracking-wider">
+                Prix Matériaux — {filtered.length} références
+              </span>
             </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12 text-muted text-sm gap-2">
+                <RefreshCw size={14} className="animate-spin" /> Chargement depuis Supabase…
+              </div>
+            ) : (
             <div className="overflow-x-auto">
+
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/20">
-                    {['Matériau', 'Unité', 'Prix marché', 'Min', 'Max', 'Source', 'Variation', ''].map(h => (
+                    {['Matériau', 'Tier', 'Marque', 'Prix marché', 'Min', 'Max', 'Source', 'Web', ''].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-mono text-muted uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -111,50 +150,60 @@ export default function AdminPrixPage() {
                 <tbody>
                   {filtered.map(m => (
                     <tr key={m.id} className="border-b border-border/10 hover:bg-white/3 transition-colors">
-                      <td className="px-4 py-3 font-medium text-cream">{m.name}</td>
-                      <td className="px-4 py-3 text-muted font-mono text-xs">{m.unit}</td>
+                      <td className="px-4 py-3 font-medium text-cream max-w-[160px] truncate">{m.name}</td>
+                      <td className="px-4 py-3">
+                        {m.tier && (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{
+                            color: TIER_LABELS[m.tier]?.color,
+                            background: `${TIER_LABELS[m.tier]?.color}22`,
+                          }}>
+                            {TIER_LABELS[m.tier]?.label}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-muted text-xs">{m.brand || '—'}</td>
                       <td className="px-4 py-3">
                         {editingId === m.id ? (
-                          <input type="number" value={editValues.price}
-                            onChange={e => setEditValues(v => ({ ...v, price: parseInt(e.target.value) }))}
+                          <input type="number" value={editValues.price_market}
+                            onChange={e => setEditValues((v: any) => ({ ...v, price_market: parseInt(e.target.value) }))}
                             className="w-24 bg-dark border border-accent/50 rounded-lg px-2 py-1 text-cream text-xs focus:outline-none" />
                         ) : (
-                          <span className="font-bold text-cream">{m.price.toLocaleString()}</span>
+                          <span className="font-bold text-cream">{m.price_market?.toLocaleString()}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {editingId === m.id ? (
-                          <input type="number" value={editValues.min}
-                            onChange={e => setEditValues(v => ({ ...v, min: parseInt(e.target.value) }))}
+                          <input type="number" value={editValues.price_min}
+                            onChange={e => setEditValues((v: any) => ({ ...v, price_min: parseInt(e.target.value) }))}
                             className="w-20 bg-dark border border-border/50 rounded-lg px-2 py-1 text-muted text-xs focus:outline-none" />
                         ) : (
-                          <span className="text-muted">{m.min.toLocaleString()}</span>
+                          <span className="text-muted">{m.price_min?.toLocaleString()}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {editingId === m.id ? (
-                          <input type="number" value={editValues.max}
-                            onChange={e => setEditValues(v => ({ ...v, max: parseInt(e.target.value) }))}
+                          <input type="number" value={editValues.price_max}
+                            onChange={e => setEditValues((v: any) => ({ ...v, price_max: parseInt(e.target.value) }))}
                             className="w-20 bg-dark border border-border/50 rounded-lg px-2 py-1 text-muted text-xs focus:outline-none" />
                         ) : (
-                          <span className="text-muted">{m.max.toLocaleString()}</span>
+                          <span className="text-muted">{m.price_max?.toLocaleString()}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs bg-dark px-2 py-1 rounded-lg text-muted">{m.source}</span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`flex items-center gap-1 text-xs font-mono ${
-                          m.change > 0 ? 'text-red-400' : m.change < 0 ? 'text-accent2' : 'text-muted'
-                        }`}>
-                          {m.change > 0 ? <TrendingUp size={12} /> : m.change < 0 ? <TrendingDown size={12} /> : null}
-                          {m.change !== 0 ? `${m.change > 0 ? '+' : ''}${m.change}%` : '—'}
-                        </span>
+                      <td className="px-4 py-3 text-xs font-mono text-muted">
+                        {m.web_price ? m.web_price.toLocaleString() : '—'}
+                        {m.last_scraped_at && (
+                          <div className="text-xs text-muted/40 mt-0.5">
+                            {new Date(m.last_scraped_at).toLocaleDateString('fr-FR')}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {editingId === m.id ? (
                           <div className="flex gap-1">
-                            <button onClick={() => saveEdit(m.id)} className="p-1.5 bg-accent2/20 text-accent2 rounded-lg hover:bg-accent2/30 transition-colors">
+                            <button onClick={() => saveEdit(m.id)} className="p-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors">
                               <Save size={12} />
                             </button>
                             <button onClick={() => setEditingId(null)} className="p-1.5 bg-white/10 text-muted rounded-lg hover:bg-white/20 transition-colors">
@@ -172,6 +221,7 @@ export default function AdminPrixPage() {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
 
           {/* Labor rates */}
@@ -188,10 +238,18 @@ export default function AdminPrixPage() {
                 </tr>
               </thead>
               <tbody>
-                {LABOR_RATES.map(r => (
+                {[
+                  { metier: 'Plombier',    tarif: 3000, urgence: 50, nuit: 30, weekend: 20 },
+                  { metier: 'Électricien', tarif: 3500, urgence: 50, nuit: 30, weekend: 25 },
+                  { metier: 'Peintre',     tarif: 2500, urgence: 40, nuit: 20, weekend: 15 },
+                  { metier: 'Maçon',       tarif: 2800, urgence: 45, nuit: 25, weekend: 20 },
+                  { metier: 'Climaticien', tarif: 4000, urgence: 60, nuit: 30, weekend: 25 },
+                  { metier: 'Serrurier',   tarif: 3000, urgence: 50, nuit: 30, weekend: 20 },
+                  { metier: 'Carreleur',   tarif: 2800, urgence: 40, nuit: 20, weekend: 15 },
+                ].map(r => (
                   <tr key={r.metier} className="border-b border-border/10 hover:bg-white/3">
                     <td className="px-4 py-3 font-medium text-cream">{r.metier}</td>
-                    <td className="px-4 py-3 font-bold text-accent">{r.tarif.toLocaleString()} FCFA</td>
+                    <td className="px-4 py-3 font-bold text-accent">{r.tarif.toLocaleString()} FCFA/h</td>
                     <td className="px-4 py-3 text-red-400 font-mono text-xs">+{r.urgence}%</td>
                     <td className="px-4 py-3 text-muted font-mono text-xs">+{r.nuit}%</td>
                     <td className="px-4 py-3 text-muted font-mono text-xs">+{r.weekend}%</td>

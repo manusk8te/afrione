@@ -117,11 +117,45 @@ export async function POST(req: NextRequest) {
     urgency: resolvedUrgency, serviceFee, historicalResiduals,
   }
 
-  const result = runMonteCarlo(input)
+  let result = runMonteCarlo(input)
+
+  // ── Contrainte : prix final < prix marché traditionnel ───────────────────
+  const { data: refData } = await supabaseAdmin
+    .from('market_reference_prices')
+    .select('reference_price_fcfa')
+    .eq('category', resolvedCategory)
+    .maybeSingle()
+
+  const marketRef = refData?.reference_price_fcfa ?? null
+  let savings = 0
+  let belowMarket = false
+
+  if (marketRef && result.estimate >= marketRef) {
+    // Réduire la commission pour rester sous le marché (min 5%)
+    const targetPrice = Math.round(marketRef * 0.95) // 5% sous le marché
+    const reducedFee  = { ...serviceFee }
+    // On réduit commission jusqu'à 5% minimum
+    const excess      = result.estimate - targetPrice
+    const feeReduction = Math.min(Math.round(excess / result.estimate * 100), serviceFee.commission_pct - 5)
+    reducedFee.commission_pct = serviceFee.commission_pct - feeReduction
+    reducedFee.artisan_share_pct = 100 - reducedFee.commission_pct - serviceFee.assurance_sav_pct
+    result = runMonteCarlo({ ...input, serviceFee: reducedFee })
+  }
+
+  if (marketRef) {
+    savings     = Math.max(0, marketRef - result.estimate)
+    belowMarket = result.estimate < marketRef
+  }
 
   const explanation = buildExplanation(result, resolvedCategory, quartier, distanceKm, hour, resolvedUrgency)
 
-  return NextResponse.json({ ...result, explanation_human: explanation })
+  return NextResponse.json({
+    ...result,
+    explanation_human: explanation,
+    market_reference_fcfa: marketRef,
+    savings_vs_market:     savings,
+    below_market:          belowMarket,
+  })
 }
 
 function buildExplanation(

@@ -41,8 +41,16 @@ export default function WarRoomPage() {
     estimate: number
     interval: { low: number; high: number }
     decomp: { labor: number; materials: number; transport: number; premium: number }
+    market_reference_fcfa?: number
+    savings_vs_market?: number
+    below_market?: boolean
   } | null>(null)
   const [pricingSugLoading, setPricingSugLoading] = useState(false)
+
+  // Sélecteur de tiers matériaux
+  const [materialTiers, setMaterialTiers]   = useState<any[]>([])
+  const [selectedTiers, setSelectedTiers]   = useState<Record<string, 'economique'|'standard'|'premium'>>({})
+  const [tiersLoading, setTiersLoading]     = useState(false)
 
   // Avis post-mission
   const [rating, setRating]               = useState(0)
@@ -184,11 +192,28 @@ export default function WarRoomPage() {
     if (rid) notifyOther(text, rid)
   }
 
-  // Ouvrir le formulaire devis + charger la suggestion moteur
+  // Ouvrir le formulaire devis + charger suggestion + tiers matériaux
   const openDevis = async () => {
     setShowDevis(true)
     if (pricingSuggestion || pricingSugLoading || !diagData) return
     setPricingSugLoading(true)
+
+    // Charger les tiers matériaux
+    if (diagData.items_needed?.length && !materialTiers.length) {
+      setTiersLoading(true)
+      try {
+        const res = await fetch(`/api/materials?category=${encodeURIComponent(diagData.category || 'Plomberie')}&items=${encodeURIComponent((diagData.items_needed || []).join(','))}`)
+        if (res.ok) {
+          const data = await res.json()
+          setMaterialTiers(data.materials || [])
+          // Sélection par défaut : standard
+          const defaults: Record<string, 'economique'|'standard'|'premium'> = {}
+          for (const m of data.materials || []) defaults[m.name] = 'standard'
+          setSelectedTiers(defaults)
+        }
+      } catch {}
+      setTiersLoading(false)
+    }
     const metierMap: Record<string, string> = {
       'Plomberie':'Plombier','Électricité':'Électricien','Peinture':'Peintre',
       'Maçonnerie':'Maçon','Menuiserie':'Menuisier','Climatisation':'Climaticien',
@@ -222,6 +247,9 @@ export default function WarRoomPage() {
             transport: d.decomposition.transport.median,
             premium:   d.decomposition.premium.median,
           },
+          market_reference_fcfa: d.market_reference_fcfa,
+          savings_vs_market:     d.savings_vs_market,
+          below_market:          d.below_market,
         })
       }
     } catch {}
@@ -783,6 +811,59 @@ export default function WarRoomPage() {
                       <span style={{color:'#0F1410',fontWeight:600}}>{label}</span> {val.toLocaleString()}
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sélecteur tiers matériaux */}
+            {tiersLoading && (
+              <div style={{fontSize:'10px',color:'#7A7A6E',padding:'8px 0',display:'flex',alignItems:'center',gap:'6px'}}>
+                <div style={{width:'10px',height:'10px',border:'1.5px solid rgba(232,93,38,0.3)',borderTop:'1.5px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+                Chargement des options matériaux…
+              </div>
+            )}
+            {!tiersLoading && materialTiers.length > 0 && (
+              <div style={{marginBottom:'12px'}}>
+                <div style={{fontSize:'9px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.12em',fontFamily:'Space Mono',marginBottom:'8px'}}>CHOIX DES MATÉRIAUX</div>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                  {materialTiers.slice(0,4).map((mat: any) => (
+                    <div key={mat.name} style={{background:'#F9F7F4',borderRadius:'10px',padding:'10px 12px',border:'1px solid #E8E2D8'}}>
+                      <div style={{fontSize:'11px',fontWeight:600,color:'#0F1410',marginBottom:'6px'}}>{mat.name}</div>
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'4px'}}>
+                        {(['economique','standard','premium'] as const).map(tier => {
+                          const t = mat.tiers[tier]
+                          const active = selectedTiers[mat.name] === tier
+                          const colors = {economique:'#2B6B3E',standard:'#C9A84C',premium:'#E85D26'}
+                          const labels = {economique:'Éco',standard:'Standard',premium:'Premium'}
+                          return (
+                            <button key={tier} onClick={() => setSelectedTiers(p => ({...p,[mat.name]:tier}))}
+                              style={{
+                                padding:'6px 4px',borderRadius:'8px',cursor:'pointer',textAlign:'center',
+                                border:`1.5px solid ${active ? colors[tier] : '#D8D2C4'}`,
+                                background: active ? `rgba(${tier==='economique'?'43,107,62':tier==='standard'?'201,168,76':'232,93,38'},0.08)` : 'white',
+                                transition:'all 0.12s',
+                              }}>
+                              <div style={{fontSize:'9px',fontWeight:700,color:active?colors[tier]:'#7A7A6E',letterSpacing:'0.05em'}}>{labels[tier]}</div>
+                              <div style={{fontSize:'11px',fontWeight:700,color:active?colors[tier]:'#0F1410',marginTop:'2px',fontFamily:'Space Mono'}}>
+                                {t?.price_market?.toLocaleString('fr') || '—'}
+                              </div>
+                              {t?.brand && <div style={{fontSize:'8px',color:'#A09A8E',marginTop:'1px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.brand}</div>}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Économies vs marché */}
+            {pricingSuggestion?.below_market && pricingSuggestion.savings_vs_market && pricingSuggestion.savings_vs_market > 0 && (
+              <div style={{background:'rgba(43,107,62,0.06)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'10px',padding:'8px 12px',marginBottom:'10px',display:'flex',alignItems:'center',gap:'8px'}}>
+                <span style={{fontSize:'16px'}}>💰</span>
+                <div style={{fontSize:'11px',color:'#2B6B3E',fontWeight:600}}>
+                  Client économise <span style={{fontFamily:'Space Mono'}}>{pricingSuggestion.savings_vs_market.toLocaleString('fr')} FCFA</span> vs marché traditionnel
                 </div>
               </div>
             )}
