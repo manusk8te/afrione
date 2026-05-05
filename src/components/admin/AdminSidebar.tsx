@@ -146,7 +146,6 @@ export default function AdminSidebar({
 
       {/* ── MOBILE TOP BAR ──────────────────────────────────────── */}
       <header style={{
-        display: 'flex',
         alignItems: 'center',
         gap: '4px',
         padding: '8px 12px',
