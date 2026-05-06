@@ -27,11 +27,20 @@ export async function GET(req: NextRequest) {
   if (type === 'transactions') {
     const { data, error } = await supabaseAdmin
       .from('transactions')
-      .select('*, missions(category, users!missions_client_id_fkey(name))')
+      .select('id, amount, platform_fee, artisan_amount, status, payment_method, wave_transaction_id, created_at, released_at, mission_id, missions(id, category, quartier, client_id, users!missions_client_id_fkey(name, email))')
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(50)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data)
+    return NextResponse.json(data || [])
+  }
+
+  if (type === 'users') {
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select('id, name, email, phone, role, is_active, created_at, avatar_url, artisan_pros(id, metier, kyc_status)')
+      .order('created_at', { ascending: false })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data || [])
   }
 
   if (type === 'stats') {
@@ -95,6 +104,16 @@ export async function POST(req: NextRequest) {
       .from('price_materials')
       .update({ price_market, price_min, price_max })
       .eq('id', id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === 'set_role') {
+    const { userId, role } = body
+    if (!['client', 'artisan', 'admin'].includes(role)) {
+      return NextResponse.json({ error: 'role invalide' }, { status: 400 })
+    }
+    const { error } = await supabaseAdmin.from('users').update({ role }).eq('id', userId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ ok: true })
   }

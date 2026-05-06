@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { TrendingUp, Users, CheckCircle, AlertCircle, DollarSign, Activity, Shield, X, Bell, RotateCcw, MessageSquare, ExternalLink } from 'lucide-react'
+import { TrendingUp, Users, CheckCircle, AlertCircle, DollarSign, Activity, Shield, X, Bell, RotateCcw, MessageSquare, ExternalLink, ShieldCheck, UserX, UserCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import AdminSidebar from '@/components/admin/AdminSidebar'
@@ -37,6 +37,10 @@ export default function AdminDashboard() {
   const [kycFilter, setKycFilter]       = useState<'pending'|'approved'|'rejected'>('pending')
   const [transactions, setTransactions] = useState<any[]>([])
 
+  // Users
+  const [users, setUsers] = useState<any[]>([])
+  const [usersFilter, setUsersFilter] = useState<'all'|'client'|'artisan'|'admin'>('all')
+
   // Litiges
   const [litiges, setLitiges]               = useState<any[]>([])
   const [selectedLitige, setSelectedLitige] = useState<any>(null)
@@ -68,12 +72,13 @@ export default function AdminDashboard() {
 
     // Toutes les requêtes admin passent par l'API server-side (supabaseAdmin / service_role)
     // pour bypasser RLS et voir toutes les données (pending, users joints, etc.)
-    const [statsRes, missionsRes, kycRes, txRes, litigesRes] = await Promise.all([
+    const [statsRes, missionsRes, kycRes, txRes, litigesRes, usersRes] = await Promise.all([
       fetch('/api/admin/data?type=stats').then(r => r.json()),
       fetch('/api/admin/data?type=missions').then(r => r.json()),
       fetch('/api/admin/data?type=kyc').then(r => r.json()),
       fetch('/api/admin/data?type=transactions').then(r => r.json()),
       fetch('/api/admin/data?type=litiges').then(r => r.json()),
+      fetch('/api/admin/data?type=users').then(r => r.json()),
     ])
 
     setStats({ missions: statsRes.missions || 0, artisans: statsRes.artisans || 0, revenue: statsRes.revenue || 0 })
@@ -82,6 +87,7 @@ export default function AdminDashboard() {
     setArtisans(Array.isArray(kycRes) ? kycRes : [])
     setTransactions(Array.isArray(txRes) ? txRes : [])
     setLitiges(Array.isArray(litigesRes) ? litigesRes : [])
+    setUsers(Array.isArray(usersRes) ? usersRes : [])
 
     setLoading(false)
   }, [])
@@ -176,6 +182,17 @@ export default function AdminDashboard() {
     await adminAction({ action: 'revoke_kyc', artisanId })
     flash('↩ KYC révoqué — artisan repassé en attente')
     loadAll()
+  }
+
+  const setRole = async (userId: string, role: 'client'|'artisan'|'admin') => {
+    const res = await adminAction({ action: 'set_role', userId, role })
+    const data = await res.json()
+    if (data.ok) {
+      flash(role === 'admin' ? '⭐ Utilisateur promu Admin' : role === 'artisan' ? 'Rôle → Artisan' : 'Rôle → Client')
+      loadAll()
+    } else {
+      flash('Erreur : ' + (data.error || 'inconnue'))
+    }
   }
 
   const toggleArtisan = async (artisanId: string, current: boolean) => {
@@ -764,27 +781,198 @@ export default function AdminDashboard() {
             )}
 
             {/* ===== TRANSACTIONS ===== */}
-            {tab === 'transactions' && (
-              <div>
-                <h2 style={{fontSize:'20px',fontWeight:700,color:'#FAFAF5',marginBottom:'20px'}}>Transactions ({transactions.length})</h2>
-                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                  {transactions.map(t => (
-                    <div key={t.id} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'12px',padding:'16px',display:'flex',alignItems:'center',gap:'16px'}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:'14px',fontWeight:500,color:'#FAFAF5'}}>{t.missions?.users?.name || 'Client'} · {t.missions?.category || '—'}</div>
-                        <div style={{fontSize:'12px',color:'#7A7A6E'}}>{new Date(t.created_at).toLocaleDateString('fr-FR')} · {t.payment_method}</div>
-                      </div>
-                      <div style={{textAlign:'right'}}>
-                        <div style={{fontSize:'15px',fontWeight:700,color:'#FAFAF5'}}>{t.amount?.toLocaleString()} FCFA</div>
-                        <div style={{fontSize:'11px',color:'#7A7A6E'}}>Artisan: {t.artisan_amount?.toLocaleString()} FCFA</div>
-                      </div>
-                      <span style={{fontSize:'11px',padding:'3px 10px',borderRadius:'20px',background:'rgba(201,168,76,0.1)',color:'#C9A84C'}}>{t.status}</span>
+            {tab === 'transactions' && (() => {
+              const totalVolume   = transactions.reduce((s,t) => s + (t.amount || 0), 0)
+              const totalFees     = transactions.reduce((s,t) => s + (t.platform_fee || 0), 0)
+              const totalArtisan  = transactions.reduce((s,t) => s + (t.artisan_amount || 0), 0)
+              const released      = transactions.filter(t => t.status === 'released').length
+              const escrow        = transactions.filter(t => t.status === 'escrow').length
+
+              const STATUS_TX: Record<string, {label:string;color:string;bg:string}> = {
+                pending:   { label: 'En attente',  color: '#C9A84C', bg: 'rgba(201,168,76,0.12)'  },
+                escrow:    { label: 'Escrow',       color: '#3B82F6', bg: 'rgba(59,130,246,0.12)'  },
+                released:  { label: 'Libéré',       color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)'   },
+                refunded:  { label: 'Remboursé',    color: '#ef4444', bg: 'rgba(239,68,68,0.12)'   },
+              }
+
+              return (
+                <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
+                    <h2 style={{fontSize:'20px',fontWeight:700,color:'#FAFAF5',margin:0}}>
+                      Transactions <span style={{fontSize:'14px',fontWeight:400,color:'#7A7A6E'}}>({transactions.length})</span>
+                    </h2>
+                    <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                      <span style={{fontSize:'11px',padding:'4px 12px',borderRadius:'20px',background:'rgba(43,107,62,0.12)',color:'#2B6B3E',fontWeight:600}}>{released} libérées</span>
+                      <span style={{fontSize:'11px',padding:'4px 12px',borderRadius:'20px',background:'rgba(59,130,246,0.12)',color:'#3B82F6',fontWeight:600}}>{escrow} en escrow</span>
                     </div>
-                  ))}
-                  {transactions.length === 0 && <p style={{textAlign:'center',color:'#7A7A6E',padding:'48px'}}>Aucune transaction</p>}
+                  </div>
+
+                  {/* Stats rapides */}
+                  {transactions.length > 0 && (
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px'}}>
+                      {[
+                        { label:'Volume total',   value: totalVolume.toLocaleString()  + ' FCFA', color:'#FAFAF5' },
+                        { label:'Commissions',    value: totalFees.toLocaleString()    + ' FCFA', color:'#C9A84C' },
+                        { label:'Payé artisans',  value: totalArtisan.toLocaleString() + ' FCFA', color:'#2B6B3E' },
+                      ].map(s => (
+                        <div key={s.label} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'14px',padding:'16px'}}>
+                          <div style={{fontSize:'20px',fontWeight:700,color:s.color,fontFamily:'Space Mono'}}>{s.value}</div>
+                          <div style={{fontSize:'10px',color:'#7A7A6E',marginTop:'4px',textTransform:'uppercase',letterSpacing:'0.07em'}}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                    {transactions.map(t => {
+                      const st = STATUS_TX[t.status] || STATUS_TX.pending
+                      return (
+                        <div key={t.id} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'12px',padding:'16px 20px',display:'flex',alignItems:'center',gap:'16px',flexWrap:'wrap'}}>
+                          <div style={{flex:1,minWidth:'180px'}}>
+                            <div style={{fontSize:'14px',fontWeight:500,color:'#FAFAF5'}}>
+                              {t.missions?.users?.name || 'Client'} · <span style={{color:'#7A7A6E',fontSize:'13px'}}>{t.missions?.category || '—'}</span>
+                            </div>
+                            <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'2px'}}>
+                              {new Date(t.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}
+                              {' · '}{t.payment_method || 'Wave'}
+                              {t.wave_transaction_id && <span style={{marginLeft:'6px',fontFamily:'Space Mono',fontSize:'10px',color:'rgba(122,122,110,0.6)'}}>{t.wave_transaction_id}</span>}
+                            </div>
+                          </div>
+                          <div style={{textAlign:'right',flexShrink:0}}>
+                            <div style={{fontSize:'16px',fontWeight:700,color:'#FAFAF5',fontFamily:'Space Mono'}}>{(t.amount||0).toLocaleString()} F</div>
+                            <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'1px'}}>
+                              <span style={{color:'#2B6B3E'}}>{(t.artisan_amount||0).toLocaleString()} F artisan</span>
+                              {t.platform_fee > 0 && <span style={{color:'#C9A84C',marginLeft:'6px'}}>+{(t.platform_fee||0).toLocaleString()} F commission</span>}
+                            </div>
+                          </div>
+                          <span style={{fontSize:'11px',padding:'4px 12px',borderRadius:'20px',fontWeight:600,background:st.bg,color:st.color,flexShrink:0}}>{st.label}</span>
+                        </div>
+                      )
+                    })}
+                    {transactions.length === 0 && (
+                      <div style={{textAlign:'center',padding:'64px 20px',color:'#7A7A6E'}}>
+                        <p style={{fontSize:'36px',marginBottom:'12px'}}>💳</p>
+                        <p style={{fontSize:'15px',color:'#FAFAF5',fontWeight:600,marginBottom:'8px'}}>Aucune transaction</p>
+                        <p style={{fontSize:'13px',lineHeight:'1.6'}}>Les transactions apparaissent ici quand un client effectue un paiement Wave/Orange pour une mission.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
+
+            {/* ===== UTILISATEURS ===== */}
+            {tab === 'utilisateurs' && (() => {
+              const ROLE_FILTERS: { id: 'all'|'client'|'artisan'|'admin'; label: string; color: string }[] = [
+                { id: 'all',     label: `Tous (${users.length})`,                                                    color: '#FAFAF5' },
+                { id: 'client',  label: `Clients (${users.filter(u=>u.role==='client').length})`,                    color: '#2B6B3E' },
+                { id: 'artisan', label: `Artisans (${users.filter(u=>u.role==='artisan').length})`,                  color: '#E85D26' },
+                { id: 'admin',   label: `Admins (${users.filter(u=>u.role==='admin').length})`,                      color: '#C9A84C' },
+              ]
+
+              const ROLE_STYLE: Record<string, {label:string;color:string;bg:string}> = {
+                client:  { label: 'Client',  color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)'   },
+                artisan: { label: 'Artisan', color: '#E85D26', bg: 'rgba(232,93,38,0.12)'   },
+                admin:   { label: 'Admin',   color: '#C9A84C', bg: 'rgba(201,168,76,0.12)'  },
+              }
+
+              const shown = usersFilter === 'all' ? users : users.filter(u => u.role === usersFilter)
+
+              return (
+                <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'12px'}}>
+                    <h2 style={{fontSize:'20px',fontWeight:700,color:'#FAFAF5',margin:0}}>Gestion des utilisateurs</h2>
+                    <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+                      {ROLE_FILTERS.map(f => (
+                        <button key={f.id} onClick={() => setUsersFilter(f.id)} style={{
+                          padding:'6px 14px',borderRadius:'20px',cursor:'pointer',fontSize:'12px',fontWeight:600,
+                          border: usersFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid rgba(255,255,255,0.08)',
+                          background: usersFilter === f.id ? `${f.color}18` : 'transparent',
+                          color: usersFilter === f.id ? f.color : '#7A7A6E',
+                          transition:'all 0.15s',
+                        }}>{f.label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                    {shown.map(u => {
+                      const rs = ROLE_STYLE[u.role] || ROLE_STYLE.client
+                      const isAdmin   = u.role === 'admin'
+                      const isArtisan = u.role === 'artisan'
+                      const artisan   = u.artisan_pros?.[0]
+
+                      return (
+                        <div key={u.id} style={{
+                          background:'rgba(255,255,255,0.04)',
+                          border: isAdmin ? '1px solid rgba(201,168,76,0.25)' : '1px solid rgba(255,255,255,0.08)',
+                          borderRadius:'14px',padding:'16px 20px',
+                          display:'flex',alignItems:'center',gap:'16px',flexWrap:'wrap',
+                        }}>
+                          {/* Avatar */}
+                          <div style={{width:'42px',height:'42px',borderRadius:'10px',overflow:'hidden',background:`${rs.color}18`,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px'}}>
+                            {u.avatar_url
+                              ? <img src={u.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
+                              : isAdmin ? '⭐' : isArtisan ? '🔧' : '👤'}
+                          </div>
+
+                          {/* Infos */}
+                          <div style={{flex:1,minWidth:'200px'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'3px',flexWrap:'wrap'}}>
+                              <span style={{fontSize:'14px',fontWeight:600,color:'#FAFAF5'}}>{u.name}</span>
+                              <span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'20px',fontWeight:700,background:rs.bg,color:rs.color}}>
+                                {rs.label}
+                              </span>
+                              {artisan && (
+                                <span style={{fontSize:'10px',padding:'2px 8px',borderRadius:'20px',background:'rgba(255,255,255,0.05)',color:'#7A7A6E'}}>
+                                  {artisan.metier}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{fontSize:'12px',color:'#7A7A6E'}}>
+                              {u.email || u.phone || '—'}
+                              <span style={{marginLeft:'8px',color:'rgba(122,122,110,0.6)'}}>
+                                · Inscrit le {new Date(u.created_at).toLocaleDateString('fr-FR')}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Actions de rôle */}
+                          <div style={{display:'flex',gap:'6px',flexShrink:0,flexWrap:'wrap'}}>
+                            {!isAdmin && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Promouvoir ${u.name} en Admin ? Il aura accès au panel admin.`)) setRole(u.id, 'admin')
+                                }}
+                                style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'10px',cursor:'pointer',fontSize:'12px',fontWeight:600,background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.3)',color:'#C9A84C'}}
+                              >
+                                <ShieldCheck size={13} /> Promouvoir Admin
+                              </button>
+                            )}
+                            {isAdmin && u.id !== adminId && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Rétrograder ${u.name} ? Il perdra l'accès au panel admin.`)) setRole(u.id, 'client')
+                                }}
+                                style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'10px',cursor:'pointer',fontSize:'12px',fontWeight:600,background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.25)',color:'#ef4444'}}
+                              >
+                                <UserX size={13} /> Rétrograder
+                              </button>
+                            )}
+                            {isAdmin && u.id === adminId && (
+                              <span style={{fontSize:'11px',color:'rgba(201,168,76,0.5)',padding:'7px 14px',fontStyle:'italic'}}>Votre compte</span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {shown.length === 0 && (
+                      <p style={{textAlign:'center',color:'#7A7A6E',padding:'48px'}}>Aucun utilisateur</p>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
           </>
         )}
       </main>

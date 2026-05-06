@@ -133,13 +133,15 @@ export async function lookupItemOnJumia(item: string, category: string): Promise
  * Lance le lookup Jumia pour tous les items_needed en parallèle
  * Timeout global de 10s — si Jumia est lent on ne bloque pas le diagnostic
  */
+type JumiaResult = Awaited<ReturnType<typeof lookupItemOnJumia>>
+
 export async function enrichItemsWithJumia(
   items: string[],
   category: string
-): Promise<ReturnType<typeof lookupItemOnJumia>[]> {
+): Promise<JumiaResult[]> {
   if (!items.length) return []
 
-  const timeout = new Promise<ReturnType<typeof lookupItemOnJumia>[]>(resolve =>
+  const timeout = new Promise<JumiaResult[]>(resolve =>
     setTimeout(() => resolve([]), 10_000)
   )
 

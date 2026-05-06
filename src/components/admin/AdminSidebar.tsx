@@ -10,6 +10,7 @@ export const ADMIN_NAV = [
   { id: 'missions',     label: 'Missions',         short: 'Missions',     icon: '📋' },
   { id: 'artisans',     label: 'Artisans',         short: 'Artisans',     icon: '🔧' },
   { id: 'transactions', label: 'Transactions',     short: 'Transactions', icon: '💳' },
+  { id: 'utilisateurs', label: 'Utilisateurs',     short: 'Users',        icon: '👥' },
   { id: 'prix',         label: 'Prix matériaux',   short: 'Prix',         icon: '💰', href: '/admin/prix' },
 ]
 
