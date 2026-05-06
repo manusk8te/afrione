@@ -66,45 +66,22 @@ export default function AdminDashboard() {
       if (u?.name) setAdminName(u.name)
     }
 
-    const { count: missionCount } = await supabase.from('missions').select('*', { count: 'exact', head: true })
-    const { count: artisanCount } = await supabase.from('artisan_pros').select('*', { count: 'exact', head: true }).eq('kyc_status', 'approved')
-    const { data: txData } = await supabase.from('transactions').select('amount').eq('status', 'released')
-    const totalRevenue = (txData || []).reduce((s: number, t: any) => s + (t.amount || 0), 0)
-    setStats({ missions: missionCount || 0, artisans: artisanCount || 0, revenue: totalRevenue })
+    // Toutes les requêtes admin passent par l'API server-side (supabaseAdmin / service_role)
+    // pour bypasser RLS et voir toutes les données (pending, users joints, etc.)
+    const [statsRes, missionsRes, kycRes, txRes, litigesRes] = await Promise.all([
+      fetch('/api/admin/data?type=stats').then(r => r.json()),
+      fetch('/api/admin/data?type=missions').then(r => r.json()),
+      fetch('/api/admin/data?type=kyc').then(r => r.json()),
+      fetch('/api/admin/data?type=transactions').then(r => r.json()),
+      fetch('/api/admin/data?type=litiges').then(r => r.json()),
+    ])
 
-    const { data: missionsData } = await supabase
-      .from('missions')
-      .select('*, users!missions_client_id_fkey(name), artisan_pros(id, metier, users!artisan_pros_user_id_fkey(name))')
-      .order('created_at', { ascending: false })
-      .limit(20)
-    setMissions(missionsData || [])
-
-    const { data: kycData } = await supabase
-      .from('artisan_pros')
-      .select('id, metier, kyc_status, created_at, is_available, users!artisan_pros_user_id_fkey(name, email, avatar_url), kyc_security(id, cni_front_url, cni_back_url, diploma_urls, status, reviewed_at)')
-      .order('created_at', { ascending: false })
-    setKycAll(kycData || [])
-
-    const { data: artisansData } = await supabase
-      .from('artisan_pros')
-      .select('*, users!artisan_pros_user_id_fkey(name, email, avatar_url)')
-      .order('created_at', { ascending: false })
-      .limit(30)
-    setArtisans(artisansData || [])
-
-    const { data: txAll } = await supabase
-      .from('transactions')
-      .select('*, missions(category, users!missions_client_id_fkey(name))')
-      .order('created_at', { ascending: false })
-      .limit(20)
-    setTransactions(txAll || [])
-
-    const { data: litigesData } = await supabase
-      .from('missions')
-      .select('*, users!missions_client_id_fkey(name, avatar_url), artisan_pros(id, metier, users!artisan_pros_user_id_fkey(name))')
-      .eq('status', 'disputed')
-      .order('updated_at', { ascending: false })
-    setLitiges(litigesData || [])
+    setStats({ missions: statsRes.missions || 0, artisans: statsRes.artisans || 0, revenue: statsRes.revenue || 0 })
+    setMissions(Array.isArray(missionsRes) ? missionsRes : [])
+    setKycAll(Array.isArray(kycRes) ? kycRes : [])
+    setArtisans(Array.isArray(kycRes) ? kycRes : [])
+    setTransactions(Array.isArray(txRes) ? txRes : [])
+    setLitiges(Array.isArray(litigesRes) ? litigesRes : [])
 
     setLoading(false)
   }, [])
@@ -159,14 +136,7 @@ export default function AdminDashboard() {
   const revertLitige = async () => {
     if (!selectedLitige || !adminId) return
     setActingLitige(true)
-    await supabase.from('missions').update({ status: 'en_cours' }).eq('id', selectedLitige.id)
-    await supabase.from('chat_history').insert({
-      mission_id: selectedLitige.id,
-      sender_id: adminId,
-      sender_role: 'admin',
-      text: "⚖️ L'administrateur AfriOne a examiné le litige et décidé de poursuivre la mission. Le litige est clôturé.",
-      type: 'system',
-    })
+    await adminAction({ action: 'revert_litige', missionId: selectedLitige.id, adminId })
     flash('Mission rétablie en cours ✓')
     setActingLitige(false)
     setSelectedLitige(null)
@@ -177,14 +147,7 @@ export default function AdminDashboard() {
   const closeLitige = async (favor: 'client' | 'artisan') => {
     if (!selectedLitige || !adminId) return
     setActingLitige(true)
-    await supabase.from('missions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', selectedLitige.id)
-    const msg = favor === 'client'
-      ? "⚖️ Litige résolu par l'admin — décision en faveur du client. Remboursement en cours."
-      : "⚖️ Litige résolu par l'admin — décision en faveur de l'artisan. Paiement validé."
-    await supabase.from('chat_history').insert({
-      mission_id: selectedLitige.id, sender_id: adminId, sender_role: 'admin',
-      text: msg, type: 'system',
-    })
+    await adminAction({ action: 'close_litige', missionId: selectedLitige.id, adminId, favor })
     if (favor === 'artisan' && (selectedLitige.total_price || 0) > 0) {
       supabase.rpc('release_escrow', { p_mission_id: selectedLitige.id })
     }
@@ -194,28 +157,29 @@ export default function AdminDashboard() {
     loadAll()
   }
 
+  const adminAction = async (body: object) =>
+    fetch('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+
   const approveKyc = async (artisanId: string, kycId?: string) => {
-    if (kycId) await supabase.from('kyc_security').update({ status: 'approved', reviewed_at: new Date().toISOString() }).eq('id', kycId)
-    await supabase.from('artisan_pros').update({ kyc_status: 'approved', is_available: true }).eq('id', artisanId)
+    await adminAction({ action: 'approve_kyc', artisanId, kycId })
     flash('✓ Artisan approuvé')
     loadAll()
   }
 
   const rejectKyc = async (artisanId: string, kycId?: string) => {
-    if (kycId) await supabase.from('kyc_security').update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', kycId)
-    await supabase.from('artisan_pros').update({ kyc_status: 'rejected', is_available: false }).eq('id', artisanId)
+    await adminAction({ action: 'reject_kyc', artisanId, kycId })
     flash('✗ Artisan rejeté')
     loadAll()
   }
 
   const revokeKyc = async (artisanId: string) => {
-    await supabase.from('artisan_pros').update({ kyc_status: 'pending', is_available: false }).eq('id', artisanId)
+    await adminAction({ action: 'revoke_kyc', artisanId })
     flash('↩ KYC révoqué — artisan repassé en attente')
     loadAll()
   }
 
   const toggleArtisan = async (artisanId: string, current: boolean) => {
-    await supabase.from('artisan_pros').update({ is_available: !current }).eq('id', artisanId)
+    await adminAction({ action: 'toggle_artisan', artisanId })
     flash(current ? 'Artisan désactivé' : 'Artisan activé')
     loadAll()
   }
