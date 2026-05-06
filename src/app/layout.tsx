@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 export const metadata: Metadata = {
   title: 'AfriOne — Trouver le bon artisan, au bon prix',
@@ -23,8 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
       </head>
       <body>
-        {children}
-        <Toaster position="top-right" />
+        <AuthProvider>
+          {children}
+          <Toaster position="top-right" />
+        </AuthProvider>
       </body>
     </html>
   )

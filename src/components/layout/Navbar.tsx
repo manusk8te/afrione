@@ -1,80 +1,40 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { Menu, X, Zap, LogOut, LayoutDashboard, Wrench, ShieldCheck } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 export default function Navbar() {
   const isMobile = useIsMobile()
+  const { user, userRole, userName, hasArtisanProfile, loading, signOut } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [user, setUser] = useState<any>(null)
-  const [userRole, setUserRole] = useState<string>('client')
-  const [userName, setUserName] = useState<string>('')
-  const [hasArtisanProfile, setHasArtisanProfile] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
 
   useEffect(() => {
-    setMounted(true)
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Close dropdown on route change
   useEffect(() => {
-    const loadUser = async (session: any) => {
-      if (!session) {
-        setUser(null); setUserRole('client'); setUserName(''); setHasArtisanProfile(false); return
-      }
-      setUser(session.user)
-      const { data } = await supabase
-        .from('users')
-        .select('role, name')
-        .eq('id', session.user.id)
-        .single()
-      if (data) {
-        setUserRole(data.role || 'client')
-        setUserName(data.name || session.user.email?.split('@')[0] || 'Mon compte')
-      } else {
-        setUserName(session.user.email?.split('@')[0] || 'Mon compte')
-      }
-      const { data: artisanData } = await supabase
-        .from('artisan_pros')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .single()
-      setHasArtisanProfile(!!artisanData)
-    }
+    setDropdownOpen(false)
+    setMenuOpen(false)
+  }, [pathname])
 
-    supabase.auth.getSession().then(({ data: { session } }) => loadUser(session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => loadUser(session))
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    setUser(null); setUserRole('client'); setUserName(''); setHasArtisanProfile(false)
-    setDropdownOpen(false); setMenuOpen(false)
-    router.refresh()
-    router.push('/')
-  }
-
-  // Artisan = profil créé OU rôle 'artisan' dans users
   const isArtisan = hasArtisanProfile || userRole === 'artisan'
   const artisanHref = hasArtisanProfile ? '/artisan-space/dashboard' : '/artisan-space/register'
 
-  const roleBadge = isArtisan
-    ? { label: userRole === 'admin' ? 'Admin · Artisan' : 'Artisan', color: '#E85D26' }
-    : userRole === 'admin'
-    ? { label: 'Admin', color: '#C9A84C' }
+  const roleBadge = userRole === 'admin'
+    ? { label: isArtisan ? 'Admin · Artisan' : 'Admin', color: '#C9A84C' }
+    : isArtisan
+    ? { label: 'Artisan', color: '#E85D26' }
     : { label: 'Client', color: '#2B6B3E' }
 
-  // "Devenir artisan" masqué si déjà artisan (par rôle ou profil)
   const links = [
     { href: '/artisans', label: 'Services' },
     { href: '/diagnostic', label: 'Diagnostic IA' },
@@ -117,98 +77,99 @@ export default function Navbar() {
 
           {/* Droite */}
           <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-            {!isMobile && !mounted ? (
-              <div style={{width:'80px',height:'36px',background:'#EDE8DE',borderRadius:'10px'}} />
-            ) : !isMobile && user ? (
-              <>
-                {/* Bouton Espace Artisan — visible si artisan (par rôle ou profil) */}
-                {isArtisan && (
-                  <Link href={artisanHref} style={{
-                    display:'flex',alignItems:'center',gap:'6px',
-                    padding:'8px 16px',borderRadius:'10px',textDecoration:'none',
-                    background:'#E85D26',color:'white',fontSize:'14px',fontWeight:600,
-                  }}>
-                    <Wrench size={14} /> Espace Artisan
-                  </Link>
-                )}
-
-                {/* Bouton Admin — visible directement dans la barre si admin */}
-                {userRole === 'admin' && (
-                  <Link href="/admin" style={{
-                    display:'flex',alignItems:'center',gap:'6px',
-                    padding:'8px 14px',borderRadius:'10px',textDecoration:'none',
-                    background:'rgba(201,168,76,0.15)',color:'#C9A84C',fontSize:'13px',fontWeight:600,
-                    border:'1px solid rgba(201,168,76,0.3)',
-                  }}>
-                    <ShieldCheck size={14} /> Admin
-                  </Link>
-                )}
-
-                {/* Avatar + dropdown */}
-                <div style={{position:'relative'}}>
-                  <button onClick={() => setDropdownOpen(!dropdownOpen)} style={{
-                    display:'flex',alignItems:'center',gap:'8px',background:'#0F1410',
-                    color:'#FAFAF5',border:'none',borderRadius:'10px',padding:'8px 14px',
-                    cursor:'pointer',fontSize:'14px',fontWeight:600,
-                  }}>
-                    <div style={{width:'26px',height:'26px',background:'#E85D26',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:700,flexShrink:0}}>
-                      {userName ? userName[0].toUpperCase() : '?'}
-                    </div>
-                    {userName}
-                  </button>
-
-                  {dropdownOpen && (
-                    <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'8px',minWidth:'220px',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',zIndex:1000}}>
-                      <div style={{padding:'10px 12px',borderBottom:'1px solid #D8D2C4',marginBottom:'8px'}}>
-                        <div style={{fontSize:'13px',fontWeight:700,color:'#0F1410'}}>{userName}</div>
-                        <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'1px'}}>{user.email}</div>
-                        <span style={{display:'inline-block',marginTop:'6px',fontSize:'11px',fontWeight:600,color:'white',background:roleBadge.color,padding:'2px 8px',borderRadius:'20px'}}>
-                          {roleBadge.label}
-                        </span>
-                      </div>
-                      <Link href="/dashboard" onClick={() => setDropdownOpen(false)}
-                        style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
-                        onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
-                        onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
-                        <LayoutDashboard size={14} /> Espace Client
-                      </Link>
-                      {userRole === 'admin' && (
-                        <Link href="/admin" onClick={() => setDropdownOpen(false)}
-                          style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#C9A84C',fontSize:'14px'}}
-                          onMouseEnter={e => (e.currentTarget.style.background='rgba(201,168,76,0.06)')}
-                          onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
-                          <ShieldCheck size={14} /> Panel Admin
-                        </Link>
-                      )}
-                      <button onClick={handleLogout}
-                        style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',color:'#E85D26',fontSize:'14px',background:'none',border:'none',cursor:'pointer',width:'100%',textAlign:'left',marginTop:'4px',borderTop:'1px solid #EDE8DE',paddingTop:'12px'}}
-                        onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
-                        onMouseLeave={e => (e.currentTarget.style.background='none')}>
-                        <LogOut size={14} /> Se déconnecter
-                      </button>
-                    </div>
+            {!isMobile && (
+              loading ? (
+                // Skeleton pendant le chargement initial — même taille que les boutons
+                <div style={{width:'80px',height:'36px',background:'#EDE8DE',borderRadius:'10px',opacity:0.5}} />
+              ) : user ? (
+                <>
+                  {isArtisan && (
+                    <Link href={artisanHref} style={{
+                      display:'flex',alignItems:'center',gap:'6px',
+                      padding:'8px 16px',borderRadius:'10px',textDecoration:'none',
+                      background:'#E85D26',color:'white',fontSize:'14px',fontWeight:600,
+                    }}>
+                      <Wrench size={14} /> Espace Artisan
+                    </Link>
                   )}
-                </div>
-              </>
-            ) : !isMobile && (
-              <>
-                <Link href="/auth" style={{border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'8px 16px',borderRadius:'10px',textDecoration:'none',fontSize:'14px'}}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='#0F1410'; (e.currentTarget as HTMLElement).style.color='white' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; (e.currentTarget as HTMLElement).style.color='#0F1410' }}>
-                  Connexion
-                </Link>
-                <Link href="/diagnostic" className="btn-primary" style={{padding:'8px 16px',fontSize:'14px'}}>
-                  Décrire mon besoin
-                </Link>
-              </>
+
+                  {userRole === 'admin' && (
+                    <Link href="/admin" style={{
+                      display:'flex',alignItems:'center',gap:'6px',
+                      padding:'8px 14px',borderRadius:'10px',textDecoration:'none',
+                      background:'rgba(201,168,76,0.15)',color:'#C9A84C',fontSize:'13px',fontWeight:600,
+                      border:'1px solid rgba(201,168,76,0.3)',
+                    }}>
+                      <ShieldCheck size={14} /> Admin
+                    </Link>
+                  )}
+
+                  {/* Avatar + dropdown */}
+                  <div style={{position:'relative'}}>
+                    <button onClick={() => setDropdownOpen(!dropdownOpen)} style={{
+                      display:'flex',alignItems:'center',gap:'8px',background:'#0F1410',
+                      color:'#FAFAF5',border:'none',borderRadius:'10px',padding:'8px 14px',
+                      cursor:'pointer',fontSize:'14px',fontWeight:600,
+                    }}>
+                      <div style={{width:'26px',height:'26px',background:'#E85D26',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:700,flexShrink:0}}>
+                        {userName ? userName[0].toUpperCase() : '?'}
+                      </div>
+                      {userName}
+                    </button>
+
+                    {dropdownOpen && (
+                      <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'8px',minWidth:'220px',boxShadow:'0 4px 20px rgba(0,0,0,0.1)',zIndex:1000}}>
+                        <div style={{padding:'10px 12px',borderBottom:'1px solid #D8D2C4',marginBottom:'8px'}}>
+                          <div style={{fontSize:'13px',fontWeight:700,color:'#0F1410'}}>{userName}</div>
+                          <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'1px'}}>{user.email}</div>
+                          <span style={{display:'inline-block',marginTop:'6px',fontSize:'11px',fontWeight:600,color:'white',background:roleBadge.color,padding:'2px 8px',borderRadius:'20px'}}>
+                            {roleBadge.label}
+                          </span>
+                        </div>
+                        <Link href="/dashboard" onClick={() => setDropdownOpen(false)}
+                          style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#0F1410',fontSize:'14px'}}
+                          onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
+                          onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                          <LayoutDashboard size={14} /> Espace Client
+                        </Link>
+                        {userRole === 'admin' && (
+                          <Link href="/admin" onClick={() => setDropdownOpen(false)}
+                            style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#C9A84C',fontSize:'14px'}}
+                            onMouseEnter={e => (e.currentTarget.style.background='rgba(201,168,76,0.06)')}
+                            onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                            <ShieldCheck size={14} /> Panel Admin
+                          </Link>
+                        )}
+                        <button onClick={signOut}
+                          style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',color:'#E85D26',fontSize:'14px',background:'none',border:'none',cursor:'pointer',width:'100%',textAlign:'left',marginTop:'4px',borderTop:'1px solid #EDE8DE',paddingTop:'12px'}}
+                          onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
+                          onMouseLeave={e => (e.currentTarget.style.background='none')}>
+                          <LogOut size={14} /> Se déconnecter
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link href="/auth" style={{border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'8px 16px',borderRadius:'10px',textDecoration:'none',fontSize:'14px'}}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='#0F1410'; (e.currentTarget as HTMLElement).style.color='white' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; (e.currentTarget as HTMLElement).style.color='#0F1410' }}>
+                    Connexion
+                  </Link>
+                  <Link href="/diagnostic" className="btn-primary" style={{padding:'8px 16px',fontSize:'14px'}}>
+                    Décrire mon besoin
+                  </Link>
+                </>
+              )
             )}
 
             {/* Hamburger — mobile uniquement */}
-          {isMobile && (
-            <button onClick={() => setMenuOpen(!menuOpen)} style={{background:'none',border:'none',cursor:'pointer',padding:'8px',display:'flex'}}>
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          )}
+            {isMobile && (
+              <button onClick={() => setMenuOpen(!menuOpen)} style={{background:'none',border:'none',cursor:'pointer',padding:'8px',display:'flex'}}>
+                {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            )}
           </div>
         </div>
 
@@ -242,7 +203,7 @@ export default function Navbar() {
                       ⚙️ Admin
                     </Link>
                   )}
-                  <button onClick={handleLogout}
+                  <button onClick={signOut}
                     style={{display:'block',padding:'12px',textAlign:'center',background:'none',border:'2px solid #E85D26',color:'#E85D26',borderRadius:'10px',fontSize:'14px',fontWeight:600,cursor:'pointer',width:'100%'}}>
                     Se déconnecter
                   </button>
