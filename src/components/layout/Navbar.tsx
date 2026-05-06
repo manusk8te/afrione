@@ -172,6 +172,14 @@ export default function Navbar() {
                         onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
                         <LayoutDashboard size={14} /> Espace Client
                       </Link>
+                      {userRole === 'admin' && (
+                        <Link href="/admin" onClick={() => setDropdownOpen(false)}
+                          style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#C9A84C',fontSize:'14px'}}
+                          onMouseEnter={e => (e.currentTarget.style.background='rgba(201,168,76,0.06)')}
+                          onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                          <ShieldCheck size={14} /> Panel Admin
+                        </Link>
+                      )}
                       <button onClick={handleLogout}
                         style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',color:'#E85D26',fontSize:'14px',background:'none',border:'none',cursor:'pointer',width:'100%',textAlign:'left',marginTop:'4px',borderTop:'1px solid #EDE8DE',paddingTop:'12px'}}
                         onMouseEnter={e => (e.currentTarget.style.background='rgba(232,93,38,0.05)')}
@@ -195,9 +203,12 @@ export default function Navbar() {
               </>
             )}
 
+            {/* Hamburger — mobile uniquement */}
+          {isMobile && (
             <button onClick={() => setMenuOpen(!menuOpen)} style={{background:'none',border:'none',cursor:'pointer',padding:'8px',display:'flex'}}>
               {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
+          )}
           </div>
         </div>
 
