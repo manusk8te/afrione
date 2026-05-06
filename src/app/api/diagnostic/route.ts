@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { enrichItemsWithJumia } from '@/lib/jumia-lookup'
 
 const CATEGORIES = `Plomberie|Électricité|Maçonnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage`
 
@@ -225,6 +226,11 @@ Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
         duration_estimate: result.duration_estimate || '2 à 4 heures',
       }
 
+      // Scrape Jumia CI for each item_needed in parallel with DB save
+      const jumiaPromise = result.items_needed.length > 0
+        ? enrichItemsWithJumia(result.items_needed, result.category)
+        : Promise.resolve([])
+
       // Sauvegarder en base si connecté
       if (user_id) {
         const { data: mission } = await supabaseAdmin
@@ -247,22 +253,26 @@ Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
             duration_estimate: result.duration_estimate,
           })
 
-          await supabaseAdmin.from('diagnostics').insert({
-            mission_id:          mission.id,
-            raw_text:            rawContext,
-            ai_summary:          result.summary,
-            category_detected:   result.category,
-            estimated_price_min: result.price_min,
-            estimated_price_max: result.price_max,
-            items_needed:        result.items_needed,
-            urgency_level:       result.urgency,
-          })
+          const [, jumiaItems] = await Promise.all([
+            supabaseAdmin.from('diagnostics').insert({
+              mission_id:          mission.id,
+              raw_text:            rawContext,
+              ai_summary:          result.summary,
+              category_detected:   result.category,
+              estimated_price_min: result.price_min,
+              estimated_price_max: result.price_max,
+              items_needed:        result.items_needed,
+              urgency_level:       result.urgency,
+            }),
+            jumiaPromise,
+          ])
 
-          return NextResponse.json({ ...result, mission_id: mission.id })
+          return NextResponse.json({ ...result, mission_id: mission.id, jumia_items: jumiaItems })
         }
       }
 
-      return NextResponse.json(result)
+      const jumiaItems = await jumiaPromise
+      return NextResponse.json({ ...result, jumia_items: jumiaItems })
     }
 
     return NextResponse.json({ error: 'Mode invalide' }, { status: 400 })
