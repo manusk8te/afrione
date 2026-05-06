@@ -51,9 +51,7 @@ export default function AdminDashboard() {
     try {
       const res = await fetch('/api/admin/scrape-prices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
       const d = await res.json()
-      const saved  = (d.results || []).filter((r: any) => !r.error).length
-      const errors = (d.results || []).filter((r: any) =>  r.error).length
-      flash(errors > 0 ? `⚠️ ${saved} prix sauvegardés, ${errors} erreurs` : `✓ ${saved} prix Jumia mis à jour`)
+      flash(d.summary || `✓ ${d.updated} prix Jumia mis à jour`)
     } catch { flash('Erreur scraping Jumia') }
     setScraping(false)
   }

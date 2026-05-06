@@ -54,7 +54,7 @@ export default function AdminPrixPage() {
         body: JSON.stringify(category ? { category } : {}),
       })
       const data = await res.json()
-      setScrapeResult(`${data.updated} prix mis à jour depuis Jumia CI`)
+      setScrapeResult(data.summary || `${data.updated} prix mis à jour depuis Jumia CI`)
       await loadMaterials()
     } catch {
       setScrapeResult('Erreur lors du scraping')
