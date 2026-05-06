@@ -124,24 +124,39 @@ export async function POST(req: NextRequest) {
       for (const [tier, product] of [['economique', eco], ['standard', std], ['premium', premium]] as const) {
         if (!product || !product.price) continue
         const { price_min, price_max } = priceToPriceRange(product.price)
+        const name = `${q.material_name}${tier === 'premium' ? ' premium' : tier === 'economique' ? ' éco' : ''}`
 
-        await supabaseAdmin.from('price_materials').upsert({
-          name:        `${q.material_name}${tier === 'premium' ? ' premium' : tier === 'economique' ? ' éco' : ''}`,
-          category:    q.category,
-          unit:        q.unit,
-          price_market: product.price,
-          price_min,
-          price_max,
-          source:      'Jumia CI',
-          tier,
-          brand:        product.brand,
-          photo_url:    product.photo_url,
-          source_url:   product.source_url,
-          web_price:    product.price,
+        // Cherche une ligne existante pour faire un UPDATE ciblé (évite le besoin de contrainte UNIQUE)
+        const { data: existing } = await supabaseAdmin
+          .from('price_materials')
+          .select('id')
+          .eq('name', name).eq('category', q.category).eq('tier', tier)
+          .maybeSingle()
+
+        const payload = {
+          name, category: q.category, unit: q.unit,
+          price_market: product.price, price_min, price_max,
+          source: 'Jumia CI', tier, brand: product.brand,
+          photo_url: product.photo_url,
+          source_url: product.source_url,
+          web_price: product.price,
           last_scraped_at: new Date().toISOString(),
-        }, { onConflict: 'name,category,tier' })
+        }
 
-        results.push({ material: q.material_name, tier, price: product.price, brand: product.brand })
+        let dbError
+        if (existing) {
+          const { error } = await supabaseAdmin.from('price_materials').update(payload).eq('id', existing.id)
+          dbError = error
+        } else {
+          const { error } = await supabaseAdmin.from('price_materials').insert(payload)
+          dbError = error
+        }
+
+        if (dbError) {
+          results.push({ material: q.material_name, tier, status: 'db_error', error: dbError.message })
+        } else {
+          results.push({ material: q.material_name, tier, price: product.price, brand: product.brand, photo: !!product.photo_url, link: !!product.source_url })
+        }
       }
     }
   }
