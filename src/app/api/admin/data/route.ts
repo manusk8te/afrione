@@ -45,6 +45,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ missions: missionCount, artisans: artisanCount, revenue, litiges: litigeCount })
   }
 
+  if (type === 'prices') {
+    const { data, error } = await supabaseAdmin
+      .from('price_materials')
+      .select('*')
+      .order('category').order('tier').order('name')
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data)
+  }
+
   if (type === 'litiges') {
     const { data, error } = await supabaseAdmin
       .from('missions')
@@ -77,6 +86,16 @@ export async function POST(req: NextRequest) {
 
   if (action === 'revoke_kyc') {
     await supabaseAdmin.from('artisan_pros').update({ kyc_status: 'pending', is_available: false }).eq('id', artisanId)
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === 'update_price') {
+    const { id, price_market, price_min, price_max } = body
+    const { error } = await supabaseAdmin
+      .from('price_materials')
+      .update({ price_market, price_min, price_max })
+      .eq('id', id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ ok: true })
   }
 

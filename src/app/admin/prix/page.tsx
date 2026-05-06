@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Edit2, Save, X, RefreshCw, Globe } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 
 const CATEGORIES = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Carrelage']
@@ -24,11 +23,9 @@ export default function AdminPrixPage() {
 
   const loadMaterials = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('price_materials')
-      .select('*')
-      .order('category').order('tier').order('name')
-    setMaterials(data || [])
+    const res = await fetch('/api/admin/data?type=prices')
+    const data = await res.json()
+    setMaterials(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 
@@ -38,7 +35,11 @@ export default function AdminPrixPage() {
   }
 
   const saveEdit = async (id: string) => {
-    await supabase.from('price_materials').update(editValues).eq('id', id)
+    await fetch('/api/admin/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_price', id, ...editValues }),
+    })
     setMaterials(ms => ms.map(m => m.id === id ? { ...m, ...editValues } : m))
     setEditingId(null)
   }
