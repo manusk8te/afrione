@@ -13,45 +13,72 @@ interface JumiaProduct {
   url:       string
 }
 
-// Extrait les produits du HTML Jumia CI
+function mapJumia(arr: any[]): JumiaProduct[] {
+  return arr.map(p => ({
+    name:      (p.displayName || p.name || '') as string,
+    brand:     (p.brand || 'Jumia CI') as string,
+    price:     Math.round(parseFloat(p.prices?.rawPrice || p.price || '0')),
+    photo_url: (p.image || p.images?.[0] || '') as string,
+    url:       `https://www.jumia.ci${p.url || ''}`,
+  })).filter(p => p.price > 0)
+}
+
+function extractArr(html: string, key: string): any[] | null {
+  const idx = html.indexOf(key)
+  if (idx === -1) return null
+  const start = html.indexOf('[', idx)
+  if (start === -1) return null
+  let depth = 0, i = start
+  for (; i < html.length; i++) {
+    if (html[i] === '[') depth++
+    else if (html[i] === ']') { depth--; if (depth === 0) break }
+  }
+  try { return JSON.parse(html.slice(start, i + 1)) } catch { return null }
+}
+
+// Extrait les produits du HTML Jumia CI — 3 stratégies en cascade
 async function fetchJumiaProducts(query: string): Promise<JumiaProduct[]> {
   const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
+  let html = ''
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9',
+        'Referer': 'https://www.jumia.ci/',
       },
       signal: AbortSignal.timeout(8_000),
     })
     if (!res.ok) return []
-    const html = await res.text()
-
-    const idx = html.indexOf('"products":')
-    if (idx === -1) return []
-
-    // Extrait le tableau JSON complet en suivant les crochets
-    let depth = 0
-    const start = html.indexOf('[', idx)
-    let i = start
-    for (; i < html.length; i++) {
-      if (html[i] === '[') depth++
-      else if (html[i] === ']') { depth--; if (depth === 0) break }
-    }
-
-    const raw = JSON.parse(html.slice(start, i + 1)) as any[]
-    return raw
-      .map(p => ({
-        name:      (p.displayName || p.name || '') as string,
-        brand:     (p.brand || 'Jumia CI') as string,
-        price:     Math.round(parseFloat(p.prices?.rawPrice || '0')),
-        photo_url: (p.image || '') as string,
-        url:       `https://www.jumia.ci${p.url || ''}`,
-      }))
-      .filter(p => p.price > 0)
+    html = await res.text()
   } catch {
     return []
   }
+
+  // Stratégie 1 : __NEXT_DATA__
+  const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)
+  if (m) {
+    try {
+      const pp = JSON.parse(m[1])?.props?.pageProps
+      for (const arr of [pp?.catalog?.products, pp?.data?.catalog?.products, pp?.initialData?.catalog?.products, pp?.products, pp?.catalog?.items]) {
+        if (Array.isArray(arr) && arr.length > 0) {
+          const r = mapJumia(arr)
+          if (r.length > 0) return r
+        }
+      }
+    } catch {}
+  }
+
+  // Stratégie 2 : "products":
+  const p2 = extractArr(html, '"products":')
+  if (p2) { const r = mapJumia(p2); if (r.length > 0) return r }
+
+  // Stratégie 3 : "items":
+  const p3 = extractArr(html, '"items":')
+  if (p3) { const r = mapJumia(p3.filter(p => p.prices?.rawPrice || p.price)); if (r.length > 0) return r }
+
+  return []
 }
 
 // Vérifie si un produit est pertinent pour l'item recherché

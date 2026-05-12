@@ -125,50 +125,93 @@ const MATERIALS: {
   },
 ]
 
-// ─── Parser HTML Jumia ────────────────────────────────────────────────────────
-async function scrapeJumia(query: string) {
+type JumiaHit = { name: string; brand: string; price: number; photo_url: string; url: string; rating: number; reviews: number }
+
+function mapProducts(arr: any[]): JumiaHit[] {
+  return arr.map(p => ({
+    name:      (p.displayName || p.name || '') as string,
+    brand:     (p.brand || 'Jumia CI') as string,
+    price:     Math.round(parseFloat(p.prices?.rawPrice || p.price || '0')),
+    photo_url: (p.image || p.images?.[0] || '') as string,
+    url:       `https://www.jumia.ci${p.url || ''}`,
+    rating:    p.rating?.average || 0,
+    reviews:   p.rating?.totalRatings || 0,
+  })).filter(p => p.price > 0)
+}
+
+function extractJsonArray(html: string, key: string): any[] | null {
+  const idx = html.indexOf(key)
+  if (idx === -1) return null
+  const start = html.indexOf('[', idx)
+  if (start === -1) return null
+  let depth = 0, i = start
+  for (; i < html.length; i++) {
+    if (html[i] === '[') depth++
+    else if (html[i] === ']') { depth--; if (depth === 0) break }
+  }
+  try { return JSON.parse(html.slice(start, i + 1)) } catch { return null }
+}
+
+// ─── Parser HTML Jumia — 3 stratégies en cascade ─────────────────────────────
+async function scrapeJumia(query: string): Promise<JumiaHit[]> {
   const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
+  let html = ''
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'fr-FR,fr;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Referer': 'https://www.jumia.ci/',
       },
       signal: AbortSignal.timeout(12_000),
     })
     if (!res.ok) return []
-    const html = await res.text()
-
-    // Localise le tableau "products" dans le HTML
-    const idx = html.indexOf('"products":')
-    if (idx === -1) return []
-
-    // Extrait le tableau JSON complet en suivant les crochets
-    let depth = 0
-    const start = html.indexOf('[', idx)
-    let i = start
-    for (; i < html.length; i++) {
-      if (html[i] === '[') depth++
-      else if (html[i] === ']') { depth--; if (depth === 0) break }
-    }
-
-    const products = JSON.parse(html.slice(start, i + 1)) as any[]
-    return products
-      .map(p => ({
-        name:      (p.displayName || p.name || '') as string,
-        brand:     (p.brand || 'Jumia CI') as string,
-        price:     Math.round(parseFloat(p.prices?.rawPrice || '0')),
-        photo_url: (p.image || '') as string,
-        url:       `https://www.jumia.ci${p.url || ''}`,
-        rating:    p.rating?.average || 0,
-        reviews:   p.rating?.totalRatings || 0,
-      }))
-      .filter(p => p.price > 0)
-
+    html = await res.text()
   } catch {
     return []
   }
+
+  // Stratégie 1 : __NEXT_DATA__ (Next.js SSR — structure la plus fiable)
+  const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)
+  if (m) {
+    try {
+      const nd = JSON.parse(m[1])
+      const pp = nd?.props?.pageProps
+      const candidates = [
+        pp?.catalog?.products,
+        pp?.data?.catalog?.products,
+        pp?.initialData?.catalog?.products,
+        pp?.products,
+        pp?.catalog?.items,
+        pp?.data?.products,
+      ]
+      for (const arr of candidates) {
+        if (Array.isArray(arr) && arr.length > 0) {
+          const result = mapProducts(arr)
+          if (result.length > 0) return result
+        }
+      }
+    } catch {}
+  }
+
+  // Stratégie 2 : "products": quelque part dans le HTML
+  const byProducts = extractJsonArray(html, '"products":')
+  if (byProducts) {
+    const result = mapProducts(byProducts)
+    if (result.length > 0) return result
+  }
+
+  // Stratégie 3 : "items": quelque part dans le HTML
+  const byItems = extractJsonArray(html, '"items":')
+  if (byItems) {
+    const result = mapProducts(byItems.filter(p => p.prices?.rawPrice || p.price))
+    if (result.length > 0) return result
+  }
+
+  return []
 }
 
 // ─── Sélection des 3 tiers ────────────────────────────────────────────────────
@@ -278,8 +321,39 @@ export async function POST(req: NextRequest) {
   })
 }
 
-// ─── Handler GET — liste les prix actuels ─────────────────────────────────────
-export async function GET() {
+// ─── Handler GET — liste les prix actuels OU debug du scraper ─────────────────
+export async function GET(req: NextRequest) {
+  const q = req.nextUrl.searchParams.get('debug')
+
+  // ?debug=robinet → teste le scraping d'un terme et retourne le diagnostic brut
+  if (q) {
+    const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(q)}`
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'fr-FR,fr;q=0.9',
+          'Referer': 'https://www.jumia.ci/',
+        },
+        signal: AbortSignal.timeout(12_000),
+      })
+      const status = res.status
+      const html = res.ok ? await res.text() : ''
+      const hasNextData = html.includes('__NEXT_DATA__')
+      const hasProducts = html.includes('"products":')
+      const hasItems    = html.includes('"items":')
+      const htmlLen     = html.length
+      // Extrait un aperçu du contenu autour de __NEXT_DATA__
+      const ndIdx = html.indexOf('__NEXT_DATA__')
+      const snippet = ndIdx !== -1 ? html.slice(ndIdx, ndIdx + 500) : html.slice(0, 500)
+      const products = await scrapeJumia(q)
+      return NextResponse.json({ status, htmlLen, hasNextData, hasProducts, hasItems, productsFound: products.length, snippet, products: products.slice(0, 3) })
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message })
+    }
+  }
+
   const { data } = await supabaseAdmin
     .from('price_materials')
     .select('name,category,tier,price_market,web_price,brand,photo_url,source_url,last_scraped_at,source')
