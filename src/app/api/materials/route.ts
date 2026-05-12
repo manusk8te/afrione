@@ -1,11 +1,11 @@
 /**
- * GET /api/materials?category=Plomberie&items=Joint,Tuyau&client_quartier=Cocody&artisan_quartier=Abobo
- * Retourne les 3 tiers (economique/standard/premium) pour chaque item
- * + proximité vendeur physique vs client/artisan si vendor_quartier renseigné
+ * GET  /api/materials?category=Plomberie&items=Joint,Tuyau&client_quartier=Cocody
+ * POST /api/materials { name, category } → lookup DB puis Jumia on-demand, retourne fiche produit complète
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { quartierKm } from '@/lib/pricing'
+import { lookupItemOnJumia } from '@/lib/jumia-lookup'
 
 const FALLBACK_TIERS: Record<string, { economique: number; standard: number; premium: number }> = {
   'Plomberie':    { economique: 0.65, standard: 1.0, premium: 1.6 },
@@ -104,6 +104,55 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ category, market_reference_fcfa: marketRef, materials: tierResults })
+}
+
+// ── POST /api/materials — lookup on-demand pour un article (warroom mat_suggest) ──
+export async function POST(req: NextRequest) {
+  const { name, category } = await req.json()
+  if (!name) return NextResponse.json({ found: false }, { status: 400 })
+
+  const cat = category || 'Plomberie'
+
+  // 1. Cherche dans la DB (ilike sur le premier mot significatif)
+  const firstWord = name.split(/\s+/).find((w: string) => w.length >= 3) || name
+  const { data: db } = await supabaseAdmin
+    .from('price_materials')
+    .select('name,brand,price_market,web_price,photo_url,source_url,source,tier')
+    .ilike('name', `%${firstWord}%`)
+    .eq('tier', 'standard')
+    .maybeSingle()
+
+  if (db && db.price_market > 0) {
+    return NextResponse.json({
+      found:        true,
+      name:         db.name,
+      brand:        db.brand || null,
+      price_market: db.price_market,
+      web_price:    db.web_price || null,
+      photo_url:    db.photo_url || null,
+      source_url:   db.source_url || null,
+      source:       db.source || 'Base AfriOne',
+      from_db:      true,
+    })
+  }
+
+  // 2. Pas en DB → lookup Jumia on-demand (scraping réel)
+  const result = await lookupItemOnJumia(name, cat)
+  if (result.found && result.price) {
+    return NextResponse.json({
+      found:        true,
+      name:         result.name || name,
+      brand:        null,
+      price_market: Math.round(result.price * 0.45),   // local ≈ 45% du prix Jumia
+      web_price:    result.price,
+      photo_url:    result.photo_url || null,
+      source_url:   result.url || null,
+      source:       'Jumia CI',
+      from_db:      false,
+    })
+  }
+
+  return NextResponse.json({ found: false })
 }
 
 function buildFallbackTier(name: string, category: string, tier: 'economique' | 'standard' | 'premium') {

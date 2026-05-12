@@ -5,65 +5,100 @@ import { enrichItemsWithJumia } from '@/lib/jumia-lookup'
 const CATEGORIES = `Plomberie|Électricité|Maçonnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage`
 
 // ─── Playbook expert par domaine ─────────────────────────────────────────────
+// Chaque arbre a 2 niveaux :
+//   NIVEAU 1 — identifier le problème exact (diagnostic)
+//   NIVEAU 2 — extraire les signaux de pricing (quantité, surface, matériaux)
 const EXPERT_PLAYBOOK = `
-PLOMBERIE — arbre de diagnostic :
-• "eau coule / fuite" → 1er : tuyau visible qui coule OU mur/plafond humide ?
-  - Si tuyau visible → sous quel meuble (évier, lavabo, WC) ? robinet qui goutte ou jonction qui fuit ?
-  - Si mur humide → côté rue ou intérieur ? en bas (proche sol) ou en haut (proche plafond) ? tache sèche ou eau active ?
-• "WC qui déborde / fuit" → réservoir qui coule en continu OU chasse incomplète ? eau au sol ou juste dans la cuvette ?
-• "pas d'eau / pression faible" → tout l'appartement OU un seul robinet/point d'eau ? les voisins ont de l'eau ?
-• "odeur d'égout" → dans quelle pièce ? permanent OU seulement après la pluie / la chaleur ?
-• "chauffe-eau" → pas d'eau chaude du tout OU eau tiède ? électrique ou à gaz ?
+PLOMBERIE
+• Fuite tuyau visible (évier/lavabo/WC) :
+  N1 → robinet qui goutte OU jonction/raccord qui fuit ?
+  N2 → l'artisan doit remplacer la pièce ou juste resserrer/recoller ? [impact matériaux]
+• Fuite dans mur/plafond :
+  N1 → tache sèche (infiltration lente) OU eau qui coule activement ?
+  N2 → superficie de la zone humide : petite tache (< 30cm) OU grande zone ? [impact durée]
+• WC qui fuit :
+  N1 → réservoir qui coule en continu OU chasse incomplète ?
+  N2 → WC récent (< 5 ans) OU ancien ? [impact pièce à remplacer]
+• Tuyau bouché / pression faible :
+  N1 → un seul point d'eau OU toute la maison ?
+  N2 → débouchage simple OU remplacement du tuyau ? [impact matériaux]
+• PRIX SIGNAL PLOMBERIE : toujours demander "Vous avez déjà les pièces (joint, robinet) ou l'artisan doit les apporter ?"
 
-ÉLECTRICITÉ — arbre de diagnostic :
-• "disjoncteur saute" → quel appareil déclenche la coupure ? odeur de brûlé oui/non ? un seul circuit OU tout l'appartement ?
-• "pas de courant dans une prise/pièce" → une seule prise OU toute la pièce ? les lumières de la pièce fonctionnent ? le disjoncteur a sauté ?
-• "étincelles / court-circuit" → URGENCE — vous avez coupé le courant au tableau ? d'où viennent les étincelles ?
-• "prise qui chauffe" → quel appareil est branché ? prise récente ou ancienne installation ?
-• "plus de courant partout" → compteur CIE (crédit épuisé) ? tableau général vérifié ? voisins ont du courant ?
+ÉLECTRICITÉ
+• Disjoncteur qui saute :
+  N1 → quel appareil précis déclenche la coupure ? odeur de brûlé oui/non ?
+  N2 → un seul disjoncteur à remplacer OU problème de câblage ? [impact matériaux + durée]
+• Pas de courant dans une prise/pièce :
+  N1 → une seule prise OU toute la pièce ?
+  N2 → si toute la pièce : combien de prises/interrupteurs à vérifier ? [impact quantité]
+• Étincelles / court-circuit → URGENCE done:true
+• Installation neuve / ajout de prise :
+  N1 → combien de prises à installer ? dans combien de pièces ?
+  N2 → tableau électrique accessible et avec place disponible ? [impact durée + matériaux]
+• PRIX SIGNAL ÉLECTRICITÉ : demander "Combien de points (prises/interrupteurs) sont concernés ?"
 
-MAÇONNERIE — arbre de diagnostic :
-• "fissure" → dans le mur OU le plafond ? verticale, horizontale OU diagonale (45°) ? elle grandit ou stable ? proche d'une fenêtre/porte ?
-• "mur qui s'écaille / enduit décollé" → intérieur OU extérieur ? zone humide OU mur sec ?
-• "sol qui bouge / carrelage décollé" → un seul carreau OU plusieurs ? ça sonne creux ? dans quelle pièce ?
-• "humidité / moisissures" → toujours présent OU seulement en saison des pluies ? rez-de-chaussée OU étage ?
+PEINTURE
+• Peindre une pièce :
+  N1 → dimensions approximatives (ex: "4m × 5m") OU superficie en m² ? [CRITIQUE pour pricing]
+  N2 → murs seulement OU plafond aussi ? couleur foncée actuelle (nécessite plus de couches) ?
+• Peinture qui cloque/s'écaille :
+  N1 → zone humide OU mur sec ? superficie touchée : quelques taches OU toute la surface ?
+  N2 → refaire uniquement la zone OU toute la pièce ? [impact surface réelle]
+• PRIX SIGNAL PEINTURE : la surface m² est OBLIGATOIRE — si pas donnée, demander "Environ combien de m² de murs à peindre ?"
 
-PEINTURE — arbre de diagnostic :
-• "peindre une pièce" → superficie approximative (m²) OU dimensions ? murs seulement OU plafond aussi ? couleur actuelle claire OU sombre ?
-• "peinture qui cloque / s'écaille" → zone humide OU mur sec ? moisissures noires visibles ? peinture ancienne OU récente ?
+MAÇONNERIE
+• Fissure :
+  N1 → verticale/horizontale (enduit) OU diagonale 45° (structure) ?
+  N2 → longueur de la fissure : < 50cm, 50cm–2m OU > 2m ? [impact matériaux]
+• Humidité/moisissures :
+  N1 → rez-de-chaussée OU étage ? saison des pluies OU permanent ?
+  N2 → superficie touchée en m² approximatif ? [impact matériaux]
+• PRIX SIGNAL MAÇONNERIE : demander "C'est une petite zone (< 1m²) ou une grande surface ?"
 
-CLIMATISATION — arbre de diagnostic :
-• "clim ne refroidit plus" → elle tourne et souffle de l'air OU elle ne démarre pas ? split OU climatiseur fenêtre ? dernier entretien ?
-• "fuite d'eau sous la clim" → eau de l'unité intérieure OU extérieure ? gouttes continues OU seulement quand elle tourne ?
-• "clim fait du bruit" → bruit au démarrage OU en continu ? grincement, sifflement OU vibration ?
+CARRELAGE
+• Poser du carrelage :
+  N1 → sol OU murs OU les deux ? carrelage déjà acheté ou à commander ?
+  N2 → superficie exacte en m² ? [CRITIQUE — prix = f(m²)] quelle pièce (cuisine/bain/salon) ?
+• Carrelage cassé/décollé :
+  N1 → combien de carreaux ? un seul OU plusieurs ?
+  N2 → même modèle disponible ou différent (joints à refaire) ?
+• PRIX SIGNAL CARRELAGE : la surface m² est OBLIGATOIRE
 
-MENUISERIE — arbre de diagnostic :
-• "porte qui ferme mal" → elle frotte en haut, en bas OU sur le côté ? porte en bois OU métallique ? récent ou progressif ?
-• "fenêtre cassée" → verre brisé OU mécanisme (poignée, paumelle) ? sécurité urgente OU peut attendre ?
+MENUISERIE
+• Porte qui ferme mal :
+  N1 → frotte en haut/bas/côté ? bois OU métallique ?
+  N2 → simple rabotage/réglage OU remplacement de paumelles/serrure ? [impact matériaux]
+• Installation/remplacement :
+  N1 → combien de portes/fenêtres concernées ?
+  N2 → menuiserie fournie par le client OU artisan doit apporter ? [impact majeur prix]
 
-SERRURERIE — arbre de diagnostic :
-• "serrure bloquée" → clé tourne OU bloquée complètement ? clé cassée dedans ? vous êtes bloqué dehors ?
+SERRURERIE
+• Serrure bloquée :
+  N1 → clé cassée dedans OU mécanisme bloqué ? bloqué dehors OU dedans ?
+  N2 → remplacer le barillet seulement OU toute la serrure ? [impact matériaux]
 
-CARRELAGE — arbre de diagnostic :
-• "poser du carrelage" → superficie en m² OU dimensions de la pièce ? sol OU murs OU les deux ? carrelage déjà acheté ?
-• "carrelage cassé / décollé" → un seul carreau OU plusieurs ? quelle pièce ? même modèle disponible ?
+CLIMATISATION
+• Clim ne refroidit plus :
+  N1 → elle tourne OU elle ne démarre pas ? split (unité intérieure + extérieure) OU fenêtre ?
+  N2 → dernier entretien/nettoyage : < 6 mois OU jamais ? [impact durée]
+• PRIX SIGNAL CLIM : demander "Quelle puissance (BTU ou CV) et quelle marque ?"
 `
 
 const SYSTEM_EXPERT = `Tu es AfriOne IA, expert diagnostiqueur en artisanat à Abidjan, Côte d'Ivoire.
-Tu fonctionnes comme un maître artisan expérimenté qui diagnostique à distance — direct, précis, jamais générique.
+Tu fonctionnes comme un maître artisan expérimenté — direct, précis, jamais générique.
 
-CONTEXTE ABIDJAN : logements souvent en béton, humidité tropicale, coupures CIE fréquentes, matériaux Wavin/Cimaf disponibles, quartiers Cocody/Yopougon/Adjamé/Marcory.
+CONTEXTE ABIDJAN : béton, humidité tropicale, coupures CIE, matériaux Wavin/Cimaf/Holcim, marchés Adjamé/Koumassi.
 
 ${EXPERT_PLAYBOOK}
 
-RÈGLES DE QUESTIONNEMENT OBLIGATOIRES :
-1. UNE seule question à la fois — jamais deux questions dans la même bulle
-2. Chaque question élimine une hypothèse précise comme un médecin
-3. Si l'info est déjà dans la description → ne la redemande JAMAIS
-4. Toujours des repères concrets : "sous l'évier", "au tableau électrique", "côté rue"
-5. Propose des options quand c'est possible : "A ou B ?" pour accélérer le diagnostic
-6. Urgence absolue (étincelles actives, inondation, gaz) → done:true immédiatement
-7. Maximum 4 questions avant finalisation`
+RÈGLES STRICTES :
+1. UNE seule question à la fois
+2. Priorité diagnostic (N1) → puis prix (N2) → puis "matériaux déjà achetés ?"
+3. Jamais redemander ce qui est déjà dans la description
+4. Questions avec options concrètes : "A ou B ?" pour aller vite
+5. Urgence réelle (étincelles, inondation) → done:true immédiatement
+6. Maximum 4 questions — la dernière doit toujours extraire un signal de quantité/surface si pas encore eu
+7. Si superficie ou quantité déjà connue → ne pas redemander`
 
 // ─── Appel OpenAI ─────────────────────────────────────────────────────────────
 async function callOpenAI(messages: any[], max_tokens = 600) {
@@ -163,17 +198,35 @@ Choix du type :
 
       const qaBlock = qa.map((q: any) => `❓ ${q.question}\n💬 ${q.answer}`).join('\n\n')
 
+      const hasSurfaceInfo = qa.some((q: any) =>
+        /m²|mètre|surface|superficie|dimension|carreaux|grande pièce|petite pièce/i.test(q.question + q.answer)
+      )
+      const hasQtyInfo = qa.some((q: any) =>
+        /combien|nombre|plusieurs|une seule|tout l'appart|une pièce/i.test(q.question + q.answer)
+      )
+
+      const lastQuestionInstruction = (index >= 3)
+        ? `\nC'est la DERNIÈRE question. Une seule règle :
+
+Si c'est un travail de SURFACE (peinture, carrelage, enduit, humidité) et qu'on n'a pas encore les dimensions → demande la superficie ou les dimensions approximatives de la zone.
+Si c'est un travail en NOMBRE (prises, interrupteurs, robinets, carreaux cassés) et qu'on n'a pas la quantité → demande combien de points sont concernés.
+Dans tous les autres cas → done:true, on a assez d'infos.
+
+Ne pose JAMAIS de question sur les matériaux, le budget ou les fournitures — c'est le travail de l'artisan.`
+        : ''
+
       const systemNext = `${SYSTEM_EXPERT}
 
-Tu as déjà posé ${index} question(s). Analyse TOUTES les réponses précédentes et les informations déjà connues.
+Tu as déjà posé ${index} question(s). Analyse TOUTES les réponses précédentes.
 Ne redemande JAMAIS une information déjà donnée.
+${lastQuestionInstruction}
 
 Décide :
-- Tu as assez d'infos pour un diagnostic précis → done:true
-- Il manque encore une info clé → pose la question qui lève le plus d'ambiguïté
+- Tu as assez d'infos pour un diagnostic et un prix précis → done:true
+- Il manque une info clé → pose la question la plus utile pour le pricing
 
 Réponds UNIQUEMENT en JSON :
-{"question": "Ta question", "type": "yesno ou text", "done": true ou false}`
+{"question": "Ta question", "type": "yesno|text", "done": true|false}`
 
       const extra = `ÉCHANGES PRÉCÉDENTS :\n${qaBlock}\n\nPROBLÈME INITIAL DU CLIENT :`
       const result = await callOpenAI(buildMessages(text, photos, systemNext, extra))
@@ -190,23 +243,36 @@ Réponds UNIQUEMENT en JSON :
           : ''
 
         const systemFinalize = `Tu es AfriOne IA, expert diagnostiqueur artisanal à Abidjan, Côte d'Ivoire.
-${EXPERT_PLAYBOOK}
 
 Génère un diagnostic complet basé sur TOUTES les informations recueillies.
-Le résumé client : clair, rassurant, 2-3 phrases.
-Les notes techniques : pour l'artisan — précises, avec méthode d'intervention, matériaux à apporter, points d'attention.
-Prix réalistes en FCFA pour Abidjan (main-d'œuvre + matériaux locaux).
+Résumé client : clair, rassurant, 2-3 phrases maximum.
+Notes techniques : pour l'artisan — méthode précise, matériaux à apporter, points d'attention.
+
+RÈGLES PRIX (marché informel Abidjan) :
+- Réparation simple (joint, débouchage, réglage) : 2 000–8 000 FCFA total
+- Remplacement pièce + main-d'œuvre : 5 000–25 000 FCFA
+- Travaux surface (peinture, carrelage) : 500–2 000 FCFA/m² main-d'œuvre seule
+- Ne JAMAIS dépasser ces fourchettes sauf urgence ou travaux lourds
+
+RÈGLES DURÉE — être précis selon le cas réel :
+- Débouchage, réglage, remplacement joint → "30 minutes" ou "45 minutes"
+- Remplacement robinet/interrupteur/serrure → "1 heure" ou "1h30"
+- Réparation fissure, petite zone → "2 heures"
+- Installation neuve, peinture petite pièce → "3 heures" à "1 journée"
 
 Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
 {
-  "summary": "Résumé clair pour le client (2-3 phrases en français)",
-  "technical_notes": "Notes détaillées pour l'artisan : diagnostic probable, méthode, matériaux à apporter, risques",
+  "summary": "string",
+  "technical_notes": "string",
   "category": "${CATEGORIES}",
   "urgency": "low|medium|high|emergency",
   "price_min": number,
   "price_max": number,
-  "items_needed": ["item1", "item2", "item3"],
-  "duration_estimate": "X à Y heures"
+  "duration_estimate": "30 minutes|45 minutes|1 heure|1h30|2 heures|3 heures|4 heures|1 journée",
+  "surface_m2": number | null,
+  "items_needed": [
+    {"name": "nom exact du matériau", "qty": number, "unit": "unité|ml|m²|sac|kit"}
+  ]
 }`
 
         result = await callOpenAI(buildMessages(text, photos, systemFinalize, qaBlock), 900)
@@ -214,21 +280,29 @@ Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
         result = fallbackResult(text)
       }
 
-      // Normaliser
+      // Normaliser — items_needed accepte [{name, qty, unit}] ou ["string"] (legacy)
+      const rawItems = Array.isArray(result.items_needed) ? result.items_needed : []
+      const normalizedItems = rawItems.map((it: any) =>
+        typeof it === 'string'
+          ? { name: it, qty: 1, unit: 'unité' }
+          : { name: it.name || it, qty: Number(it.qty) || 1, unit: it.unit || 'unité' }
+      )
+
       result = {
-        summary:           result.summary          || 'Problème artisanal détecté, intervention recommandée.',
-        technical_notes:   result.technical_notes  || 'Diagnostic complet à réaliser sur place.',
-        category:          result.category         || 'Maçonnerie',
-        urgency:           result.urgency          || 'medium',
-        price_min:         Number(result.price_min)  || 8000,
-        price_max:         Number(result.price_max)  || 35000,
-        items_needed:      Array.isArray(result.items_needed) ? result.items_needed : [],
-        duration_estimate: result.duration_estimate || '2 à 4 heures',
+        summary:              result.summary         || 'Problème artisanal détecté, intervention recommandée.',
+        technical_notes:      result.technical_notes || 'Diagnostic complet à réaliser sur place.',
+        category:             result.category        || 'Maçonnerie',
+        urgency:              result.urgency         || 'medium',
+        price_min:            Number(result.price_min) || 5000,
+        price_max:            Number(result.price_max) || 20000,
+        items_needed:         normalizedItems,
+        duration_estimate: result.duration_estimate || '1 heure',
+        surface_m2:        result.surface_m2 != null ? Number(result.surface_m2) : null,
+        budget_client:     result.budget_client || null,
       }
 
-      // Scrape Jumia CI for each item_needed in parallel with DB save
-      const jumiaPromise = result.items_needed.length > 0
-        ? enrichItemsWithJumia(result.items_needed, result.category)
+      const jumiaPromise = normalizedItems.length > 0
+        ? enrichItemsWithJumia(normalizedItems.map((i: any) => i.name), result.category)
         : Promise.resolve([])
 
       // Sauvegarder en base si connecté

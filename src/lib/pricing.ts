@@ -145,11 +145,31 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
   return 2 * R * Math.asin(Math.sqrt(a))
 }
 
+// ── SMIG Côte d'Ivoire ────────────────────────────────────────────────────────
+// Plancher objectif : SMIG × 2 / 173h/mois
+export const SMIG_MENSUEL   = 75_000          // FCFA/mois (officiel CI)
+export const SMIG_X2_HORAIRE = Math.round(SMIG_MENSUEL * 2 / 173)  // ≈ 866 FCFA/h
+
+// α = intensité diagnostic [0,1] → interpole entre SMIG×2 et tarif artisan déclaré
+export function diagnosticAlpha(urgency: string, itemsCount: number, durationHours: number): number {
+  const u = { low: 0.10, medium: 0.30, high: 0.65, emergency: 1.00 }[urgency] ?? 0.30
+  const c = Math.min(itemsCount / 8, 0.40)                   // complexité matériaux
+  const d = Math.min((durationHours - 1) / 9, 0.25)          // durée normalisée [1h→0, 10h→0.25]
+  return Math.min(u + c + d, 1.0)
+}
+
+// Taux horaire juste entre plancher SMIG×2 et tarif déclaré artisan
+export function effectiveHourlyRate(artisanDeclaredRate: number, alpha: number): number {
+  return Math.round(SMIG_X2_HORAIRE + (artisanDeclaredRate - SMIG_X2_HORAIRE) * alpha)
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface MaterialInput { price_market: number; price_min: number; price_max: number; qty: number; category: string }
 export interface PricingInput {
   laborRate: { tarif_horaire: number; majoration_urgence: number }
+  artisanDeclaredRate?: number   // tarif déclaré par l'artisan (plafond subjectif)
+  alpha?: number                  // facteur diagnostic pré-calculé [0,1]
   durationHours: number
   yearsExp: number
   materials: MaterialInput[]
@@ -179,9 +199,15 @@ export function runMonteCarlo(input: PricingInput): PricingResult {
   const rng = makePRNG((Date.now() * Math.random() * 0xffffff) | 0)
 
   // ── 1. Labor (Gamma) ──────────────────────────────────────────────────────
+  // Si tarif artisan déclaré + alpha diagnostic → taux juste SMIG×2 ↔ tarif déclaré
+  // Sinon → tarif_horaire brut (fallback DB)
+  const hourlyRate = (input.artisanDeclaredRate && input.alpha != null)
+    ? effectiveHourlyRate(input.artisanDeclaredRate, input.alpha)
+    : input.laborRate.tarif_horaire
+
   const urgencyMark = ['high', 'emergency'].includes(input.urgency)
     ? input.laborRate.majoration_urgence / 100 : 0
-  const baseLabor   = input.laborRate.tarif_horaire * input.durationHours * (1 + urgencyMark)
+  const baseLabor   = hourlyRate * input.durationHours * (1 + urgencyMark)
   const shapeL      = Math.max(2.0, input.yearsExp * 0.35 + 2.0)
   const laborS      = gammaSamples(rng, shapeL, baseLabor / shapeL, N)
 
@@ -225,9 +251,11 @@ export function runMonteCarlo(input: PricingInput): PricingResult {
     }
   }
 
-  // ── 3. Transport (d^1.3 physique) ─────────────────────────────────────────
+  // ── 3. Transport (moto-taxi Abidjan)  ─────────────────────────────────────
+  // Référence terrain : zem 2km = ~300 FCFA, 5km = ~700 FCFA, 10km = ~1 500 FCFA
+  // Coeff 80 FCFA × d^1.3 × trafic — minimum 300 FCFA (course courte)
   const tc       = trafficCoeff(input.quartier, input.hour)
-  const baseCost = Math.max(600 * Math.pow(input.distanceKm, 1.3) * tc, 500)
+  const baseCost = Math.max(80 * Math.pow(input.distanceKm, 1.3) * tc, 300)
   const sigTr    = 0.20
   const transportS = normalSamples(rng, N)
   for (let i = 0; i < N; i++) {

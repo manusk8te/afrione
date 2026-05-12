@@ -12,6 +12,7 @@ export const ADMIN_NAV = [
   { id: 'transactions', label: 'Transactions',     short: 'Transactions', icon: '💳' },
   { id: 'utilisateurs', label: 'Utilisateurs',     short: 'Users',        icon: '👥' },
   { id: 'prix',         label: 'Prix matériaux',   short: 'Prix',         icon: '💰', href: '/admin/prix' },
+  { id: 'sources',      label: 'Sources de prix',  short: 'Sources',      icon: '🏪', href: '/admin/sources' },
 ]
 
 interface Props {
@@ -34,7 +35,7 @@ export default function AdminSidebar({
 
   const getHref = (item: typeof ADMIN_NAV[0]) => {
     if (item.href) return item.href
-    if (isPrixPage) return '/admin'
+    if (isPrixPage || pathname === '/admin/sources') return '/admin'
     return undefined
   }
 

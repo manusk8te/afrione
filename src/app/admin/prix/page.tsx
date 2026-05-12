@@ -62,6 +62,7 @@ export default function AdminPrixPage() {
     setScraping(false)
   }
 
+
   const filtered = activeCategory === 'Tous'
     ? materials
     : materials.filter(m => m.category === activeCategory)

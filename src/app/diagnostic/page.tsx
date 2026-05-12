@@ -9,7 +9,9 @@ import { supabase } from '@/lib/supabase'
 
 type Step = 'input' | 'questioning' | 'summarizing' | 'confirming'
 
-interface QA { question: string; type: 'yesno' | 'text'; answer: string }
+type QAType = 'yesno' | 'text'
+interface QA { question: string; type: QAType; answer: string }
+
 
 interface DiagResult {
   summary: string
@@ -18,8 +20,10 @@ interface DiagResult {
   urgency: 'low' | 'medium' | 'high' | 'emergency'
   price_min: number
   price_max: number
-  items_needed: string[]
+  items_needed: { name: string; qty: number; unit: string }[]
   duration_estimate: string
+  surface_m2?: number | null
+  budget_client?: string | null
   mission_id?: string
 }
 
@@ -39,8 +43,18 @@ interface PricingData {
 }
 
 function parseDuration(str: string): number {
+  if (!str) return 2
+  const lower = str.toLowerCase()
+  const minMatch = lower.match(/(\d+)\s*min/)
+  if (minMatch && !lower.includes('heure') && !lower.match(/\d+\s*h(?:eure)?s?\s+\d+/)) {
+    return Math.max(0.25, parseInt(minMatch[1]) / 60)
+  }
+  const hMinMatch = lower.match(/(\d+)\s*h(?:eure)?s?\s*(\d+)/)
+  if (hMinMatch) return parseInt(hMinMatch[1]) + parseInt(hMinMatch[2]) / 60
+  const rangeMatch = lower.match(/(\d+(?:\.\d+)?)\s*[àa-]\s*(\d+(?:\.\d+)?)/)
+  if (rangeMatch) return parseFloat(rangeMatch[1])
   const nums = str.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
-  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 2
+  return nums.length ? nums[0] : 2
 }
 
 function materialEmoji(name: string): string {
@@ -87,7 +101,7 @@ export default function DiagnosticPage() {
   const [photos, setPhotos]           = useState<string[]>([])
   const [uploading, setUploading]     = useState(false)
   const [qa, setQA]                   = useState<QA[]>([])
-  const [currentQ, setCurrentQ]       = useState<{ question: string; type: 'yesno' | 'text' } | null>(null)
+  const [currentQ, setCurrentQ]       = useState<{ question: string; type: QAType } | null>(null)
   const [currentAnswer, setCurrentAnswer] = useState('')
   const [showPrecise, setShowPrecise] = useState(false)
   const [preciseText, setPreciseText] = useState('')
@@ -210,12 +224,14 @@ export default function DiagnosticPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            metier:         CATEGORY_TO_METIER[diagResult.category] || 'Maçon',
-            category:       diagResult.category,
-            urgency:        diagResult.urgency,
-            duration_hours: parseDuration(diagResult.duration_estimate),
-            quartier:       quartier || 'Cocody',
-            items_needed:   diagResult.items_needed,
+            metier:               CATEGORY_TO_METIER[diagResult.category] || 'Maçon',
+            category:             diagResult.category,
+            urgency:              diagResult.urgency,
+            duration_hours:       parseDuration(diagResult.duration_estimate),
+            quartier:             quartier || 'Cocody',
+            items_needed:         diagResult.items_needed,
+            surface_m2:    diagResult.surface_m2 || null,
+            budget_client: diagResult.budget_client || null,
           }),
         }),
         diagResult.items_needed.length > 0
@@ -275,7 +291,7 @@ export default function DiagnosticPage() {
       setStep('confirming')
       fetchPricing(safeResult)
     } catch {
-      const fallback: DiagResult = { summary: 'Problème artisanal détecté, intervention professionnelle recommandée.', technical_notes: 'Diagnostic à affiner sur place.', category: 'Plomberie', urgency: 'medium', price_min: 8000, price_max: 35000, items_needed: ['Matériaux selon diagnostic'], duration_estimate: '1 à 3 heures' }
+      const fallback: DiagResult = { summary: 'Problème artisanal détecté, intervention professionnelle recommandée.', technical_notes: 'Diagnostic à affiner sur place.', category: 'Plomberie', urgency: 'medium', price_min: 5000, price_max: 20000, items_needed: [{ name: 'Matériaux selon diagnostic', qty: 1, unit: 'unité' }], duration_estimate: '1 heure' }
       setResult(fallback)
       setStep('confirming')
       fetchPricing(fallback)
@@ -499,6 +515,7 @@ export default function DiagnosticPage() {
                     style={{ width: '100%', padding: '13px 16px', borderRadius: '14px', border: '1.5px solid #D8D2C4', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', color: '#0F1410', boxSizing: 'border-box' }}
                   />
                 )}
+
 
                 <button onClick={answerQuestion} disabled={!currentAnswer.trim()}
                   style={{
@@ -765,8 +782,8 @@ export default function DiagnosticPage() {
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#7A7A6E', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>MATÉRIEL PROBABLE</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {result.items_needed.map(item => (
-                    <span key={item} style={{ fontSize: '12px', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '4px 12px', borderRadius: '20px', color: '#E85D26', fontWeight: 500 }}>
-                      {item}
+                    <span key={item.name} style={{ fontSize: '12px', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '4px 12px', borderRadius: '20px', color: '#E85D26', fontWeight: 500 }}>
+                      {item.qty > 1 ? `${item.qty}× ` : ''}{item.name}
                     </span>
                   ))}
                 </div>

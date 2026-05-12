@@ -203,10 +203,9 @@ function selectTiers(
 
 // ─── Handler POST ─────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const { category } = await req.json().catch(() => ({}))
-  const materials = category
-    ? MATERIALS.filter(m => m.category === category)
-    : MATERIALS
+  const body = await req.json().catch(() => ({}))
+  const { category } = body
+  const materials = category ? MATERIALS.filter(m => m.category === category) : MATERIALS
 
   const saved: any[]    = []
   const skipped: any[]  = []
@@ -233,7 +232,10 @@ export async function POST(req: NextRequest) {
 
     for (const [tier, product] of Object.entries(tiers) as ['economique'|'standard'|'premium', any][]) {
       const name = `${mat.material_name}${tier === 'premium' ? ' premium' : tier === 'economique' ? ' éco' : ''}`
-      const priceMargin = { price_min: Math.round(product.price * 0.85), price_max: Math.round(product.price * 1.15) }
+      // Jumia = retail e-commerce, 2-3× marché physique Abidjan
+      // price_market = estimation marché local selon tier
+      const localFactor = tier === 'economique' ? 0.30 : tier === 'standard' ? 0.45 : 0.70
+      const localPrice  = Math.round(product.price * localFactor)
 
       // UPDATE si existe, INSERT sinon
       const { data: existing } = await supabaseAdmin
@@ -244,9 +246,9 @@ export async function POST(req: NextRequest) {
 
       const payload = {
         name, category: mat.category, unit: mat.unit, tier,
-        price_market:    product.price,
-        price_min:       priceMargin.price_min,
-        price_max:       priceMargin.price_max,
+        price_market:    localPrice,
+        price_min:       Math.round(product.price * 0.25),
+        price_max:       product.price,
         source:          'Jumia CI',
         brand:           product.brand,
         photo_url:       product.photo_url,

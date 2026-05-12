@@ -14,11 +14,12 @@ import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 const TABS = [
-  { id: 'missions', label: 'Missions', icon: Clock },
-  { id: 'messages', label: 'Messages', icon: MessageCircle },
-  { id: 'profile', label: 'Mon Profil', icon: Edit3 },
-  { id: 'portfolio', label: 'Portfolio', icon: ImageIcon },
-  { id: 'wallet', label: 'Portefeuille', icon: Wallet },
+  { id: 'missions',   label: 'Missions',    icon: Clock },
+  { id: 'messages',   label: 'Messages',    icon: MessageCircle },
+  { id: 'profile',    label: 'Mon Profil',  icon: Edit3 },
+  { id: 'portfolio',  label: 'Portfolio',   icon: ImageIcon },
+  { id: 'wallet',     label: 'Portefeuille',icon: Wallet },
+  { id: 'materiaux',  label: 'Matériaux',   icon: Briefcase, href: '/artisan-space/materiaux' },
 ]
 
 const QUARTIERS_ABJ = [
@@ -358,22 +359,33 @@ export default function ArtisanDashboardPage() {
 
         {/* Tabs */}
         <div style={{display:'flex',background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'4px',marginBottom:'20px',gap:'4px',overflowX:'auto'}}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
+          {TABS.map(t => {
+            const isActive = tab === t.id
+            const sharedStyle: React.CSSProperties = {
               flexShrink:0,padding:isMobile?'10px 12px':'10px',borderRadius:'8px',border:'none',cursor:'pointer',
               display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
               fontSize:isMobile?'12px':'13px',fontWeight:500,transition:'all 0.2s',position:'relative',
-              background: tab === t.id ? '#0F1410' : 'transparent',
-              color: tab === t.id ? '#FAFAF5' : '#7A7A6E',
-            }}>
-              <t.icon size={13} /> {isMobile ? t.label.split(' ')[0] : t.label}
-              {t.id === 'messages' && unreadCount > 0 && (
-                <span style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',background:'#E85D26',borderRadius:'50%',fontSize:'10px',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-          ))}
+              background: isActive ? '#0F1410' : 'transparent',
+              color: isActive ? '#FAFAF5' : '#7A7A6E',
+              textDecoration:'none',
+            }
+            const content = (
+              <>
+                <t.icon size={13} /> {isMobile ? t.label.split(' ')[0] : t.label}
+                {t.id === 'messages' && unreadCount > 0 && (
+                  <span style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',background:'#E85D26',borderRadius:'50%',fontSize:'10px',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </>
+            )
+            if ((t as any).href) {
+              return <Link key={t.id} href={(t as any).href} style={sharedStyle}>{content}</Link>
+            }
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)} style={sharedStyle}>{content}</button>
+            )
+          })}
         </div>
 
         {/* ===== ONGLET MISSIONS ===== */}

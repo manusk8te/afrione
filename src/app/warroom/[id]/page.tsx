@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, Star, Camera } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, Star, Camera, Plus } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -83,6 +83,26 @@ export default function WarRoomPage() {
   const [diagData, setDiagData]           = useState<any>(null)
   const [showDiagPanel, setShowDiagPanel] = useState(true)
 
+  // Mise à jour matériaux achetés (artisan, mission en cours)
+  const [showMatUpdate, setShowMatUpdate]     = useState(false)
+  const [purchasedMats, setPurchasedMats]     = useState<{name:string;qty:number;prix_unitaire:number}[]>([])
+  const [newMatName, setNewMatName]           = useState('')
+  const [newMatQty, setNewMatQty]             = useState('1')
+  const [newMatPrix, setNewMatPrix]           = useState('')
+  const [diagChangeNote, setDiagChangeNote]   = useState('')
+  const [sendingMatUpdate, setSendingMatUpdate] = useState(false)
+
+  // Matériau non prévu — lookup IA + signal dans le chat
+  const [showMatSuggest, setShowMatSuggest] = useState(false)
+  const [suggestName, setSuggestName]       = useState('')
+  const [suggestQty, setSuggestQty]         = useState('1')
+  const [lookingUp, setLookingUp]           = useState(false)
+
+  // Requalification du temps
+  const [showTimeAdj, setShowTimeAdj]   = useState(false)
+  const [adjHours, setAdjHours]         = useState('')
+  const [adjReason, setAdjReason]       = useState('')
+
   // Modal paiement Wave (avant scheduling)
   const [showPayment, setShowPayment]       = useState(false)
   const [payStep, setPayStep]               = useState<'form'|'processing'|'success'>('form')
@@ -149,6 +169,12 @@ export default function WarRoomPage() {
           const diagJson = await diagRes.json()
           if (diagJson.diag) {
             const diag = diagJson.diag
+            // Normalize items_needed to string[] for rendering
+            if (Array.isArray(diag.items_needed)) {
+              diag.items_needed = diag.items_needed.map((it: any) =>
+                typeof it === 'string' ? it : it.name || String(it)
+              )
+            }
             setDiagData(diag)
             if ((userData?.role ?? 'client') === 'client') {
               setInput(diag.ai_summary || '')
@@ -222,15 +248,28 @@ export default function WarRoomPage() {
   }
 
   // Ouvrir le formulaire devis + charger suggestion + tiers matériaux
-  const openDevis = async () => {
-    setShowDevis(true)
+  // Borne basse d'une durée texte : "1 à 3 heures" → 1, "30 min" → 0.5, "1h30" → 1.5
+  const parseDurLow = (s: string): number => {
+    if (!s) return 2
+    const lower = s.toLowerCase()
+    const minMatch = lower.match(/(\d+)\s*min/)
+    if (minMatch && !lower.includes('heure') && !lower.match(/\d+\s*h\S*\s+\d+/))
+      return Math.max(0.25, parseInt(minMatch[1]) / 60)
+    const hMinMatch = lower.match(/(\d+)\s*h\S*\s*(\d+)/)
+    if (hMinMatch) return parseInt(hMinMatch[1]) + parseInt(hMinMatch[2]) / 60
+    const rangeMatch = lower.match(/(\d+(?:\.\d+)?)\s*[àa-]\s*(\d+(?:\.\d+)?)/)
+    if (rangeMatch) return parseFloat(rangeMatch[1])   // borne basse
+    const nums = s.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
+    return nums.length ? nums[0] : 2
+  }
+
+  // Charge la suggestion de prix sans ouvrir le drawer devis
+  const loadPricingSuggestion = async () => {
     if (pricingSuggestion || pricingSugLoading || !diagData) return
     setPricingSugLoading(true)
 
-    // Fetch vendor proximity (photo, lien Jumia, km artisan/client) pour les matériaux
     if (diagData.items_needed?.length && !materialsProximity.length) {
-      const clientQ  = mission?.quartier || 'Cocody'
-      // zone_gps de l'artisan est inconnu ici sans fetch supplémentaire — on passe juste le client
+      const clientQ = mission?.quartier || 'Cocody'
       fetch(`/api/materials?category=${encodeURIComponent(diagData.category || 'Plomberie')}&items=${encodeURIComponent((diagData.items_needed || []).join(','))}&client_quartier=${encodeURIComponent(clientQ)}`)
         .then(r => r.ok ? r.json() : null)
         .then(data => { if (data?.materials) setMaterialsProximity(data.materials) })
@@ -242,10 +281,6 @@ export default function WarRoomPage() {
       'Maçonnerie':'Maçon','Menuiserie':'Menuisier','Climatisation':'Climaticien',
       'Serrurerie':'Serrurier','Carrelage':'Carreleur',
     }
-    const parseDur = (s: string) => {
-      const n = s.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
-      return n.length ? n.reduce((a, b) => a + b, 0) / n.length : 2
-    }
     try {
       const res = await fetch('/api/pricing', {
         method: 'POST',
@@ -254,7 +289,7 @@ export default function WarRoomPage() {
           metier:         metierMap[diagData.category] || 'Maçon',
           category:       diagData.category || 'Maçonnerie',
           urgency:        diagData.urgency  || 'medium',
-          duration_hours: parseDur(diagData.duration_estimate || '2h'),
+          duration_hours: parseDurLow(diagData.duration_estimate || '2 heures'),
           quartier:       mission?.quartier || 'Cocody',
           items_needed:   diagData.items_needed || [],
         }),
@@ -277,6 +312,11 @@ export default function WarRoomPage() {
       }
     } catch {}
     setPricingSugLoading(false)
+  }
+
+  const openDevis = async () => {
+    setShowDevis(true)
+    await loadPricingSuggestion()
   }
 
   // Envoyer un devis
@@ -403,6 +443,169 @@ export default function WarRoomPage() {
       sender_role: userRole, text: 'Devis refusé — une contre-proposition est possible.', type: 'system',
     })
     toast('Devis refusé.')
+    setActing(false)
+  }
+
+  // Artisan soumet les matériaux achetés (mise à jour diagnostic)
+  const addPurchasedMat = () => {
+    if (!newMatName.trim() || !newMatPrix) return
+    setPurchasedMats(ms => [...ms, {
+      name: newMatName.trim(),
+      qty: parseInt(newMatQty) || 1,
+      prix_unitaire: parseInt(newMatPrix),
+    }])
+    setNewMatName(''); setNewMatQty('1'); setNewMatPrix('')
+  }
+
+  const sendMatUpdate = async () => {
+    if (!purchasedMats.length) { toast.error('Ajoutez au moins un matériau'); return }
+    setSendingMatUpdate(true)
+    const laborFixed = pricingSuggestion?.decomp.labor ?? 0
+    const matTotal   = purchasedMats.reduce((s, m) => s + m.qty * m.prix_unitaire, 0)
+    const payload = JSON.stringify({
+      labor_fixed:     laborFixed,
+      materials:       purchasedMats,
+      diag_change_note: diagChangeNote.trim() || null,
+      total:           laborFixed + matTotal,
+    })
+    const { error } = await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id,
+      sender_role: userRole, text: payload, type: 'material_update',
+    })
+    if (error) { toast.error('Erreur envoi.'); setSendingMatUpdate(false); return }
+    const rid = getRecipientId(mission, user.id)
+    if (rid) notifyOther(`Mise à jour matériaux — total: ${(laborFixed + matTotal).toLocaleString('fr')} FCFA`, rid)
+    setShowMatUpdate(false)
+    setPurchasedMats([])
+    setDiagChangeNote('')
+    setSendingMatUpdate(false)
+    toast.success('Matériaux mis à jour !')
+  }
+
+  // Lookup prix d'un matériau — DB d'abord puis Jumia CI on-demand (scraping réel)
+  const lookupMatPrice = async (name: string): Promise<{
+    price: number; web_price: number | null; source: string | null
+    photo_url: string | null; source_url: string | null
+    product_name: string | null; brand: string | null; from_db: boolean
+  }> => {
+    const cat = diagData?.category || 'Plomberie'
+    try {
+      const res = await fetch('/api/materials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category: cat }),
+      })
+      if (!res.ok) return { price: 0, web_price: null, source: null, photo_url: null, source_url: null, product_name: null, brand: null, from_db: false }
+      const d = await res.json()
+      if (!d.found) return { price: 0, web_price: null, source: null, photo_url: null, source_url: null, product_name: null, brand: null, from_db: false }
+      return {
+        price:        d.price_market || 0,
+        web_price:    d.web_price    || null,
+        source:       d.source       || null,
+        photo_url:    d.photo_url    || null,
+        source_url:   d.source_url   || null,
+        product_name: d.name         || null,
+        brand:        d.brand        || null,
+        from_db:      d.from_db      ?? true,
+      }
+    } catch { return { price: 0, web_price: null, source: null, photo_url: null, source_url: null, product_name: null, brand: null, from_db: false } }
+  }
+
+  // Artisan signale un matériau non prévu → lookup prix → message material_suggest
+  const sendMatSuggest = async () => {
+    if (!suggestName.trim()) return
+    setLookingUp(true)
+    const qty    = parseInt(suggestQty) || 1
+    const lookup = await lookupMatPrice(suggestName.trim())
+    const payload = JSON.stringify({
+      name:         suggestName.trim(),
+      product_name: lookup.product_name,   // nom exact Jumia si trouvé
+      brand:        lookup.brand,
+      qty,
+      price_market: lookup.price,
+      web_price:    lookup.web_price,       // prix Jumia (retail)
+      photo_url:    lookup.photo_url,
+      source_url:   lookup.source_url,
+      source:       lookup.source,
+      from_db:      lookup.from_db,
+      total:        lookup.price * qty,
+    })
+    const { error } = await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id,
+      sender_role: userRole, text: payload, type: 'material_suggest',
+    })
+    if (!error) {
+      const rid = getRecipientId(mission, user.id)
+      if (rid) notifyOther(`Matériau non prévu : ${suggestName.trim()} (×${qty}) — ~${(lookup.price * qty).toLocaleString('fr')} FCFA`, rid)
+    }
+    setSuggestName(''); setSuggestQty('1')
+    setShowMatSuggest(false)
+    setLookingUp(false)
+  }
+
+  // Artisan requalifie le temps — ajuste la MO
+  const sendTimeAdj = async () => {
+    const extra = parseFloat(adjHours)
+    if (!extra || extra <= 0) return
+    const baseDur   = parseDurLow(diagData?.duration_estimate || '2 heures')
+    const baseLabor = pricingSuggestion?.decomp.labor ?? 0
+    const hourlyRate = baseDur > 0 ? baseLabor / baseDur : 2500
+    const laborImpact = Math.round(extra * hourlyRate)
+    const payload = JSON.stringify({
+      extra_hours:  extra,
+      reason:       adjReason.trim() || null,
+      labor_impact: laborImpact,
+      hourly_rate:  Math.round(hourlyRate),
+    })
+    const { error } = await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id,
+      sender_role: userRole, text: payload, type: 'time_adjust',
+    })
+    if (!error) {
+      const rid = getRecipientId(mission, user.id)
+      if (rid) notifyOther(`Temps ajusté +${extra}h — impact MO : +${laborImpact.toLocaleString('fr')} FCFA`, rid)
+    }
+    setAdjHours(''); setAdjReason('')
+    setShowTimeAdj(false)
+  }
+
+  // Artisan envoie la proposition finale — construite depuis les messages accumulés
+  const sendFinalProposal = async () => {
+    // S'assurer que le pricing est chargé avant de construire la proposition
+    if (!pricingSuggestion) await loadPricingSuggestion()
+    const matSuggests = messages
+      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
+      .map(m => { try { return JSON.parse(m.text) } catch { return null } })
+      .filter(Boolean)
+    const timeAdjs = messages
+      .filter(m => m.type === 'time_adjust' && m.sender_role !== 'client')
+      .map(m => { try { return JSON.parse(m.text) } catch { return null } })
+      .filter(Boolean)
+
+    const baseEstimate    = pricingSuggestion?.estimate ?? 0
+    const extraMatTotal   = matSuggests.reduce((s: number, m: any) => s + (m.total || 0), 0)
+    const extraLaborTotal = timeAdjs.reduce((s: number, t: any) => s + (t.labor_impact || 0), 0)
+    const total           = baseEstimate + extraMatTotal + extraLaborTotal
+
+    const payload = JSON.stringify({
+      base_estimate:     baseEstimate,
+      extra_materials:   matSuggests,
+      time_adjustments:  timeAdjs,
+      extra_mat_total:   extraMatTotal,
+      extra_labor_total: extraLaborTotal,
+      total,
+      decomp: pricingSuggestion?.decomp,
+    })
+    setActing(true)
+    const { error } = await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id,
+      sender_role: userRole, text: payload, type: 'price_proposal',
+    })
+    if (!error) {
+      const rid = getRecipientId(mission, user.id)
+      if (rid) notifyOther(`Proposition finale : ${total.toLocaleString('fr')} FCFA — validez pour confirmer`, rid)
+      setShowDevis(false)
+    }
     setActing(false)
   }
 
@@ -793,6 +996,69 @@ export default function WarRoomPage() {
           </div>
           <span style={{fontSize:'12px',fontWeight:600,opacity:0.9}}>Voir →</span>
         </Link>
+      )}
+
+      {/* ─── DRAWER : Matériau non prévu (artisan) ────────────────────── */}
+      {showMatSuggest && isArtisan && (
+        <div style={{background:'#FAFAF5',borderTop:'2px solid #C9A84C',padding:'14px 16px',flexShrink:0}}>
+          <div style={{maxWidth:'672px',margin:'0 auto'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
+              <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>📦 Matériau non prévu</span>
+              <button onClick={() => setShowMatSuggest(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}><X size={16}/></button>
+            </div>
+            <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'10px',lineHeight:'1.5'}}>
+              Signalez un matériau absent du diagnostic — l'IA cherche son prix de marché à Abidjan.
+            </p>
+            <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:'8px',marginBottom:'10px'}}>
+              <input value={suggestName} onChange={e => setSuggestName(e.target.value)}
+                placeholder="ex: Joint torique DN20"
+                onKeyDown={e => e.key === 'Enter' && sendMatSuggest()}
+                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+              <input type="number" value={suggestQty} onChange={e => setSuggestQty(e.target.value)} placeholder="Qté"
+                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+            </div>
+            <button onClick={sendMatSuggest} disabled={lookingUp || !suggestName.trim()}
+              style={{width:'100%',padding:'10px',background:suggestName.trim()?'#C9A84C':'#D8D2C4',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:suggestName.trim()?'pointer':'default',opacity:lookingUp?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+              {lookingUp ? <><div style={{width:'12px',height:'12px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> Recherche prix…</> : '🔍 Chercher le prix & envoyer'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── DRAWER : Requalification du temps (artisan) ──────────────── */}
+      {showTimeAdj && isArtisan && (
+        <div style={{background:'#FAFAF5',borderTop:'2px solid #E85D26',padding:'14px 16px',flexShrink:0}}>
+          <div style={{maxWidth:'672px',margin:'0 auto'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
+              <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>⏱ Requalifier le temps</span>
+              <button onClick={() => setShowTimeAdj(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}><X size={16}/></button>
+            </div>
+            {pricingSuggestion && (
+              <div style={{background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'8px',padding:'8px 12px',marginBottom:'10px',fontSize:'12px',color:'#7A7A6E'}}>
+                Taux horaire actuel ≈ <strong style={{color:'#0F1410',fontFamily:'Space Mono'}}>
+                  {Math.round(pricingSuggestion.decomp.labor / Math.max(0.25, parseDurLow(diagData?.duration_estimate || '2 heures'))).toLocaleString('fr')} FCFA/h
+                </strong>
+              </div>
+            )}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:'8px',marginBottom:'10px'}}>
+              <input type="number" value={adjHours} onChange={e => setAdjHours(e.target.value)} placeholder="Heures sup."
+                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+              <input value={adjReason} onChange={e => setAdjReason(e.target.value)} placeholder="Raison (ex: découvert une fuite cachée)"
+                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+            </div>
+            {adjHours && pricingSuggestion && (
+              <div style={{background:'rgba(232,93,38,0.06)',borderRadius:'8px',padding:'8px 12px',marginBottom:'10px',fontSize:'13px',color:'#0F1410'}}>
+                Impact MO ≈ <strong style={{fontFamily:'Space Mono',color:'#E85D26'}}>
+                  +{Math.round(parseFloat(adjHours) * pricingSuggestion.decomp.labor / Math.max(0.25, parseDurLow(diagData?.duration_estimate || '2 heures'))).toLocaleString('fr')} FCFA
+                </strong>
+              </div>
+            )}
+            <button onClick={sendTimeAdj} disabled={!adjHours || parseFloat(adjHours) <= 0}
+              style={{width:'100%',padding:'10px',background:adjHours?'#E85D26':'#D8D2C4',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:adjHours?'pointer':'default'}}>
+              Envoyer la requalification →
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Formulaire devis (drawer inline) */}
@@ -1240,6 +1506,229 @@ export default function WarRoomPage() {
               )
             }
 
+            // Matériau non prévu — fiche produit complète (photo, marque, prix Jumia vs local)
+            if (msg.type === 'material_suggest') {
+              let d: any = {}
+              try { d = JSON.parse(msg.text) } catch {}
+              const localTotal = (d.price_market ?? 0) * (d.qty ?? 1)
+              const webTotal   = (d.web_price ?? 0) * (d.qty ?? 1)
+              const hasPrice   = localTotal > 0
+              return (
+                <div key={msg.id} style={{display:'flex',justifyContent:isMe?'flex-end':'flex-start'}}>
+                  <div style={{maxWidth:'86%',background:'white',border:'1.5px solid rgba(201,168,76,0.45)',borderRadius:'16px',overflow:'hidden',boxShadow:'0 2px 12px rgba(201,168,76,0.08)'}}>
+                    {/* Header */}
+                    <div style={{background:'rgba(201,168,76,0.08)',padding:'8px 14px',display:'flex',gap:'8px',alignItems:'center',borderBottom:'1px solid rgba(201,168,76,0.12)'}}>
+                      <span style={{fontSize:'14px'}}>📦</span>
+                      <span style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>MATÉRIAU NON PRÉVU</span>
+                      {d.source && (
+                        <span style={{marginLeft:'auto',fontSize:'9px',padding:'2px 7px',borderRadius:'10px',background:'rgba(232,93,38,0.08)',color:'#E85D26',fontWeight:600,border:'1px solid rgba(232,93,38,0.2)'}}>
+                          {d.source}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{padding:'12px 14px',display:'flex',gap:'12px',alignItems:'flex-start'}}>
+                      {/* Photo produit */}
+                      {d.photo_url ? (
+                        <a href={d.source_url || '#'} target="_blank" rel="noreferrer" style={{flexShrink:0,display:'block',lineHeight:0,borderRadius:'10px',overflow:'hidden',width:'72px',height:'72px',background:'#F5F0E8'}}>
+                          <img src={d.photo_url} alt={d.product_name || d.name}
+                            style={{width:'72px',height:'72px',objectFit:'cover',display:'block'}}
+                            onError={e => { (e.target as HTMLImageElement).parentElement!.style.display='none' }} />
+                        </a>
+                      ) : (
+                        <div style={{width:'72px',height:'72px',borderRadius:'10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px',flexShrink:0}}>
+                          {materialEmoji(d.name)}
+                        </div>
+                      )}
+
+                      {/* Infos produit */}
+                      <div style={{flex:1,minWidth:0}}>
+                        {/* Nom artisan */}
+                        <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410',marginBottom:'2px'}}>
+                          {d.qty > 1 ? `${d.qty}× ` : ''}{d.name}
+                        </div>
+                        {/* Nom produit Jumia si différent */}
+                        {d.product_name && d.product_name !== d.name && (
+                          <div style={{fontSize:'11px',color:'#7A7A6E',marginBottom:'4px',fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                            {d.product_name}
+                          </div>
+                        )}
+                        {d.brand && (
+                          <div style={{fontSize:'10px',color:'#A09A8E',marginBottom:'6px'}}>{d.brand}</div>
+                        )}
+
+                        {/* Prix */}
+                        {hasPrice ? (
+                          <div style={{display:'flex',flexDirection:'column',gap:'2px'}}>
+                            <div style={{display:'flex',alignItems:'baseline',gap:'4px'}}>
+                              <span style={{fontFamily:'Space Mono',fontSize:'20px',fontWeight:700,color:'#C9A84C'}}>
+                                ~{localTotal.toLocaleString('fr')}
+                              </span>
+                              <span style={{fontSize:'11px',color:'#7A7A6E'}}>FCFA</span>
+                              <span style={{fontSize:'10px',color:'#2B6B3E',background:'rgba(43,107,62,0.08)',padding:'1px 6px',borderRadius:'4px',fontWeight:600}}>prix local</span>
+                            </div>
+                            {webTotal > 0 && (
+                              <div style={{fontSize:'11px',color:'#7A7A6E'}}>
+                                Jumia : <span style={{fontFamily:'Space Mono',fontWeight:600}}>{webTotal.toLocaleString('fr')}</span> FCFA
+                                {d.qty > 1 && <span style={{color:'#A09A8E'}}> ({d.web_price?.toLocaleString('fr')}/u)</span>}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{fontSize:'12px',color:'#E85D26',fontWeight:600}}>⚠️ Prix non trouvé — à discuter</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer — lien Jumia */}
+                    {d.source_url && (
+                      <a href={d.source_url} target="_blank" rel="noreferrer"
+                        style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',padding:'8px',borderTop:'1px solid rgba(201,168,76,0.12)',fontSize:'12px',fontWeight:600,color:'#E85D26',textDecoration:'none',background:'rgba(232,93,38,0.03)'}}>
+                        Voir sur {d.source || 'Jumia'} →
+                      </a>
+                    )}
+                    <div style={{padding:'4px 14px 8px',fontSize:'10px',color:'#7A7A6E'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                  </div>
+                </div>
+              )
+            }
+
+            // Requalification du temps
+            if (msg.type === 'time_adjust') {
+              let d: any = {}
+              try { d = JSON.parse(msg.text) } catch {}
+              return (
+                <div key={msg.id} style={{textAlign:'center',padding:'6px 0'}}>
+                  <div style={{display:'inline-block',background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.3)',borderRadius:'12px',padding:'10px 16px',maxWidth:'88%',textAlign:'left'}}>
+                    <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em',marginBottom:'5px'}}>⏱ REQUALIFICATION DU TEMPS</div>
+                    <div style={{fontSize:'14px',color:'#0F1410',fontWeight:600}}>
+                      +{d.extra_hours}h
+                      <span style={{fontSize:'12px',fontWeight:400,color:'#7A7A6E',marginLeft:'8px'}}>
+                        → MO +<span style={{fontFamily:'Space Mono',fontWeight:600,color:'#E85D26'}}>{(d.labor_impact||0).toLocaleString('fr')} FCFA</span>
+                      </span>
+                    </div>
+                    {d.reason && <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'3px',fontStyle:'italic'}}>{d.reason}</div>}
+                    <div style={{fontSize:'10px',color:'#7A7A6E',marginTop:'5px'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                  </div>
+                </div>
+              )
+            }
+
+            // Proposition finale — validation conjointe des deux parties
+            if (msg.type === 'price_proposal') {
+              let d: any = {}
+              try { d = JSON.parse(msg.text) } catch {}
+              const canValidate = !isMe && !acting && status !== 'completed' && status !== 'cancelled' && status !== 'en_cours'
+              return (
+                <div key={msg.id} style={{padding:'4px 0'}}>
+                  <div style={{background:'white',border:'2px solid #0F1410',borderRadius:'18px',overflow:'hidden',maxWidth:'94%',boxShadow:'0 4px 20px rgba(0,0,0,0.1)'}}>
+                    {/* Header */}
+                    <div style={{background:'#0F1410',padding:'12px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
+                      <span style={{fontSize:'18px'}}>⚖️</span>
+                      <div>
+                        <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>PROPOSITION FINALE · VALIDATION REQUISE</div>
+                        <div style={{fontSize:'11px',color:'rgba(255,255,255,0.4)',marginTop:'1px'}}>Construit depuis diagnostic + ajustements discutés</div>
+                      </div>
+                    </div>
+                    <div style={{padding:'16px 18px',display:'flex',flexDirection:'column',gap:'7px'}}>
+                      {/* Base */}
+                      <div style={{display:'flex',justifyContent:'space-between',fontSize:'13px'}}>
+                        <span style={{color:'#7A7A6E'}}>📋 Devis diagnostic initial</span>
+                        <span style={{fontFamily:'Space Mono',color:'#0F1410',fontWeight:600}}>{(d.base_estimate||0).toLocaleString('fr')} F</span>
+                      </div>
+                      {/* Extra materials */}
+                      {(d.extra_materials||[]).map((m: any, i: number) => (
+                        <div key={`em${i}`} style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}>
+                          <span style={{color:'#C9A84C'}}>📦 {m.qty>1?`${m.qty}× `:''}{m.name}</span>
+                          <span style={{fontFamily:'Space Mono',color:'#C9A84C',fontWeight:600}}>+{(m.total||0).toLocaleString('fr')} F</span>
+                        </div>
+                      ))}
+                      {/* Time adjustments */}
+                      {(d.time_adjustments||[]).map((t: any, i: number) => (
+                        <div key={`ta${i}`} style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}>
+                          <span style={{color:'#E85D26'}}>⏱ Temps +{t.extra_hours}h</span>
+                          <span style={{fontFamily:'Space Mono',color:'#E85D26',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
+                        </div>
+                      ))}
+                      {/* Divider + Total */}
+                      <div style={{borderTop:'1.5px solid #D8D2C4',paddingTop:'12px',marginTop:'4px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+                        <span style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>Total</span>
+                        <div style={{textAlign:'right'}}>
+                          <span style={{fontFamily:'Space Mono',fontSize:'26px',fontWeight:700,color:'#0F1410'}}>{(d.total||0).toLocaleString('fr')}</span>
+                          <span style={{fontSize:'13px',color:'#7A7A6E',marginLeft:'4px'}}>FCFA</span>
+                        </div>
+                      </div>
+                      {/* Action */}
+                      {canValidate ? (
+                        <div style={{marginTop:'4px',display:'flex',gap:'8px'}}>
+                          <button onClick={() => acceptDevis(d.total)} style={{flex:1,padding:'12px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'7px'}}>
+                            <CheckCircle size={15}/> Je valide & Paye
+                          </button>
+                          <button onClick={refuseDevis} style={{padding:'12px 14px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'12px',fontWeight:600,fontSize:'13px',cursor:'pointer'}}>
+                            <X size={14}/>
+                          </button>
+                        </div>
+                      ) : isMe ? (
+                        <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>
+                          <Clock size={12}/> En attente de validation client…
+                        </div>
+                      ) : null}
+                    </div>
+                    <div style={{padding:'0 18px 10px',fontSize:'10px',color:'#7A7A6E'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                  </div>
+                </div>
+              )
+            }
+
+            // Mise à jour matériaux (artisan pendant mission)
+            if (msg.type === 'material_update') {
+              let upd: any = {}
+              try { upd = JSON.parse(msg.text) } catch {}
+              const mats: {name:string;qty:number;prix_unitaire:number}[] = upd.materials || []
+              const matTotal = mats.reduce((s: number, m: any) => s + m.qty * m.prix_unitaire, 0)
+              const laborFixed: number = upd.labor_fixed ?? 0
+              return (
+                <div key={msg.id} style={{padding:'4px 0'}}>
+                  <div style={{background:'white',border:'2px solid #2B6B3E',borderRadius:'16px',overflow:'hidden',maxWidth:'92%',boxShadow:'0 2px 10px rgba(43,107,62,0.08)'}}>
+                    <div style={{background:'rgba(43,107,62,0.07)',padding:'10px 16px',borderBottom:'1px solid rgba(43,107,62,0.12)',display:'flex',alignItems:'center',gap:'8px'}}>
+                      <span style={{fontSize:'14px'}}>🧾</span>
+                      <div>
+                        <div style={{fontSize:'10px',fontWeight:700,color:'#2B6B3E',letterSpacing:'0.1em',fontFamily:'Space Mono'}}>MATÉRIAUX ACHETÉS — ARTISAN</div>
+                        <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'1px'}}>Main d'œuvre fixée · seuls les matériaux sont justifiés ici</div>
+                      </div>
+                    </div>
+                    <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:'8px'}}>
+                      {upd.diag_change_note && (
+                        <div style={{background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'10px',padding:'8px 12px',fontSize:'12px',color:'#0F1410',lineHeight:'1.5'}}>
+                          <span style={{fontWeight:700,color:'#E85D26'}}>⚠️ Diagnostic modifié : </span>{upd.diag_change_note}
+                        </div>
+                      )}
+                      {/* Main d'œuvre fixe */}
+                      {laborFixed > 0 && (
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 10px',background:'rgba(201,168,76,0.07)',borderRadius:'8px'}}>
+                          <span style={{fontSize:'12px',color:'#7A7A6E'}}>🔧 Main d'œuvre (fixe)</span>
+                          <span style={{fontFamily:'Space Mono',fontSize:'13px',fontWeight:700,color:'#C9A84C'}}>{laborFixed.toLocaleString('fr')} F</span>
+                        </div>
+                      )}
+                      {/* Matériaux */}
+                      {mats.map((m: any, i: number) => (
+                        <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 10px',background:'rgba(0,0,0,0.02)',borderRadius:'8px'}}>
+                          <span style={{fontSize:'12px',color:'#0F1410',flex:1}}>{m.qty > 1 ? `${m.qty}× ` : ''}{m.name}</span>
+                          <span style={{fontFamily:'Space Mono',fontSize:'12px',color:'#0F1410',fontWeight:600,flexShrink:0}}>{(m.qty * m.prix_unitaire).toLocaleString('fr')} F</span>
+                        </div>
+                      ))}
+                      {/* Total */}
+                      <div style={{borderTop:'1px solid #D8D2C4',paddingTop:'8px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+                        <span style={{fontWeight:700,fontSize:'13px',color:'#0F1410'}}>Total</span>
+                        <span style={{fontFamily:'Space Mono',fontSize:'20px',fontWeight:700,color:'#0F1410'}}>{(upd.total ?? matTotal + laborFixed).toLocaleString('fr')} <span style={{fontSize:'12px',color:'#7A7A6E',fontFamily:'inherit'}}>FCFA</span></span>
+                      </div>
+                      <div style={{fontSize:'10px',color:'#7A7A6E'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
             // Message texte normal
             return (
               <div key={msg.id} style={{display:'flex',gap:'8px',flexDirection:isMe?'row-reverse':'row',alignItems:'flex-end'}}>
@@ -1264,20 +1753,133 @@ export default function WarRoomPage() {
         </div>
       </div>
 
+      {/* ─── DRAWER MISE À JOUR MATÉRIAUX (artisan, en_cours) ──────────── */}
+      {showMatUpdate && isArtisan && (
+        <div style={{background:'white',borderTop:'2px solid #2B6B3E',padding:'16px',flexShrink:0,maxHeight:'70vh',overflowY:'auto'}}>
+          <div style={{maxWidth:'672px',margin:'0 auto'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
+              <span style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>🧾 Matériaux achetés</span>
+              <button onClick={() => setShowMatUpdate(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}><X size={18}/></button>
+            </div>
+
+            {/* Info règle : MO fixe */}
+            <div style={{background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:'10px',padding:'10px 12px',marginBottom:'12px',fontSize:'12px',color:'#7A7A6E',lineHeight:'1.6'}}>
+              <strong style={{color:'#C9A84C'}}>Règle AfriOne :</strong> La main d'œuvre ({pricingSuggestion ? `${pricingSuggestion.decomp.labor.toLocaleString('fr')} FCFA` : 'calculée au diagnostic'}) est <strong>fixe et non négociable</strong>. Vous ne justifiez ici que les matériaux réellement achetés.
+            </div>
+
+            {/* Diagnostic changé ? */}
+            <div style={{marginBottom:'12px'}}>
+              <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.05em'}}>Diagnostic modifié ? (optionnel)</label>
+              <input value={diagChangeNote} onChange={e => setDiagChangeNote(e.target.value)}
+                placeholder="ex: J'ai découvert une fuite supplémentaire sous l'évier"
+                style={{width:'100%',padding:'9px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'13px',outline:'none',boxSizing:'border-box' as const,color:'#0F1410'}} />
+            </div>
+
+            {/* Liste matériaux ajoutés */}
+            {purchasedMats.length > 0 && (
+              <div style={{marginBottom:'12px',display:'flex',flexDirection:'column',gap:'6px'}}>
+                {purchasedMats.map((m, i) => (
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',padding:'7px 10px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'8px'}}>
+                    <div style={{flex:1,fontSize:'13px',color:'#0F1410'}}>{m.qty > 1 ? `${m.qty}× ` : ''}{m.name}</div>
+                    <div style={{fontFamily:'Space Mono',fontSize:'13px',fontWeight:600,color:'#0F1410',flexShrink:0}}>{(m.qty*m.prix_unitaire).toLocaleString('fr')} F</div>
+                    <button onClick={() => setPurchasedMats(ms => ms.filter((_,j) => j !== i))} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E',padding:'0',lineHeight:0,flexShrink:0}}>
+                      <X size={13}/>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Formulaire ajout article */}
+            <div style={{background:'rgba(0,0,0,0.02)',border:'1px dashed #D8D2C4',borderRadius:'10px',padding:'10px',marginBottom:'12px'}}>
+              <div style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.05em'}}>Ajouter un article</div>
+              <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr',gap:'8px',marginBottom:'8px'}}>
+                <input value={newMatName} onChange={e => setNewMatName(e.target.value)} placeholder="Nom du matériau"
+                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#0F1410'}} />
+                <input type="number" value={newMatQty} onChange={e => setNewMatQty(e.target.value)} placeholder="Qté"
+                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#0F1410'}} />
+                <input type="number" value={newMatPrix} onChange={e => setNewMatPrix(e.target.value)} placeholder="Prix/u FCFA"
+                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#0F1410'}} />
+              </div>
+              <button onClick={addPurchasedMat} disabled={!newMatName.trim() || !newMatPrix}
+                style={{width:'100%',padding:'8px',background:'transparent',border:'1px dashed rgba(43,107,62,0.5)',borderRadius:'8px',color:'#2B6B3E',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',opacity:!newMatName.trim()||!newMatPrix?0.4:1}}>
+                <Plus size={13}/> Ajouter
+              </button>
+            </div>
+
+            {/* Total récapitulatif */}
+            {purchasedMats.length > 0 && (
+              <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px 14px',marginBottom:'12px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+                <span style={{fontSize:'12px',color:'#7A7A6E'}}>Total matériaux + MO</span>
+                <span style={{fontFamily:'Space Mono',fontSize:'18px',fontWeight:700,color:'#0F1410'}}>
+                  {((pricingSuggestion?.decomp.labor ?? 0) + purchasedMats.reduce((s,m) => s+m.qty*m.prix_unitaire,0)).toLocaleString('fr')} F
+                </span>
+              </div>
+            )}
+
+            <button onClick={sendMatUpdate} disabled={sendingMatUpdate || !purchasedMats.length}
+              style={{width:'100%',padding:'12px',background:purchasedMats.length?'#2B6B3E':'#D8D2C4',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:purchasedMats.length?'pointer':'default',opacity:sendingMatUpdate?0.6:1}}>
+              {sendingMatUpdate ? 'Envoi…' : '📤 Envoyer au client →'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Zone actions bas */}
       {!isClosed ? (
         <div style={{background:'white',borderTop:'1px solid #D8D2C4',padding:'10px 16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
 
-            {/* Bouton artisan : Proposer devis (negotiation/matching) */}
-            {isArtisan && (status === 'negotiation' || status === 'matching') && !showDevis && (
+            {/* Artisan : Actions de discussion (negotiation/matching) */}
+            {isArtisan && (status === 'negotiation' || status === 'matching') && !showDevis && !showMatSuggest && !showTimeAdj && (
+              <div style={{marginBottom:'8px',display:'flex',gap:'6px',flexWrap:'wrap'}}>
+                {/* Matériau non prévu */}
+                <button onClick={() => { setShowMatSuggest(true); setShowTimeAdj(false); loadPricingSuggestion() }} style={{
+                  flex:1,minWidth:'130px',padding:'9px 10px',background:'rgba(201,168,76,0.08)',
+                  border:'1px dashed #C9A84C',borderRadius:'10px',color:'#C9A84C',
+                  fontWeight:600,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
+                }}>
+                  📦 Matériau non prévu
+                </button>
+                {/* Requalifier le temps */}
+                <button onClick={() => { setShowTimeAdj(true); setShowMatSuggest(false) }} style={{
+                  flex:1,minWidth:'130px',padding:'9px 10px',background:'rgba(232,93,38,0.06)',
+                  border:'1px dashed rgba(232,93,38,0.6)',borderRadius:'10px',color:'#E85D26',
+                  fontWeight:600,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
+                }}>
+                  ⏱ +Temps
+                </button>
+                {/* Proposition finale (si des ajustements existent) ou devis simple */}
+                {messages.some(m => m.type === 'material_suggest' || m.type === 'time_adjust') ? (
+                  <button onClick={sendFinalProposal} disabled={acting} style={{
+                    width:'100%',marginTop:'4px',padding:'11px',background:'#0F1410',
+                    color:'white',border:'none',borderRadius:'10px',
+                    fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
+                    opacity: acting ? 0.6 : 1,
+                  }}>
+                    ⚖️ {acting ? 'Envoi…' : 'Lancer la proposition finale'}
+                  </button>
+                ) : (
+                  <button onClick={openDevis} style={{
+                    width:'100%',marginTop:'4px',padding:'10px',background:'rgba(232,93,38,0.08)',
+                    border:'1px dashed #E85D26',borderRadius:'10px',color:'#E85D26',
+                    fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
+                  }}>
+                    💰 Proposer un devis
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Bouton artisan : Mise à jour matériaux (en_cours) */}
+            {isArtisan && (status === 'en_cours' || status === 'en_route') && !showMatUpdate && (
               <div style={{marginBottom:'8px'}}>
-                <button onClick={openDevis} style={{
-                  width:'100%',padding:'10px',background:'rgba(232,93,38,0.08)',
-                  border:'1px dashed #E85D26',borderRadius:'10px',color:'#E85D26',
+                <button onClick={() => { setShowMatUpdate(true); loadPricingSuggestion() }} style={{
+                  width:'100%',padding:'10px',background:'rgba(43,107,62,0.08)',
+                  border:'1px dashed #2B6B3E',borderRadius:'10px',color:'#2B6B3E',
                   fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                 }}>
-                  💰 Proposer un devis
+                  🧾 Déclarer les matériaux achetés
                 </button>
               </div>
             )}

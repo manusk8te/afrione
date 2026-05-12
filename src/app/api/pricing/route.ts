@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import {
   runMonteCarlo, computeDistance, CATEGORY_TO_METIER,
+  diagnosticAlpha,
   type PricingInput, type MaterialInput,
 } from '@/lib/pricing'
 
@@ -18,16 +19,37 @@ const FALLBACK_LABOR: Record<string, { tarif_horaire: number; majoration_urgence
 }
 const FALLBACK_FEE       = { commission_pct: 10, assurance_sav_pct: 2, artisan_share_pct: 88 }
 const FALLBACK_URGENCY   = { commission_pct: 12, assurance_sav_pct: 3, artisan_share_pct: 85 }
+// Fallback matériaux quand ni Jumia ni DB ne trouvent l'item
+// [price_market, price_min, price_max] en FCFA — estimation marché local Abidjan
+// Ces valeurs sont volontairement conservatrices (bas) pour rester accessible
+// À remplacer par de vraies données via l'admin dès que possible
 const FALLBACK_MATERIAL: Record<string, [number, number, number]> = {
-  'Plomberie':    [3000, 2000, 5000], 'Électricité':  [4000, 2500, 7000],
-  'Peinture':     [3500, 2500, 5500], 'Maçonnerie':   [6000, 4500, 9000],
-  'Carrelage':    [8000, 6000, 12000],'Climatisation': [8000, 5000, 15000],
-  'Menuiserie':   [5000, 3500, 8000], 'Serrurerie':   [4000, 3000, 6000],
+  'Plomberie':    [800,  300,  3000], // joint, siphon, petit raccord
+  'Électricité':  [1000, 400,  4000], // fil, interrupteur, prise
+  'Peinture':     [1500, 800,  5000], // rouleau, petit pot peinture
+  'Maçonnerie':   [2000, 800,  6000], // enduit, mortier, vis
+  'Carrelage':    [2500, 1000, 8000], // colle, joint, baguette
+  'Climatisation':[3000, 1500, 10000],// filtre, courroie, gaz
+  'Menuiserie':   [1500, 500,  5000], // charnière, vis, poignée
+  'Serrurerie':   [1500, 500,  4000], // barillet, pêne, clé
 }
 
 function parseDuration(s: string): number {
+  if (!s) return 2
+  const lower = s.toLowerCase()
+  // "30 minutes", "45 min", "1h30" → convertir en heures
+  const minMatch = lower.match(/(\d+)\s*min/)
+  if (minMatch && !lower.includes('heure') && !lower.match(/\d+\s*h(?:eure)?s?\s+\d+/)) {
+    return Math.max(0.25, parseInt(minMatch[1]) / 60)
+  }
+  // "1h30", "1h 30min"
+  const hMinMatch = lower.match(/(\d+)\s*h(?:eure)?s?\s*(\d+)/)
+  if (hMinMatch) return parseInt(hMinMatch[1]) + parseInt(hMinMatch[2]) / 60
+  // "1 à 3 heures", "2 à 4 heures" → prendre la borne basse (on veut être pas cher)
+  const rangeMatch = lower.match(/(\d+(?:\.\d+)?)\s*[àa-]\s*(\d+(?:\.\d+)?)/)
+  if (rangeMatch) return parseFloat(rangeMatch[1])
   const nums = s.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
-  return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 2
+  return nums.length ? nums[0] : 2
 }
 
 export async function POST(req: NextRequest) {
@@ -37,10 +59,15 @@ export async function POST(req: NextRequest) {
     duration_hours, duration_estimate,
     quartier = 'Cocody', items_needed = [],
     artisan_id, diagnostic_id, hour_override,
+    surface_m2, budget_client,
   } = body
 
   // Auto-enrichissement depuis le diagnostic si fourni
-  let resolvedItems     = items_needed as string[]
+  // items_needed peut être [{name, qty, unit}] ou ["string"]
+  let resolvedItems: { name: string; qty: number; unit: string }[] =
+    (items_needed as any[]).map((it: any) =>
+      typeof it === 'string' ? { name: it, qty: 1, unit: 'unité' } : it
+    )
   let resolvedDuration  = duration_hours ?? (duration_estimate ? parseDuration(duration_estimate) : 2)
   let resolvedCategory  = category
   let resolvedUrgency   = urgency
@@ -69,7 +96,7 @@ export async function POST(req: NextRequest) {
     supabaseAdmin.from('service_fees').select('*')
       .eq('category', ['high','emergency'].includes(resolvedUrgency) ? 'urgence' : 'default').maybeSingle(),
     artisan_id
-      ? supabaseAdmin.from('artisan_pros').select('zone_gps,years_experience').eq('id', artisan_id).maybeSingle()
+      ? supabaseAdmin.from('artisan_pros').select('zone_gps,years_experience,tarif_min').eq('id', artisan_id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabaseAdmin.from('quotations').select('total_price').eq('status', 'accepted').limit(200).order('created_at', { ascending: false }),
   ])
@@ -86,17 +113,24 @@ export async function POST(req: NextRequest) {
   const yearsExp = artisan?.years_experience ?? 3
   const distanceKm = computeDistance(artisan?.zone_gps ?? null, quartier)
 
-  // Matériaux — cherche dans price_materials, fallback par catégorie
+  // ── Tarif déclaré artisan + interpolation SMIG×2 ──────────────────────────
+  // artisan_pros.tarif_min = ce que l'artisan a inscrit (considéré exagéré)
+  // α = intensité du diagnostic → positionne le prix entre SMIG×2 et tarif déclaré
+  const artisanDeclaredRate: number | undefined = artisan?.tarif_min ?? undefined
+  const alpha = diagnosticAlpha(resolvedUrgency, resolvedItems.length, resolvedDuration)
+
+  // Matériaux — cherche dans price_materials avec qty réelle du diagnostic
   const materials: MaterialInput[] = []
   if (resolvedItems.length > 0) {
-    await Promise.all(resolvedItems.slice(0, 10).map(async (item: string) => {
+    await Promise.all(resolvedItems.slice(0, 10).map(async (item) => {
       const { data } = await supabaseAdmin
-        .from('price_materials').select('*').ilike('name', `%${item}%`).limit(1).maybeSingle()
+        .from('price_materials').select('*').ilike('name', `%${item.name}%`).limit(1).maybeSingle()
+      const qty = item.qty || 1
       if (data) {
-        materials.push({ price_market: data.price_market, price_min: data.price_min, price_max: data.price_max, qty: 1, category: data.category })
+        materials.push({ price_market: data.price_market, price_min: data.price_min, price_max: data.price_max, qty, category: data.category })
       } else {
-        const [mid, lo, hi] = FALLBACK_MATERIAL[resolvedCategory] ?? [4000, 2500, 7000]
-        materials.push({ price_market: mid, price_min: lo, price_max: hi, qty: 1, category: resolvedCategory })
+        const [mid, lo, hi] = FALLBACK_MATERIAL[resolvedCategory] ?? [800, 300, 3000]
+        materials.push({ price_market: mid, price_min: lo, price_max: hi, qty, category: resolvedCategory })
       }
     }))
   }
@@ -112,7 +146,8 @@ export async function POST(req: NextRequest) {
   const hour = hour_override ?? new Date().getHours()
 
   const input: PricingInput = {
-    laborRate, durationHours: resolvedDuration, yearsExp,
+    laborRate, artisanDeclaredRate, alpha,
+    durationHours: resolvedDuration, yearsExp,
     materials, distanceKm, hour, quartier: quartier,
     urgency: resolvedUrgency, serviceFee, historicalResiduals,
   }

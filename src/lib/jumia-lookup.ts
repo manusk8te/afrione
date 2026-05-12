@@ -97,14 +97,19 @@ export async function lookupItemOnJumia(item: string, category: string): Promise
     .ilike('name', `%${item}%`)
     .maybeSingle()
 
+  // Jumia = prix e-commerce retail importé ≈ 2–3× marché physique Abidjan
+  // web_price conserve le vrai prix Jumia pour affichage
+  // price_market = estimation marché local (Adjamé/Koumassi) ≈ 45% du prix Jumia
+  // price_min    = bas du marché local ≈ 25% du prix Jumia
+  // price_max    = prix Jumia (plafond, si l'artisan achète en ligne)
   const payload = {
     name:            item,
     category,
     unit:            'unité',
     tier:            'standard',
-    price_market:    best.price,
-    price_min:       Math.round(best.price * 0.80),
-    price_max:       Math.round(best.price * 1.20),
+    price_market:    Math.round(best.price * 0.45),
+    price_min:       Math.round(best.price * 0.25),
+    price_max:       best.price,
     source:          'Jumia CI',
     brand:           best.brand,
     photo_url:       best.photo_url,
