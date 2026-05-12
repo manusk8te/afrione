@@ -395,8 +395,20 @@ function AuthPageInner() {
                   <strong>Artisan :</strong> après avoir confirmé votre email, connectez-vous ici — vous complèterez votre profil artisan directement.
                 </div>
               )}
-              <button onClick={() => setStep('login')} className="btn-outline w-full flex items-center justify-center gap-2">
+              <button onClick={() => setStep('login')} className="btn-outline w-full flex items-center justify-center gap-2 mb-3">
                 Retour à la connexion
+              </button>
+              <button
+                onClick={async () => {
+                  setLoading(true)
+                  await supabase.auth.resend({ type: 'signup', email })
+                  setLoading(false)
+                  setError('Email renvoyé !')
+                }}
+                disabled={loading}
+                style={{background:'none',border:'none',cursor:'pointer',fontSize:'13px',color:'#7A7A6E',width:'100%'}}
+              >
+                {loading ? 'Envoi…' : 'Renvoyer le lien de confirmation'}
               </button>
             </div>
           )}
@@ -436,7 +448,7 @@ function AuthPageInner() {
                 </div>
                 <button onClick={() => { setArtisanStep(1); setStep('artisan_profile') }}
                   disabled={artisan.phone.length < 8}
-                  className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40">
+                  className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                   Continuer <ArrowRight size={16} />
                 </button>
                 <p className="text-xs text-center text-muted">
@@ -494,7 +506,7 @@ function AuthPageInner() {
                 </div>
                 <button onClick={() => { setArtisanStep(2); setStep('artisan_metier') }}
                   disabled={!artisan.quartier}
-                  className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40">
+                  className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                   Continuer <ArrowRight size={16} />
                 </button>
               </div>
@@ -523,7 +535,7 @@ function AuthPageInner() {
                 ))}
               </div>
               <button onClick={finishArtisan} disabled={!artisan.metier || loading}
-                className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40">
+                className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                 {loading
                   ? <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Création en cours...</>
                   : <><CheckCircle size={16} /> Finaliser mon inscription</>

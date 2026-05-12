@@ -35,9 +35,10 @@ export default function AdminSourcesPage() {
   const [loading, setLoading]       = useState(true)
   const [expanded, setExpanded]     = useState<string | null>(null)
   const [materials, setMaterials]   = useState<Record<string, Material[]>>({})
-  const [matLoading, setMatLoading] = useState<string | null>(null)
-  const [scraping, setScraping]     = useState<string | null>(null)
-  const [msg, setMsg]               = useState<string | null>(null)
+  const [matLoading, setMatLoading]   = useState<string | null>(null)
+  const [scraping, setScraping]       = useState<string | null>(null)
+  const [msg, setMsg]                 = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   // Form — ajouter un site web
   const [showWebForm, setShowWebForm] = useState(false)
@@ -80,7 +81,8 @@ export default function AdminSourcesPage() {
   }
 
   const remove = async (id: string) => {
-    if (!confirm('Supprimer cette source et tous ses articles ?')) return
+    if (confirmDelete !== id) { setConfirmDelete(id); return }
+    setConfirmDelete(null)
     await fetch('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -246,6 +248,7 @@ export default function AdminSourcesPage() {
                   materials={materials[src.id]}
                   matLoading={matLoading === src.id}
                   scraping={scraping === src.id}
+                  isConfirmingDelete={confirmDelete === src.id}
                   onToggle={() => toggleExpand(src.id)}
                   onVerify={() => verify(src.id)}
                   onDelete={() => remove(src.id)}
@@ -278,6 +281,7 @@ export default function AdminSourcesPage() {
                   materials={materials[src.id]}
                   matLoading={matLoading === src.id}
                   scraping={false}
+                  isConfirmingDelete={confirmDelete === src.id}
                   onToggle={() => toggleExpand(src.id)}
                   onVerify={() => verify(src.id)}
                   onDelete={() => remove(src.id)}
@@ -294,7 +298,7 @@ export default function AdminSourcesPage() {
 
 // ── SourceCard ────────────────────────────────────────────────────────────────
 function SourceCard({
-  source, expanded, materials, matLoading, scraping,
+  source, expanded, materials, matLoading, scraping, isConfirmingDelete,
   onToggle, onVerify, onDelete, onScrape, onConfirmMaterial,
 }: {
   source: Source
@@ -302,6 +306,7 @@ function SourceCard({
   materials?: Material[]
   matLoading: boolean
   scraping: boolean
+  isConfirmingDelete: boolean
   onToggle: () => void
   onVerify: () => void
   onDelete: () => void
@@ -349,8 +354,8 @@ function SourceCard({
             </button>
           )}
           <button onClick={onDelete}
-            style={{ padding: '5px 8px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#f87171', fontSize: '11px', cursor: 'pointer' }}>
-            <Trash2 size={11} />
+            style={{ padding: '5px 8px', background: isConfirmingDelete ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.08)', border: `1px solid ${isConfirmingDelete ? 'rgba(239,68,68,0.6)' : 'rgba(239,68,68,0.2)'}`, borderRadius: '6px', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontWeight: isConfirmingDelete ? 700 : 400, whiteSpace: 'nowrap' }}>
+            {isConfirmingDelete ? '⚠️ Confirmer ?' : <Trash2 size={11} />}
           </button>
           {expanded ? <ChevronUp size={14} color="#7A7A6E" /> : <ChevronDown size={14} color="#7A7A6E" />}
         </div>

@@ -53,6 +53,7 @@ export default function MissionLivePage() {
   const [mission, setMission]         = useState<any>(null)
   const [user, setUser]               = useState<any>(null)
   const [userRole, setUserRole]       = useState('client')
+  const [missionRole, setMissionRole] = useState<'client'|'artisan'|'admin'>('client')
   const [artisanPos, setArtisanPos]   = useState<{ lat: number; lng: number } | null>(null)
   const [clientPos, setClientPos]     = useState<[number, number]>(ABIDJAN_CENTER)
   const [isTracking, setIsTracking]   = useState(false)
@@ -73,11 +74,19 @@ export default function MissionLivePage() {
   const [showLitige, setShowLitige]         = useState(false)
   const [litigeText, setLitigeText]         = useState('')
   const [submittingLitige, setSubmittingLitige] = useState(false)
+  const [confirmDone, setConfirmDone]       = useState(false)
 
   const watchRef     = useRef<number | null>(null)
   const clientPosRef = useRef<[number, number]>(ABIDJAN_CENTER)
 
-  const isArtisan = userRole === 'artisan' || userRole === 'admin'
+  const isArtisan = missionRole === 'artisan' || missionRole === 'admin'
+
+  // Escape key closes litige modal
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') { setShowLitige(false); setConfirmDone(false) } }
+    document.addEventListener('keydown', onEsc)
+    return () => document.removeEventListener('keydown', onEsc)
+  }, [])
 
   // Google Maps
   const { isLoaded: mapsLoaded } = useJsApiLoader({
@@ -119,7 +128,6 @@ export default function MissionLivePage() {
       const { data: ud } = await supabase.from('users').select('role').eq('id', session.user.id).single()
       const role = ud?.role ?? 'client'
       setUserRole(role)
-      const artisan = role === 'artisan' || role === 'admin'
 
       const { data: m } = await supabase
         .from('missions')
@@ -127,6 +135,18 @@ export default function MissionLivePage() {
         .eq('id', missionId).single()
       if (!m) { setLoading(false); return }
       setMission(m)
+
+      // Rôle dans CETTE mission (indépendant du rôle global du profil)
+      const mr: 'client'|'artisan'|'admin' =
+        m.artisan_pros?.user_id === session.user.id && m.client_id !== session.user.id
+        ? 'artisan'
+        : m.client_id === session.user.id
+        ? 'client'
+        : role === 'admin'
+        ? 'admin'
+        : 'client'
+      setMissionRole(mr)
+      const artisan = mr !== 'client'
 
       const quartier = m.users?.quartier || m.quartier || ''
       const coords: [number, number] = QUARTIER_COORDS[quartier] || ABIDJAN_CENTER
@@ -212,7 +232,7 @@ export default function MissionLivePage() {
     await supabase.from('missions').update({ status: 'en_cours', started_at: new Date().toISOString() }).eq('id', missionId)
     setMission((prev: any) => ({ ...prev, status: 'en_cours' }))
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: 'artisan',
+      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
       text: "L'artisan est arrivé — mission démarrée ! ⚡", type: 'system',
     })
     if (mission?.client_id) {
@@ -248,7 +268,7 @@ export default function MissionLivePage() {
     if (existing) await supabase.from('proof_of_work').update(payload).eq('mission_id', missionId)
     else await supabase.from('proof_of_work').insert(payload)
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
       text: JSON.stringify({ urls: proofAfterUrls, notes: proofNotes.trim() }), type: 'proof',
     })
     setProofSaved(true)
@@ -266,7 +286,7 @@ export default function MissionLivePage() {
       if (error) console.error('[release_escrow]', error)
     }
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
       text: `Mission terminée ✅ — ${amount > 0 ? `${amount.toLocaleString()} FCFA transférés sur votre wallet.` : 'Merci pour votre confiance !'}`,
       type: 'system',
     })
@@ -286,7 +306,7 @@ export default function MissionLivePage() {
     await supabase.from('missions').update({ status: 'disputed' }).eq('id', missionId)
     setMission((prev: any) => ({ ...prev, status: 'disputed' }))
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
       text: `⚠️ Litige signalé : ${litigeText.trim()}`, type: 'system',
     })
     if (mission?.artisan_pros?.user_id) {
@@ -335,8 +355,8 @@ export default function MissionLivePage() {
 
       {/* ── MODAL LITIGE ─────────────────────────────────────────────── */}
       {showLitige && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,14,11,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ width: '100%', maxWidth: '420px', background: 'white', borderRadius: '20px', padding: '24px' }}>
+        <div onClick={() => setShowLitige(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,14,11,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '420px', background: 'white', borderRadius: '20px', padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <div style={{ width: '36px', height: '36px', background: 'rgba(239,68,68,0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <AlertCircle size={18} color="#ef4444" />
@@ -629,8 +649,8 @@ export default function MissionLivePage() {
                     <div style={{ fontSize: '11px', color: '#7A7A6E' }}>Le client voit votre déplacement en direct</div>
                   </div>
                 </div>
-                <button onClick={markArrived} disabled={acting} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: acting ? 0.6 : 1 }}>
-                  <CheckCircle size={18} /> {acting ? 'Chargement…' : "Je suis arrivé — Démarrer la mission"}
+                <button onClick={markArrived} disabled={acting} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: acting ? 0.6 : 1 }}>
+                  {acting ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Démarrage…</> : <><CheckCircle size={18} /> Je suis arrivé — Démarrer la mission</>}
                 </button>
               </>
             )}
@@ -639,9 +659,25 @@ export default function MissionLivePage() {
 
         {/* ARTISAN — En cours */}
         {isArtisan && status === 'en_cours' && (
-          <button onClick={markDone} disabled={acting} style={{ width: '100%', padding: '15px', background: 'rgba(43,107,62,0.2)', color: '#2B6B3E', border: '1px solid rgba(43,107,62,0.4)', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: acting ? 0.6 : 1 }}>
-            <CheckCircle size={18} /> {acting ? 'En cours…' : 'Marquer la mission comme terminée'}
-          </button>
+          confirmDone ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '12px', fontSize: '13px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>
+                ⚠️ Cela libère le paiement escrow. Confirmer ?
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setConfirmDone(false)} style={{ flex: 1, padding: '13px', background: 'none', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: '#7A7A6E', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                  Annuler
+                </button>
+                <button onClick={markDone} disabled={acting} style={{ flex: 2, padding: '13px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', opacity: acting ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  {acting ? <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> En cours…</> : <><CheckCircle size={16} /> Oui, terminer</>}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDone(true)} disabled={acting} style={{ width: '100%', padding: '15px', background: 'rgba(43,107,62,0.2)', color: '#2B6B3E', border: '1px solid rgba(43,107,62,0.4)', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              <CheckCircle size={18} /> Marquer la mission comme terminée
+            </button>
+          )
         )}
 
         {/* CLIENT — En route */}

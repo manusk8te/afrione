@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Send, RotateCcw, CheckCircle, Zap, AlertCircle, Clock, Wrench, X, ChevronRight } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
 
 type Step = 'input' | 'questioning' | 'summarizing' | 'confirming'
 
@@ -116,6 +117,7 @@ export default function DiagnosticPage() {
   const [marketRef, setMarketRef]           = useState<number | null>(null)
   const [refineText, setRefineText]   = useState('')
   const [refining, setRefining]       = useState(false)
+  const [navigating, setNavigating]   = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const bottomRef     = useRef<HTMLDivElement>(null)
 
@@ -147,6 +149,8 @@ export default function DiagnosticPage() {
       if (!error) {
         const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
         setPhotos(prev => [...prev, publicUrl])
+      } else {
+        toast.error(`Échec upload : ${file.name}`)
       }
     }
     setUploading(false)
@@ -823,24 +827,30 @@ export default function DiagnosticPage() {
             </div>
 
             {/* CTA principal */}
-            <Link
-              href={result.mission_id
-                ? `/matching?mission=${result.mission_id}&category=${encodeURIComponent(result.category)}`
-                : `/matching?category=${encodeURIComponent(result.category)}`
-              }
+            <button
+              onClick={() => {
+                if (navigating) return
+                setNavigating(true)
+                const href = result.mission_id
+                  ? `/matching?mission=${result.mission_id}&category=${encodeURIComponent(result.category)}`
+                  : `/matching?category=${encodeURIComponent(result.category)}`
+                router.push(href)
+              }}
+              disabled={navigating}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                padding: '18px', background: '#E85D26', color: 'white', textDecoration: 'none',
-                borderRadius: '16px', fontWeight: 700, fontSize: '16px',
-                boxShadow: '0 8px 24px rgba(232,93,38,0.3)',
+                padding: '18px', background: '#E85D26', color: 'white', border: 'none',
+                borderRadius: '16px', fontWeight: 700, fontSize: '16px', cursor: navigating ? 'not-allowed' : 'pointer',
+                boxShadow: '0 8px 24px rgba(232,93,38,0.3)', width: '100%', opacity: navigating ? 0.8 : 1,
               }}
             >
-              <CheckCircle size={20} />
-              Valider et trouver un artisan
-              <ChevronRight size={18} />
-            </Link>
+              {navigating
+                ? <><div style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Recherche des artisans…</>
+                : <><CheckCircle size={20} /> Valider et trouver un artisan <ChevronRight size={18} /></>
+              }
+            </button>
 
-            <button onClick={() => { setStep('input'); setResult(null); setQA([]); setPhotos([]); setText('') }} style={{
+            <button onClick={() => { setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null); setMaterialTiers([]) }} style={{
               padding: '13px', background: 'transparent', border: '1.5px solid #D8D2C4', borderRadius: '14px',
               fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#7A7A6E',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',

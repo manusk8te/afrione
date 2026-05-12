@@ -57,6 +57,7 @@ export default function ArtisanDashboardPage() {
   const [certifications, setCertifications] = useState<string[]>([])
   const [newCertif, setNewCertif] = useState('')
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([])
+  const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null)
 
   // Recalcule le nombre de messages non lus en temps réel
   const refreshUnread = async (artisanId: string, artisanUserId: string, missionIds: string[]) => {
@@ -221,8 +222,10 @@ export default function ArtisanDashboardPage() {
     setSaving(false)
   }
 
-  // Supprimer photo portfolio
+  // Supprimer photo portfolio (avec confirmation deux étapes)
   const removePortfolioPhoto = async (url: string) => {
+    if (confirmDeletePhoto !== url) { setConfirmDeletePhoto(url); return }
+    setConfirmDeletePhoto(null)
     const updated = portfolioUrls.filter(u => u !== url)
     await supabase.from('artisan_pros').update({ portfolio: updated }).eq('id', artisan.id)
     setPortfolioUrls(updated)
@@ -722,19 +725,34 @@ export default function ArtisanDashboardPage() {
               ) : (
                 <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
                   {allPhotos.map((p, i) => (
-                    <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'12px',overflow:'hidden',background:'#EDE8DE',cursor:'pointer'}}>
+                    <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'12px',overflow:'hidden',background:'#EDE8DE',cursor:'pointer'}}
+                    onClick={() => { if (confirmDeletePhoto === p.url) setConfirmDeletePhoto(null) }}>
                       <img src={p.url} alt={p.category} style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                      <div style={{position:'absolute',inset:0,background:'linear-gradient(transparent 40%,rgba(15,20,16,0.85))',display:'flex',flexDirection:'column',justifyContent:'space-between',padding:'8px'}}>
+                      {/* Confirmation overlay */}
+                      {confirmDeletePhoto === p.url && p.source === 'manual' && (
+                        <div style={{position:'absolute',inset:0,background:'rgba(239,68,68,0.92)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',padding:'12px'}}>
+                          <span style={{color:'white',fontSize:'11px',fontWeight:700,textAlign:'center'}}>Supprimer cette photo ?</span>
+                          <button onClick={e => { e.stopPropagation(); removePortfolioPhoto(p.url) }}
+                            style={{padding:'6px 16px',background:'white',color:'#ef4444',border:'none',borderRadius:'8px',fontWeight:700,fontSize:'12px',cursor:'pointer'}}>
+                            Confirmer
+                          </button>
+                          <button onClick={e => { e.stopPropagation(); setConfirmDeletePhoto(null) }}
+                            style={{background:'none',border:'none',color:'rgba(255,255,255,0.8)',fontSize:'11px',cursor:'pointer'}}>
+                            Annuler
+                          </button>
+                        </div>
+                      )}
+                      <div style={{position:'absolute',inset:0,background:'linear-gradient(transparent 40%,rgba(15,20,16,0.85))',display:'flex',flexDirection:'column',justifyContent:'space-between',padding:'8px',pointerEvents: confirmDeletePhoto === p.url ? 'none' : 'auto'}}>
                         {p.source === 'manual' && (
                           <button
-                            onClick={() => removePortfolioPhoto(p.url)}
+                            onClick={e => { e.stopPropagation(); removePortfolioPhoto(p.url) }}
                             style={{alignSelf:'flex-end',width:'24px',height:'24px',background:'rgba(0,0,0,0.6)',border:'none',borderRadius:'50%',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'white'}}
                           >
                             <X size={12} />
                           </button>
                         )}
                         {p.source === 'auto' && (
-                          <span style={{alignSelf:'flex-end',fontSize:'9px',color:'rgba(255,255,255,0.6)',background:'rgba(43,107,62,0.6)',padding:'2px 6px',borderRadius:'4px'}}>AUTO</span>
+                          <span style={{alignSelf:'flex-end',fontSize:'10px',color:'white',background:'rgba(43,107,62,0.85)',padding:'2px 8px',borderRadius:'4px',fontWeight:600}}>Mission</span>
                         )}
                         <div>
                           <div style={{fontSize:'11px',color:'#FAFAF5',fontWeight:600}}>{p.category}</div>
@@ -767,27 +785,61 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET WALLET ===== */}
         {tab === 'wallet' && (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
-            <div className="card" style={{textAlign:'center',padding:'40px'}}>
+            <div className="card" style={{textAlign:'center',padding:'32px'}}>
               <div style={{fontSize:'13px',color:'#7A7A6E',fontFamily:'Space Mono',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.1em'}}>Solde disponible</div>
               <div className="font-display" style={{fontSize:'52px',fontWeight:700,color:'#0F1410',marginBottom:'4px'}}>
                 {(wallet?.balance_available || 0).toLocaleString()}
               </div>
-              <div style={{color:'#7A7A6E',marginBottom:'32px',fontFamily:'Space Mono',fontSize:'14px'}}>FCFA</div>
+              <div style={{color:'#7A7A6E',marginBottom:'24px',fontFamily:'Space Mono',fontSize:'14px'}}>FCFA</div>
               <button className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
                 Retirer vers Wave
               </button>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'12px'}}>
               {[
-                { label: 'En escrow', value: wallet?.balance_escrow || 0 },
-                { label: 'Total gagné', value: wallet?.total_earned || 0 },
+                { label: 'En escrow', value: wallet?.balance_escrow || 0, color: '#C9A84C' },
+                { label: 'Total gagné', value: wallet?.total_earned || 0, color: '#2B6B3E' },
+                { label: 'Missions', value: completedMissions.length, color: '#E85D26', suffix: '' },
               ].map(item => (
-                <div key={item.label} className="card" style={{textAlign:'center'}}>
-                  <div style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'4px'}}>{item.label}</div>
-                  <div className="font-display" style={{fontSize:'24px',fontWeight:700,color:'#0F1410'}}>{item.value.toLocaleString()}</div>
-                  <div style={{fontSize:'11px',color:'#7A7A6E'}}>FCFA</div>
+                <div key={item.label} className="card" style={{textAlign:'center',padding:'16px'}}>
+                  <div style={{fontSize:'11px',color:'#7A7A6E',marginBottom:'6px'}}>{item.label}</div>
+                  <div className="font-display" style={{fontSize:'20px',fontWeight:700,color:item.color}}>{item.value.toLocaleString()}</div>
+                  {'suffix' in item ? null : <div style={{fontSize:'10px',color:'#7A7A6E'}}>FCFA</div>}
                 </div>
               ))}
+            </div>
+
+            {/* Historique des transactions */}
+            <div className="card" style={{padding:'0',overflow:'hidden'}}>
+              <div style={{padding:'16px 20px',borderBottom:'1px solid #EDE8DE',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <h3 style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>Historique</h3>
+                <span style={{fontSize:'12px',color:'#7A7A6E'}}>{completedMissions.length} mission{completedMissions.length !== 1 ? 's' : ''}</span>
+              </div>
+              {completedMissions.length === 0 ? (
+                <div style={{textAlign:'center',padding:'32px',color:'#7A7A6E',fontSize:'13px'}}>
+                  Aucune mission terminée pour l'instant
+                </div>
+              ) : (
+                <div>
+                  {completedMissions.slice(0, 10).map((m: any, i: number) => (
+                    <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'14px 20px',borderBottom: i < Math.min(completedMissions.length, 10) - 1 ? '1px solid #F5F0E8' : 'none'}}>
+                      <div style={{width:'36px',height:'36px',background:'rgba(43,107,62,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:'16px'}}>✅</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:600,fontSize:'13px',color:'#0F1410'}}>{m.category || 'Intervention'}</div>
+                        <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'2px'}}>
+                          {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                        </div>
+                      </div>
+                      {m.total_price > 0 && (
+                        <div style={{textAlign:'right',flexShrink:0}}>
+                          <div style={{fontWeight:700,fontSize:'14px',color:'#2B6B3E',fontFamily:'Space Mono'}}>+{m.total_price.toLocaleString()}</div>
+                          <div style={{fontSize:'10px',color:'#7A7A6E'}}>FCFA</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

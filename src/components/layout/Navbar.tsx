@@ -26,6 +26,18 @@ export default function Navbar() {
     setMenuOpen(false)
   }, [pathname])
 
+  // Escape key closes menus + lock body scroll when mobile menu open
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') { setMenuOpen(false); setDropdownOpen(false) } }
+    document.addEventListener('keydown', onEsc)
+    return () => document.removeEventListener('keydown', onEsc)
+  }, [])
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [menuOpen])
+
   const isArtisan = hasArtisanProfile || userRole === 'artisan'
   const artisanHref = hasArtisanProfile ? '/artisan-space/dashboard' : '/artisan-space/register'
 

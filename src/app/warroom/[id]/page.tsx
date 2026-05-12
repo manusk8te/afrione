@@ -51,6 +51,8 @@ export default function WarRoomPage() {
   const [input, setInput]             = useState('')
   const [user, setUser]               = useState<any>(null)
   const [userRole, setUserRole]       = useState<string>('client')
+  const [missionRole, setMissionRole] = useState<'client'|'artisan'|'admin'>('client')
+  const [sending, setSending]         = useState(false)
   const [mission, setMission]         = useState<any>(null)
   const [loading, setLoading]         = useState(true)
   const [acting, setActing]           = useState(false)
@@ -118,7 +120,7 @@ export default function WarRoomPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   usePushNotifications(user?.id || null)
 
-  const isArtisan = userRole === 'artisan' || userRole === 'admin'
+  const isArtisan = missionRole === 'artisan' || missionRole === 'admin'
 
   // Notifier l'autre partie par push
   const notifyOther = useCallback((text: string, recipientId: string) => {
@@ -154,6 +156,18 @@ export default function WarRoomPage() {
         .single()
       setMission(missionData)
 
+      // Role dans CETTE mission (indépendant du rôle global du profil)
+      const globalRole = userData?.role ?? 'client'
+      const mr: 'client'|'artisan'|'admin' =
+        missionData?.artisan_pros?.user_id === session.user.id && missionData?.client_id !== session.user.id
+        ? 'artisan'
+        : missionData?.client_id === session.user.id
+        ? 'client'
+        : globalRole === 'admin'
+        ? 'admin'
+        : 'client'
+      setMissionRole(mr)
+
       const { data: msgs } = await supabase
         .from('chat_history')
         .select('*, users(name, avatar_url)')
@@ -176,11 +190,11 @@ export default function WarRoomPage() {
               )
             }
             setDiagData(diag)
-            if ((userData?.role ?? 'client') === 'client') {
+            if (mr === 'client') {
               setInput(diag.ai_summary || '')
             }
             // Charger les liens d'achat des matériaux dès l'init (artisan uniquement)
-            if ((userData?.role ?? 'client') !== 'client' && diag.items_needed?.length) {
+            if (mr !== 'client' && diag.items_needed?.length) {
               const clientQ = missionData?.quartier || 'Cocody'
               fetch(`/api/materials?category=${encodeURIComponent(diag.category || 'Plomberie')}&items=${encodeURIComponent(diag.items_needed.join(','))}&client_quartier=${encodeURIComponent(clientQ)}`)
                 .then(r => r.ok ? r.json() : null)
@@ -200,7 +214,7 @@ export default function WarRoomPage() {
         .is('read_at', null)
 
       // Vérifier si le client a déjà laissé un avis pour cette mission
-      if ((userData?.role ?? 'client') !== 'artisan') {
+      if (mr !== 'artisan') {
         const { data: existingReview } = await supabase
           .from('sentiment_logs')
           .select('id')
@@ -235,13 +249,15 @@ export default function WarRoomPage() {
 
   // Envoyer message texte
   const send = async () => {
-    if (!input.trim() || !user) return
+    if (!input.trim() || !user || sending) return
     const text = input.trim()
     setInput('')
+    setSending(true)
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text, type: 'text',
+      sender_role: missionRole, text, type: 'text',
     })
+    setSending(false)
     if (error) { toast.error('Message non envoyé.'); setInput(text); return }
     const rid = getRecipientId(mission, user.id)
     if (rid) notifyOther(text, rid)
@@ -328,7 +344,7 @@ export default function WarRoomPage() {
     const payload = JSON.stringify({ amount, description: devisDesc.trim() })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: payload, type: 'quotation',
+      sender_role: missionRole, text: payload, type: 'quotation',
     })
     if (error) { toast.error('Erreur envoi devis.'); setActing(false); return }
     const rid = getRecipientId(mission, user.id)
@@ -368,7 +384,7 @@ export default function WarRoomPage() {
 
     // Message système dans le chat
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
       text: `💳 Paiement de ${pendingAmount.toLocaleString()} FCFA sécurisé via Wave. L'argent sera transféré à l'artisan à la fin de la mission.`,
       type: 'system',
     })
@@ -393,7 +409,7 @@ export default function WarRoomPage() {
     if (error) { toast.error('Erreur.'); setActing(false); return }
     setMission((prev: any) => ({ ...prev, status: 'en_route' }))
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
       text: 'Devis accepté — intervention maintenant 🚗 Suivi GPS activé', type: 'system',
     })
     const rid = getRecipientId(mission, user.id)
@@ -425,7 +441,7 @@ export default function WarRoomPage() {
 
     setMission((prev: any) => ({ ...prev, status: 'scheduled', scheduled_at: scheduledAt }))
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: userRole,
+      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
       text: `Devis accepté — intervention programmée le ${dateStr} à ${schedTime} 📅`, type: 'system',
     })
     const rid = getRecipientId(mission, user.id)
@@ -440,7 +456,7 @@ export default function WarRoomPage() {
     setActing(true)
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: 'Devis refusé — une contre-proposition est possible.', type: 'system',
+      sender_role: missionRole, text: 'Devis refusé — une contre-proposition est possible.', type: 'system',
     })
     toast('Devis refusé.')
     setActing(false)
@@ -470,7 +486,7 @@ export default function WarRoomPage() {
     })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: payload, type: 'material_update',
+      sender_role: missionRole, text: payload, type: 'material_update',
     })
     if (error) { toast.error('Erreur envoi.'); setSendingMatUpdate(false); return }
     const rid = getRecipientId(mission, user.id)
@@ -532,7 +548,7 @@ export default function WarRoomPage() {
     })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: payload, type: 'material_suggest',
+      sender_role: missionRole, text: payload, type: 'material_suggest',
     })
     if (!error) {
       const rid = getRecipientId(mission, user.id)
@@ -559,7 +575,7 @@ export default function WarRoomPage() {
     })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: payload, type: 'time_adjust',
+      sender_role: missionRole, text: payload, type: 'time_adjust',
     })
     if (!error) {
       const rid = getRecipientId(mission, user.id)
@@ -599,7 +615,7 @@ export default function WarRoomPage() {
     setActing(true)
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: userRole, text: payload, type: 'price_proposal',
+      sender_role: missionRole, text: payload, type: 'price_proposal',
     })
     if (!error) {
       const rid = getRecipientId(mission, user.id)
@@ -875,8 +891,8 @@ export default function WarRoomPage() {
 
       {/* ─── MODAL SCHEDULING ─────────────────────────────────────── */}
       {showScheduling && (
-        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(10,14,11,0.96)',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
-          <div style={{width:'100%',maxWidth:'480px',background:'#1A1F1B',borderRadius:'24px 24px 0 0',padding:'24px 20px 32px'}}>
+        <div onClick={() => { if (!acting) setShowScheduling(false) }} style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(10,14,11,0.96)',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+          <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:'480px',background:'#1A1F1B',borderRadius:'24px 24px 0 0',padding:'24px 20px 32px'}}>
             <div style={{width:'40px',height:'4px',background:'rgba(255,255,255,0.15)',borderRadius:'2px',margin:'0 auto 24px'}} />
 
             {schedMode === null && (
@@ -1908,7 +1924,7 @@ export default function WarRoomPage() {
                   if (error) { toast.error('Erreur.'); setActing(false); return }
                   setMission((prev: any) => ({ ...prev, status: 'en_route' }))
                   await supabase.from('chat_history').insert({
-                    mission_id: missionId, sender_id: user.id, sender_role: userRole,
+                    mission_id: missionId, sender_id: user.id, sender_role: missionRole,
                     text: "L'artisan est en route 🚗 Suivi GPS activé", type: 'system',
                   })
                   const rid = getRecipientId(mission, user.id)
@@ -1956,9 +1972,11 @@ export default function WarRoomPage() {
               <input type="text" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
                 placeholder="Votre message…" className="input" style={{flex:1}} />
-              <button onClick={send} disabled={!input.trim()}
-                style={{width:'44px',height:'44px',background:'#E85D26',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:'pointer',flexShrink:0,opacity:input.trim()?1:0.4}}>
-                <Send size={18} />
+              <button onClick={send} disabled={!input.trim() || sending}
+                style={{width:'44px',height:'44px',background:'#E85D26',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:(!input.trim()||sending)?'not-allowed':'pointer',flexShrink:0,opacity:(input.trim()&&!sending)?1:0.4}}>
+                {sending
+                  ? <div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+                  : <Send size={18} />}
               </button>
             </div>
           </div>
