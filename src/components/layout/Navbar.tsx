@@ -72,11 +72,11 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" style={{display:'flex',alignItems:'center',gap:'8px',textDecoration:'none'}}>
-            <div style={{width:'32px',height:'32px',background:'#E85D26',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div className="afrione-gradient" style={{width:'32px',height:'32px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Zap size={16} color="white" />
             </div>
             <span className="font-display font-bold" style={{fontSize:'20px', color: isDark ? 'white' : '#0F1410', transition: 'color 0.3s'}}>
-              AFRI<span style={{ color: '#E85D26' }}>ONE</span>
+              AFRI<span className="afrione-gradient-text">ONE</span>
             </span>
           </Link>
 

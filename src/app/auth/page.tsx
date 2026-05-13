@@ -155,16 +155,17 @@ function PrimaryBtn({ children, loading, disabled, onClick, type = 'button' }: {
   return (
     <button
       type={type} disabled={disabled || loading} onClick={onClick}
+      className="afrione-gradient"
       style={{
         width: '100%', padding: '14px', borderRadius: '12px',
-        background: disabled || loading ? 'rgba(232,93,38,0.4)' : '#E85D26',
+        opacity: disabled || loading ? 0.45 : 1,
         color: 'white', border: 'none', cursor: disabled || loading ? 'not-allowed' : 'pointer',
         fontSize: '15px', fontWeight: 700, ...syne,
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
         transition: 'opacity 0.15s, transform 0.1s',
       }}
-      onMouseEnter={e => { if (!disabled && !loading) (e.currentTarget as HTMLElement).style.opacity = '0.9' }}
-      onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+      onMouseEnter={e => { if (!disabled && !loading) (e.currentTarget as HTMLElement).style.opacity = '0.88' }}
+      onMouseLeave={e => { if (!disabled && !loading) (e.currentTarget as HTMLElement).style.opacity = '1' }}
     >
       {loading
         ? <><Spinner />Chargement...</>
@@ -323,11 +324,11 @@ function AuthPageInner() {
 
           {/* Logo */}
           <motion.div variants={leftChild} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '32px', height: '32px', background: '#E85D26', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="afrione-gradient" style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Zap size={16} color="white" />
             </div>
             <span style={{ ...syne, fontWeight: 700, fontSize: '18px', color: 'white', letterSpacing: '-0.02em' }}>
-              AFRI<span style={{ color: '#E85D26' }}>ONE</span>
+              AFRI<span className="afrione-gradient-text">ONE</span>
             </span>
           </motion.div>
 
@@ -362,10 +363,10 @@ function AuthPageInner() {
 
           {/* Mobile logo */}
           <Link href="/" className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', marginBottom: '8px' }}>
-            <div style={{ width: '28px', height: '28px', background: '#E85D26', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="afrione-gradient" style={{ width: '28px', height: '28px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Zap size={14} color="white" />
             </div>
-            <span style={{ ...syne, fontWeight: 700, fontSize: '16px', color: 'white' }}>AFRI<span style={{ color: '#E85D26' }}>ONE</span></span>
+            <span style={{ ...syne, fontWeight: 700, fontSize: '16px', color: 'white' }}>AFRI<span className="afrione-gradient-text">ONE</span></span>
           </Link>
 
           {/* ── CHOICE ── */}

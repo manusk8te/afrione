@@ -169,6 +169,13 @@ const T1  = 'rgba(255,255,255,0.92)'
 const T2  = 'rgba(255,255,255,0.55)'
 const T3  = 'rgba(255,255,255,0.32)'
 const BO  = 'rgba(255,255,255,0.08)'
+/* Light sections */
+const LBG  = '#F5F0E8'  // warm cream
+const LBG2 = '#EDE8DE'  // sand
+const LT1  = '#0F1410'
+const LT2  = '#5A5A50'
+const LT3  = '#9A9A8E'
+const LBO  = '#D8D2C4'
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function HomePage() {
@@ -254,7 +261,7 @@ export default function HomePage() {
               <motion.div variants={fadeUp}>
                 <div className="liquid-glass rounded-full inline-flex items-center gap-2 mb-10"
                   style={{ padding: '6px 16px 6px 10px' }}>
-                  <span className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse-soft" style={{ background: '#E85D26' }} />
+                  <span className="afrione-gradient w-2 h-2 rounded-full flex-shrink-0 animate-pulse-soft" />
                   <span style={{ ...mono, fontSize: '11px', color: T2, letterSpacing: '0.1em' }}>PLATEFORME #1 · ABIDJAN</span>
                 </div>
               </motion.div>
@@ -275,8 +282,8 @@ export default function HomePage() {
               {/* CTAs */}
               <motion.div variants={fadeUp} className="flex flex-wrap gap-3 justify-center" style={{ marginBottom: '48px' }}>
                 <Link href="/diagnostic"
-                  className="liquid-glass-strong rounded-full inline-flex items-center gap-2"
-                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 700, color: 'white', textDecoration: 'none', cursor: 'pointer' }}>
+                  className="afrione-gradient rounded-full inline-flex items-center gap-2"
+                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 700, color: 'white', textDecoration: 'none', cursor: 'pointer', boxShadow: '0 8px 32px rgba(232,93,38,0.35)' }}>
                   Décrire mon problème <ArrowRight size={16} />
                 </Link>
                 <Link href="/artisans"
@@ -293,7 +300,7 @@ export default function HomePage() {
                 {STATS_DISPLAY.map(s => (
                   <motion.div key={s.label} variants={fadeUp}>
                     <div className="liquid-glass rounded-2xl p-5 text-left" style={{ minWidth: '148px' }}>
-                      <div style={{ ...syne, fontWeight: 700, fontSize: '28px', letterSpacing: '-0.03em', lineHeight: 1, color: '#E85D26' }}>
+                      <div className="afrione-gradient-text" style={{ ...syne, fontWeight: 700, fontSize: '28px', letterSpacing: '-0.03em', lineHeight: 1 }}>
                         {s.value}
                       </div>
                       <div style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: '8px' }}>
@@ -348,15 +355,15 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ CAPABILITIES / SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="relative overflow-hidden" style={{ minHeight: '90vh', background: BG1 }}>
-        <div className="page-container py-24">
+      <section style={{ background: LBG, padding: '96px 0' }}>
+        <div className="page-container">
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
 
-            <motion.p variants={fadeUp} style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '20px' }}>
+            <motion.p variants={fadeUp} style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '20px' }}>
               // Services
             </motion.p>
             <motion.h2 variants={fadeUp}
-              style={{ ...syne, fontWeight: 700, fontSize: 'clamp(48px, 7vw, 86px)', lineHeight: 0.9, letterSpacing: '-0.04em', color: 'white', marginBottom: '60px' }}>
+              style={{ ...syne, fontWeight: 700, fontSize: 'clamp(48px, 7vw, 86px)', lineHeight: 0.9, letterSpacing: '-0.04em', color: LT1, marginBottom: '60px' }}>
               Tous vos corps<br />de métier.
             </motion.h2>
 
@@ -364,15 +371,19 @@ export default function HomePage() {
               {SERVICES.map(({ Icon, label, metier }) => (
                 <motion.div key={label} variants={fadeUp}>
                   <Link href={`/artisans?metier=${encodeURIComponent(metier)}`}
-                    className="liquid-glass rounded-2xl flex flex-col gap-3"
-                    style={{ padding: '20px', textDecoration: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.09)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                    <div className="liquid-glass rounded-xl flex items-center justify-center" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
-                      <Icon size={17} style={{ color: '#E85D26' }} />
+                    style={{
+                      display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px',
+                      textDecoration: 'none', cursor: 'pointer',
+                      background: 'white', border: `1px solid ${LBO}`, borderRadius: '16px',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                    }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(232,93,38,0.4)'; el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.07)' }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = LBO; el.style.boxShadow = '' }}>
+                    <div className="afrione-gradient rounded-xl flex items-center justify-center" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
+                      <Icon size={17} style={{ color: 'white' }} />
                     </div>
-                    <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white' }}>{label}</div>
-                    <div style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1 }}>{label}</div>
+                    <div style={{ ...mono, fontSize: '10px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                       {serviceCounts[metier] ? `${serviceCounts[metier]} artisan${serviceCounts[metier] > 1 ? 's' : ''}` : 'Disponible'}
                     </div>
                   </Link>
@@ -384,23 +395,22 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ HOW IT WORKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: BG1, padding: '80px 16px' }}>
+      <section style={{ background: LBG2, padding: '80px 16px' }}>
         <div className="page-container">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1.7fr] gap-16 items-start">
 
             {/* Left heading */}
             <div className="md:sticky md:top-24">
-              <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>COMMENT ÇA MARCHE</span>
-              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.05, color: 'white', marginTop: '12px', marginBottom: '16px' }}>
+              <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>COMMENT ÇA MARCHE</span>
+              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.05, color: LT1, marginTop: '12px', marginBottom: '16px' }}>
                 Simple.<br />Rapide.<br />Sécurisé.
               </h2>
-              <p style={{ ...body, fontSize: '14px', color: T2, lineHeight: 1.7, maxWidth: '38ch' }}>
+              <p style={{ ...body, fontSize: '14px', color: LT2, lineHeight: 1.7, maxWidth: '38ch' }}>
                 De la description du problème à la validation finale, tout se passe sur AfriOne.
                 Transparent, à chaque étape.
               </p>
-              <Link href="/diagnostic"
-                className="liquid-glass-strong rounded-lg inline-flex items-center gap-2"
-                style={{ ...syne, padding: '11px 22px', marginTop: '32px', fontSize: '14px', fontWeight: 700, color: 'white', textDecoration: 'none', cursor: 'pointer' }}>
+              <Link href="/diagnostic" className="btn-primary"
+                style={{ ...syne, marginTop: '32px', fontSize: '14px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', borderRadius: '8px' }}>
                 Essayer maintenant <ArrowRight size={15} />
               </Link>
             </div>
@@ -412,17 +422,16 @@ export default function HomePage() {
                 const { Icon } = step
                 return (
                   <motion.div key={step.num} variants={fadeUp}
-                    className="liquid-glass rounded-2xl flex gap-5"
-                    style={{ padding: '20px 24px' }}>
+                    style={{ background: 'white', border: `1px solid ${LBO}`, borderRadius: '16px', padding: '20px 24px', display: 'flex', gap: '20px' }}>
                     <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', paddingTop: '2px' }}>
-                      <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon size={19} style={{ color: '#E85D26' }} />
+                      <div className="afrione-gradient" style={{ width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon size={19} style={{ color: 'white' }} />
                       </div>
-                      <span style={{ ...mono, fontSize: '9px', color: 'rgba(232,93,38,0.4)', letterSpacing: '0.05em' }}>{step.num}</span>
+                      <span style={{ ...mono, fontSize: '9px', color: 'rgba(232,93,38,0.55)', letterSpacing: '0.05em' }}>{step.num}</span>
                     </div>
                     <div style={{ paddingTop: '4px' }}>
-                      <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: 'white', marginBottom: '6px' }}>{step.title}</h3>
-                      <p style={{ ...body, fontSize: '13px', color: T2, lineHeight: 1.65 }}>{step.desc}</p>
+                      <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: LT1, marginBottom: '6px' }}>{step.title}</h3>
+                      <p style={{ ...body, fontSize: '13px', color: LT2, lineHeight: 1.65 }}>{step.desc}</p>
                     </div>
                   </motion.div>
                 )
@@ -574,31 +583,30 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ TRUST ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: BG1, padding: '80px 16px' }}>
+      <section style={{ background: LBG, padding: '80px 16px' }}>
         <div className="page-container">
           <div className="mb-12">
-            <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>POURQUOI AFRIONE</span>
-            <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3.5vw, 42px)', lineHeight: 1.05, color: 'white', marginTop: '8px', maxWidth: '20ch' }}>
+            <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>POURQUOI AFRIONE</span>
+            <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3.5vw, 42px)', lineHeight: 1.05, color: LT1, marginTop: '8px', maxWidth: '20ch' }}>
               Construit pour que vous ayez confiance.
             </h2>
           </div>
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
             className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {TRUST_PILLARS.map(({ Icon, title, desc, stat, color, bg }) => (
+            {TRUST_PILLARS.map(({ Icon, title, desc, stat, color }) => (
               <motion.div key={title} variants={fadeUp}
-                className="liquid-glass rounded-2xl p-6"
-                style={{ background: bg, border: `1px solid ${color}20` }}>
+                style={{ background: 'white', borderRadius: '16px', padding: '24px', border: `1px solid ${LBO}`, borderLeft: `3px solid ${color}` }}>
                 <div className="flex items-start gap-4 mb-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${color}18`, border: `1px solid ${color}28` }}>
+                  <div className="rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ width: '40px', height: '40px', background: `${color}15`, border: `1px solid ${color}25` }}>
                     <Icon size={18} style={{ color }} />
                   </div>
                   <div>
-                    <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: 'white', marginBottom: '4px' }}>{title}</h3>
-                    <span style={{ ...mono, fontSize: '10px', color, opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat}</span>
+                    <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: LT1, marginBottom: '4px' }}>{title}</h3>
+                    <span style={{ ...mono, fontSize: '10px', color, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat}</span>
                   </div>
                 </div>
-                <p style={{ ...body, fontSize: '13px', color: T2, lineHeight: 1.65, paddingLeft: '56px' }}>{desc}</p>
+                <p style={{ ...body, fontSize: '13px', color: LT2, lineHeight: 1.65, paddingLeft: '56px' }}>{desc}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -809,11 +817,11 @@ export default function HomePage() {
             {/* Logo + baseline */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 bg-accent rounded flex items-center justify-center" style={{ background: '#E85D26' }}>
+                <div className="afrione-gradient rounded flex items-center justify-center" style={{ width: '28px', height: '28px' }}>
                   <Zap size={13} color="white" />
                 </div>
                 <span style={{ ...syne, fontWeight: 700, fontSize: '16px', letterSpacing: '-0.02em', color: 'white' }}>
-                  AFRI<span style={{ color: '#E85D26' }}>ONE</span>
+                  AFRI<span className="afrione-gradient-text">ONE</span>
                 </span>
               </div>
               <p style={{ ...body, fontSize: '13px', color: T2, lineHeight: 1.65, maxWidth: '200px' }}>

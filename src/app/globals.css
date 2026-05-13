@@ -58,7 +58,24 @@ p { line-height: 1.65; }
 
 /* ─── Boutons — radius 6px : sérieux, pas bubbly ─────────────────────────── */
 .btn-primary {
-  background: #E85D26;
+  background-color: #E85D26;
+  background-image:
+    radial-gradient(circle at var(--ag-x1) var(--ag-y1), #FFD580 0px, transparent var(--ag-s1)),
+    radial-gradient(circle at var(--ag-x2) var(--ag-y2), #B03010 0px, transparent var(--ag-s2)),
+    radial-gradient(circle at var(--ag-x3) var(--ag-y3), #C9A84C 0px, transparent var(--ag-s3)),
+    radial-gradient(circle at var(--ag-x4) var(--ag-y4), #FF6B35 0px, transparent var(--ag-s4)),
+    radial-gradient(circle at var(--ag-x5) var(--ag-y5), #8B2500 0px, transparent var(--ag-s5));
+  animation:
+    ag-blob1 5s   ease-in-out infinite,
+    ag-blob2 6s   ease-in-out infinite,
+    ag-blob3 5.5s ease-in-out infinite,
+    ag-blob4 6.5s ease-in-out infinite,
+    ag-blob5 4s   ease-in-out infinite,
+    ag-size1 3.5s ease-in-out infinite,
+    ag-size2 4.2s ease-in-out infinite,
+    ag-size3 3.8s ease-in-out infinite,
+    ag-size4 4.6s ease-in-out infinite,
+    ag-size5 3s   ease-in-out infinite;
   color: white;
   font-family: 'Syne', sans-serif;
   font-weight: 700;
@@ -70,10 +87,10 @@ p { line-height: 1.65; }
   gap: 7px;
   border: none;
   cursor: pointer;
-  transition: background 0.15s var(--ease-out), transform 0.1s;
+  transition: opacity 0.15s, transform 0.1s;
   text-decoration: none;
 }
-.btn-primary:hover  { background: #c94d18; }
+.btn-primary:hover  { opacity: 0.88; }
 .btn-primary:active { transform: scale(0.97); }
 
 .btn-secondary {
@@ -218,6 +235,31 @@ p { line-height: 1.65; }
 @property --ag-s4 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
 @property --ag-s5 { syntax: '<percentage>'; inherits: false; initial-value: 65%; }
 
+/* ─── Gradient text — même ADN que la boule du hero ──────────────────────── */
+.afrione-gradient-text {
+  background-color: #E85D26;
+  background-image:
+    radial-gradient(circle at var(--ag-x1) var(--ag-y1), #FFD580 0px, transparent var(--ag-s1)),
+    radial-gradient(circle at var(--ag-x2) var(--ag-y2), #B03010 0px, transparent var(--ag-s2)),
+    radial-gradient(circle at var(--ag-x3) var(--ag-y3), #C9A84C 0px, transparent var(--ag-s3)),
+    radial-gradient(circle at var(--ag-x4) var(--ag-y4), #FF6B35 0px, transparent var(--ag-s4)),
+    radial-gradient(circle at var(--ag-x5) var(--ag-y5), #8B2500 0px, transparent var(--ag-s5));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation:
+    ag-blob1 5s   ease-in-out infinite,
+    ag-blob2 6s   ease-in-out infinite,
+    ag-blob3 5.5s ease-in-out infinite,
+    ag-blob4 6.5s ease-in-out infinite,
+    ag-blob5 4s   ease-in-out infinite,
+    ag-size1 3.5s ease-in-out infinite,
+    ag-size2 4.2s ease-in-out infinite,
+    ag-size3 3.8s ease-in-out infinite,
+    ag-size4 4.6s ease-in-out infinite,
+    ag-size5 3s   ease-in-out infinite;
+}
+
 .afrione-gradient {
   background-color: #E85D26;
   background-image:
@@ -275,7 +317,7 @@ p { line-height: 1.65; }
 /* ─── Accessibilité ───────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-  .afrione-gradient { animation: none; }
+  .afrione-gradient, .afrione-gradient-text { animation: none; }
 }
 
 ::selection { background: #E85D26; color: white; }
