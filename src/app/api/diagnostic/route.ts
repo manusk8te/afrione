@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
 
 Le client décrit son problème pour la première fois. Identifie le domaine (plomberie, électricité, maçonnerie, etc.) et pose la PREMIÈRE question d'élimination la plus pertinente selon l'arbre de diagnostic correspondant.
 
-Si la description est déjà très complète et précise, mets done:true.
+IMPORTANT : Pose TOUJOURS au moins 1 question — ne mets JAMAIS done:true dès le départ même si la description semble complète. Il manque toujours une info clé sur la localisation exacte, l'étendue ou l'urgence.
 
 Réponds UNIQUEMENT en JSON (un de ces formats) :
 
@@ -242,38 +242,41 @@ EXEMPLES de bonnes questions choice :
 
       const qaBlock = qa.map((q: any) => `❓ ${q.question}\n💬 ${q.answer}`).join('\n\n')
 
-      const hasSurfaceInfo = qa.some((q: any) =>
-        /m²|mètre|surface|superficie|dimension|carreaux|grande pièce|petite pièce/i.test(q.question + q.answer)
-      )
-      const hasQtyInfo = qa.some((q: any) =>
-        /combien|nombre|plusieurs|une seule|tout l'appart|une pièce/i.test(q.question + q.answer)
-      )
+      // Minimum 2 questions avant de pouvoir terminer
+      const MIN_Q = 2
+      const canFinish = index >= MIN_Q
 
       const lastQuestionInstruction = (index >= 3)
-        ? `\nC'est la DERNIÈRE question. Une seule règle :
-
-Si c'est un travail de SURFACE (peinture, carrelage, enduit, humidité) et qu'on n'a pas encore les dimensions → demande la superficie ou les dimensions approximatives de la zone.
-Si c'est un travail en NOMBRE (prises, interrupteurs, robinets, carreaux cassés) et qu'on n'a pas la quantité → demande combien de points sont concernés.
-Dans tous les autres cas → done:true, on a assez d'infos.
-
-Ne pose JAMAIS de question sur les matériaux, le budget ou les fournitures — c'est le travail de l'artisan.`
+        ? `\nC'est la DERNIÈRE question. Règle unique :
+- Travail de SURFACE (peinture, carrelage, enduit, humidité) sans dimensions connues → demande la superficie approximative.
+- Travail en NOMBRE (prises, robinets, carreaux cassés) sans quantité connue → demande combien.
+- Sinon → done:true.
+Ne pose JAMAIS de question sur le budget, les matériaux ou les fournitures.`
         : ''
+
+      const mustAskInstruction = !canFinish
+        ? `\nOBLIGATOIRE : Tu as posé seulement ${index} question(s). Il en faut au minimum ${MIN_Q}. Tu DOIS poser une autre question — done:true est INTERDIT maintenant.`
+        : `\nTu peux décider de terminer si tu as suffisamment d'infos pour un prix précis.`
 
       const systemNext = `${SYSTEM_EXPERT}
 
 Tu as déjà posé ${index} question(s). Analyse TOUTES les réponses précédentes.
 Ne redemande JAMAIS une information déjà donnée.
+${mustAskInstruction}
 ${lastQuestionInstruction}
 
-Décide :
-- Tu as assez d'infos pour un diagnostic et un prix précis → done:true
-- Il manque une info clé → pose la question la plus utile pour le pricing
-
-Réponds UNIQUEMENT en JSON (même format que pour la première question — choice/yesno/text ou done:true)`
+Réponds UNIQUEMENT en JSON (même format que pour la première question — choice/yesno/text ou done:true si autorisé)`
 
       const extra = `ÉCHANGES PRÉCÉDENTS :\n${qaBlock}\n\nPROBLÈME INITIAL DU CLIENT :`
       const raw = await callOpenAI(buildMessages(text, photos, systemNext, extra))
-      return NextResponse.json(normalizeQuestion(raw, index))
+      const normalized = normalizeQuestion(raw, index)
+
+      // Sécurité serveur : si done:true trop tôt, force une question de fallback
+      if (normalized.done && !canFinish) {
+        return NextResponse.json(fallbackQuestion(index))
+      }
+
+      return NextResponse.json(normalized)
     }
 
     // ── MODE FINALIZE : diagnostic complet ────────────────────────────────────
@@ -303,6 +306,15 @@ RÈGLES DURÉE — être précis selon le cas réel :
 - Réparation fissure, petite zone → "2 heures"
 - Installation neuve, peinture petite pièce → "3 heures" à "1 journée"
 
+RÈGLES MATÉRIAUX — CRITIQUES :
+- Maximum 4 items_needed, jamais plus
+- Liste UNIQUEMENT les pièces à remplacer physiquement et les consommables (joint, colle, peinture, enduit)
+- JAMAIS les outils de l'artisan (clé, tournevis, perceuse, niveau, taloche) — c'est son propre matériel
+- JAMAIS les protections génériques (bâche, ruban de masquage) sauf si le client doit les acheter
+- Si la réparation est un simple resserrage/réglage/débouchage → items_needed peut être vide []
+- Exemple réparation joint : ["Joint torique ⌀32"] — pas besoin de clé à molette
+- Exemple peinture 20m² : ["Peinture vinylique 10L", "Apprêt acrylique 5L", "Rouleau mousse"] — 3 items max
+
 Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
 {
   "summary": "string",
@@ -314,7 +326,7 @@ Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
   "duration_estimate": "30 minutes|45 minutes|1 heure|1h30|2 heures|3 heures|4 heures|1 journée",
   "surface_m2": number | null,
   "items_needed": [
-    {"name": "nom exact du matériau", "qty": number, "unit": "unité|ml|m²|sac|kit"}
+    {"name": "nom exact du matériau/pièce", "qty": number, "unit": "unité|ml|m²|sac|kit|L"}
   ]
 }`
 
@@ -324,12 +336,16 @@ Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
       }
 
       // Normaliser — items_needed accepte [{name, qty, unit}] ou ["string"] (legacy)
+      const TOOLS_RE = /\b(clé (à molette|plate|allen)|tournevis|perceuse|niveau (à bulle)?|taloche|truelle|spatule|marteau|scie|pince|mètre ruban|testeur de prise|multimètre|bâche|ruban (de masquage|adhésif)|gants|masque)\b/i
       const rawItems = Array.isArray(result.items_needed) ? result.items_needed : []
-      const normalizedItems = rawItems.map((it: any) =>
-        typeof it === 'string'
-          ? { name: it, qty: 1, unit: 'unité' }
-          : { name: it.name || it, qty: Number(it.qty) || 1, unit: it.unit || 'unité' }
-      )
+      const normalizedItems = rawItems
+        .map((it: any) =>
+          typeof it === 'string'
+            ? { name: it, qty: 1, unit: 'unité' }
+            : { name: it.name || it, qty: Number(it.qty) || 1, unit: it.unit || 'unité' }
+        )
+        .filter((it: any) => it.name && !TOOLS_RE.test(it.name))
+        .slice(0, 4)
 
       result = {
         summary:              result.summary         || 'Problème artisanal détecté, intervention recommandée.',

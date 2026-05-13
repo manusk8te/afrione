@@ -167,8 +167,7 @@ export default function DiagnosticPage() {
         body: JSON.stringify({ mode: 'start', text, photos }),
       })
       const data = await res.json()
-      const isEmpty = !data.question || (data.type === 'choice' && (!data.options || data.options.length < 2))
-      if (data.done || isEmpty) {
+      if (data.done || !data.question) {
         await finalizeWithQA([])
       } else {
         setCurrentQ({ question: data.question, type: data.type, options: data.options })
