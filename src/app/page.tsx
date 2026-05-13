@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
 import Navbar from '@/components/layout/Navbar'
@@ -11,60 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-/* ─── Video URLs ──────────────────────────────────────────────────────────── */
-const HERO_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4'
-
-/* ─── FadingVideo (rAF crossfade — no CSS transitions) ───────────────────── */
-const FADE_MS       = 500
-const FADE_OUT_LEAD = 0.55
-
-function FadingVideo({ src, className }: { src: string; className?: string }) {
-  const videoRef     = useRef<HTMLVideoElement>(null)
-  const rafRef       = useRef<number>(0)
-  const fadingOutRef = useRef(false)
-
-  const fadeTo = useCallback((target: number, ms: number) => {
-    cancelAnimationFrame(rafRef.current)
-    const v = videoRef.current
-    if (!v) return
-    const t0   = performance.now()
-    const from = parseFloat(v.style.opacity || '0')
-    const tick = (now: number) => {
-      const p = Math.min((now - t0) / ms, 1)
-      v.style.opacity = String(from + (target - from) * p)
-      if (p < 1) rafRef.current = requestAnimationFrame(tick)
-    }
-    rafRef.current = requestAnimationFrame(tick)
-  }, [])
-
-  useEffect(() => {
-    const v = videoRef.current
-    if (!v) return
-    const onLoaded = () => { v.style.opacity = '0'; v.play().catch(() => {}); fadeTo(1, FADE_MS) }
-    const onTime   = () => {
-      if (!fadingOutRef.current && v.duration > 0 && v.duration - v.currentTime <= FADE_OUT_LEAD) {
-        fadingOutRef.current = true; fadeTo(0, FADE_MS)
-      }
-    }
-    const onEnded  = () => {
-      v.style.opacity = '0'
-      setTimeout(() => { v.currentTime = 0; v.play().catch(() => {}); fadingOutRef.current = false; fadeTo(1, FADE_MS) }, 100)
-    }
-    v.addEventListener('loadeddata', onLoaded)
-    v.addEventListener('timeupdate', onTime)
-    v.addEventListener('ended',      onEnded)
-    return () => {
-      cancelAnimationFrame(rafRef.current)
-      v.removeEventListener('loadeddata', onLoaded)
-      v.removeEventListener('timeupdate', onTime)
-      v.removeEventListener('ended',      onEnded)
-    }
-  }, [fadeTo])
-
-  return <video ref={videoRef} src={src} className={className} style={{ opacity: 0 }} muted playsInline preload="auto" />
-}
-
-/* ─── BlurText (word-by-word blur-in) ────────────────────────────────────── */
+/* ─── BlurText ────────────────────────────────────────────────────────────── */
 function BlurText({ text, className, style }: { text: string; className?: string; style?: React.CSSProperties }) {
   const ref    = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: '-10% 0px' })
@@ -111,49 +58,18 @@ const STEPS = [
 ]
 
 const FAQ_ITEMS = [
-  {
-    q: "Comment les artisans sont-ils vérifiés ?",
-    a: "Chaque artisan passe une vérification d'identité et de compétences avant d'être admis. Nous contrôlons leurs documents, leurs qualifications et vérifions leurs antécédents professionnels.",
-  },
-  {
-    q: "Comment fonctionne le paiement ?",
-    a: "Vous payez via Wave au moment de la réservation. Les fonds sont bloqués sur un compte séquestre jusqu'à la fin de la mission et libérés uniquement après votre validation.",
-  },
-  {
-    q: "Combien de temps pour trouver un artisan ?",
-    a: "En général moins de 30 minutes après votre demande. Un artisan qualifié de votre quartier vous contacte directement par téléphone ou via l'application.",
-  },
-  {
-    q: "Que faire si je ne suis pas satisfait ?",
-    a: "Chaque mission est notée. Si la prestation ne correspond pas, notre équipe intervient sous 24h pour trouver une solution ou procéder au remboursement.",
-  },
-  {
-    q: "Dans quels quartiers êtes-vous disponibles ?",
-    a: "Nous couvrons Cocody, Plateau, Marcory, Yopougon, Adjamé, Abobo, Treichville et leurs environs. La couverture s'étend régulièrement.",
-  },
+  { q: "Comment les artisans sont-ils vérifiés ?",   a: "Chaque artisan passe une vérification d'identité et de compétences avant d'être admis. Nous contrôlons leurs documents, leurs qualifications et vérifions leurs antécédents professionnels." },
+  { q: "Comment fonctionne le paiement ?",           a: "Vous payez via Wave au moment de la réservation. Les fonds sont bloqués sur un compte séquestre jusqu'à la fin de la mission et libérés uniquement après votre validation." },
+  { q: "Combien de temps pour trouver un artisan ?", a: "En général moins de 30 minutes après votre demande. Un artisan qualifié de votre quartier vous contacte directement par téléphone ou via l'application." },
+  { q: "Que faire si je ne suis pas satisfait ?",    a: "Chaque mission est notée. Si la prestation ne correspond pas, notre équipe intervient sous 24h pour trouver une solution ou procéder au remboursement." },
+  { q: "Dans quels quartiers êtes-vous disponibles ?", a: "Nous couvrons Cocody, Plateau, Marcory, Yopougon, Adjamé, Abobo, Treichville et leurs environs. La couverture s'étend régulièrement." },
 ]
 
 const TRUST_PILLARS = [
-  {
-    Icon: Shield, title: 'Artisans vérifiés KYC',
-    desc: "Chaque artisan passe une vérification d'identité et de compétence avant d'être admis sur la plateforme.",
-    stat: '100% contrôlés', color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)',
-  },
-  {
-    Icon: CreditCard, title: 'Escrow Wave',
-    desc: "Votre argent est sécurisé jusqu'à la fin de la mission. Libéré uniquement après votre validation.",
-    stat: 'Paiement garanti', color: '#E85D26', bg: 'rgba(232,93,38,0.1)',
-  },
-  {
-    Icon: Star, title: 'Qualité garantie',
-    desc: 'Chaque mission est notée. Les artisans sous 3/5 sont automatiquement suspendus de la plateforme.',
-    stat: '4.8★ en moyenne', color: '#C9A84C', bg: 'rgba(201,168,76,0.1)',
-  },
-  {
-    Icon: Clock, title: 'Réponse en 30 min',
-    desc: 'Un artisan qualifié de votre quartier vous contacte en moins de 30 minutes après votre demande.',
-    stat: 'Rapide et local', color: '#C8B49A', bg: 'rgba(200,180,154,0.1)',
-  },
+  { Icon: Shield,     title: 'Artisans vérifiés KYC', desc: "Chaque artisan passe une vérification d'identité et de compétence avant d'être admis sur la plateforme.",          stat: '100% contrôlés',   color: '#2B6B3E' },
+  { Icon: CreditCard, title: 'Escrow Wave',            desc: "Votre argent est sécurisé jusqu'à la fin de la mission. Libéré uniquement après votre validation.",                stat: 'Paiement garanti', color: '#E85D26' },
+  { Icon: Star,       title: 'Qualité garantie',       desc: 'Chaque mission est notée. Les artisans sous 3/5 sont automatiquement suspendus de la plateforme.',                stat: '4.8★ en moyenne',  color: '#C9A84C' },
+  { Icon: Clock,      title: 'Réponse en 30 min',      desc: 'Un artisan qualifié de votre quartier vous contacte en moins de 30 minutes après votre demande.',                 stat: 'Rapide et local',  color: '#C8B49A' },
 ]
 
 /* ─── Animation variants ──────────────────────────────────────────────────── */
@@ -161,25 +77,19 @@ const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.09 } } }
 const fadeUp  = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 90, damping: 18 } } }
 const fadeIn  = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.5 } } }
 
-/* ─── Tokens ──────────────────────────────────────────────────────────────── */
-const BG0 = '#060604'   // hero dark base
-const T1  = 'rgba(255,255,255,0.92)'
-const T2  = 'rgba(255,255,255,0.55)'
-const T3  = 'rgba(255,255,255,0.32)'
-const BO  = 'rgba(255,255,255,0.08)'
-/* White base system */
-const LBG  = '#FFFFFF'
-const LBG2 = '#F5F7FA'
-const LT1  = '#3D4852'
-const LT2  = '#6B7280'
-const LT3  = '#8B95A5'
-const LBO  = '#E2E8F0'
-/* Shadows — dark only on white (light highlight invisible on white) */
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_HOVER  = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
-const NEU_INSET  = 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8px rgba(255,255,255,0.9)'
+/* ─── Design tokens — 100% white ─────────────────────────────────────────── */
+const W   = '#FFFFFF'
+const W2  = '#F5F7FA'
+const T1  = '#3D4852'
+const T2  = '#6B7280'
+const T3  = '#8B95A5'
+const BO  = '#E2E8F0'
+
+const NEU_SHADOW    = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_HOVER     = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
+const NEU_INSET     = 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8px rgba(255,255,255,0.9)'
 const NEU_INSET_DEEP = 'inset 8px 8px 18px rgba(163,177,198,0.55), inset -6px -6px 12px rgba(255,255,255,0.95)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SMALL     = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function HomePage() {
@@ -232,10 +142,10 @@ export default function HomePage() {
   }, [])
 
   const STATS_DISPLAY = [
-    { value: `${stats.artisans}+`,                       label: 'Artisans vérifiés'   },
-    { value: `${stats.rating}★`,                         label: 'Note moyenne'         },
-    { value: `${stats.missions.toLocaleString()}+`,      label: 'Missions réalisées'   },
-    { value: `${stats.satisfaction}%`,                   label: 'Clients satisfaits'   },
+    { value: `${stats.artisans}+`,                  label: 'Artisans vérifiés' },
+    { value: `${stats.rating}★`,                    label: 'Note moyenne'       },
+    { value: `${stats.missions.toLocaleString()}+`, label: 'Missions réalisées' },
+    { value: `${stats.satisfaction}%`,              label: 'Clients satisfaits' },
   ]
 
   const mono = { fontFamily: "'Space Mono', monospace" } as const
@@ -243,27 +153,19 @@ export default function HomePage() {
   const body = { fontFamily: "'Bricolage Grotesque', sans-serif" } as const
 
   return (
-    <div style={{ background: LBG, color: LT1, minHeight: '100vh' }}>
+    <div style={{ background: W, color: T1, minHeight: '100vh' }}>
       <Navbar />
 
       {/* ━━━━ HERO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="relative overflow-hidden flex flex-col" style={{ minHeight: '100dvh', background: BG0 }}>
-        {/* Video */}
-        <FadingVideo src={HERO_VIDEO} className="absolute inset-0 w-full h-full object-cover z-0" />
-        {/* Vignette */}
-        <div className="absolute inset-0 z-[1] pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 100% 80% at 50% 65%, rgba(6,6,4,0.05) 0%, rgba(6,6,4,0.62) 100%)' }} />
-
-        {/* Content */}
-        <div className="relative z-10 flex-1 flex flex-col page-container">
+      <section style={{ background: W, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <div className="flex-1 flex flex-col page-container">
           <div className="flex-1 flex flex-col items-center justify-center text-center pt-32 pb-10 px-4">
             <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-center w-full">
 
               {/* Badge */}
               <motion.div variants={fadeUp}>
-                <div className="liquid-glass rounded-full inline-flex items-center gap-2 mb-10"
-                  style={{ padding: '6px 20px' }}>
-                  <span style={{ ...mono, fontSize: '11px', color: T2, letterSpacing: '0.1em' }}>PLATEFORME #1 · ABIDJAN</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 20px', borderRadius: '999px', background: W, boxShadow: NEU_SHADOW, marginBottom: '40px' }}>
+                  <span style={{ ...mono, fontSize: '11px', color: T3, letterSpacing: '0.1em' }}>PLATEFORME #1 · ABIDJAN</span>
                 </div>
               </motion.div>
 
@@ -281,16 +183,15 @@ export default function HomePage() {
               </motion.p>
 
               {/* CTAs */}
-              <motion.div variants={fadeUp} className="flex flex-wrap gap-3 justify-center" style={{ marginBottom: '48px' }}>
+              <motion.div variants={fadeUp} className="flex flex-wrap gap-3 justify-center" style={{ marginBottom: '56px' }}>
                 <Link href="/diagnostic"
                   className="afrione-gradient rounded-full inline-flex items-center gap-2"
                   style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 700, color: 'white', textDecoration: 'none', cursor: 'pointer', boxShadow: '0 8px 32px rgba(232,93,38,0.35)' }}>
                   Décrire mon problème <ArrowRight size={16} />
                 </Link>
                 <Link href="/artisans"
-                  className="rounded-full inline-flex items-center gap-2"
-                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 600, color: T2, textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'white'}
+                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 600, color: T2, textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '999px', background: W, boxShadow: NEU_SHADOW }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = T1}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = T2}>
                   <Play size={13} style={{ fill: 'currentColor' }} /> Voir les artisans
                 </Link>
@@ -300,7 +201,7 @@ export default function HomePage() {
               <motion.div variants={stagger} className="flex flex-wrap gap-4 justify-center">
                 {STATS_DISPLAY.map(s => (
                   <motion.div key={s.label} variants={fadeUp}>
-                    <div className="liquid-glass rounded-2xl p-5 text-left" style={{ minWidth: '148px' }}>
+                    <div style={{ background: W, borderRadius: '20px', boxShadow: NEU_SHADOW, padding: '20px', minWidth: '148px', textAlign: 'left' }}>
                       <div className="afrione-gradient-text" style={{ ...syne, fontWeight: 700, fontSize: '28px', letterSpacing: '-0.03em', lineHeight: 1 }}>
                         {s.value}
                       </div>
@@ -314,7 +215,7 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          {/* Bottom strip */}
+          {/* Bottom strip — trust + service chips */}
           <div className="pb-8 px-4" style={{ borderTop: `1px solid ${BO}`, paddingTop: '24px' }}>
             <motion.div variants={stagger} initial="hidden" animate="show">
 
@@ -338,9 +239,8 @@ export default function HomePage() {
                 <div className="flex flex-wrap gap-2">
                   {SERVICES.map(({ Icon, label, metier }) => (
                     <Link key={metier} href={`/artisans?metier=${encodeURIComponent(metier)}`}
-                      className="liquid-glass rounded-full inline-flex items-center gap-2"
-                      style={{ padding: '7px 14px', fontSize: '13px', color: T2, textDecoration: 'none', cursor: 'pointer', transition: 'color 0.15s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'white'}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '999px', fontSize: '13px', color: T2, textDecoration: 'none', cursor: 'pointer', background: W, boxShadow: NEU_SMALL, transition: 'color 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = T1}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = T2}>
                       <Icon size={12} />
                       {label}
@@ -354,15 +254,15 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ CAPABILITIES / SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: LBG, padding: '96px 0' }}>
+      <section style={{ background: W2, padding: '96px 0' }}>
         <div className="page-container">
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
 
-            <motion.p variants={fadeUp} style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '20px' }}>
+            <motion.p variants={fadeUp} style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '20px' }}>
               // Services
             </motion.p>
             <motion.h2 variants={fadeUp}
-              style={{ ...syne, fontWeight: 700, fontSize: 'clamp(48px, 7vw, 86px)', lineHeight: 0.9, letterSpacing: '-0.04em', color: LT1, marginBottom: '60px' }}>
+              style={{ ...syne, fontWeight: 700, fontSize: 'clamp(48px, 7vw, 86px)', lineHeight: 0.9, letterSpacing: '-0.04em', color: T1, marginBottom: '60px' }}>
               Tous vos corps<br />de métier.
             </motion.h2>
 
@@ -373,19 +273,19 @@ export default function HomePage() {
                     style={{
                       display: 'flex', flexDirection: 'column', gap: '14px', padding: '22px',
                       textDecoration: 'none', cursor: 'pointer',
-                      background: LBG, borderRadius: '24px',
+                      background: W, borderRadius: '24px',
                       boxShadow: NEU_SHADOW,
                       transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out',
                     }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-2px)' }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
-                    <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: NEU_INSET, background: LBG, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <div className="afrione-gradient rounded-xl flex items-center justify-center" style={{ width: '38px', height: '38px' }}>
                         <Icon size={17} color="white" />
                       </div>
                     </div>
-                    <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1 }}>{label}</div>
-                    <div style={{ ...mono, fontSize: '10px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1 }}>{label}</div>
+                    <div style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                       {serviceCounts[metier] ? `${serviceCounts[metier]} artisan${serviceCounts[metier] > 1 ? 's' : ''}` : 'Disponible'}
                     </div>
                   </Link>
@@ -397,16 +297,16 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ HOW IT WORKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: LBG2, padding: '80px 16px' }}>
+      <section style={{ background: W, padding: '80px 16px' }}>
         <div className="page-container">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1.7fr] gap-16 items-start">
 
             <div className="md:sticky md:top-24">
-              <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>COMMENT ÇA MARCHE</span>
-              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.05, color: LT1, marginTop: '12px', marginBottom: '16px' }}>
+              <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>COMMENT ÇA MARCHE</span>
+              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.05, color: T1, marginTop: '12px', marginBottom: '16px' }}>
                 Simple.<br />Rapide.<br />Sécurisé.
               </h2>
-              <p style={{ ...body, fontSize: '14px', color: LT2, lineHeight: 1.7, maxWidth: '38ch' }}>
+              <p style={{ ...body, fontSize: '14px', color: T2, lineHeight: 1.7, maxWidth: '38ch' }}>
                 De la description du problème à la validation finale, tout se passe sur AfriOne.
                 Transparent, à chaque étape.
               </p>
@@ -422,11 +322,11 @@ export default function HomePage() {
                 const { Icon } = step
                 return (
                   <motion.div key={step.num} variants={fadeUp}
-                    style={{ background: LBG2, borderRadius: '24px', padding: '22px 26px', display: 'flex', gap: '20px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
+                    style={{ background: W, borderRadius: '24px', padding: '22px 26px', display: 'flex', gap: '20px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-1px)' }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
                     <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', paddingTop: '2px' }}>
-                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: NEU_INSET, background: LBG2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <div className="afrione-gradient" style={{ width: '38px', height: '38px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Icon size={19} color="white" />
                         </div>
@@ -434,8 +334,8 @@ export default function HomePage() {
                       <span style={{ ...mono, fontSize: '9px', color: 'rgba(232,93,38,0.55)', letterSpacing: '0.05em' }}>{step.num}</span>
                     </div>
                     <div style={{ paddingTop: '4px' }}>
-                      <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: LT1, marginBottom: '6px' }}>{step.title}</h3>
-                      <p style={{ ...body, fontSize: '13px', color: LT2, lineHeight: 1.65 }}>{step.desc}</p>
+                      <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: T1, marginBottom: '6px' }}>{step.title}</h3>
+                      <p style={{ ...body, fontSize: '13px', color: T2, lineHeight: 1.65 }}>{step.desc}</p>
                     </div>
                   </motion.div>
                 )
@@ -446,13 +346,13 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ TOP ARTISANS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: LBG, padding: '80px 16px' }}>
+      <section style={{ background: W2, padding: '80px 16px' }}>
         <div className="page-container">
           <div className="flex items-end justify-between mb-10">
             <div>
-              <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>ARTISANS EN VEDETTE</span>
-              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3vw, 40px)', color: LT1, marginTop: '8px' }}>Les mieux notés</h2>
-              <p style={{ ...body, fontSize: '14px', color: LT2, marginTop: '4px' }}>Tous vérifiés, tous fiables</p>
+              <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>ARTISANS EN VEDETTE</span>
+              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3vw, 40px)', color: T1, marginTop: '8px' }}>Les mieux notés</h2>
+              <p style={{ ...body, fontSize: '14px', color: T2, marginTop: '4px' }}>Tous vérifiés, tous fiables</p>
             </div>
             <Link href="/artisans"
               className="hidden sm:flex items-center gap-1 font-semibold hover:gap-2 transition-all"
@@ -463,26 +363,25 @@ export default function HomePage() {
 
           {loadingArtisans ? (
             <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
-              <div style={{ background: LBG, borderRadius: '28px', padding: '24px', minHeight: '220px', boxShadow: NEU_SHADOW }} className="animate-pulse" />
+              <div style={{ background: W, borderRadius: '28px', padding: '24px', minHeight: '220px', boxShadow: NEU_SHADOW }} className="animate-pulse" />
               <div className="flex flex-col gap-4">
-                {[1, 2].map(i => <div key={i} style={{ background: LBG, borderRadius: '24px', height: '96px', boxShadow: NEU_SHADOW }} className="animate-pulse" />)}
+                {[1, 2].map(i => <div key={i} style={{ background: W, borderRadius: '24px', height: '96px', boxShadow: NEU_SHADOW }} className="animate-pulse" />)}
               </div>
             </div>
           ) : topArtisans.length > 0 ? (
             <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true }}
               className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
 
-              {/* Featured artisan */}
               {topArtisans[0] && (() => {
                 const a = topArtisans[0]
                 const MetierIcon = METIER_ICON_MAP[a.metier] || Wrench
                 return (
                   <motion.div variants={fadeUp}
-                    style={{ background: LBG, borderRadius: '28px', padding: '24px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'default' }}
+                    style={{ background: W, borderRadius: '28px', padding: '24px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'default' }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-2px)' }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
                     <div className="flex items-start justify-between mb-5">
-                      <div style={{ width: '64px', height: '64px', borderRadius: '20px', boxShadow: NEU_INSET, background: LBG, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                      <div style={{ width: '64px', height: '64px', borderRadius: '20px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                         {a.users?.avatar_url
                           ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                           : <MetierIcon size={26} style={{ color: '#E85D26' }} />
@@ -490,28 +389,24 @@ export default function HomePage() {
                       </div>
                       <span className="badge-green">Vérifié</span>
                     </div>
-                    <h3 style={{ ...syne, fontWeight: 700, fontSize: '20px', color: LT1, marginBottom: '4px' }}>
+                    <h3 style={{ ...syne, fontWeight: 700, fontSize: '20px', color: T1, marginBottom: '4px' }}>
                       {a.users?.name || a.metier}
                     </h3>
-                    <div className="flex items-center gap-2 mb-6" style={{ ...body, fontSize: '13px', color: LT2 }}>
+                    <div className="flex items-center gap-2 mb-6" style={{ ...body, fontSize: '13px', color: T2 }}>
                       <span>{a.metier}</span>
-                      {a.users?.quartier && (
-                        <><span style={{ color: LBO }}>·</span><MapPin size={11} /><span>{a.users.quartier}</span></>
-                      )}
+                      {a.users?.quartier && <><span style={{ color: BO }}>·</span><MapPin size={11} /><span>{a.users.quartier}</span></>}
                     </div>
-                    <div className="flex items-center gap-5 pt-4 mb-6" style={{ borderTop: `1px solid ${LBO}` }}>
+                    <div className="flex items-center gap-5 pt-4 mb-6" style={{ borderTop: `1px solid ${BO}` }}>
                       <div className="flex items-center gap-1">
                         <Star size={14} style={{ color: '#C9A84C', fill: '#C9A84C' }} />
-                        <span style={{ ...syne, fontWeight: 600, fontSize: '14px', color: LT1 }}>
-                          {(a.rating_avg || 0).toFixed(1)}
-                        </span>
+                        <span style={{ ...syne, fontWeight: 600, fontSize: '14px', color: T1 }}>{(a.rating_avg || 0).toFixed(1)}</span>
                       </div>
-                      <div className="flex items-center gap-1" style={{ ...body, fontSize: '13px', color: LT2 }}>
+                      <div className="flex items-center gap-1" style={{ ...body, fontSize: '13px', color: T2 }}>
                         <CheckCircle size={12} style={{ color: '#2B6B3E' }} />
                         {a.mission_count || 0} missions
                       </div>
                       {a.tarif_min > 0 && (
-                        <div className="ml-auto" style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1 }}>
+                        <div className="ml-auto" style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1 }}>
                           Dès {a.tarif_min.toLocaleString()} F
                         </div>
                       )}
@@ -524,39 +419,38 @@ export default function HomePage() {
                 )
               })()}
 
-              {/* Two compact artisans */}
               <div className="flex flex-col gap-3">
                 {topArtisans.slice(1, 3).map(a => {
                   const MetierIcon = METIER_ICON_MAP[a.metier] || Wrench
                   return (
                     <motion.div key={a.id} variants={fadeUp}
-                      style={{ background: LBG, borderRadius: '24px', padding: '16px 20px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'default' }}
+                      style={{ background: W, borderRadius: '24px', padding: '16px 20px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'default' }}
                       onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-1px)' }}
                       onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
                       <div className="flex items-center gap-3">
-                        <div style={{ width: '44px', height: '44px', borderRadius: '14px', boxShadow: NEU_INSET, background: LBG, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '14px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
                           {a.users?.avatar_url
                             ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                             : <MetierIcon size={18} style={{ color: '#E85D26' }} />
                           }
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {a.users?.name || a.metier}
                           </div>
-                          <div style={{ ...body, fontSize: '12px', color: LT2, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <div style={{ ...body, fontSize: '12px', color: T2, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                             {a.metier}
-                            {a.users?.quartier && <><span style={{ color: LBO }}>·</span><MapPin size={10} />{a.users.quartier}</>}
+                            {a.users?.quartier && <><span style={{ color: BO }}>·</span><MapPin size={10} />{a.users.quartier}</>}
                           </div>
                         </div>
                         <span className="badge-green flex-shrink-0" style={{ fontSize: '11px' }}>Vérifié</span>
                       </div>
-                      <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: `1px solid ${LBO}` }}>
+                      <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: `1px solid ${BO}` }}>
                         <div className="flex items-center gap-1">
                           <Star size={12} style={{ color: '#C9A84C', fill: '#C9A84C' }} />
-                          <span style={{ ...syne, fontWeight: 600, fontSize: '13px', color: LT1 }}>{(a.rating_avg || 0).toFixed(1)}</span>
+                          <span style={{ ...syne, fontWeight: 600, fontSize: '13px', color: T1 }}>{(a.rating_avg || 0).toFixed(1)}</span>
                         </div>
-                        <span style={{ ...body, fontSize: '12px', color: LT2 }}>{a.mission_count || 0} missions</span>
+                        <span style={{ ...body, fontSize: '12px', color: T2 }}>{a.mission_count || 0} missions</span>
                         <Link href={`/artisans/${a.id}`}
                           className="ml-auto flex items-center gap-1 hover:gap-2 transition-all"
                           style={{ fontSize: '12px', fontWeight: 600, color: '#E85D26', cursor: 'pointer', textDecoration: 'none' }}>
@@ -569,9 +463,9 @@ export default function HomePage() {
               </div>
             </motion.div>
           ) : (
-            <div className="text-center py-16 rounded-[28px]" style={{ boxShadow: NEU_SHADOW, background: LBG }}>
-              <Wrench size={28} style={{ color: LT3, margin: '0 auto 16px' }} />
-              <p style={{ ...body, fontSize: '15px', color: LT2, marginBottom: '24px' }}>
+            <div className="text-center py-16 rounded-[28px]" style={{ boxShadow: NEU_SHADOW, background: W }}>
+              <Wrench size={28} style={{ color: T3, margin: '0 auto 16px' }} />
+              <p style={{ ...body, fontSize: '15px', color: T2, marginBottom: '24px' }}>
                 Nos artisans complètent leur inscription — revenez bientôt !
               </p>
               <Link href="/diagnostic" className="btn-primary inline-flex items-center gap-2" style={{ cursor: 'pointer', textDecoration: 'none' }}>
@@ -583,11 +477,11 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ TRUST ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: LBG2, padding: '80px 16px' }}>
+      <section style={{ background: W, padding: '80px 16px' }}>
         <div className="page-container">
           <div className="mb-14">
-            <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>POURQUOI AFRIONE</span>
-            <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3.5vw, 42px)', lineHeight: 1.05, color: LT1, marginTop: '8px', maxWidth: '20ch' }}>
+            <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>POURQUOI AFRIONE</span>
+            <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3.5vw, 42px)', lineHeight: 1.05, color: T1, marginTop: '8px', maxWidth: '20ch' }}>
               Construit pour que vous ayez confiance.
             </h2>
           </div>
@@ -595,19 +489,19 @@ export default function HomePage() {
             className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {TRUST_PILLARS.map(({ Icon, title, desc, stat, color }) => (
               <motion.div key={title} variants={fadeUp}
-                style={{ background: LBG2, borderRadius: '28px', padding: '28px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
+                style={{ background: W, borderRadius: '28px', padding: '28px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
                 onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-2px)' }}
                 onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
                 <div className="flex items-start gap-4 mb-4">
-                  <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: `inset 6px 6px 10px rgb(163,177,198,0.55), inset -6px -6px 10px rgba(255,255,255,0.45)`, background: LBG2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icon size={20} style={{ color }} />
                   </div>
                   <div>
-                    <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: LT1, marginBottom: '4px' }}>{title}</h3>
+                    <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: T1, marginBottom: '4px' }}>{title}</h3>
                     <span style={{ ...mono, fontSize: '10px', color, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat}</span>
                   </div>
                 </div>
-                <p style={{ ...body, fontSize: '13px', color: LT2, lineHeight: 1.65 }}>{desc}</p>
+                <p style={{ ...body, fontSize: '13px', color: T2, lineHeight: 1.65 }}>{desc}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -616,13 +510,13 @@ export default function HomePage() {
 
       {/* ━━━━ ENTREPRISES PARTENAIRES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {topEntreprises.length > 0 && (
-        <section style={{ background: LBG, padding: '80px 16px' }}>
+        <section style={{ background: W2, padding: '80px 16px' }}>
           <div className="page-container">
             <div className="flex items-end justify-between mb-10">
               <div>
-                <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>STRUCTURES PARTENAIRES</span>
-                <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3vw, 40px)', color: LT1, marginTop: '8px' }}>Entreprises multi-corps</h2>
-                <p style={{ ...body, fontSize: '14px', color: LT2, marginTop: '4px' }}>Des équipes complètes pour vos grands travaux</p>
+                <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>STRUCTURES PARTENAIRES</span>
+                <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3vw, 40px)', color: T1, marginTop: '8px' }}>Entreprises multi-corps</h2>
+                <p style={{ ...body, fontSize: '14px', color: T2, marginTop: '4px' }}>Des équipes complètes pour vos grands travaux</p>
               </div>
               <Link href="/entreprises"
                 className="hidden sm:flex items-center gap-1 font-semibold hover:gap-2 transition-all"
@@ -637,35 +531,35 @@ export default function HomePage() {
                   <motion.div key={e.id} variants={fadeUp}>
                     <Link href={`/entreprise-space/dashboard?id=${e.id}`} style={{ textDecoration: 'none' }}>
                       <div
-                        style={{ background: LBG, borderRadius: '28px', overflow: 'hidden', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'pointer' }}
+                        style={{ background: W, borderRadius: '28px', overflow: 'hidden', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'pointer' }}
                         onMouseEnter={el => { (el.currentTarget as HTMLElement).style.boxShadow = NEU_HOVER; (el.currentTarget as HTMLElement).style.transform = 'translateY(-2px)' }}
                         onMouseLeave={el => { (el.currentTarget as HTMLElement).style.boxShadow = NEU_SHADOW; (el.currentTarget as HTMLElement).style.transform = '' }}>
-                        <div style={{ height: '110px', overflow: 'hidden', background: e.banner_url ? LBG : `linear-gradient(135deg, ${LBG2}, ${LBG})`, position: 'relative' }}>
+                        <div style={{ height: '110px', overflow: 'hidden', background: e.banner_url ? W : `linear-gradient(135deg, ${W2}, ${W})`, position: 'relative' }}>
                           {e.banner_url
                             ? <img src={e.banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
                             : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                                <Building2 size={36} style={{ color: LT3 }} />
+                                <Building2 size={36} style={{ color: T3 }} />
                               </div>
                           }
                         </div>
                         <div style={{ padding: '16px 20px 20px' }}>
                           <div className="flex items-start justify-between mb-2">
-                            <h3 style={{ ...syne, fontWeight: 700, fontSize: '15px', color: LT1 }}>{e.name}</h3>
+                            <h3 style={{ ...syne, fontWeight: 700, fontSize: '15px', color: T1 }}>{e.name}</h3>
                             <span className="badge-green" style={{ flexShrink: 0, marginLeft: '8px', fontSize: '11px' }}>Vérifié</span>
                           </div>
                           {e.description && (
-                            <p style={{ ...body, fontSize: '12px', color: LT2, marginBottom: '10px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                            <p style={{ ...body, fontSize: '12px', color: T2, marginBottom: '10px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
                               {e.description}
                             </p>
                           )}
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
                             {(e.secteurs || []).slice(0, 3).map((s: string) => (
-                              <span key={s} style={{ ...body, fontSize: '11px', background: LBG, boxShadow: NEU_SMALL, padding: '2px 10px', borderRadius: '10px', color: LT2 }}>{s}</span>
+                              <span key={s} style={{ ...body, fontSize: '11px', background: W, boxShadow: NEU_SMALL, padding: '2px 10px', borderRadius: '10px', color: T2 }}>{s}</span>
                             ))}
-                            {(e.secteurs || []).length > 3 && <span style={{ ...body, fontSize: '11px', color: LT3 }}>+{e.secteurs.length - 3}</span>}
+                            {(e.secteurs || []).length > 3 && <span style={{ ...body, fontSize: '11px', color: T3 }}>+{e.secteurs.length - 3}</span>}
                           </div>
-                          <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${LBO}` }}>
-                            <span style={{ ...body, fontSize: '12px', color: LT2 }}>{(e.artisan_pros || []).length} artisan{(e.artisan_pros || []).length !== 1 ? 's' : ''}</span>
+                          <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${BO}` }}>
+                            <span style={{ ...body, fontSize: '12px', color: T2 }}>{(e.artisan_pros || []).length} artisan{(e.artisan_pros || []).length !== 1 ? 's' : ''}</span>
                             <span style={{ ...syne, fontSize: '12px', fontWeight: 600, color: '#E85D26' }}>Voir l'équipe →</span>
                           </div>
                         </div>
@@ -679,24 +573,24 @@ export default function HomePage() {
                 <motion.div variants={fadeUp}>
                   <Link href={`/entreprise-space/dashboard?id=${topEntreprises[2].id}`} style={{ textDecoration: 'none' }}>
                     <div
-                      style={{ background: LBG, borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', cursor: 'pointer', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
+                      style={{ background: W, borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', cursor: 'pointer', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
                       onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-1px)' }}
                       onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
-                      <div style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden', boxShadow: NEU_INSET, background: LBG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {topEntreprises[2].banner_url
                           ? <img src={topEntreprises[2].banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <Building2 size={18} style={{ color: LT3 }} />
+                          : <Building2 size={18} style={{ color: T3 }} />
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1 }}>{topEntreprises[2].name}</div>
-                        <div style={{ ...body, fontSize: '12px', color: LT2, marginTop: '2px' }}>
+                        <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1 }}>{topEntreprises[2].name}</div>
+                        <div style={{ ...body, fontSize: '12px', color: T2, marginTop: '2px' }}>
                           {(topEntreprises[2].artisan_pros || []).length} artisans
                           {(topEntreprises[2].secteurs || []).length > 0 && ` · ${(topEntreprises[2].secteurs || []).slice(0, 2).join(', ')}`}
                         </div>
                       </div>
                       <span className="badge-green flex-shrink-0" style={{ fontSize: '11px' }}>Vérifié</span>
-                      <ChevronRight size={14} style={{ color: LT3, flexShrink: 0 }} />
+                      <ChevronRight size={14} style={{ color: T3, flexShrink: 0 }} />
                     </div>
                   </Link>
                 </motion.div>
@@ -707,23 +601,23 @@ export default function HomePage() {
       )}
 
       {/* ━━━━ CTA ENTREPRISE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: LBG2, padding: '64px 16px' }}>
+      <section style={{ background: W, padding: '64px 16px' }}>
         <div className="page-container">
           <div className="rounded-[32px] p-10 flex flex-wrap items-center justify-between gap-8"
-            style={{ background: LBG2, boxShadow: NEU_SHADOW }}>
+            style={{ background: W, boxShadow: NEU_SHADOW }}>
             <div style={{ flex: 1, minWidth: '260px' }}>
               <div className="flex items-center gap-3 mb-4">
-                <div style={{ width: '44px', height: '44px', borderRadius: '14px', boxShadow: NEU_INSET, background: LBG2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '14px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Building2 size={18} style={{ color: '#E85D26' }} />
                 </div>
                 <span style={{ ...mono, fontSize: '11px', color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
                   Structures professionnelles
                 </span>
               </div>
-              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(22px, 2.5vw, 30px)', lineHeight: 1.15, color: LT1, marginBottom: '10px' }}>
+              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(22px, 2.5vw, 30px)', lineHeight: 1.15, color: T1, marginBottom: '10px' }}>
                 Vous gérez une équipe<br />d'artisans ?
               </h2>
-              <p style={{ ...body, fontSize: '14px', color: LT2, lineHeight: 1.7, maxWidth: '46ch' }}>
+              <p style={{ ...body, fontSize: '14px', color: T2, lineHeight: 1.7, maxWidth: '46ch' }}>
                 Créez un espace entreprise sur AfriOne. Gérez vos artisans, vos missions
                 et accédez à des clients professionnels à Abidjan.
               </p>
@@ -733,18 +627,18 @@ export default function HomePage() {
                 style={{ whiteSpace: 'nowrap', ...syne, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                 <Building2 size={15} /> Créer mon espace entreprise
               </Link>
-              <p style={{ ...mono, fontSize: '11px', color: LT3, textAlign: 'center' }}>Validation sous 24h · Gratuit</p>
+              <p style={{ ...mono, fontSize: '11px', color: T3, textAlign: 'center' }}>Validation sous 24h · Gratuit</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* ━━━━ CTA ARTISAN + FAQ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: LBG, padding: '80px 16px' }}>
+      <section style={{ background: W2, padding: '80px 16px' }}>
         <div className="page-container">
           <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-8 items-stretch">
 
-            {/* Orange animated CTA card — afrione-gradient stays */}
+            {/* Orange animated CTA card */}
             <div className="afrione-gradient rounded-[32px] py-16 px-10 flex flex-col justify-center items-center text-center"
               style={{ boxShadow: '0 20px 60px rgba(232,93,38,0.3)' }}>
               <p style={{ ...mono, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.65)', marginBottom: '16px' }}>
@@ -759,8 +653,8 @@ export default function HomePage() {
               <Link href="/auth"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '13px 28px', background: LBG, borderRadius: '16px',
-                  color: LT1, fontSize: '14px', fontWeight: 700, ...syne,
+                  padding: '13px 28px', background: W, borderRadius: '16px',
+                  color: T1, fontSize: '14px', fontWeight: 700, ...syne,
                   textDecoration: 'none', cursor: 'pointer',
                   boxShadow: NEU_SHADOW, transition: 'transform 0.15s, box-shadow 0.15s',
                 }}
@@ -770,9 +664,9 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* FAQ accordion — neumorphic */}
+            {/* FAQ accordion */}
             <div className="flex flex-col justify-center gap-2">
-              <p style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>
+              <p style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>
                 Questions fréquentes
               </p>
               {FAQ_ITEMS.map((item, i) => {
@@ -781,7 +675,7 @@ export default function HomePage() {
                   <div key={i}
                     onClick={() => setFaqOpen(isOpen ? null : i)}
                     style={{
-                      background: LBG,
+                      background: W,
                       borderRadius: '20px',
                       padding: '14px 16px',
                       cursor: 'pointer',
@@ -789,14 +683,14 @@ export default function HomePage() {
                       transition: 'box-shadow 0.3s ease-out',
                     }}>
                     <div className="flex items-center justify-between gap-3">
-                      <span style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1, lineHeight: 1.35 }}>{item.q}</span>
+                      <span style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1, lineHeight: 1.35 }}>{item.q}</span>
                       {isOpen
                         ? <ChevronUp size={16} style={{ color: '#E85D26', flexShrink: 0 }} />
-                        : <ChevronDown size={16} style={{ color: LT3, flexShrink: 0 }} />
+                        : <ChevronDown size={16} style={{ color: T3, flexShrink: 0 }} />
                       }
                     </div>
                     {isOpen && (
-                      <p style={{ ...body, marginTop: '10px', fontSize: '13px', color: LT2, lineHeight: 1.65 }}>
+                      <p style={{ ...body, marginTop: '10px', fontSize: '13px', color: T2, lineHeight: 1.65 }}>
                         {item.a}
                       </p>
                     )}
@@ -809,18 +703,17 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <footer style={{ background: '#08080A', borderTop: `1px solid ${BO}` }}>
+      <footer style={{ background: W2, borderTop: `1px solid ${BO}` }}>
         <div className="page-container" style={{ paddingTop: '64px', paddingBottom: '20px' }}>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_2fr] gap-10" style={{ marginBottom: '48px' }}>
 
-            {/* Logo + baseline */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="afrione-gradient rounded flex items-center justify-center" style={{ width: '28px', height: '28px' }}>
                   <Zap size={13} color="white" />
                 </div>
-                <span style={{ ...syne, fontWeight: 700, fontSize: '16px', letterSpacing: '-0.02em', color: 'white' }}>
+                <span style={{ ...syne, fontWeight: 700, fontSize: '16px', letterSpacing: '-0.02em', color: T1 }}>
                   AFRI<span className="afrione-gradient-text">ONE</span>
                 </span>
               </div>
@@ -829,20 +722,19 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Navigation */}
             <div>
-              <h4 style={{ ...syne, fontWeight: 700, fontSize: '13px', color: 'white', marginBottom: '16px', letterSpacing: '-0.01em' }}>Plateforme</h4>
+              <h4 style={{ ...syne, fontWeight: 700, fontSize: '13px', color: T1, marginBottom: '16px', letterSpacing: '-0.01em' }}>Plateforme</h4>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  { href: '/artisans',    label: 'Artisans'          },
-                  { href: '/entreprises', label: 'Entreprises'        },
-                  { href: '/diagnostic',  label: 'Diagnostic'         },
-                  { href: '/aide',        label: 'Comment ça marche'  },
+                  { href: '/artisans',    label: 'Artisans'         },
+                  { href: '/entreprises', label: 'Entreprises'       },
+                  { href: '/diagnostic',  label: 'Diagnostic'        },
+                  { href: '/aide',        label: 'Comment ça marche' },
                 ].map(({ href, label }) => (
                   <li key={label}>
                     <Link href={href}
                       style={{ ...body, fontSize: '13px', color: T2, textDecoration: 'none', transition: 'color 0.15s', cursor: 'pointer' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'white'}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = T1}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = T2}>
                       {label}
                     </Link>
@@ -851,9 +743,8 @@ export default function HomePage() {
               </ul>
             </div>
 
-            {/* Legal */}
             <div>
-              <h4 style={{ ...syne, fontWeight: 700, fontSize: '13px', color: 'white', marginBottom: '16px', letterSpacing: '-0.01em' }}>Légal</h4>
+              <h4 style={{ ...syne, fontWeight: 700, fontSize: '13px', color: T1, marginBottom: '16px', letterSpacing: '-0.01em' }}>Légal</h4>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
                   { href: '/aide', label: 'CGU'             },
@@ -863,7 +754,7 @@ export default function HomePage() {
                   <li key={label}>
                     <Link href={href}
                       style={{ ...body, fontSize: '13px', color: T2, textDecoration: 'none', transition: 'color 0.15s', cursor: 'pointer' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'white'}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = T1}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = T2}>
                       {label}
                     </Link>
@@ -872,29 +763,25 @@ export default function HomePage() {
               </ul>
             </div>
 
-            {/* Espaces */}
             <div>
-              <h4 style={{ ...syne, fontWeight: 700, fontSize: '13px', color: 'white', marginBottom: '16px', letterSpacing: '-0.01em' }}>Votre espace</h4>
+              <h4 style={{ ...syne, fontWeight: 700, fontSize: '13px', color: T1, marginBottom: '16px', letterSpacing: '-0.01em' }}>Votre espace</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <Link href="/artisan-space/dashboard"
-                  className="liquid-glass rounded-lg inline-flex items-center gap-2"
-                  style={{ padding: '9px 14px', fontSize: '13px', color: 'white', textDecoration: 'none', cursor: 'pointer', ...syne, fontWeight: 600, transition: 'background 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.09)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                  style={{ background: W, borderRadius: '10px', boxShadow: NEU_SMALL, display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 14px', fontSize: '13px', color: T1, textDecoration: 'none', cursor: 'pointer', ...syne, fontWeight: 600, transition: 'box-shadow 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SHADOW}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SMALL}>
                   <Wrench size={13} style={{ color: '#E85D26' }} /> Espace artisan
                 </Link>
                 <Link href="/entreprise-space/register"
-                  className="liquid-glass rounded-lg inline-flex items-center gap-2"
-                  style={{ padding: '9px 14px', fontSize: '13px', color: 'white', textDecoration: 'none', cursor: 'pointer', ...syne, fontWeight: 600, transition: 'background 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.09)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                  style={{ background: W, borderRadius: '10px', boxShadow: NEU_SMALL, display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 14px', fontSize: '13px', color: T1, textDecoration: 'none', cursor: 'pointer', ...syne, fontWeight: 600, transition: 'box-shadow 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SHADOW}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SMALL}>
                   <Building2 size={13} style={{ color: '#C9A84C' }} /> Espace entreprise
                 </Link>
               </div>
             </div>
           </div>
 
-          {/* Bottom bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4"
             style={{ borderTop: `1px solid ${BO}`, paddingTop: '20px', paddingBottom: '8px' }}>
             <p style={{ ...mono, fontSize: '11px', color: T3 }}>
