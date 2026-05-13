@@ -175,45 +175,17 @@ async function scrapeJumia(query: string): Promise<JumiaHit[]> {
   }
 }
 
-// ─── Sélection des 3 tiers ────────────────────────────────────────────────────
-// Filtre par pertinence (keywords + fourchette de prix)
-// Puis prend P15, P50, P85 comme éco/standard/premium
-function selectTiers(
-  products: Awaited<ReturnType<typeof scrapeJumia>>,
-  mat: typeof MATERIALS[0]
-) {
-  // 1. Filtre par fourchette de prix et pertinence keywords
-  const relevant = products.filter(p => {
-    if (p.price < mat.priceMin || p.price > mat.priceMax) return false
-    const nameLow = p.name.toLowerCase()
-    return mat.keywords.some(k => nameLow.includes(k.toLowerCase()))
-  })
-
-  if (relevant.length === 0) return null
-
-  // 2. Trie par prix croissant
-  const sorted = [...relevant].sort((a, b) => a.price - b.price)
-  const n = sorted.length
-
-  // 3. Prend les 3 percentiles
-  const pick = (pct: number) => sorted[Math.min(Math.floor(n * pct), n - 1)]
-
-  return {
-    economique: pick(0.15),
-    standard:   pick(0.50),
-    premium:    pick(0.85),
-  }
-}
-
 // ─── Handler POST ─────────────────────────────────────────────────────────────
+// Pour chaque requête de la liste : scrape Jumia, sauvegarde TOUS les résultats.
+// Pas de filtre keyword — Jumia gère la pertinence. On filtre à l'affichage.
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const { category } = body
   const materials = category ? MATERIALS.filter(m => m.category === category) : MATERIALS
 
-  const saved: any[]    = []
-  const skipped: any[]  = []
-  const errors: any[]   = []
+  const saved: any[]   = []
+  const skipped: any[] = []
+  const errors: any[]  = []
 
   for (const mat of materials) {
     const products = await scrapeJumia(mat.query)
@@ -223,35 +195,15 @@ export async function POST(req: NextRequest) {
       continue
     }
 
-    const tiers = selectTiers(products, mat)
-    if (!tiers) {
-      skipped.push({
-        material: mat.material_name,
-        reason: `aucun produit dans [${mat.priceMin}–${mat.priceMax} FCFA] avec keywords ${mat.keywords.join('/')}`,
-        found: products.length,
-        prices: products.slice(0, 3).map(p => p.price),
-      })
-      continue
-    }
-
-    for (const [tier, product] of Object.entries(tiers) as ['economique'|'standard'|'premium', any][]) {
-      const name = `${mat.material_name}${tier === 'premium' ? ' premium' : tier === 'economique' ? ' éco' : ''}`
-      // Les prix Jumia CI sont déjà en FCFA (marketplace locale, pas import)
-      // price_market ≈ marché physique Adjamé/Treichville : légèrement sous Jumia
-      const localFactor = tier === 'economique' ? 0.80 : tier === 'standard' ? 0.88 : 1.0
-      const localPrice  = Math.round(product.price * localFactor)
-
-      // UPDATE si existe, INSERT sinon
-      const { data: existing } = await supabaseAdmin
-        .from('price_materials')
-        .select('id')
-        .eq('name', name).eq('category', mat.category).eq('tier', tier)
-        .maybeSingle()
-
+    // Sauvegarde TOUS les produits retournés par la recherche Jumia
+    for (const product of products) {
       const payload = {
-        name, category: mat.category, unit: mat.unit, tier,
-        price_market:    localPrice,
-        price_min:       Math.round(product.price * 0.25),
+        name:            product.name,
+        category:        mat.category,
+        unit:            mat.unit,
+        tier:            'standard',
+        price_market:    Math.round(product.price * 0.88),
+        price_min:       Math.round(product.price * 0.75),
         price_max:       product.price,
         source:          'Jumia CI',
         brand:           product.brand,
@@ -261,14 +213,17 @@ export async function POST(req: NextRequest) {
         last_scraped_at: new Date().toISOString(),
       }
 
+      const { data: existing } = await supabaseAdmin
+        .from('price_materials').select('id').eq('name', product.name).maybeSingle()
+
       const { error } = existing
         ? await supabaseAdmin.from('price_materials').update(payload).eq('id', existing.id)
         : await supabaseAdmin.from('price_materials').insert(payload)
 
       if (error) {
-        errors.push({ material: name, error: error.message })
+        errors.push({ name: product.name, error: error.message })
       } else {
-        saved.push({ material: name, tier, price: product.price, brand: product.brand, photo: !!product.photo_url })
+        saved.push({ name: product.name, price: product.price, brand: product.brand, photo: !!product.photo_url, url: product.url })
       }
     }
   }

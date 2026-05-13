@@ -1,6 +1,9 @@
 /**
- * Lookup Jumia CI à la demande pour un matériau spécifique
- * Appelé depuis le diagnostic finalize quand l'IA détecte des items_needed
+ * Lookup Jumia CI à la demande pour un matériau spécifique.
+ * Principe : on fait la recherche exactement comme un utilisateur Jumia.
+ * Jumia retourne les résultats les plus pertinents — on sauvegarde TOUT
+ * dans price_materials sans filtrer par mots-clés. Le filtre se fait
+ * au moment de l'affichage, pas à l'indexation.
  */
 
 import { supabaseAdmin } from './supabase'
@@ -13,8 +16,7 @@ interface JumiaProduct {
   url:       string
 }
 
-// Jumia CI utilise des attributs HTML (data-gtm-name, class="prc", data-src)
-// Les prix sont directement en FCFA — pas de conversion.
+// Parse les cartes produit Jumia CI depuis le HTML (data-gtm-* + class="prc")
 function parseJumiaHtml(html: string): JumiaProduct[] {
   const results: JumiaProduct[] = []
   const cardRe = /href="(\/[a-z0-9][a-z0-9-]+-\d+\.html)"[^>]+class="core"[^>]+data-gtm-name="([^"]+)"[^>]+data-gtm-brand="([^"]+)"/g
@@ -37,7 +39,6 @@ function parseJumiaHtml(html: string): JumiaProduct[] {
   return results
 }
 
-// Extrait les produits du HTML Jumia CI
 async function fetchJumiaProducts(query: string): Promise<JumiaProduct[]> {
   const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
   try {
@@ -57,74 +58,56 @@ async function fetchJumiaProducts(query: string): Promise<JumiaProduct[]> {
   }
 }
 
-// Vérifie si un produit est pertinent pour l'item recherché
-// Au moins 1 mot de l'item (3+ lettres) doit être dans le nom du produit
-function isRelevant(productName: string, itemQuery: string): boolean {
-  const nameLow = productName.toLowerCase()
-  const words   = itemQuery.toLowerCase().split(/\s+/).filter(w => w.length >= 3)
-  return words.some(w => nameLow.includes(w))
-}
-
-// Prend le produit au prix médian parmi les pertinents
-function pickMedian(products: JumiaProduct[]): JumiaProduct | null {
-  if (!products.length) return null
-  const sorted = [...products].sort((a, b) => a.price - b.price)
-  return sorted[Math.floor(sorted.length / 2)]
+// Sauvegarde tous les produits Jumia dans price_materials (upsert par nom exact)
+async function saveAllProducts(products: JumiaProduct[], category: string) {
+  await Promise.all(products.map(async p => {
+    const payload = {
+      name:            p.name,
+      category,
+      unit:            'unité',
+      tier:            'standard',
+      price_market:    Math.round(p.price * 0.88), // marché physique ≈ 88% du prix Jumia CI
+      price_min:       Math.round(p.price * 0.75),
+      price_max:       p.price,
+      source:          'Jumia CI',
+      brand:           p.brand,
+      photo_url:       p.photo_url,
+      source_url:      p.url,
+      web_price:       p.price,
+      last_scraped_at: new Date().toISOString(),
+    }
+    const { data: existing } = await supabaseAdmin
+      .from('price_materials').select('id').eq('name', p.name).maybeSingle()
+    if (existing) {
+      await supabaseAdmin.from('price_materials').update(payload).eq('id', existing.id)
+    } else {
+      await supabaseAdmin.from('price_materials').insert(payload)
+    }
+  }))
 }
 
 /**
- * Cherche un item sur Jumia CI et met à jour price_materials si trouvé.
- * Retourne { found, product } — appelé en parallèle pour tous les items_needed.
+ * Cherche un item sur Jumia CI, sauvegarde TOUS les résultats dans price_materials,
+ * et retourne le produit au prix médian pour l'affichage dans le diagnostic.
  */
 export async function lookupItemOnJumia(item: string, category: string): Promise<{
-  item:      string
-  found:     boolean
-  price?:    number
+  item:       string
+  found:      boolean
+  price?:     number
   photo_url?: string
-  url?:      string
-  name?:     string
+  url?:       string
+  name?:      string
+  saved?:     number
 }> {
   const products = await fetchJumiaProducts(item)
   if (!products.length) return { item, found: false }
 
-  // Filtre les produits pertinents
-  const relevant = products.filter(p => isRelevant(p.name, item))
-  if (!relevant.length) return { item, found: false }
+  // Sauvegarde tout en arrière-plan (sans bloquer le retour)
+  saveAllProducts(products, category).catch(() => {})
 
-  const best = pickMedian(relevant)!
-
-  // Sauvegarde / mise à jour dans price_materials
-  const { data: existing } = await supabaseAdmin
-    .from('price_materials')
-    .select('id')
-    .ilike('name', `%${item}%`)
-    .maybeSingle()
-
-  // Prix Jumia CI déjà en FCFA (marketplace locale).
-  // price_market ≈ marché physique Adjamé (légèrement sous Jumia, ~88%)
-  // price_min    = bas du marché (soldeur, fin de stock) ≈ 75%
-  // price_max    = prix Jumia (plafond achat en ligne)
-  const payload = {
-    name:            item,
-    category,
-    unit:            'unité',
-    tier:            'standard',
-    price_market:    Math.round(best.price * 0.88),
-    price_min:       Math.round(best.price * 0.75),
-    price_max:       best.price,
-    source:          'Jumia CI',
-    brand:           best.brand,
-    photo_url:       best.photo_url,
-    source_url:      best.url,
-    web_price:       best.price,
-    last_scraped_at: new Date().toISOString(),
-  }
-
-  if (existing) {
-    await supabaseAdmin.from('price_materials').update(payload).eq('id', existing.id)
-  } else {
-    await supabaseAdmin.from('price_materials').insert(payload)
-  }
+  // Produit médian = référence de prix pour l'affichage
+  const sorted = [...products].sort((a, b) => a.price - b.price)
+  const best   = sorted[Math.floor(sorted.length / 2)]
 
   return {
     item,
@@ -133,12 +116,13 @@ export async function lookupItemOnJumia(item: string, category: string): Promise
     photo_url: best.photo_url,
     url:       best.url,
     name:      best.name,
+    saved:     products.length,
   }
 }
 
 /**
- * Lance le lookup Jumia pour tous les items_needed en parallèle
- * Timeout global de 10s — si Jumia est lent on ne bloque pas le diagnostic
+ * Lance le lookup Jumia pour tous les items_needed en parallèle.
+ * Timeout global de 12s — si Jumia est lent on ne bloque pas le diagnostic.
  */
 type JumiaResult = Awaited<ReturnType<typeof lookupItemOnJumia>>
 
@@ -149,10 +133,10 @@ export async function enrichItemsWithJumia(
   if (!items.length) return []
 
   const timeout = new Promise<JumiaResult[]>(resolve =>
-    setTimeout(() => resolve([]), 10_000)
+    setTimeout(() => resolve([]), 12_000)
   )
 
-  const lookups = Promise.all(items.slice(0, 6).map(item => lookupItemOnJumia(item, category)))
+  const lookups = Promise.all(items.slice(0, 8).map(item => lookupItemOnJumia(item, category)))
 
   return Promise.race([lookups, timeout])
 }
