@@ -7,6 +7,7 @@ import {
   ArrowRight, Shield, Zap, Star, CheckCircle, ChevronRight, Building2,
   Droplets, Hammer, Paintbrush, Ruler, Wind, Lock, LayoutGrid,
   Cpu, Users, CreditCard, Camera, Wrench, MapPin, Clock,
+  ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -34,6 +35,29 @@ const STEPS = [
   { num: '02', title: 'Choisissez un artisan',  desc: 'Profils sélectionnés selon votre quartier et votre budget.',           Icon: Users      },
   { num: '03', title: 'Confirmez & payez',       desc: "Paiement sécurisé Wave. Les fonds sont bloqués jusqu'à la fin.",       Icon: CreditCard },
   { num: '04', title: 'Mission validée',         desc: "Validez la photo de fin de chantier et notez l'artisan.",             Icon: Camera     },
+]
+
+const FAQ_ITEMS = [
+  {
+    q: "Comment les artisans sont-ils vérifiés ?",
+    a: "Chaque artisan passe une vérification d'identité et de compétences avant d'être admis. Nous contrôlons leurs documents, leurs qualifications et vérifions leurs antécédents professionnels.",
+  },
+  {
+    q: "Comment fonctionne le paiement ?",
+    a: "Vous payez via Wave au moment de la réservation. Les fonds sont bloqués sur un compte séquestre jusqu'à la fin de la mission et libérés uniquement après votre validation.",
+  },
+  {
+    q: "Combien de temps pour trouver un artisan ?",
+    a: "En général moins de 30 minutes après votre demande. Un artisan qualifié de votre quartier vous contacte directement par téléphone ou via l'application.",
+  },
+  {
+    q: "Que faire si je ne suis pas satisfait ?",
+    a: "Chaque mission est notée. Si la prestation ne correspond pas, notre équipe intervient sous 24h pour trouver une solution ou procéder au remboursement.",
+  },
+  {
+    q: "Dans quels quartiers êtes-vous disponibles ?",
+    a: "Nous couvrons Cocody, Plateau, Marcory, Yopougon, Adjamé, Abobo, Treichville et leurs environs. La couverture s'étend régulièrement.",
+  },
 ]
 
 const TRUST_PILLARS = [
@@ -92,6 +116,7 @@ const fadeIn  = {
 /* ─── Component ───────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
+  const [faqOpen, setFaqOpen] = useState<number | null>(0)
   const [stats, setStats]             = useState({ artisans: 500, missions: 2400, rating: 4.8, satisfaction: 98 })
   const [topArtisans, setTopArtisans] = useState<any[]>([])
   const [topEntreprises, setTopEntreprises] = useState<any[]>([])
@@ -812,66 +837,175 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ━━━━ CTA ARTISAN ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="py-20 px-4 bg-accent">
+      {/* ━━━━ CTA ARTISAN + FAQ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="py-20 px-4">
         <div className="page-container">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10 items-center">
-            <div>
-              <h2 className="font-display font-bold text-white tracking-tight"
-                style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', marginBottom: '12px' }}>
-                Vous êtes artisan ?
-              </h2>
-              <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.65, maxWidth: '50ch' }}>
-                Rejoignez AfriOne et accédez à des centaines de clients qualifiés à Abidjan.
-                Inscription gratuite, paiement garanti.
+          <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-8 items-stretch">
+
+            {/* Gradient CTA card */}
+            <div className="afrione-gradient rounded-xl py-16 px-10 text-white flex flex-col justify-center items-center text-center"
+              style={{ boxShadow: '0 10px 40px rgba(232,93,38,0.25)' }}>
+              <p className="font-mono mb-4" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.7 }}>
+                Pour les artisans
               </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
+              <h2 className="font-display font-bold text-white"
+                style={{ fontSize: 'clamp(28px, 3.5vw, 46px)', lineHeight: 1, letterSpacing: '-0.03em', marginBottom: '16px' }}>
+                Rejoignez des centaines<br />d'artisans à Abidjan.
+              </h2>
+              <p style={{ fontSize: '15px', opacity: 0.82, lineHeight: 1.6, marginBottom: '32px', maxWidth: '38ch' }}>
+                Inscription gratuite. Accédez à vos premiers clients qualifiés dès aujourd'hui. Paiement garanti par AfriOne.
+              </p>
               <Link href="/auth"
-                className="btn-secondary"
-                style={{ cursor: 'pointer', textDecoration: 'none', transition: 'opacity 0.15s' }}>
-                S'inscrire comme artisan
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '13px 28px', background: '#0F1410', borderRadius: '6px',
+                  color: 'white', fontSize: '14px', fontWeight: 700,
+                  fontFamily: "'Syne', sans-serif", textDecoration: 'none', cursor: 'pointer',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.35)', transition: 'transform 0.15s, box-shadow 0.15s',
+                }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 12px 28px rgba(0,0,0,0.45)' }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 8px 20px rgba(0,0,0,0.35)' }}>
+                S'inscrire gratuitement <ArrowRight size={15} />
               </Link>
-              <Link href="/aide"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 22px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none', transition: 'background 0.15s', fontFamily: "'Syne', sans-serif" }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.18)'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-                En savoir plus
-              </Link>
+            </div>
+
+            {/* FAQ accordion */}
+            <div className="flex flex-col justify-center gap-2">
+              <p className="section-label mb-4">Questions fréquentes</p>
+              {FAQ_ITEMS.map((item, i) => {
+                const isOpen = faqOpen === i
+                return (
+                  <div key={i}
+                    onClick={() => setFaqOpen(isOpen ? null : i)}
+                    style={{
+                      background: 'white',
+                      border: `1px solid ${isOpen ? '#D8D2C4' : '#EDE8DE'}`,
+                      borderRadius: '8px',
+                      padding: '14px 16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: isOpen ? '0 4px 14px rgba(0,0,0,0.05)' : '0 1px 4px rgba(0,0,0,0.03)',
+                    }}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-display font-bold text-dark" style={{ fontSize: '14px', lineHeight: 1.35 }}>
+                        {item.q}
+                      </span>
+                      {isOpen
+                        ? <ChevronUp size={17} className="text-accent flex-shrink-0" />
+                        : <ChevronDown size={17} className="text-muted flex-shrink-0" />
+                      }
+                    </div>
+                    {isOpen && (
+                      <p style={{ marginTop: '10px', fontSize: '13px', color: '#7A7A6E', lineHeight: 1.65 }}>
+                        {item.a}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
       </section>
 
       {/* ━━━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <footer className="bg-dark py-12 px-4">
-        <div className="page-container">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-                <Zap size={15} className="text-white fill-white" />
+      <footer style={{ background: '#FAFAF8', borderTop: '1px solid #EDE8DE' }}>
+        <div className="page-container" style={{ paddingTop: '64px', paddingBottom: '20px' }}>
+
+          {/* 4-col grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_2fr] gap-10" style={{ marginBottom: '48px' }}>
+
+            {/* Logo + baseline */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 bg-accent rounded flex items-center justify-center">
+                  <Zap size={13} className="text-white fill-white" />
+                </div>
+                <span className="font-display font-bold text-dark" style={{ fontSize: '16px', letterSpacing: '-0.02em' }}>
+                  AFRI<span className="text-accent">ONE</span>
+                </span>
               </div>
-              <span className="font-display font-bold text-cream" style={{ fontSize: '18px' }}>
-                AFRI<span className="text-accent">ONE</span>
-              </span>
+              <p style={{ fontSize: '13px', color: '#7A7A6E', lineHeight: 1.65, maxWidth: '200px' }}>
+                La plateforme des artisans vérifiés à Abidjan. Rapide, sécurisé, transparent.
+              </p>
             </div>
-            <p className="font-mono text-muted text-center" style={{ fontSize: '11px' }}>
-              © 2025 AFRIONE — Abidjan, Côte d'Ivoire · Tous droits réservés
-            </p>
-            <nav className="flex gap-5">
-              {[
-                { href: '/artisans',   label: 'Artisans'  },
-                { href: '/diagnostic', label: 'Services'  },
-                { href: '/aide',       label: 'Contact'   },
-                { href: '/aide',       label: 'CGU'       },
-              ].map(({ href, label }) => (
-                <Link key={label} href={href}
-                  className="text-muted hover:text-cream transition-colors"
-                  style={{ fontSize: '12px', textDecoration: 'none', cursor: 'pointer' }}>
-                  {label}
+
+            {/* Navigation */}
+            <div>
+              <h4 className="font-display font-bold text-dark" style={{ fontSize: '13px', marginBottom: '16px', letterSpacing: '-0.01em' }}>
+                Plateforme
+              </h4>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  { href: '/artisans',   label: 'Artisans'    },
+                  { href: '/entreprises',label: 'Entreprises' },
+                  { href: '/diagnostic', label: 'Diagnostic'  },
+                  { href: '/aide',       label: 'Comment ça marche' },
+                ].map(({ href, label }) => (
+                  <li key={label}>
+                    <Link href={href} style={{ fontSize: '13px', color: '#7A7A6E', textDecoration: 'none', transition: 'color 0.15s', cursor: 'pointer' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#1A1A1A'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#7A7A6E'}>
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="font-display font-bold text-dark" style={{ fontSize: '13px', marginBottom: '16px', letterSpacing: '-0.01em' }}>
+                Légal
+              </h4>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  { href: '/aide', label: 'CGU'            },
+                  { href: '/aide', label: 'Confidentialité'},
+                  { href: '/aide', label: 'Contact'        },
+                ].map(({ href, label }) => (
+                  <li key={label}>
+                    <Link href={href} style={{ fontSize: '13px', color: '#7A7A6E', textDecoration: 'none', transition: 'color 0.15s', cursor: 'pointer' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#1A1A1A'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#7A7A6E'}>
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Espaces */}
+            <div>
+              <h4 className="font-display font-bold text-dark" style={{ fontSize: '13px', marginBottom: '16px', letterSpacing: '-0.01em' }}>
+                Votre espace
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Link href="/artisan-space/dashboard"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 14px', background: 'white', border: '1px solid #D8D2C4', borderRadius: '6px', fontSize: '13px', color: '#1A1A1A', textDecoration: 'none', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontWeight: 600, transition: 'border-color 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#E85D26'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = '#D8D2C4'}>
+                  <Wrench size={13} className="text-accent" /> Espace artisan
                 </Link>
-              ))}
-            </nav>
+                <Link href="/entreprise-space/register"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 14px', background: 'white', border: '1px solid #D8D2C4', borderRadius: '6px', fontSize: '13px', color: '#1A1A1A', textDecoration: 'none', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontWeight: 600, transition: 'border-color 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#60a5fa'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = '#D8D2C4'}>
+                  <Building2 size={13} style={{ color: '#60a5fa' }} /> Espace entreprise
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4"
+            style={{ borderTop: '1px solid #EDE8DE', paddingTop: '20px', paddingBottom: '8px' }}>
+            <p className="font-mono" style={{ fontSize: '11px', color: '#9A9A8E' }}>
+              © 2025 AFRIONE · Abidjan, Côte d'Ivoire · Tous droits réservés
+            </p>
+            <p className="font-mono" style={{ fontSize: '11px', color: '#C0BAB0' }}>
+              Artisans vérifiés · Paiement Wave · KYC
+            </p>
           </div>
         </div>
       </footer>

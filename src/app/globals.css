@@ -201,9 +201,81 @@ p { line-height: 1.65; }
 @keyframes pulseSoft { 0%,100%{opacity:1} 50%{opacity:0.55} }
 @keyframes spin      { to { transform:rotate(360deg) } }
 
+/* ─── Animated gradient CTA — @property pour interpolation GPU ───────────── */
+@property --ag-x1 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --ag-y1 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --ag-x2 { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --ag-y2 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --ag-x3 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }
+@property --ag-y3 { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --ag-x4 { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --ag-y4 { syntax: '<percentage>'; inherits: false; initial-value: 90%; }
+@property --ag-x5 { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --ag-y5 { syntax: '<percentage>'; inherits: false; initial-value: 50%; }
+@property --ag-s1 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+@property --ag-s2 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+@property --ag-s3 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+@property --ag-s4 { syntax: '<percentage>'; inherits: false; initial-value: 55%; }
+@property --ag-s5 { syntax: '<percentage>'; inherits: false; initial-value: 65%; }
+
+.afrione-gradient {
+  background-color: #E85D26;
+  background-image:
+    radial-gradient(circle at var(--ag-x1) var(--ag-y1), #FFD580 0px, transparent var(--ag-s1)),
+    radial-gradient(circle at var(--ag-x2) var(--ag-y2), #B03010 0px, transparent var(--ag-s2)),
+    radial-gradient(circle at var(--ag-x3) var(--ag-y3), #C9A84C 0px, transparent var(--ag-s3)),
+    radial-gradient(circle at var(--ag-x4) var(--ag-y4), #FF6B35 0px, transparent var(--ag-s4)),
+    radial-gradient(circle at var(--ag-x5) var(--ag-y5), #8B2500 0px, transparent var(--ag-s5));
+  animation:
+    ag-blob1 5s   ease-in-out infinite,
+    ag-blob2 6s   ease-in-out infinite,
+    ag-blob3 5.5s ease-in-out infinite,
+    ag-blob4 6.5s ease-in-out infinite,
+    ag-blob5 4s   ease-in-out infinite,
+    ag-size1 3.5s ease-in-out infinite,
+    ag-size2 4.2s ease-in-out infinite,
+    ag-size3 3.8s ease-in-out infinite,
+    ag-size4 4.6s ease-in-out infinite,
+    ag-size5 3s   ease-in-out infinite;
+}
+
+@keyframes ag-blob1 {
+  0%,100% { --ag-x1: 5%;  --ag-y1: 5%;  }
+  25%     { --ag-x1: 45%; --ag-y1: 20%; }
+  50%     { --ag-x1: 30%; --ag-y1: 55%; }
+  75%     { --ag-x1: 0%;  --ag-y1: 30%; }
+}
+@keyframes ag-blob2 {
+  0%,100% { --ag-x2: 95%; --ag-y2: 5%;  }
+  33%     { --ag-x2: 55%; --ag-y2: 35%; }
+  66%     { --ag-x2: 80%; --ag-y2: 65%; }
+}
+@keyframes ag-blob3 {
+  0%,100% { --ag-x3: 5%;  --ag-y3: 95%; }
+  40%     { --ag-x3: 45%; --ag-y3: 65%; }
+  70%     { --ag-x3: 25%; --ag-y3: 100%;}
+}
+@keyframes ag-blob4 {
+  0%,100% { --ag-x4: 95%; --ag-y4: 95%; }
+  30%     { --ag-x4: 60%; --ag-y4: 70%; }
+  60%     { --ag-x4: 100%;--ag-y4: 50%; }
+}
+@keyframes ag-blob5 {
+  0%,100% { --ag-x5: 50%; --ag-y5: 50%; }
+  25%     { --ag-x5: 70%; --ag-y5: 30%; }
+  50%     { --ag-x5: 40%; --ag-y5: 70%; }
+  75%     { --ag-x5: 30%; --ag-y5: 40%; }
+}
+@keyframes ag-size1 { 0%,100% { --ag-s1: 45%; } 50% { --ag-s1: 80%; } }
+@keyframes ag-size2 { 0%,100% { --ag-s2: 45%; } 50% { --ag-s2: 85%; } }
+@keyframes ag-size3 { 0%,100% { --ag-s3: 45%; } 50% { --ag-s3: 78%; } }
+@keyframes ag-size4 { 0%,100% { --ag-s4: 45%; } 50% { --ag-s4: 82%; } }
+@keyframes ag-size5 { 0%,100% { --ag-s5: 50%; } 50% { --ag-s5: 85%; } }
+
 /* ─── Accessibilité ───────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .afrione-gradient { animation: none; }
 }
 
 ::selection { background: #E85D26; color: white; }
