@@ -33,15 +33,16 @@ function BlurText({ text, className, style }: { text: string; className?: string
 }
 
 /* ─── Static data ─────────────────────────────────────────────────────────── */
+/* Remplacer les URLs photo par vos propres images d'activité */
 const SERVICES = [
-  { Icon: Droplets,   label: 'Plomberie',     metier: 'Plomberie'     },
-  { Icon: Zap,        label: 'Électricité',   metier: 'Électricité'   },
-  { Icon: Hammer,     label: 'Maçonnerie',    metier: 'Maçonnerie'    },
-  { Icon: Paintbrush, label: 'Peinture',      metier: 'Peinture'      },
-  { Icon: Ruler,      label: 'Menuiserie',    metier: 'Menuiserie'    },
-  { Icon: Wind,       label: 'Climatisation', metier: 'Climatisation' },
-  { Icon: Lock,       label: 'Serrurerie',    metier: 'Serrurerie'    },
-  { Icon: LayoutGrid, label: 'Carrelage',     metier: 'Carrelage'     },
+  { Icon: Droplets,   label: 'Plomberie',     metier: 'Plomberie',     photo: 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=400&h=220&fit=crop&q=80' },
+  { Icon: Zap,        label: 'Électricité',   metier: 'Électricité',   photo: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&h=220&fit=crop&q=80' },
+  { Icon: Hammer,     label: 'Maçonnerie',    metier: 'Maçonnerie',    photo: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&h=220&fit=crop&q=80' },
+  { Icon: Paintbrush, label: 'Peinture',      metier: 'Peinture',      photo: 'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=400&h=220&fit=crop&q=80' },
+  { Icon: Ruler,      label: 'Menuiserie',    metier: 'Menuiserie',    photo: 'https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?w=400&h=220&fit=crop&q=80' },
+  { Icon: Wind,       label: 'Climatisation', metier: 'Climatisation', photo: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=220&fit=crop&q=80' },
+  { Icon: Lock,       label: 'Serrurerie',    metier: 'Serrurerie',    photo: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=220&fit=crop&q=80' },
+  { Icon: LayoutGrid, label: 'Carrelage',     metier: 'Carrelage',     photo: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&h=220&fit=crop&q=80' },
 ]
 
 const METIER_ICON_MAP: Record<string, React.ElementType> = {
@@ -268,27 +269,61 @@ export default function HomePage() {
             </motion.h2>
 
             <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-              {SERVICES.map(({ Icon, label, metier }) => (
+              {SERVICES.map(({ Icon, label, metier, photo }) => (
                 <motion.div key={label} variants={fadeUp}>
                   <Link href={`/artisans?metier=${encodeURIComponent(metier)}`}
                     style={{
-                      display: 'flex', flexDirection: 'column', gap: '14px', padding: '22px',
+                      display: 'flex', flexDirection: 'column',
                       textDecoration: 'none', cursor: 'pointer',
                       background: W, borderRadius: '24px',
+                      overflow: 'hidden',
                       boxShadow: NEU_SHADOW,
                       transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out',
                     }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-2px)' }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
-                    <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <div className="afrione-gradient rounded-xl flex items-center justify-center" style={{ width: '38px', height: '38px' }}>
-                        <Icon size={17} color="white" />
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLElement
+                      el.style.boxShadow = NEU_HOVER
+                      el.style.transform = 'translateY(-3px)'
+                      const img = el.querySelector('img') as HTMLImageElement | null
+                      if (img) img.style.transform = 'scale(1.07)'
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLElement
+                      el.style.boxShadow = NEU_SHADOW
+                      el.style.transform = ''
+                      const img = el.querySelector('img') as HTMLImageElement | null
+                      if (img) img.style.transform = 'scale(1)'
+                    }}>
+
+                    {/* ── Photo — moitié haute ── */}
+                    <div style={{ height: '150px', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+                      {photo
+                        ? <img
+                            src={photo}
+                            alt={label}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease-out' }}
+                          />
+                        : <div className="afrione-gradient" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Icon size={36} color="rgba(255,255,255,0.45)" />
+                          </div>
+                      }
+                      {/* gradient au bas pour lisibilité */}
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50px', background: 'linear-gradient(to top, rgba(0,0,0,0.22), transparent)', pointerEvents: 'none' }} />
+                    </div>
+
+                    {/* ── Contenu — moitié basse ── */}
+                    <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '14px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div className="afrione-gradient rounded-xl flex items-center justify-center" style={{ width: '32px', height: '32px' }}>
+                          <Icon size={15} color="white" />
+                        </div>
+                      </div>
+                      <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1 }}>{label}</div>
+                      <div style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        {serviceCounts[metier] ? `${serviceCounts[metier]} artisan${serviceCounts[metier] > 1 ? 's' : ''}` : 'Disponible'}
                       </div>
                     </div>
-                    <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1 }}>{label}</div>
-                    <div style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      {serviceCounts[metier] ? `${serviceCounts[metier]} artisan${serviceCounts[metier] > 1 ? 's' : ''}` : 'Disponible'}
-                    </div>
+
                   </Link>
                 </motion.div>
               ))}
