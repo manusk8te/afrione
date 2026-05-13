@@ -480,6 +480,21 @@ export default function WarRoomPage() {
     setActing(false)
   }
 
+  // Artisan accepte la contre-proposition du client → renvoie un devis artisan au même montant
+  const acceptCounterProposal = async (amount: number) => {
+    setActing(true)
+    const payload = JSON.stringify({ amount, description: `Tarif convenu : ${amount.toLocaleString()} FCFA` })
+    const { error } = await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id,
+      sender_role: missionRole, text: payload, type: 'quotation',
+    })
+    if (!error) {
+      const rid = getRecipientId(mission, user.id)
+      if (rid) notifyOther(`Tarif accepté : ${amount.toLocaleString()} FCFA — vous pouvez confirmer le paiement.`, rid)
+    }
+    setActing(false)
+  }
+
   // Client refuse le devis → ouvre le panneau contre-proposition
   const refuseDevis = () => {
     setShowCounterProposal(true)
@@ -1650,14 +1665,17 @@ export default function WarRoomPage() {
               let devisData: any = {}
               try { devisData = JSON.parse(msg.text) } catch {}
               const canAct = !isMe && status !== 'en_cours' && status !== 'completed' && status !== 'cancelled'
+              const isClientProposal = msg.sender_role === 'client'
               return (
                 <div key={msg.id} style={{display:'flex',justifyContent: isMe ? 'flex-end' : 'flex-start'}}>
                   <div style={{
-                    maxWidth:'85%',border:'2px solid #E85D26',borderRadius:'16px',overflow:'hidden',
-                    background:'white',boxShadow:'0 4px 16px rgba(232,93,38,0.1)',
+                    maxWidth:'85%',border:`2px solid ${isClientProposal ? '#C9A84C' : '#E85D26'}`,borderRadius:'16px',overflow:'hidden',
+                    background:'white',boxShadow:`0 4px 16px ${isClientProposal ? 'rgba(201,168,76,0.1)' : 'rgba(232,93,38,0.1)'}`,
                   }}>
-                    <div style={{background:'rgba(232,93,38,0.06)',padding:'12px 16px',borderBottom:'1px solid rgba(232,93,38,0.15)'}}>
-                      <div style={{fontSize:'11px',fontWeight:700,color:'#E85D26',letterSpacing:'0.05em'}}>DEVIS PROPOSÉ</div>
+                    <div style={{background: isClientProposal ? 'rgba(201,168,76,0.07)' : 'rgba(232,93,38,0.06)',padding:'12px 16px',borderBottom:`1px solid ${isClientProposal ? 'rgba(201,168,76,0.15)' : 'rgba(232,93,38,0.15)'}`}}>
+                      <div style={{fontSize:'11px',fontWeight:700,color: isClientProposal ? '#C9A84C' : '#E85D26',letterSpacing:'0.05em'}}>
+                        {isClientProposal ? 'CONTRE-PROPOSITION CLIENT' : 'DEVIS ARTISAN'}
+                      </div>
                     </div>
                     <div style={{padding:'16px'}}>
                       {devisData.description && (
@@ -1668,19 +1686,32 @@ export default function WarRoomPage() {
                         <span style={{fontSize:'13px',color:'#7A7A6E'}}>FCFA</span>
                       </div>
                       {canAct && !acting && (
-                        <div style={{display:'flex',gap:'8px'}}>
-                          <button onClick={() => acceptDevis(devisData.amount)} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
-                            <CheckCircle size={14}/> Accepter & Payer
-                          </button>
-                          <button onClick={refuseDevis} style={{flex:1,padding:'10px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
-                            <X size={14}/> Refuser
-                          </button>
-                        </div>
+                        isClientProposal && isArtisan ? (
+                          /* Artisan répond à une contre-proposition client */
+                          <div style={{display:'flex',gap:'8px'}}>
+                            <button onClick={() => acceptCounterProposal(devisData.amount)} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                              <CheckCircle size={14}/> Accepter ce tarif
+                            </button>
+                            <button onClick={refuseDevis} style={{flex:1,padding:'10px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                              <X size={14}/> Contrer
+                            </button>
+                          </div>
+                        ) : !isClientProposal ? (
+                          /* Client répond à un devis artisan */
+                          <div style={{display:'flex',gap:'8px'}}>
+                            <button onClick={() => acceptDevis(devisData.amount)} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                              <CheckCircle size={14}/> Accepter & Payer
+                            </button>
+                            <button onClick={refuseDevis} style={{flex:1,padding:'10px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                              <X size={14}/> Refuser
+                            </button>
+                          </div>
+                        ) : null
                       )}
                       {isMe && (
                         <div style={{fontSize:'12px',color:'#7A7A6E',display:'flex',alignItems:'center',gap:'4px'}}>
                           <Clock size={11} />
-                          {status === 'en_cours' ? 'Accepté ✓' : status === 'negotiation' ? 'En attente de réponse…' : ''}
+                          {status === 'en_cours' ? 'Accepté ✓' : 'En attente de réponse…'}
                         </div>
                       )}
                     </div>
