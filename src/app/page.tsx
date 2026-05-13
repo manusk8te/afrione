@@ -133,7 +133,6 @@ const FAQ_ITEMS = [
   },
 ]
 
-/* Blue removed — warm cream #C8B49A replaces it for palette coherence */
 const TRUST_PILLARS = [
   {
     Icon: Shield, title: 'Artisans vérifiés KYC',
@@ -163,19 +162,24 @@ const fadeUp  = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, trans
 const fadeIn  = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.5 } } }
 
 /* ─── Tokens ──────────────────────────────────────────────────────────────── */
-const BG0 = '#060604'   // base — warmest black
-const BG1 = '#0B0A07'   // elevated sections
+const BG0 = '#060604'   // hero dark base
 const T1  = 'rgba(255,255,255,0.92)'
 const T2  = 'rgba(255,255,255,0.55)'
 const T3  = 'rgba(255,255,255,0.32)'
 const BO  = 'rgba(255,255,255,0.08)'
-/* Light sections */
-const LBG  = '#F5F0E8'  // warm cream
-const LBG2 = '#EDE8DE'  // sand
-const LT1  = '#0F1410'
-const LT2  = '#5A5A50'
-const LT3  = '#9A9A8E'
-const LBO  = '#D8D2C4'
+/* Neumorphic cool grey system */
+const LBG  = '#E0E5EC'
+const LBG2 = '#D9DFE7'
+const LT1  = '#3D4852'
+const LT2  = '#6B7280'
+const LT3  = '#8B95A5'
+const LBO  = '#C8D0DA'
+/* Neumorphic shadows */
+const NEU_SHADOW = '9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)'
+const NEU_HOVER  = '12px 12px 20px rgb(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)'
+const NEU_INSET  = 'inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)'
+const NEU_INSET_DEEP = 'inset 10px 10px 20px rgb(163,177,198,0.7), inset -10px -10px 20px rgba(255,255,255,0.6)'
+const NEU_SMALL  = '5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)'
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function HomePage() {
@@ -234,26 +238,24 @@ export default function HomePage() {
     { value: `${stats.satisfaction}%`,                   label: 'Clients satisfaits'   },
   ]
 
-  /* ── helpers ── */
   const mono = { fontFamily: "'Space Mono', monospace" } as const
   const syne = { fontFamily: "'Syne', sans-serif" }      as const
   const body = { fontFamily: "'Bricolage Grotesque', sans-serif" } as const
 
   return (
-    <div style={{ background: BG0, color: T1, minHeight: '100vh' }}>
+    <div style={{ background: LBG, color: LT1, minHeight: '100vh' }}>
       <Navbar />
 
       {/* ━━━━ HERO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="relative overflow-hidden flex flex-col" style={{ minHeight: '100dvh', background: BG0 }}>
         {/* Video */}
         <FadingVideo src={HERO_VIDEO} className="absolute inset-0 w-full h-full object-cover z-0" />
-        {/* Vignette — readability, not opacity mask */}
+        {/* Vignette */}
         <div className="absolute inset-0 z-[1] pointer-events-none"
           style={{ background: 'radial-gradient(ellipse 100% 80% at 50% 65%, rgba(6,6,4,0.05) 0%, rgba(6,6,4,0.62) 100%)' }} />
 
         {/* Content */}
         <div className="relative z-10 flex-1 flex flex-col page-container">
-          {/* Main hero body */}
           <div className="flex-1 flex flex-col items-center justify-center text-center pt-32 pb-10 px-4">
             <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-center w-full">
 
@@ -269,7 +271,7 @@ export default function HomePage() {
               {/* Headline */}
               <BlurText
                 text="Trouvez le bon artisan au bon prix"
-                style={{ fontSize: 'clamp(44px, 7.5vw, 92px)', lineHeight: 0.88, letterSpacing: '-0.04em', marginBottom: '28px', maxWidth: '16ch', ...syne, fontWeight: 700 }}
+                style={{ fontSize: 'clamp(44px, 7.5vw, 92px)', lineHeight: 0.88, letterSpacing: '-0.04em', marginBottom: '28px', maxWidth: '16ch', ...syne, fontWeight: 700, color: T1 }}
               />
 
               {/* Subtitle */}
@@ -313,11 +315,10 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          {/* Bottom strip — trust + service chips */}
+          {/* Bottom strip */}
           <div className="pb-8 px-4" style={{ borderTop: `1px solid ${BO}`, paddingTop: '24px' }}>
             <motion.div variants={stagger} initial="hidden" animate="show">
 
-              {/* Trust micro-row */}
               <motion.div variants={fadeIn} className="flex flex-wrap gap-5 justify-center mb-6">
                 {[
                   { Icon: Shield,      text: 'Artisans vérifiés KYC' },
@@ -331,7 +332,6 @@ export default function HomePage() {
                 ))}
               </motion.div>
 
-              {/* Service chips */}
               <motion.div variants={fadeIn}>
                 <p style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
                   Accès direct
@@ -367,20 +367,23 @@ export default function HomePage() {
               Tous vos corps<br />de métier.
             </motion.h2>
 
-            <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 gap-5">
               {SERVICES.map(({ Icon, label, metier }) => (
                 <motion.div key={label} variants={fadeUp}>
                   <Link href={`/artisans?metier=${encodeURIComponent(metier)}`}
                     style={{
-                      display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px',
+                      display: 'flex', flexDirection: 'column', gap: '14px', padding: '22px',
                       textDecoration: 'none', cursor: 'pointer',
-                      background: 'white', border: `1px solid ${LBO}`, borderRadius: '16px',
-                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                      background: LBG, borderRadius: '24px',
+                      boxShadow: NEU_SHADOW,
+                      transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out',
                     }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(232,93,38,0.4)'; el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.07)' }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = LBO; el.style.boxShadow = '' }}>
-                    <div className="afrione-gradient rounded-xl flex items-center justify-center" style={{ width: '40px', height: '40px', flexShrink: 0 }}>
-                      <Icon size={17} style={{ color: 'white' }} />
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
+                    <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: NEU_INSET, background: LBG, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div className="afrione-gradient rounded-xl flex items-center justify-center" style={{ width: '38px', height: '38px' }}>
+                        <Icon size={17} color="white" />
+                      </div>
                     </div>
                     <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1 }}>{label}</div>
                     <div style={{ ...mono, fontSize: '10px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -399,7 +402,6 @@ export default function HomePage() {
         <div className="page-container">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1.7fr] gap-16 items-start">
 
-            {/* Left heading */}
             <div className="md:sticky md:top-24">
               <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>COMMENT ÇA MARCHE</span>
               <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.05, color: LT1, marginTop: '12px', marginBottom: '16px' }}>
@@ -410,22 +412,25 @@ export default function HomePage() {
                 Transparent, à chaque étape.
               </p>
               <Link href="/diagnostic" className="btn-primary"
-                style={{ ...syne, marginTop: '32px', fontSize: '14px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', borderRadius: '8px' }}>
+                style={{ ...syne, marginTop: '32px', fontSize: '14px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', borderRadius: '12px' }}>
                 Essayer maintenant <ArrowRight size={15} />
               </Link>
             </div>
 
-            {/* Right steps */}
             <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
-              className="flex flex-col gap-3">
+              className="flex flex-col gap-4">
               {STEPS.map((step) => {
                 const { Icon } = step
                 return (
                   <motion.div key={step.num} variants={fadeUp}
-                    style={{ background: 'white', border: `1px solid ${LBO}`, borderRadius: '16px', padding: '20px 24px', display: 'flex', gap: '20px' }}>
+                    style={{ background: LBG2, borderRadius: '24px', padding: '22px 26px', display: 'flex', gap: '20px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-1px)' }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
                     <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', paddingTop: '2px' }}>
-                      <div className="afrione-gradient" style={{ width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon size={19} style={{ color: 'white' }} />
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: NEU_INSET, background: LBG2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div className="afrione-gradient" style={{ width: '38px', height: '38px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon size={19} color="white" />
+                        </div>
                       </div>
                       <span style={{ ...mono, fontSize: '9px', color: 'rgba(232,93,38,0.55)', letterSpacing: '0.05em' }}>{step.num}</span>
                     </div>
@@ -442,13 +447,13 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ TOP ARTISANS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: BG0, padding: '80px 16px' }}>
+      <section style={{ background: LBG, padding: '80px 16px' }}>
         <div className="page-container">
           <div className="flex items-end justify-between mb-10">
             <div>
-              <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>ARTISANS EN VEDETTE</span>
-              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3vw, 40px)', color: 'white', marginTop: '8px' }}>Les mieux notés</h2>
-              <p style={{ ...body, fontSize: '14px', color: T2, marginTop: '4px' }}>Tous vérifiés, tous fiables</p>
+              <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>ARTISANS EN VEDETTE</span>
+              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3vw, 40px)', color: LT1, marginTop: '8px' }}>Les mieux notés</h2>
+              <p style={{ ...body, fontSize: '14px', color: LT2, marginTop: '4px' }}>Tous vérifiés, tous fiables</p>
             </div>
             <Link href="/artisans"
               className="hidden sm:flex items-center gap-1 font-semibold hover:gap-2 transition-all"
@@ -459,9 +464,9 @@ export default function HomePage() {
 
           {loadingArtisans ? (
             <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
-              <div className="liquid-glass rounded-2xl animate-pulse" style={{ padding: '24px', minHeight: '220px' }} />
+              <div style={{ background: LBG, borderRadius: '28px', padding: '24px', minHeight: '220px', boxShadow: NEU_SHADOW }} className="animate-pulse" />
               <div className="flex flex-col gap-4">
-                {[1, 2].map(i => <div key={i} className="liquid-glass rounded-2xl animate-pulse" style={{ height: '96px' }} />)}
+                {[1, 2].map(i => <div key={i} style={{ background: LBG, borderRadius: '24px', height: '96px', boxShadow: NEU_SHADOW }} className="animate-pulse" />)}
               </div>
             </div>
           ) : topArtisans.length > 0 ? (
@@ -474,13 +479,11 @@ export default function HomePage() {
                 const MetierIcon = METIER_ICON_MAP[a.metier] || Wrench
                 return (
                   <motion.div variants={fadeUp}
-                    className="liquid-glass rounded-2xl"
-                    style={{ padding: '24px', transition: 'background 0.2s', cursor: 'default' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                    style={{ background: LBG, borderRadius: '28px', padding: '24px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'default' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
                     <div className="flex items-start justify-between mb-5">
-                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden"
-                        style={{ background: 'rgba(255,255,255,0.07)', flexShrink: 0 }}>
+                      <div style={{ width: '64px', height: '64px', borderRadius: '20px', boxShadow: NEU_INSET, background: LBG, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                         {a.users?.avatar_url
                           ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                           : <MetierIcon size={26} style={{ color: '#E85D26' }} />
@@ -488,28 +491,28 @@ export default function HomePage() {
                       </div>
                       <span className="badge-green">Vérifié</span>
                     </div>
-                    <h3 style={{ ...syne, fontWeight: 700, fontSize: '20px', color: 'white', marginBottom: '4px' }}>
+                    <h3 style={{ ...syne, fontWeight: 700, fontSize: '20px', color: LT1, marginBottom: '4px' }}>
                       {a.users?.name || a.metier}
                     </h3>
-                    <div className="flex items-center gap-2 mb-6" style={{ ...body, fontSize: '13px', color: T2 }}>
+                    <div className="flex items-center gap-2 mb-6" style={{ ...body, fontSize: '13px', color: LT2 }}>
                       <span>{a.metier}</span>
                       {a.users?.quartier && (
-                        <><span style={{ color: BO }}>·</span><MapPin size={11} /><span>{a.users.quartier}</span></>
+                        <><span style={{ color: LBO }}>·</span><MapPin size={11} /><span>{a.users.quartier}</span></>
                       )}
                     </div>
-                    <div className="flex items-center gap-5 pt-4 mb-6" style={{ borderTop: `1px solid ${BO}` }}>
+                    <div className="flex items-center gap-5 pt-4 mb-6" style={{ borderTop: `1px solid ${LBO}` }}>
                       <div className="flex items-center gap-1">
                         <Star size={14} style={{ color: '#C9A84C', fill: '#C9A84C' }} />
-                        <span style={{ ...syne, fontWeight: 600, fontSize: '14px', color: 'white' }}>
+                        <span style={{ ...syne, fontWeight: 600, fontSize: '14px', color: LT1 }}>
                           {(a.rating_avg || 0).toFixed(1)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1" style={{ ...body, fontSize: '13px', color: T2 }}>
+                      <div className="flex items-center gap-1" style={{ ...body, fontSize: '13px', color: LT2 }}>
                         <CheckCircle size={12} style={{ color: '#2B6B3E' }} />
                         {a.mission_count || 0} missions
                       </div>
                       {a.tarif_min > 0 && (
-                        <div className="ml-auto" style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white' }}>
+                        <div className="ml-auto" style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1 }}>
                           Dès {a.tarif_min.toLocaleString()} F
                         </div>
                       )}
@@ -528,35 +531,33 @@ export default function HomePage() {
                   const MetierIcon = METIER_ICON_MAP[a.metier] || Wrench
                   return (
                     <motion.div key={a.id} variants={fadeUp}
-                      className="liquid-glass rounded-2xl"
-                      style={{ padding: '16px 20px', transition: 'background 0.2s', cursor: 'default' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                      style={{ background: LBG, borderRadius: '24px', padding: '16px 20px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'default' }}
+                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-1px)' }}
+                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center"
-                          style={{ background: 'rgba(255,255,255,0.07)' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '14px', boxShadow: NEU_INSET, background: LBG, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
                           {a.users?.avatar_url
                             ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                             : <MetierIcon size={18} style={{ color: '#E85D26' }} />
                           }
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {a.users?.name || a.metier}
                           </div>
-                          <div style={{ ...body, fontSize: '12px', color: T2, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <div style={{ ...body, fontSize: '12px', color: LT2, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                             {a.metier}
-                            {a.users?.quartier && <><span style={{ color: BO }}>·</span><MapPin size={10} />{a.users.quartier}</>}
+                            {a.users?.quartier && <><span style={{ color: LBO }}>·</span><MapPin size={10} />{a.users.quartier}</>}
                           </div>
                         </div>
                         <span className="badge-green flex-shrink-0" style={{ fontSize: '11px' }}>Vérifié</span>
                       </div>
-                      <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: `1px solid ${BO}` }}>
+                      <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: `1px solid ${LBO}` }}>
                         <div className="flex items-center gap-1">
                           <Star size={12} style={{ color: '#C9A84C', fill: '#C9A84C' }} />
-                          <span style={{ ...syne, fontWeight: 600, fontSize: '13px', color: 'white' }}>{(a.rating_avg || 0).toFixed(1)}</span>
+                          <span style={{ ...syne, fontWeight: 600, fontSize: '13px', color: LT1 }}>{(a.rating_avg || 0).toFixed(1)}</span>
                         </div>
-                        <span style={{ ...body, fontSize: '12px', color: T2 }}>{a.mission_count || 0} missions</span>
+                        <span style={{ ...body, fontSize: '12px', color: LT2 }}>{a.mission_count || 0} missions</span>
                         <Link href={`/artisans/${a.id}`}
                           className="ml-auto flex items-center gap-1 hover:gap-2 transition-all"
                           style={{ fontSize: '12px', fontWeight: 600, color: '#E85D26', cursor: 'pointer', textDecoration: 'none' }}>
@@ -569,9 +570,9 @@ export default function HomePage() {
               </div>
             </motion.div>
           ) : (
-            <div className="text-center py-16 rounded-2xl" style={{ border: `1.5px dashed ${BO}` }}>
-              <Wrench size={28} style={{ color: T3, margin: '0 auto 16px' }} />
-              <p style={{ ...body, fontSize: '15px', color: T2, marginBottom: '24px' }}>
+            <div className="text-center py-16 rounded-[28px]" style={{ boxShadow: NEU_SHADOW, background: LBG }}>
+              <Wrench size={28} style={{ color: LT3, margin: '0 auto 16px' }} />
+              <p style={{ ...body, fontSize: '15px', color: LT2, marginBottom: '24px' }}>
                 Nos artisans complètent leur inscription — revenez bientôt !
               </p>
               <Link href="/diagnostic" className="btn-primary inline-flex items-center gap-2" style={{ cursor: 'pointer', textDecoration: 'none' }}>
@@ -583,30 +584,31 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ TRUST ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: LBG, padding: '80px 16px' }}>
+      <section style={{ background: LBG2, padding: '80px 16px' }}>
         <div className="page-container">
-          <div className="mb-12">
+          <div className="mb-14">
             <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>POURQUOI AFRIONE</span>
             <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3.5vw, 42px)', lineHeight: 1.05, color: LT1, marginTop: '8px', maxWidth: '20ch' }}>
               Construit pour que vous ayez confiance.
             </h2>
           </div>
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {TRUST_PILLARS.map(({ Icon, title, desc, stat, color }) => (
               <motion.div key={title} variants={fadeUp}
-                style={{ background: 'white', borderRadius: '16px', padding: '24px', border: `1px solid ${LBO}`, borderLeft: `3px solid ${color}` }}>
-                <div className="flex items-start gap-4 mb-3">
-                  <div className="rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ width: '40px', height: '40px', background: `${color}15`, border: `1px solid ${color}25` }}>
-                    <Icon size={18} style={{ color }} />
+                style={{ background: LBG2, borderRadius: '28px', padding: '28px', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
+                <div className="flex items-start gap-4 mb-4">
+                  <div style={{ width: '52px', height: '52px', borderRadius: '16px', boxShadow: `inset 6px 6px 10px rgb(163,177,198,0.55), inset -6px -6px 10px rgba(255,255,255,0.45)`, background: LBG2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={20} style={{ color }} />
                   </div>
                   <div>
                     <h3 style={{ ...syne, fontWeight: 700, fontSize: '16px', color: LT1, marginBottom: '4px' }}>{title}</h3>
                     <span style={{ ...mono, fontSize: '10px', color, opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat}</span>
                   </div>
                 </div>
-                <p style={{ ...body, fontSize: '13px', color: LT2, lineHeight: 1.65, paddingLeft: '56px' }}>{desc}</p>
+                <p style={{ ...body, fontSize: '13px', color: LT2, lineHeight: 1.65 }}>{desc}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -615,17 +617,17 @@ export default function HomePage() {
 
       {/* ━━━━ ENTREPRISES PARTENAIRES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {topEntreprises.length > 0 && (
-        <section style={{ background: BG0, padding: '80px 16px' }}>
+        <section style={{ background: LBG, padding: '80px 16px' }}>
           <div className="page-container">
             <div className="flex items-end justify-between mb-10">
               <div>
-                <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>STRUCTURES PARTENAIRES</span>
-                <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3vw, 40px)', color: 'white', marginTop: '8px' }}>Entreprises multi-corps</h2>
-                <p style={{ ...body, fontSize: '14px', color: T2, marginTop: '4px' }}>Des équipes complètes pour vos grands travaux</p>
+                <span style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>STRUCTURES PARTENAIRES</span>
+                <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 3vw, 40px)', color: LT1, marginTop: '8px' }}>Entreprises multi-corps</h2>
+                <p style={{ ...body, fontSize: '14px', color: LT2, marginTop: '4px' }}>Des équipes complètes pour vos grands travaux</p>
               </div>
               <Link href="/entreprises"
                 className="hidden sm:flex items-center gap-1 font-semibold hover:gap-2 transition-all"
-                style={{ fontSize: '14px', cursor: 'pointer', textDecoration: 'none', color: '#C9A84C' }}>
+                style={{ fontSize: '14px', cursor: 'pointer', textDecoration: 'none', color: '#E85D26' }}>
                 Voir tout <ChevronRight size={15} />
               </Link>
             </div>
@@ -635,37 +637,37 @@ export default function HomePage() {
                 {topEntreprises.slice(0, 2).map(e => (
                   <motion.div key={e.id} variants={fadeUp}>
                     <Link href={`/entreprise-space/dashboard?id=${e.id}`} style={{ textDecoration: 'none' }}>
-                      <div className="liquid-glass rounded-2xl overflow-hidden group"
-                        style={{ transition: 'background 0.2s', cursor: 'pointer' }}
-                        onMouseEnter={el => (el.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'}
-                        onMouseLeave={el => (el.currentTarget as HTMLElement).style.background = ''}>
-                        <div style={{ height: '110px', overflow: 'hidden', background: e.banner_url ? '#0A0A08' : 'linear-gradient(135deg, #1A2F1E, #0F1E14)', position: 'relative' }}>
+                      <div
+                        style={{ background: LBG, borderRadius: '28px', overflow: 'hidden', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out', cursor: 'pointer' }}
+                        onMouseEnter={el => { (el.currentTarget as HTMLElement).style.boxShadow = NEU_HOVER; (el.currentTarget as HTMLElement).style.transform = 'translateY(-2px)' }}
+                        onMouseLeave={el => { (el.currentTarget as HTMLElement).style.boxShadow = NEU_SHADOW; (el.currentTarget as HTMLElement).style.transform = '' }}>
+                        <div style={{ height: '110px', overflow: 'hidden', background: e.banner_url ? LBG : `linear-gradient(135deg, ${LBG2}, ${LBG})`, position: 'relative' }}>
                           {e.banner_url
-                            ? <img src={e.banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75 }} />
+                            ? <img src={e.banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
                             : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                                <Building2 size={36} style={{ color: 'rgba(255,255,255,0.07)' }} />
+                                <Building2 size={36} style={{ color: LT3 }} />
                               </div>
                           }
                         </div>
                         <div style={{ padding: '16px 20px 20px' }}>
                           <div className="flex items-start justify-between mb-2">
-                            <h3 style={{ ...syne, fontWeight: 700, fontSize: '15px', color: 'white' }}>{e.name}</h3>
+                            <h3 style={{ ...syne, fontWeight: 700, fontSize: '15px', color: LT1 }}>{e.name}</h3>
                             <span className="badge-green" style={{ flexShrink: 0, marginLeft: '8px', fontSize: '11px' }}>Vérifié</span>
                           </div>
                           {e.description && (
-                            <p style={{ ...body, fontSize: '12px', color: T2, marginBottom: '10px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                            <p style={{ ...body, fontSize: '12px', color: LT2, marginBottom: '10px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
                               {e.description}
                             </p>
                           )}
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
                             {(e.secteurs || []).slice(0, 3).map((s: string) => (
-                              <span key={s} style={{ ...body, fontSize: '11px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${BO}`, padding: '2px 8px', borderRadius: '10px', color: T2 }}>{s}</span>
+                              <span key={s} style={{ ...body, fontSize: '11px', background: LBG, boxShadow: NEU_SMALL, padding: '2px 10px', borderRadius: '10px', color: LT2 }}>{s}</span>
                             ))}
-                            {(e.secteurs || []).length > 3 && <span style={{ ...body, fontSize: '11px', color: T3 }}>+{e.secteurs.length - 3}</span>}
+                            {(e.secteurs || []).length > 3 && <span style={{ ...body, fontSize: '11px', color: LT3 }}>+{e.secteurs.length - 3}</span>}
                           </div>
-                          <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${BO}` }}>
-                            <span style={{ ...body, fontSize: '12px', color: T2 }}>{(e.artisan_pros || []).length} artisan{(e.artisan_pros || []).length !== 1 ? 's' : ''}</span>
-                            <span style={{ ...syne, fontSize: '12px', fontWeight: 600, color: '#C9A84C' }}>Voir l'équipe →</span>
+                          <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${LBO}` }}>
+                            <span style={{ ...body, fontSize: '12px', color: LT2 }}>{(e.artisan_pros || []).length} artisan{(e.artisan_pros || []).length !== 1 ? 's' : ''}</span>
+                            <span style={{ ...syne, fontSize: '12px', fontWeight: 600, color: '#E85D26' }}>Voir l'équipe →</span>
                           </div>
                         </div>
                       </div>
@@ -677,25 +679,25 @@ export default function HomePage() {
               {topEntreprises[2] && (
                 <motion.div variants={fadeUp}>
                   <Link href={`/entreprise-space/dashboard?id=${topEntreprises[2].id}`} style={{ textDecoration: 'none' }}>
-                    <div className="liquid-glass rounded-2xl flex items-center gap-4"
-                      style={{ padding: '14px 20px', cursor: 'pointer', transition: 'background 0.2s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                      <div style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', background: topEntreprises[2].banner_url ? '#0A0A08' : 'linear-gradient(135deg,#1A2F1E,#0F1E14)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                      style={{ background: LBG, borderRadius: '24px', display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', cursor: 'pointer', boxShadow: NEU_SHADOW, transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out' }}
+                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_HOVER; el.style.transform = 'translateY(-1px)' }}
+                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = NEU_SHADOW; el.style.transform = '' }}>
+                      <div style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden', boxShadow: NEU_INSET, background: LBG, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {topEntreprises[2].banner_url
-                          ? <img src={topEntreprises[2].banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75 }} />
-                          : <Building2 size={18} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                          ? <img src={topEntreprises[2].banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <Building2 size={18} style={{ color: LT3 }} />
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white' }}>{topEntreprises[2].name}</div>
-                        <div style={{ ...body, fontSize: '12px', color: T2, marginTop: '2px' }}>
+                        <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1 }}>{topEntreprises[2].name}</div>
+                        <div style={{ ...body, fontSize: '12px', color: LT2, marginTop: '2px' }}>
                           {(topEntreprises[2].artisan_pros || []).length} artisans
                           {(topEntreprises[2].secteurs || []).length > 0 && ` · ${(topEntreprises[2].secteurs || []).slice(0, 2).join(', ')}`}
                         </div>
                       </div>
                       <span className="badge-green flex-shrink-0" style={{ fontSize: '11px' }}>Vérifié</span>
-                      <ChevronRight size={14} style={{ color: T3, flexShrink: 0 }} />
+                      <ChevronRight size={14} style={{ color: LT3, flexShrink: 0 }} />
                     </div>
                   </Link>
                 </motion.div>
@@ -706,47 +708,45 @@ export default function HomePage() {
       )}
 
       {/* ━━━━ CTA ENTREPRISE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: topEntreprises.length > 0 ? BG1 : BG0, padding: '64px 16px' }}>
+      <section style={{ background: LBG2, padding: '64px 16px' }}>
         <div className="page-container">
-          <div className="rounded-2xl p-10 flex flex-wrap items-center justify-between gap-8"
-            style={{ background: 'linear-gradient(135deg, #151208 0%, #1E1A08 55%, #151208 100%)', border: `1px solid rgba(201,168,76,0.12)` }}>
+          <div className="rounded-[32px] p-10 flex flex-wrap items-center justify-between gap-8"
+            style={{ background: LBG2, boxShadow: NEU_SHADOW }}>
             <div style={{ flex: 1, minWidth: '260px' }}>
               <div className="flex items-center gap-3 mb-4">
-                <div style={{ width: '34px', height: '34px', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={16} style={{ color: '#C9A84C' }} />
+                <div style={{ width: '44px', height: '44px', borderRadius: '14px', boxShadow: NEU_INSET, background: LBG2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={18} style={{ color: '#E85D26' }} />
                 </div>
-                <span style={{ ...mono, fontSize: '11px', color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                <span style={{ ...mono, fontSize: '11px', color: '#E85D26', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
                   Structures professionnelles
                 </span>
               </div>
-              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(22px, 2.5vw, 30px)', lineHeight: 1.15, color: 'white', marginBottom: '10px' }}>
+              <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(22px, 2.5vw, 30px)', lineHeight: 1.15, color: LT1, marginBottom: '10px' }}>
                 Vous gérez une équipe<br />d'artisans ?
               </h2>
-              <p style={{ ...body, fontSize: '14px', color: T2, lineHeight: 1.7, maxWidth: '46ch' }}>
+              <p style={{ ...body, fontSize: '14px', color: LT2, lineHeight: 1.7, maxWidth: '46ch' }}>
                 Créez un espace entreprise sur AfriOne. Gérez vos artisans, vos missions
                 et accédez à des clients professionnels à Abidjan.
               </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
-              <Link href="/entreprise-space/register"
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#C9A84C', borderRadius: '6px', color: '#0F1410', fontSize: '14px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', transition: 'opacity 0.15s', whiteSpace: 'nowrap', ...syne }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}>
+              <Link href="/entreprise-space/register" className="btn-primary"
+                style={{ whiteSpace: 'nowrap', ...syne, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                 <Building2 size={15} /> Créer mon espace entreprise
               </Link>
-              <p style={{ ...mono, fontSize: '11px', color: T3, textAlign: 'center' }}>Validation sous 24h · Gratuit</p>
+              <p style={{ ...mono, fontSize: '11px', color: LT3, textAlign: 'center' }}>Validation sous 24h · Gratuit</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* ━━━━ CTA ARTISAN + FAQ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: BG0, padding: '80px 16px' }}>
+      <section style={{ background: LBG, padding: '80px 16px' }}>
         <div className="page-container">
           <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-8 items-stretch">
 
-            {/* Gradient CTA card — afrione-gradient stays */}
-            <div className="afrione-gradient rounded-2xl py-16 px-10 flex flex-col justify-center items-center text-center"
+            {/* Orange animated CTA card — afrione-gradient stays */}
+            <div className="afrione-gradient rounded-[32px] py-16 px-10 flex flex-col justify-center items-center text-center"
               style={{ boxShadow: '0 20px 60px rgba(232,93,38,0.3)' }}>
               <p style={{ ...mono, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.65)', marginBottom: '16px' }}>
                 Pour les artisans
@@ -760,20 +760,20 @@ export default function HomePage() {
               <Link href="/auth"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '13px 28px', background: '#0F1410', borderRadius: '6px',
-                  color: 'white', fontSize: '14px', fontWeight: 700, ...syne,
+                  padding: '13px 28px', background: LBG, borderRadius: '16px',
+                  color: LT1, fontSize: '14px', fontWeight: 700, ...syne,
                   textDecoration: 'none', cursor: 'pointer',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)', transition: 'transform 0.15s, box-shadow 0.15s',
+                  boxShadow: NEU_SHADOW, transition: 'transform 0.15s, box-shadow 0.15s',
                 }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 12px 32px rgba(0,0,0,0.5)' }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 8px 24px rgba(0,0,0,0.4)' }}>
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = NEU_HOVER }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = NEU_SHADOW }}>
                 S'inscrire gratuitement <ArrowRight size={15} />
               </Link>
             </div>
 
-            {/* FAQ accordion */}
+            {/* FAQ accordion — neumorphic */}
             <div className="flex flex-col justify-center gap-2">
-              <p style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>
+              <p style={{ ...mono, fontSize: '11px', color: LT3, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>
                 Questions fréquentes
               </p>
               {FAQ_ITEMS.map((item, i) => {
@@ -781,22 +781,23 @@ export default function HomePage() {
                 return (
                   <div key={i}
                     onClick={() => setFaqOpen(isOpen ? null : i)}
-                    className="liquid-glass rounded-xl"
                     style={{
+                      background: LBG,
+                      borderRadius: '20px',
                       padding: '14px 16px',
                       cursor: 'pointer',
-                      transition: 'background 0.2s',
-                      background: isOpen ? 'rgba(255,255,255,0.08)' : '',
+                      boxShadow: isOpen ? NEU_INSET_DEEP : NEU_SHADOW,
+                      transition: 'box-shadow 0.3s ease-out',
                     }}>
                     <div className="flex items-center justify-between gap-3">
-                      <span style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white', lineHeight: 1.35 }}>{item.q}</span>
+                      <span style={{ ...syne, fontWeight: 700, fontSize: '14px', color: LT1, lineHeight: 1.35 }}>{item.q}</span>
                       {isOpen
                         ? <ChevronUp size={16} style={{ color: '#E85D26', flexShrink: 0 }} />
-                        : <ChevronDown size={16} style={{ color: T3, flexShrink: 0 }} />
+                        : <ChevronDown size={16} style={{ color: LT3, flexShrink: 0 }} />
                       }
                     </div>
                     {isOpen && (
-                      <p style={{ ...body, marginTop: '10px', fontSize: '13px', color: T2, lineHeight: 1.65 }}>
+                      <p style={{ ...body, marginTop: '10px', fontSize: '13px', color: LT2, lineHeight: 1.65 }}>
                         {item.a}
                       </p>
                     )}
