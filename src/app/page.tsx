@@ -296,7 +296,7 @@ export default function HomePage() {
                 <h2 className="font-display text-4xl font-bold text-cream mt-2">Entreprises multi-corps</h2>
                 <p className="text-muted mt-2">Des équipes complètes pour vos grands travaux</p>
               </div>
-              <Link href="/artisans" className="hidden sm:flex items-center gap-1 text-sm font-medium text-accent hover:gap-2 transition-all">
+              <Link href="/entreprises" className="hidden sm:flex items-center gap-1 text-sm font-medium text-accent hover:gap-2 transition-all">
                 Voir tout <ChevronRight size={16} />
               </Link>
             </div>
