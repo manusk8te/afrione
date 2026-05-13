@@ -58,6 +58,7 @@ function EntrepriseDashboard() {
   const [expandedArtisan, setExpandedArtisan] = useState<string | null>(null)
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const bannerInputRef = useRef<HTMLInputElement>(null)
+  const [joinRequests, setJoinRequests] = useState<any[]>([])
 
   // Profil édition
   const [editing, setEditing]     = useState(false)
@@ -129,6 +130,15 @@ function EntrepriseDashboard() {
 
     setTeam(artisans || [])
 
+    // Demandes en attente
+    const { data: requests } = await supabase
+      .from('entreprise_requests')
+      .select('id, created_at, artisan_pros(id, metier, users!artisan_pros_user_id_fkey(name, email, avatar_url, phone))')
+      .eq('entreprise_id', eId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+    setJoinRequests(requests || [])
+
     // Missions liées aux artisans de cette entreprise
     if (artisans && artisans.length > 0) {
       const artisanIds = artisans.map((a: any) => a.id)
@@ -168,6 +178,22 @@ function EntrepriseDashboard() {
       toast.error('Erreur upload bannière')
     }
     setUploadingBanner(false)
+  }
+
+  // ── Demandes d'adhésion ────────────────────────────────────────────────
+  const approveRequest = async (req: any) => {
+    const artisanId = req.artisan_pros?.id
+    if (!artisanId || !entreprise) return
+    await supabase.from('entreprise_requests').update({ status: 'approved', reviewed_at: new Date().toISOString() }).eq('id', req.id)
+    await supabase.from('artisan_pros').update({ entreprise_id: entreprise.id }).eq('id', artisanId)
+    toast.success(`${req.artisan_pros?.users?.name || 'Artisan'} ajouté à l'équipe ✓`)
+    load()
+  }
+
+  const rejectRequest = async (req: any) => {
+    await supabase.from('entreprise_requests').update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', req.id)
+    toast(`Demande refusée`)
+    setJoinRequests(prev => prev.filter(r => r.id !== req.id))
   }
 
   // ── Sauvegarder profil ─────────────────────────────────────────────────
@@ -357,6 +383,42 @@ function EntrepriseDashboard() {
               </div>
               <InviteInfo />
             </div>
+
+            {/* Demandes en attente */}
+            {joinRequests.length > 0 && (
+              <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '12px', padding: '16px', marginBottom: '8px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#C9A84C', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  ⏳ {joinRequests.length} demande{joinRequests.length > 1 ? 's' : ''} en attente
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {joinRequests.map(req => {
+                    const a = req.artisan_pros
+                    const aName = a?.users?.name || a?.metier || 'Artisan'
+                    return (
+                      <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', background: '#E85D26', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', color: 'white', flexShrink: 0 }}>
+                          {a?.users?.avatar_url
+                            ? <img src={a.users.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                            : aName[0]?.toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#FAFAF5' }}>{aName}</div>
+                          <div style={{ fontSize: '11px', color: '#7A7A6E' }}>{a?.metier} · {a?.users?.phone || a?.users?.email || ''}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                          <button onClick={() => rejectRequest(req)} style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', color: '#ef4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                            Refuser
+                          </button>
+                          <button onClick={() => approveRequest(req)} style={{ padding: '6px 12px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px', color: '#22c55e', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                            Accepter
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {team.length === 0 ? (
               <EmptyTeam />

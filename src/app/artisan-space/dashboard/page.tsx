@@ -61,6 +61,7 @@ export default function ArtisanDashboardPage() {
 
   // Entreprise
   const [artisanEntreprise, setArtisanEntreprise] = useState<any>(null)
+  const [pendingRequest, setPendingRequest] = useState<any>(null)
   const [entrepriseSearch, setEntrepriseSearch] = useState('')
   const [entrepriseResults, setEntrepriseResults] = useState<any[]>([])
   const [joiningEntreprise, setJoiningEntreprise] = useState(false)
@@ -102,6 +103,15 @@ export default function ArtisanDashboardPage() {
             .eq('id', artisanData.entreprise_id)
             .single()
           if (ent) setArtisanEntreprise(ent)
+        } else {
+          // Chercher une demande en attente
+          const { data: req } = await supabase
+            .from('entreprise_requests')
+            .select('id, status, entreprises(id, name, secteurs)')
+            .eq('artisan_id', artisanData.id)
+            .eq('status', 'pending')
+            .maybeSingle()
+          if (req) setPendingRequest(req)
         }
 
         setBio(artisanData.bio || '')
@@ -260,15 +270,30 @@ export default function ArtisanDashboardPage() {
     setEntrepriseResults(data || [])
   }
 
-  const joinEntreprise = async (ent: any) => {
+  const requestJoinEntreprise = async (ent: any) => {
     if (!artisan) return
     setJoiningEntreprise(true)
-    await supabase.from('artisan_pros').update({ entreprise_id: ent.id }).eq('id', artisan.id)
-    setArtisanEntreprise(ent)
-    setEntrepriseSearch('')
-    setEntrepriseResults([])
-    toast.success(`Vous avez rejoint ${ent.name} ✓`)
+    const { data, error } = await supabase
+      .from('entreprise_requests')
+      .insert({ artisan_id: artisan.id, entreprise_id: ent.id, status: 'pending' })
+      .select('id, status, entreprises(id, name, secteurs)')
+      .single()
+    if (error) {
+      toast.error('Erreur lors de la demande')
+    } else {
+      setPendingRequest(data)
+      setEntrepriseSearch('')
+      setEntrepriseResults([])
+      toast.success(`Demande envoyée à ${ent.name} ✓`)
+    }
     setJoiningEntreprise(false)
+  }
+
+  const cancelRequest = async () => {
+    if (!pendingRequest) return
+    await supabase.from('entreprise_requests').delete().eq('id', pendingRequest.id)
+    setPendingRequest(null)
+    toast('Demande annulée')
   }
 
   const leaveEntreprise = async () => {
@@ -732,7 +757,8 @@ export default function ArtisanDashboardPage() {
               </h3>
               <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'16px'}}>Rattachez-vous à une structure pour apparaître dans son catalogue.</p>
 
-              {artisanEntreprise ? (
+              {/* État 1 — affilié */}
+              {artisanEntreprise && (
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',padding:'12px 14px',background:'rgba(96,165,250,0.06)',border:'1px solid rgba(96,165,250,0.2)',borderRadius:'12px'}}>
                   <div style={{display:'flex',alignItems:'center',gap:'10px',minWidth:0}}>
                     <div style={{width:'36px',height:'36px',background:'rgba(96,165,250,0.15)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -740,14 +766,38 @@ export default function ArtisanDashboardPage() {
                     </div>
                     <div style={{minWidth:0}}>
                       <div style={{fontSize:'14px',fontWeight:700,color:'#0F1410',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{artisanEntreprise.name}</div>
-                      <div style={{fontSize:'11px',color:'#7A7A6E'}}>{(artisanEntreprise.secteurs||[]).slice(0,2).join(' · ')}</div>
+                      <div style={{fontSize:'11px',color:'#2B6B3E',fontWeight:600}}>✓ Membre actif</div>
                     </div>
                   </div>
                   <button onClick={leaveEntreprise} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer',flexShrink:0,fontWeight:600}}>
                     <LogOut size={12}/> Quitter
                   </button>
                 </div>
-              ) : (
+              )}
+
+              {/* État 2 — demande en attente */}
+              {!artisanEntreprise && pendingRequest && (
+                <div style={{padding:'12px 14px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:'12px'}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'10px',minWidth:0}}>
+                      <div style={{width:'36px',height:'36px',background:'rgba(201,168,76,0.15)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        <Building2 size={16} color="#C9A84C" />
+                      </div>
+                      <div style={{minWidth:0}}>
+                        <div style={{fontSize:'14px',fontWeight:700,color:'#0F1410',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(pendingRequest.entreprises as any)?.name}</div>
+                        <div style={{fontSize:'11px',color:'#C9A84C',fontWeight:600}}>⏳ En attente de validation</div>
+                      </div>
+                    </div>
+                    <button onClick={cancelRequest} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer',flexShrink:0,fontWeight:600}}>
+                      <X size={12}/> Annuler
+                    </button>
+                  </div>
+                  <p style={{fontSize:'11px',color:'#7A7A6E',marginTop:'8px',marginBottom:0}}>L'administrateur de l'entreprise doit valider votre demande.</p>
+                </div>
+              )}
+
+              {/* État 3 — libre, recherche */}
+              {!artisanEntreprise && !pendingRequest && (
                 <div style={{position:'relative'}}>
                   <div style={{position:'relative'}}>
                     <Search size={14} style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',color:'#7A7A6E'}} />
@@ -761,7 +811,7 @@ export default function ArtisanDashboardPage() {
                   {entrepriseResults.length > 0 && (
                     <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',overflow:'hidden',zIndex:20,boxShadow:'0 8px 24px rgba(0,0,0,0.1)'}}>
                       {entrepriseResults.map(e => (
-                        <button key={e.id} onClick={() => joinEntreprise(e)} disabled={joiningEntreprise}
+                        <button key={e.id} onClick={() => requestJoinEntreprise(e)} disabled={joiningEntreprise}
                           style={{width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'12px 14px',background:'none',border:'none',borderBottom:'1px solid #F5F3EE',cursor:'pointer',textAlign:'left'}}
                           onMouseEnter={el => (el.currentTarget.style.background='#F5F3EE')}
                           onMouseLeave={el => (el.currentTarget.style.background='none')}>
@@ -772,7 +822,7 @@ export default function ArtisanDashboardPage() {
                             <div style={{fontSize:'13px',fontWeight:600,color:'#0F1410'}}>{e.name}</div>
                             <div style={{fontSize:'11px',color:'#7A7A6E'}}>{(e.secteurs||[]).slice(0,3).join(' · ')}</div>
                           </div>
-                          <span style={{fontSize:'12px',color:'#60a5fa',fontWeight:600,flexShrink:0}}>Rejoindre</span>
+                          <span style={{fontSize:'12px',color:'#60a5fa',fontWeight:600,flexShrink:0}}>Demander →</span>
                         </button>
                       ))}
                     </div>
