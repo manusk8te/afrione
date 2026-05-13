@@ -1,7 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -36,7 +36,15 @@ const QUARTIERS_ABJ = [
   'Yopougon', 'Koumassi', 'Port-Bouët', 'Attécoubé', 'Bingerville', 'Anyama',
 ]
 
-export default function EntrepriseDashboard() {
+export default function EntrepriseDashboardPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0F1410', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7A7A6E', fontSize: '14px' }}>Chargement…</div>}>
+      <EntrepriseDashboard />
+    </Suspense>
+  )
+}
+
+function EntrepriseDashboard() {
   const router     = useRouter()
   const params     = useSearchParams()
   const entrepriseId = params.get('id')
