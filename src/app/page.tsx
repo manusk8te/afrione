@@ -156,28 +156,28 @@ export default function HomePage() {
     <div style={{ background: W, color: T1, minHeight: '100vh' }}>
       <Navbar />
 
-      {/* ━━━━ HERO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: W, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      {/* ━━━━ HERO — fond orange animé ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="afrione-gradient" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <div className="flex-1 flex flex-col page-container">
           <div className="flex-1 flex flex-col items-center justify-center text-center pt-32 pb-10 px-4">
             <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-center w-full">
 
               {/* Badge */}
               <motion.div variants={fadeUp}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 20px', borderRadius: '999px', background: W, boxShadow: NEU_SHADOW, marginBottom: '40px' }}>
-                  <span style={{ ...mono, fontSize: '11px', color: T3, letterSpacing: '0.1em' }}>PLATEFORME #1 · ABIDJAN</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 20px', borderRadius: '999px', background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', marginBottom: '40px' }}>
+                  <span style={{ ...mono, fontSize: '11px', color: 'rgba(255,255,255,0.9)', letterSpacing: '0.1em' }}>PLATEFORME #1 · ABIDJAN</span>
                 </div>
               </motion.div>
 
               {/* Headline */}
               <BlurText
                 text="Trouvez le bon artisan au bon prix"
-                style={{ fontSize: 'clamp(44px, 7.5vw, 92px)', lineHeight: 0.88, letterSpacing: '-0.04em', marginBottom: '28px', maxWidth: '16ch', ...syne, fontWeight: 700, color: T1 }}
+                style={{ fontSize: 'clamp(44px, 7.5vw, 92px)', lineHeight: 0.88, letterSpacing: '-0.04em', marginBottom: '28px', maxWidth: '16ch', ...syne, fontWeight: 700, color: 'white' }}
               />
 
               {/* Subtitle */}
               <motion.p variants={fadeUp}
-                style={{ ...body, fontSize: '16px', maxWidth: '52ch', color: T2, marginBottom: '40px', lineHeight: 1.65 }}>
+                style={{ ...body, fontSize: '16px', maxWidth: '52ch', color: 'rgba(255,255,255,0.82)', marginBottom: '40px', lineHeight: 1.65 }}>
                 Artisans vérifiés KYC, prix transparents, paiement sécurisé via Wave.
                 Votre chantier, géré de bout en bout à Abidjan.
               </motion.p>
@@ -185,14 +185,15 @@ export default function HomePage() {
               {/* CTAs */}
               <motion.div variants={fadeUp} className="flex flex-wrap gap-3 justify-center" style={{ marginBottom: '56px' }}>
                 <Link href="/diagnostic"
-                  className="afrione-gradient rounded-full inline-flex items-center gap-2"
-                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 700, color: 'white', textDecoration: 'none', cursor: 'pointer', boxShadow: '0 8px 32px rgba(232,93,38,0.35)' }}>
+                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 700, color: '#E85D26', textDecoration: 'none', cursor: 'pointer', background: 'white', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)' }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)' }}>
                   Décrire mon problème <ArrowRight size={16} />
                 </Link>
                 <Link href="/artisans"
-                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 600, color: T2, textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '999px', background: W, boxShadow: NEU_SHADOW }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = T1}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = T2}>
+                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', textDecoration: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '999px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', transition: 'background 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.28)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)'}>
                   <Play size={13} style={{ fill: 'currentColor' }} /> Voir les artisans
                 </Link>
               </motion.div>
@@ -201,11 +202,11 @@ export default function HomePage() {
               <motion.div variants={stagger} className="flex flex-wrap gap-4 justify-center">
                 {STATS_DISPLAY.map(s => (
                   <motion.div key={s.label} variants={fadeUp}>
-                    <div style={{ background: W, borderRadius: '20px', boxShadow: NEU_SHADOW, padding: '20px', minWidth: '148px', textAlign: 'left' }}>
-                      <div className="afrione-gradient-text" style={{ ...syne, fontWeight: 700, fontSize: '28px', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px', padding: '20px', minWidth: '148px', textAlign: 'left' }}>
+                      <div style={{ ...syne, fontWeight: 700, fontSize: '28px', color: 'white', letterSpacing: '-0.03em', lineHeight: 1 }}>
                         {s.value}
                       </div>
-                      <div style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: '8px' }}>
+                      <div style={{ ...mono, fontSize: '10px', color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: '8px' }}>
                         {s.label}
                       </div>
                     </div>
@@ -216,7 +217,7 @@ export default function HomePage() {
           </div>
 
           {/* Bottom strip — trust + service chips */}
-          <div className="pb-8 px-4" style={{ borderTop: `1px solid ${BO}`, paddingTop: '24px' }}>
+          <div className="pb-8 px-4" style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '24px' }}>
             <motion.div variants={stagger} initial="hidden" animate="show">
 
               <motion.div variants={fadeIn} className="flex flex-wrap gap-5 justify-center mb-6">
@@ -226,22 +227,22 @@ export default function HomePage() {
                   { Icon: CheckCircle, text: 'Paiement sécurisé Wave' },
                 ].map(({ Icon, text }) => (
                   <div key={text} className="flex items-center gap-2">
-                    <Icon size={13} style={{ color: 'rgba(232,93,38,0.75)' }} />
-                    <span style={{ ...body, fontSize: '13px', color: T3 }}>{text}</span>
+                    <Icon size={13} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                    <span style={{ ...body, fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{text}</span>
                   </div>
                 ))}
               </motion.div>
 
               <motion.div variants={fadeIn}>
-                <p style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
+                <p style={{ ...mono, fontSize: '10px', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
                   Accès direct
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {SERVICES.map(({ Icon, label, metier }) => (
                     <Link key={metier} href={`/artisans?metier=${encodeURIComponent(metier)}`}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '999px', fontSize: '13px', color: T2, textDecoration: 'none', cursor: 'pointer', background: W, boxShadow: NEU_SMALL, transition: 'color 0.15s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = T1}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = T2}>
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '999px', fontSize: '13px', color: 'rgba(255,255,255,0.88)', textDecoration: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', transition: 'background 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.28)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)'}>
                       <Icon size={12} />
                       {label}
                     </Link>
