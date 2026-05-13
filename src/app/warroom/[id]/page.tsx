@@ -110,6 +110,18 @@ export default function WarRoomPage() {
   const [proposalDraft, setProposalDraft]             = useState<any>(null)
   const [proposalTotal, setProposalTotal]             = useState('')
 
+  // Material suggest — 2 étapes : recherche → aperçu → envoi
+  const [suggestStep, setSuggestStep]       = useState<'input'|'preview'>('input')
+  const [suggestPreview, setSuggestPreview] = useState<{
+    price: number; web_price: number|null; total: number; newEstimate: number
+    product_name: string|null; photo_url: string|null; source_url: string|null
+    source: string|null; from_db: boolean
+  } | null>(null)
+
+  // Contre-proposition (client refuse devis)
+  const [showCounterProposal, setShowCounterProposal] = useState(false)
+  const [counterAmount, setCounterAmount]             = useState('')
+
   // Modal paiement Wave (avant scheduling)
   const [showPayment, setShowPayment]       = useState(false)
   const [payStep, setPayStep]               = useState<'form'|'processing'|'success'>('form')
@@ -462,14 +474,39 @@ export default function WarRoomPage() {
     setActing(false)
   }
 
-  // Client refuse le devis
-  const refuseDevis = async () => {
+  // Client refuse le devis → ouvre le panneau contre-proposition
+  const refuseDevis = () => {
+    setShowCounterProposal(true)
+  }
+
+  // Client confirme refus — avec ou sans contre-proposition
+  const sendRefusal = async (withCounter: boolean) => {
     setActing(true)
-    await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: 'Devis refusé — une contre-proposition est possible.', type: 'system',
-    })
-    toast('Devis refusé.')
+    const rid = getRecipientId(mission, user.id)
+    if (withCounter) {
+      const amount = parseInt(counterAmount.replace(/\D/g, ''))
+      if (amount > 0) {
+        const payload = JSON.stringify({ amount, description: `Contre-proposition client : ${amount.toLocaleString()} FCFA` })
+        await supabase.from('chat_history').insert({
+          mission_id: missionId, sender_id: user.id,
+          sender_role: missionRole, text: payload, type: 'quotation',
+        })
+        if (rid) notifyOther(`Contre-proposition : ${amount.toLocaleString()} FCFA`, rid)
+        toast('Contre-proposition envoyée.')
+      } else {
+        toast.error('Montant invalide')
+        setActing(false)
+        return
+      }
+    } else {
+      await supabase.from('chat_history').insert({
+        mission_id: missionId, sender_id: user.id,
+        sender_role: missionRole, text: 'Devis refusé — une contre-proposition est bienvenue.', type: 'system',
+      })
+      toast('Devis refusé.')
+    }
+    setShowCounterProposal(false)
+    setCounterAmount('')
     setActing(false)
   }
 
@@ -538,24 +575,43 @@ export default function WarRoomPage() {
     } catch { return { price: 0, web_price: null, source: null, photo_url: null, source_url: null, product_name: null, brand: null, from_db: false } }
   }
 
-  // Artisan signale un matériau non prévu → lookup prix → message material_suggest
-  const sendMatSuggest = async () => {
+  // Artisan signale un matériau non prévu — étape 1 : lookup prix + aperçu impact
+  const previewMatSuggest = async () => {
     if (!suggestName.trim()) return
     setLookingUp(true)
     const qty    = parseInt(suggestQty) || 1
     const lookup = await lookupMatPrice(suggestName.trim())
-    const payload = JSON.stringify({
-      name:         suggestName.trim(),
-      product_name: lookup.product_name,   // nom exact Jumia si trouvé
-      brand:        lookup.brand,
-      qty,
-      price_market: lookup.price,
-      web_price:    lookup.web_price,       // prix Jumia (retail)
+    setSuggestPreview({
+      price:        lookup.price,
+      web_price:    lookup.web_price,
+      total:        lookup.price * qty,
+      newEstimate:  (pricingSuggestion?.estimate ?? 0) + lookup.price * qty,
+      product_name: lookup.product_name,
       photo_url:    lookup.photo_url,
       source_url:   lookup.source_url,
       source:       lookup.source,
       from_db:      lookup.from_db,
-      total:        lookup.price * qty,
+    })
+    setSuggestStep('preview')
+    setLookingUp(false)
+  }
+
+  // Artisan signale un matériau non prévu — étape 2 : confirmation envoi
+  const sendMatSuggest = async () => {
+    if (!suggestName.trim() || !suggestPreview) return
+    setLookingUp(true)
+    const qty = parseInt(suggestQty) || 1
+    const payload = JSON.stringify({
+      name:         suggestName.trim(),
+      product_name: suggestPreview.product_name,
+      qty,
+      price_market: suggestPreview.price,
+      web_price:    suggestPreview.web_price,
+      photo_url:    suggestPreview.photo_url,
+      source_url:   suggestPreview.source_url,
+      source:       suggestPreview.source,
+      from_db:      suggestPreview.from_db,
+      total:        suggestPreview.total,
     })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
@@ -563,9 +619,10 @@ export default function WarRoomPage() {
     })
     if (!error) {
       const rid = getRecipientId(mission, user.id)
-      if (rid) notifyOther(`Matériau non prévu : ${suggestName.trim()} (×${qty}) — ~${(lookup.price * qty).toLocaleString('fr')} FCFA`, rid)
+      if (rid) notifyOther(`Matériau non prévu : ${suggestName.trim()} (×${qty}) — ~${suggestPreview.total.toLocaleString('fr')} FCFA`, rid)
     }
     setSuggestName(''); setSuggestQty('1')
+    setSuggestStep('input'); setSuggestPreview(null)
     setShowMatSuggest(false)
     setLookingUp(false)
   }
@@ -1071,23 +1128,81 @@ export default function WarRoomPage() {
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
               <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>📦 Matériau non prévu</span>
-              <button onClick={() => setShowMatSuggest(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}><X size={16}/></button>
+              <button onClick={() => { setShowMatSuggest(false); setSuggestStep('input'); setSuggestPreview(null) }} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}><X size={16}/></button>
             </div>
-            <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'10px',lineHeight:'1.5'}}>
-              Signalez un matériau absent du diagnostic — l'IA cherche son prix de marché à Abidjan.
-            </p>
-            <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:'8px',marginBottom:'10px'}}>
-              <input value={suggestName} onChange={e => setSuggestName(e.target.value)}
-                placeholder="ex: Joint torique DN20"
-                onKeyDown={e => e.key === 'Enter' && sendMatSuggest()}
-                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
-              <input type="number" value={suggestQty} onChange={e => setSuggestQty(e.target.value)} placeholder="Qté"
-                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
-            </div>
-            <button onClick={sendMatSuggest} disabled={lookingUp || !suggestName.trim()}
-              style={{width:'100%',padding:'10px',background:suggestName.trim()?'#C9A84C':'#D8D2C4',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:suggestName.trim()?'pointer':'default',opacity:lookingUp?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
-              {lookingUp ? <><div style={{width:'12px',height:'12px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> Recherche prix…</> : '🔍 Chercher le prix & envoyer'}
-            </button>
+
+            {/* Étape 1 : saisie nom + quantité */}
+            {suggestStep === 'input' && (
+              <>
+                <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'10px',lineHeight:'1.5'}}>
+                  Signalez un matériau absent du diagnostic — l'IA cherche son prix de marché à Abidjan.
+                </p>
+                <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:'8px',marginBottom:'10px'}}>
+                  <input value={suggestName} onChange={e => setSuggestName(e.target.value)}
+                    placeholder="ex: Joint torique DN20"
+                    onKeyDown={e => e.key === 'Enter' && previewMatSuggest()}
+                    style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+                  <input type="number" value={suggestQty} onChange={e => setSuggestQty(e.target.value)} placeholder="Qté"
+                    style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+                </div>
+                <button onClick={previewMatSuggest} disabled={lookingUp || !suggestName.trim()}
+                  style={{width:'100%',padding:'10px',background:suggestName.trim()?'#C9A84C':'#D8D2C4',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:suggestName.trim()?'pointer':'default',opacity:lookingUp?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                  {lookingUp ? <><div style={{width:'12px',height:'12px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> Recherche prix IA…</> : '🔍 Chercher le prix'}
+                </button>
+              </>
+            )}
+
+            {/* Étape 2 : aperçu prix + impact estimation */}
+            {suggestStep === 'preview' && suggestPreview && (
+              <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                {/* Fiche produit */}
+                <div style={{background:'white',border:'1.5px solid rgba(201,168,76,0.4)',borderRadius:'12px',overflow:'hidden'}}>
+                  <div style={{padding:'10px 12px',display:'flex',gap:'10px',alignItems:'center'}}>
+                    {suggestPreview.photo_url ? (
+                      <img src={suggestPreview.photo_url} alt={suggestName}
+                        style={{width:'52px',height:'52px',borderRadius:'8px',objectFit:'cover',flexShrink:0,background:'#EDE8DE'}}
+                        onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                    ) : (
+                      <div style={{width:'52px',height:'52px',borderRadius:'8px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0}}>
+                        {materialEmoji(suggestName)}
+                      </div>
+                    )}
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410',marginBottom:'2px'}}>{parseInt(suggestQty)||1 > 1 ? `${parseInt(suggestQty)||1}× ` : ''}{suggestName}</div>
+                      {suggestPreview.product_name && suggestPreview.product_name !== suggestName && (
+                        <div style={{fontSize:'11px',color:'#7A7A6E',fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{suggestPreview.product_name}</div>
+                      )}
+                      {suggestPreview.price > 0 ? (
+                        <div style={{display:'flex',alignItems:'baseline',gap:'4px',marginTop:'4px'}}>
+                          <span style={{fontFamily:'Space Mono',fontSize:'18px',fontWeight:700,color:'#C9A84C'}}>~{suggestPreview.total.toLocaleString('fr')}</span>
+                          <span style={{fontSize:'11px',color:'#7A7A6E'}}>FCFA</span>
+                        </div>
+                      ) : (
+                        <div style={{fontSize:'12px',color:'#E85D26',fontWeight:600,marginTop:'4px'}}>⚠️ Prix non trouvé — à discuter</div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Impact sur l'estimation totale */}
+                  {pricingSuggestion && suggestPreview.price > 0 && (
+                    <div style={{padding:'8px 12px',borderTop:'1px solid rgba(201,168,76,0.15)',background:'rgba(232,93,38,0.04)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <span style={{fontSize:'11px',color:'#7A7A6E'}}>Nouveau total estimé</span>
+                      <span style={{fontFamily:'Space Mono',fontSize:'14px',fontWeight:700,color:'#E85D26'}}>{suggestPreview.newEstimate.toLocaleString('fr')} <span style={{fontSize:'10px',fontWeight:400}}>FCFA</span></span>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{display:'flex',gap:'8px'}}>
+                  <button onClick={() => { setSuggestStep('input'); setSuggestPreview(null) }}
+                    style={{flex:1,padding:'9px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'12px',cursor:'pointer'}}>
+                    ← Modifier
+                  </button>
+                  <button onClick={sendMatSuggest} disabled={lookingUp}
+                    style={{flex:2,padding:'9px',background:'#C9A84C',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',opacity:lookingUp?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
+                    {lookingUp ? <><div style={{width:'12px',height:'12px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> Envoi…</> : '📤 Envoyer au client'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1394,10 +1509,81 @@ export default function WarRoomPage() {
               <div style={{width:'32px',height:'32px',border:'3px solid rgba(232,93,38,0.2)',borderTop:'3px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'0 auto'}} />
             </div>
           ) : messages.length === 0 ? (
-            <div style={{textAlign:'center',padding:'40px',color:'#7A7A6E',fontSize:'14px'}}>
-              <p style={{fontSize:'32px',marginBottom:'12px'}}>💬</p>
-              <p style={{fontWeight:600,color:'#0F1410',marginBottom:'4px'}}>Démarrez la conversation</p>
-              <p style={{fontSize:'13px'}}>Discutez des détails, puis l'artisan vous enverra un devis.</p>
+            <div style={{display:'flex',flexDirection:'column',gap:'10px',paddingTop:'8px'}}>
+              {/* Bulle d'accueil AfriOne IA */}
+              <div style={{display:'flex',gap:'10px',alignItems:'flex-start'}}>
+                <div style={{
+                  width:'34px',height:'34px',flexShrink:0,borderRadius:'10px',
+                  background:'linear-gradient(135deg,#E85D26,#C9A84C)',
+                  display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',
+                  boxShadow:'0 2px 8px rgba(232,93,38,0.25)',
+                }}>✨</div>
+                <div style={{flex:1}}>
+                  <div style={{
+                    background:'white',border:'1.5px solid #D8D2C4',
+                    borderRadius:'16px',borderBottomLeftRadius:'4px',
+                    padding:'14px 16px',boxShadow:'0 2px 10px rgba(0,0,0,0.05)',
+                  }}>
+                    {/* Salutation + nom */}
+                    <div style={{fontWeight:700,fontSize:'14px',color:'#0F1410',marginBottom:'8px'}}>
+                      {isArtisan
+                        ? `Bonjour ${artisanName} ! Nouvelle demande de ${clientName}.`
+                        : `Bonjour ${clientName} ! Votre demande a bien été reçue.`}
+                    </div>
+
+                    {/* Contexte problème */}
+                    {diagData ? (
+                      isArtisan ? (
+                        <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                          {diagData.technical_notes && (
+                            <p style={{fontSize:'13px',color:'#0F1410',lineHeight:'1.55',margin:0}}>
+                              {diagData.technical_notes}
+                            </p>
+                          )}
+                          <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+                            <span style={{fontSize:'11px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',padding:'2px 9px',borderRadius:'20px',color:'#E85D26',fontWeight:600}}>{diagData.category}</span>
+                            <span style={{fontSize:'11px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.2)',padding:'2px 9px',borderRadius:'20px',color:'#C9A84C',fontWeight:600}}>
+                              {diagData.urgency === 'emergency' ? '🔴 Urgence' : diagData.urgency === 'high' ? '🟠 Urgent' : diagData.urgency === 'medium' ? '🟡 Normal' : '🟢 Faible'}
+                            </span>
+                            {diagData.duration_estimate && (
+                              <span style={{fontSize:'11px',background:'rgba(0,0,0,0.04)',border:'1px solid rgba(0,0,0,0.08)',padding:'2px 9px',borderRadius:'20px',color:'#7A7A6E'}}>⏱ {diagData.duration_estimate}</span>
+                            )}
+                          </div>
+                          {diagData.items_needed?.length > 0 && (
+                            <div>
+                              <div style={{fontSize:'10px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.08em',marginBottom:'4px'}}>MATÉRIAUX PROBABLES</div>
+                              <div style={{display:'flex',flexWrap:'wrap',gap:'4px'}}>
+                                {diagData.items_needed.map((it: string) => (
+                                  <span key={it} style={{fontSize:'11px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.25)',padding:'2px 8px',borderRadius:'14px',color:'#C9A84C'}}>{it}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <p style={{fontSize:'12px',color:'#7A7A6E',margin:0,lineHeight:'1.5'}}>
+                            Présentez-vous au client, puis utilisez les outils ci-dessous pour construire votre devis.
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                          <p style={{fontSize:'13px',color:'#0F1410',lineHeight:'1.55',margin:0}}>
+                            {diagData.ai_summary || `Votre demande de <strong>${diagData.category}</strong> a été transmise à ${artisanName}${artisanMetier ? ` (${artisanMetier})` : ''}.`}
+                          </p>
+                          <div style={{padding:'10px 12px',background:'rgba(201,168,76,0.07)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px',fontSize:'12px',color:'#7A7A6E',lineHeight:'1.55'}}>
+                            <strong style={{color:'#C9A84C'}}>Prochaine étape :</strong> {artisanName} va analyser votre situation et vous envoyer un devis. Vous pouvez lui envoyer un message dès maintenant.
+                          </div>
+                        </div>
+                      )
+                    ) : (
+                      <p style={{fontSize:'13px',color:'#7A7A6E',margin:0,lineHeight:'1.55'}}>
+                        {isArtisan
+                          ? `Présentez-vous à ${clientName} et demandez-lui les détails de sa situation.`
+                          : `Décrivez votre problème à ${artisanName} en détail pour obtenir un devis précis.`}
+                      </p>
+                    )}
+                  </div>
+                  <div style={{fontSize:'10px',color:'#A09A8E',marginTop:'4px',marginLeft:'4px'}}>AfriOne IA · maintenant</div>
+                </div>
+              </div>
             </div>
           ) : messages.map((msg: any) => {
             const isMe = msg.sender_id === user?.id
@@ -1944,7 +2130,7 @@ export default function WarRoomPage() {
                   📦 Matériau non prévu
                 </button>
                 {/* Requalifier le temps */}
-                <button onClick={() => { setShowTimeAdj(true); setShowMatSuggest(false) }} style={{
+                <button onClick={() => { setShowTimeAdj(true); setShowMatSuggest(false); loadPricingSuggestion() }} style={{
                   flex:1,minWidth:'130px',padding:'9px 10px',background:'rgba(232,93,38,0.06)',
                   border:'1px dashed rgba(232,93,38,0.6)',borderRadius:'10px',color:'#E85D26',
                   fontWeight:600,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
@@ -2082,6 +2268,40 @@ export default function WarRoomPage() {
                 }}>
                   🚗 Voir le suivi en direct →
                 </Link>
+              </div>
+            )}
+
+            {/* Contre-proposition client (après refus devis) */}
+            {showCounterProposal && !isArtisan && (
+              <div style={{marginBottom:'10px',background:'white',border:'2px solid #E85D26',borderRadius:'14px',overflow:'hidden'}}>
+                <div style={{background:'rgba(232,93,38,0.06)',padding:'10px 14px',borderBottom:'1px solid rgba(232,93,38,0.15)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span style={{fontWeight:700,fontSize:'13px',color:'#E85D26'}}>💬 Refuser le devis</span>
+                  <button onClick={() => { setShowCounterProposal(false); setCounterAmount('') }} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E',padding:'2px',lineHeight:0}}><X size={14}/></button>
+                </div>
+                <div style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:'10px'}}>
+                  <div>
+                    <label style={{fontSize:'10px',fontWeight:700,color:'#7A7A6E',display:'block',marginBottom:'5px',letterSpacing:'0.08em'}}>VOTRE CONTRE-PROPOSITION (optionnel)</label>
+                    <div style={{display:'flex',gap:'8px'}}>
+                      <input
+                        type="text" inputMode="numeric"
+                        value={counterAmount}
+                        onChange={e => setCounterAmount(e.target.value)}
+                        placeholder="Ex: 38 000 FCFA"
+                        style={{flex:1,padding:'10px 12px',border:'1.5px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410',fontWeight:600}}
+                      />
+                    </div>
+                  </div>
+                  <div style={{display:'flex',gap:'8px'}}>
+                    <button onClick={() => sendRefusal(false)} disabled={acting}
+                      style={{flex:1,padding:'10px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'12px',cursor:'pointer',opacity:acting?0.6:1}}>
+                      Refuser sans contre-offre
+                    </button>
+                    <button onClick={() => sendRefusal(true)} disabled={acting || !counterAmount.trim()}
+                      style={{flex:2,padding:'10px',background:counterAmount.trim()?'#E85D26':'#D8D2C4',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'12px',cursor:counterAmount.trim()?'pointer':'default',opacity:acting?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
+                      <CheckCircle size={13}/> Envoyer ma contre-offre
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
