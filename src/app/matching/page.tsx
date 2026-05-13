@@ -165,7 +165,7 @@ function MatchingContent() {
                       <div style={{flex:1}}>
                         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}}>
                           <div>
-                            <h3 className="font-display" style={{fontWeight:700,color:'#0F1410',fontSize:'16px'}}>{a.users?.name || 'Artisan'}</h3>
+                            <h3 className="font-display" style={{fontWeight:700,color:'#0F1410',fontSize:'16px'}}>{a.users?.name || a.metier || 'Artisan'}</h3>
                             <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#7A7A6E',marginTop:'2px'}}>
                               <MapPin size={12} /> {a.users?.quartier || 'Abidjan'}
                             </div>

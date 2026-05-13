@@ -243,7 +243,7 @@ export default function HomePage() {
                     </div>
                     <span className="badge-green">Vérifié</span>
                   </div>
-                  <h3 className="font-display font-bold text-dark">{a.users?.name || 'Artisan'}</h3>
+                  <h3 className="font-display font-bold text-dark">{a.users?.name || a.metier || 'Artisan'}</h3>
                   <p className="text-sm text-muted mt-1">{a.metier} · {a.users?.quartier || 'Abidjan'}</p>
                   <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border">
                     <div className="flex items-center gap-1">

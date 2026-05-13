@@ -100,7 +100,7 @@ export default function ArtisansPage() {
               {filtered.map(a => {
                 const coverPhoto = a.portfolio?.[0] || null
                 const avatarUrl = a.users?.avatar_url || null
-                const name = a.users?.name || 'Artisan'
+                const name = a.users?.name || a.metier || 'Artisan'
                 const rating = a.rating_avg || 0
                 const stars = Math.round(rating)
                 const bgColor = METIER_COLORS[a.metier] || '#1A2A1A'

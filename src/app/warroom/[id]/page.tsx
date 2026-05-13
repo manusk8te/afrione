@@ -169,7 +169,7 @@ export default function WarRoomPage() {
 
       const { data: missionData } = await supabase
         .from('missions')
-        .select('*, scheduled_at, artisan_pros(id, user_id, metier, users(name, avatar_url, phone)), users!missions_client_id_fkey(name, avatar_url)')
+        .select('*, scheduled_at, artisan_pros(id, user_id, metier, users!artisan_pros_user_id_fkey(name, avatar_url, phone)), users!missions_client_id_fkey(name, avatar_url)')
         .eq('id', missionId)
         .single()
       setMission(missionData)
@@ -602,31 +602,44 @@ export default function WarRoomPage() {
     setLookingUp(false)
   }
 
-  // Artisan signale un matériau non prévu — étape 2 : confirmation envoi
+  // Artisan signale un matériau non prévu — étape 2 : confirmation envoi (fallback direct lookup si preview absent)
   const sendMatSuggest = async () => {
-    if (!suggestName.trim() || !suggestPreview) return
+    if (!suggestName.trim()) return
     setLookingUp(true)
     const qty = parseInt(suggestQty) || 1
+
+    // Utilise les données du preview ou refait le lookup si absent
+    let price = suggestPreview?.price ?? 0
+    let web_price = suggestPreview?.web_price ?? null
+    let product_name = suggestPreview?.product_name ?? null
+    let photo_url = suggestPreview?.photo_url ?? null
+    let source_url = suggestPreview?.source_url ?? null
+    let source = suggestPreview?.source ?? null
+    let from_db = suggestPreview?.from_db ?? false
+
+    if (!suggestPreview) {
+      const lookup = await lookupMatPrice(suggestName.trim())
+      price        = lookup.price
+      web_price    = lookup.web_price
+      product_name = lookup.product_name
+      photo_url    = lookup.photo_url
+      source_url   = lookup.source_url
+      source       = lookup.source
+      from_db      = lookup.from_db
+    }
+
     const payload = JSON.stringify({
-      name:         suggestName.trim(),
-      product_name: suggestPreview.product_name,
-      qty,
-      price_market: suggestPreview.price,
-      web_price:    suggestPreview.web_price,
-      photo_url:    suggestPreview.photo_url,
-      source_url:   suggestPreview.source_url,
-      source:       suggestPreview.source,
-      from_db:      suggestPreview.from_db,
-      total:        suggestPreview.total,
+      name: suggestName.trim(), product_name, qty,
+      price_market: price, web_price, photo_url, source_url, source, from_db,
+      total: price * qty,
     })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
       sender_role: missionRole, text: payload, type: 'material_suggest',
     })
-    if (!error) {
-      const rid = getRecipientId(mission, user.id)
-      if (rid) notifyOther(`Matériau non prévu : ${suggestName.trim()} (×${qty}) — ~${suggestPreview.total.toLocaleString('fr')} FCFA`, rid)
-    }
+    if (error) { toast.error('Erreur envoi matériau.'); setLookingUp(false); return }
+    const rid = getRecipientId(mission, user.id)
+    if (rid) notifyOther(`Matériau non prévu : ${suggestName.trim()} (×${qty}) — ~${(price * qty).toLocaleString('fr')} FCFA`, rid)
     setSuggestName(''); setSuggestQty('1')
     setSuggestStep('input'); setSuggestPreview(null)
     setShowMatSuggest(false)
@@ -1860,15 +1873,23 @@ export default function WarRoomPage() {
                       </a>
                     )}
 
-                    {/* Validation client — boutons Accepter / Refuser */}
+                    {/* Validation client — disclaimer + boutons */}
                     {canRespond && (
-                      <div style={{display:'flex',gap:'8px',padding:'10px 14px',borderTop:'1px solid rgba(201,168,76,0.12)'}}>
-                        <button onClick={() => sendMatResponse(msg.id, d.name, 'approved')} style={{flex:1,padding:'9px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
-                          <CheckCircle size={13}/> Accepter
-                        </button>
-                        <button onClick={() => sendMatResponse(msg.id, d.name, 'rejected')} style={{flex:1,padding:'9px',background:'none',color:'#E85D26',border:'1.5px solid rgba(232,93,38,0.4)',borderRadius:'10px',fontWeight:700,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
-                          <X size={13}/> Refuser
-                        </button>
+                      <div style={{borderTop:'1px solid rgba(201,168,76,0.12)'}}>
+                        <div style={{padding:'8px 14px',background:'rgba(232,93,38,0.04)',display:'flex',gap:'8px',alignItems:'flex-start'}}>
+                          <span style={{fontSize:'13px',flexShrink:0}}>⚠️</span>
+                          <p style={{fontSize:'11px',color:'#7A7A6E',margin:0,lineHeight:'1.55'}}>
+                            Prix estimatif non validé par AfriOne. Acceptez si le tarif vous convient, ou refusez et demandez des précisions à votre artisan.
+                          </p>
+                        </div>
+                        <div style={{display:'flex',gap:'8px',padding:'10px 14px'}}>
+                          <button onClick={() => sendMatResponse(msg.id, d.name, 'approved')} style={{flex:1,padding:'9px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
+                            <CheckCircle size={13}/> Accepter
+                          </button>
+                          <button onClick={() => { sendMatResponse(msg.id, d.name, 'rejected'); setInput(`Pouvez-vous m'expliquer pourquoi ce matériau (${d.name}) est nécessaire ?`) }} style={{flex:1,padding:'9px',background:'none',color:'#E85D26',border:'1.5px solid rgba(232,93,38,0.4)',borderRadius:'10px',fontWeight:700,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
+                            <X size={13}/> Négocier
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -1891,18 +1912,34 @@ export default function WarRoomPage() {
             if (msg.type === 'time_adjust') {
               let d: any = {}
               try { d = JSON.parse(msg.text) } catch {}
+              const canDiscuss = missionRole === 'client' && !isMe
               return (
-                <div key={msg.id} style={{textAlign:'center',padding:'6px 0'}}>
-                  <div style={{display:'inline-block',background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.3)',borderRadius:'12px',padding:'10px 16px',maxWidth:'88%',textAlign:'left'}}>
-                    <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em',marginBottom:'5px'}}>⏱ REQUALIFICATION DU TEMPS</div>
-                    <div style={{fontSize:'14px',color:'#0F1410',fontWeight:600}}>
-                      +{d.extra_hours}h
-                      <span style={{fontSize:'12px',fontWeight:400,color:'#7A7A6E',marginLeft:'8px'}}>
-                        → MO +<span style={{fontFamily:'Space Mono',fontWeight:600,color:'#E85D26'}}>{(d.labor_impact||0).toLocaleString('fr')} FCFA</span>
-                      </span>
+                <div key={msg.id} style={{padding:'6px 0'}}>
+                  <div style={{background:'white',border:'1.5px solid rgba(232,93,38,0.35)',borderRadius:'14px',overflow:'hidden',maxWidth:'90%'}}>
+                    <div style={{background:'rgba(232,93,38,0.06)',padding:'8px 14px',borderBottom:'1px solid rgba(232,93,38,0.12)'}}>
+                      <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>⏱ TEMPS SUPPLÉMENTAIRE — NON CONFIRMÉ</div>
                     </div>
-                    {d.reason && <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'3px',fontStyle:'italic'}}>{d.reason}</div>}
-                    <div style={{fontSize:'10px',color:'#7A7A6E',marginTop:'5px'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                    <div style={{padding:'12px 14px'}}>
+                      <div style={{fontSize:'15px',color:'#0F1410',fontWeight:700,marginBottom:'4px'}}>
+                        +{d.extra_hours}h de travail
+                        <span style={{fontSize:'13px',fontWeight:500,color:'#7A7A6E',marginLeft:'8px'}}>
+                          → +<span style={{fontFamily:'Space Mono',fontWeight:700,color:'#E85D26'}}>{(d.labor_impact||0).toLocaleString('fr')} FCFA</span>
+                        </span>
+                      </div>
+                      {d.reason && <div style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'8px',fontStyle:'italic'}}>{d.reason}</div>}
+                      {canDiscuss && (
+                        <div style={{marginTop:'8px',padding:'8px 10px',background:'rgba(232,93,38,0.04)',borderRadius:'8px',border:'1px solid rgba(232,93,38,0.12)'}}>
+                          <p style={{fontSize:'11px',color:'#7A7A6E',margin:'0 0 8px',lineHeight:'1.55'}}>
+                            ⚠️ Ce supplément n'est pas encore validé par AfriOne. Discutez avec votre artisan avant d'accepter le devis final.
+                          </p>
+                          <button onClick={() => setInput(`Concernant les ${d.extra_hours}h supplémentaires — pouvez-vous préciser ce qui a nécessité ce temps additionnel ?`)}
+                            style={{padding:'7px 12px',background:'none',border:'1px solid rgba(232,93,38,0.4)',borderRadius:'8px',color:'#E85D26',fontWeight:600,fontSize:'11px',cursor:'pointer'}}>
+                            💬 Demander une explication
+                          </button>
+                        </div>
+                      )}
+                      <div style={{fontSize:'10px',color:'#A09A8E',marginTop:'8px'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                    </div>
                   </div>
                 </div>
               )
