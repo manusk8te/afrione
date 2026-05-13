@@ -105,3 +105,79 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, artisan_amount: artisanAmount })
 }
+
+/**
+ * PATCH /api/payment
+ * Remplace release_escrow — libère l'escrow vers balance_available artisan.
+ * Body : { mission_id }
+ * Auth : Bearer token Supabase (client ou artisan de la mission)
+ */
+export async function PATCH(req: NextRequest) {
+  const { mission_id } = await req.json()
+  if (!mission_id) return NextResponse.json({ error: 'mission_id requis' }, { status: 400 })
+
+  const authHeader = req.headers.get('authorization') || ''
+  const token = authHeader.replace('Bearer ', '').trim()
+  if (!token) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+
+  const userClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+  const { data: { user } } = await userClient.auth.getUser(token)
+  if (!user) return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
+
+  const { data: mission } = await supabaseAdmin
+    .from('missions')
+    .select('id, client_id, artisan_id, status')
+    .eq('id', mission_id)
+    .single()
+
+  if (!mission) return NextResponse.json({ error: 'Mission introuvable' }, { status: 404 })
+
+  // Seul le client ou l'artisan de la mission peuvent libérer l'escrow
+  const isClient  = mission.client_id  === user.id
+  const { data: artisanPro } = await supabaseAdmin
+    .from('artisan_pros').select('user_id').eq('id', mission.artisan_id).maybeSingle()
+  const isArtisan = artisanPro?.user_id === user.id
+
+  if (!isClient && !isArtisan) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+  if (mission.status === 'completed') return NextResponse.json({ ok: true }) // idempotent
+
+  // Récupérer la transaction escrow de cette mission
+  const { data: tx } = await supabaseAdmin
+    .from('transactions')
+    .select('id, artisan_amount')
+    .eq('mission_id', mission_id)
+    .eq('status', 'escrow')
+    .maybeSingle()
+
+  const artisanAmount = tx?.artisan_amount || 0
+
+  // Déplacer l'escrow vers disponible
+  if (artisanAmount > 0) {
+    const { data: wallet } = await supabaseAdmin
+      .from('wallets')
+      .select('id, balance_escrow, balance_available, total_earned')
+      .eq('artisan_id', mission.artisan_id)
+      .maybeSingle()
+
+    if (wallet) {
+      await supabaseAdmin.from('wallets').update({
+        balance_escrow:    Math.max(0, (wallet.balance_escrow || 0) - artisanAmount),
+        balance_available: (wallet.balance_available || 0) + artisanAmount,
+        total_earned:      (wallet.total_earned || 0) + artisanAmount,
+        updated_at:        new Date().toISOString(),
+      }).eq('artisan_id', mission.artisan_id)
+    }
+
+    // Marquer la transaction comme libérée
+    if (tx) {
+      await supabaseAdmin.from('transactions').update({
+        status: 'released', released_at: new Date().toISOString(),
+      }).eq('id', tx.id)
+    }
+  }
+
+  return NextResponse.json({ ok: true, artisan_amount: artisanAmount })
+}

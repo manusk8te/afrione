@@ -282,8 +282,16 @@ export default function MissionLivePage() {
     setMission((prev: any) => ({ ...prev, status: 'completed' }))
     const amount = mission?.total_price || 0
     if (amount > 0) {
-      const { error } = await supabase.rpc('release_escrow', { p_mission_id: missionId })
-      if (error) console.error('[release_escrow]', error)
+      const { data: { session } } = await supabase.auth.getSession()
+      const releaseRes = await fetch('/api/payment', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({ mission_id: missionId }),
+      })
+      if (!releaseRes.ok) console.error('[release_escrow]', await releaseRes.json().catch(() => {}))
     }
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id, sender_role: missionRole,
