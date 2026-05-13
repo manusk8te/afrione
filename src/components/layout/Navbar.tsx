@@ -38,6 +38,9 @@ export default function Navbar() {
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
 
+  const isHome  = pathname === '/'
+  const isDark  = isHome && !scrolled
+
   const isArtisan = hasArtisanProfile || userRole === 'artisan'
   const isEntrepriseAdmin = userRole === 'entreprise_admin'
   const artisanHref = hasArtisanProfile ? '/artisan-space/dashboard' : '/artisan-space/register'
@@ -59,7 +62,7 @@ export default function Navbar() {
   return (
     <nav style={{
       position:'fixed',top:0,left:0,right:0,zIndex:999,
-      transition:'all 0.3s',
+      transition:'all 0.4s cubic-bezier(0.16,1,0.3,1)',
       background: scrolled ? 'rgba(245,240,232,0.97)' : 'transparent',
       backdropFilter: scrolled ? 'blur(12px)' : 'none',
       borderBottom: scrolled ? '1px solid #D8D2C4' : 'none',
@@ -72,8 +75,8 @@ export default function Navbar() {
             <div style={{width:'32px',height:'32px',background:'#E85D26',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Zap size={16} color="white" />
             </div>
-            <span className="font-display font-bold text-dark" style={{fontSize:'20px'}}>
-              AFRI<span className="text-accent">ONE</span>
+            <span className="font-display font-bold" style={{fontSize:'20px', color: isDark ? 'white' : '#0F1410', transition: 'color 0.3s'}}>
+              AFRI<span style={{ color: '#E85D26' }}>ONE</span>
             </span>
           </Link>
 
@@ -83,8 +86,8 @@ export default function Navbar() {
               {links.map(l => (
                 <Link key={l.href} href={l.href} style={{
                   fontSize:'14px',fontWeight:500,padding:'8px 16px',borderRadius:'8px',
-                  textDecoration:'none',transition:'all 0.2s',
-                  color: pathname === l.href ? '#E85D26' : '#7A7A6E',
+                  textDecoration:'none',transition:'all 0.3s',
+                  color: pathname === l.href ? '#E85D26' : (isDark ? 'rgba(255,255,255,0.7)' : '#7A7A6E'),
                 }}>{l.label}</Link>
               ))}
             </div>
@@ -186,9 +189,23 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/auth" style={{border:'2px solid #0F1410',color:'#0F1410',fontWeight:600,padding:'8px 16px',borderRadius:'10px',textDecoration:'none',fontSize:'14px'}}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='#0F1410'; (e.currentTarget as HTMLElement).style.color='white' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='transparent'; (e.currentTarget as HTMLElement).style.color='#0F1410' }}>
+                  <Link href="/auth"
+                    style={{
+                      border: isDark ? '1.5px solid rgba(255,255,255,0.3)' : '2px solid #0F1410',
+                      color: isDark ? 'rgba(255,255,255,0.85)' : '#0F1410',
+                      fontWeight:600,padding:'8px 16px',borderRadius:'10px',textDecoration:'none',fontSize:'14px',
+                      transition:'all 0.3s',
+                    }}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLElement
+                      el.style.background = isDark ? 'rgba(255,255,255,0.1)' : '#0F1410'
+                      el.style.color = 'white'
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLElement
+                      el.style.background = 'transparent'
+                      el.style.color = isDark ? 'rgba(255,255,255,0.85)' : '#0F1410'
+                    }}>
                     Connexion
                   </Link>
                   <Link href="/diagnostic" className="btn-primary" style={{padding:'8px 16px',fontSize:'14px'}}>
@@ -200,7 +217,7 @@ export default function Navbar() {
 
             {/* Hamburger — mobile uniquement */}
             {isMobile && (
-              <button onClick={() => setMenuOpen(!menuOpen)} style={{background:'none',border:'none',cursor:'pointer',padding:'8px',display:'flex'}}>
+              <button onClick={() => setMenuOpen(!menuOpen)} style={{background:'none',border:'none',cursor:'pointer',padding:'8px',display:'flex', color: isDark ? 'white' : '#0F1410', transition: 'color 0.3s'}}>
                 {menuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
