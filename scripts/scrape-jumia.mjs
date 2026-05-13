@@ -6,8 +6,21 @@
  *   SUPABASE_SERVICE_KEY  → service_role key (pas la anon key)
  */
 
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY
+// Charge .env.local si présent (exécution locale)
+import { readFileSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+const __dir = dirname(fileURLToPath(import.meta.url))
+try {
+  const env = readFileSync(resolve(__dir, '../.env.local'), 'utf8')
+  for (const line of env.split('\n')) {
+    const [k, ...v] = line.split('=')
+    if (k && v.length) process.env[k.trim()] = v.join('=').trim()
+  }
+} catch {}
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('SUPABASE_URL et SUPABASE_SERVICE_KEY sont requis')
@@ -16,24 +29,37 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 // ─── Liste des requêtes à scraper ────────────────────────────────────────────
 const QUERIES = [
-  { query: 'robinet cuisine eau froide lavabo',       category: 'Plomberie'     },
-  { query: 'pomme de douche pommeau douchette',       category: 'Plomberie'     },
-  { query: 'joint torique caoutchouc kit assortiment',category: 'Plomberie'     },
-  { query: 'tuyau flexible douche raccord',           category: 'Plomberie'     },
-  { query: 'interrupteur simple allumage mural',      category: 'Électricité'   },
-  { query: 'ampoule LED E27 blanc chaud',             category: 'Électricité'   },
-  { query: 'cable rallonge electrique prise',         category: 'Électricité'   },
-  { query: 'disjoncteur modulaire tableau electrique',category: 'Électricité'   },
-  { query: 'rouleau peinture poignee set',            category: 'Peinture'      },
-  { query: 'pinceau brosse peinture set lot',         category: 'Peinture'      },
-  { query: 'serrure verrou porte entree',             category: 'Menuiserie'    },
-  { query: 'poignee porte bouton rose',               category: 'Menuiserie'    },
-  { query: 'perceuse visseuse electrique sans fil',   category: 'Maçonnerie'    },
-  { query: 'niveau bulle mesure macon',               category: 'Maçonnerie'    },
-  { query: 'carrelage adhesif sol mur',               category: 'Carrelage'     },
-  { query: 'joint carrelage mortier colle',           category: 'Carrelage'     },
-  { query: 'filtre climatiseur split entretien',      category: 'Climatisation' },
-  { query: 'telecommande climatiseur universel',      category: 'Climatisation' },
+  // Plomberie
+  { query: 'robinet cuisine lavabo',                  category: 'Plomberie'     },
+  { query: 'pomme douche pommeau',                    category: 'Plomberie'     },
+  { query: 'joint plomberie kit',                     category: 'Plomberie'     },
+  { query: 'tuyau raccord plomberie',                 category: 'Plomberie'     },
+  { query: 'siphon evacuation bonde',                 category: 'Plomberie'     },
+  // Électricité
+  { query: 'interrupteur prise murale',               category: 'Électricité'   },
+  { query: 'ampoule LED lampe',                       category: 'Électricité'   },
+  { query: 'rallonge electrique multiprise',          category: 'Électricité'   },
+  { query: 'disjoncteur electrique',                  category: 'Électricité'   },
+  { query: 'fil electrique cable',                    category: 'Électricité'   },
+  // Peinture
+  { query: 'rouleau peinture',                        category: 'Peinture'      },
+  { query: 'pinceau peinture',                        category: 'Peinture'      },
+  { query: 'bache protection peinture',               category: 'Peinture'      },
+  // Menuiserie
+  { query: 'serrure porte',                           category: 'Menuiserie'    },
+  { query: 'poignee porte',                           category: 'Menuiserie'    },
+  { query: 'charniere porte',                         category: 'Menuiserie'    },
+  // Maçonnerie
+  { query: 'perceuse visseuse',                       category: 'Maçonnerie'    },
+  { query: 'niveau bulle',                            category: 'Maçonnerie'    },
+  { query: 'truelle spatule macon',                   category: 'Maçonnerie'    },
+  // Carrelage
+  { query: 'carrelage sol interieur',                 category: 'Carrelage'     },
+  { query: 'colle carrelage joint',                   category: 'Carrelage'     },
+  // Climatisation
+  { query: 'telecommande climatiseur',                category: 'Climatisation' },
+  { query: 'filtre air climatiseur',                  category: 'Climatisation' },
+  { query: 'ventilateur brasseur air',                category: 'Climatisation' },
 ]
 
 // ─── Parser HTML Jumia CI ─────────────────────────────────────────────────────
