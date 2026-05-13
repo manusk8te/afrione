@@ -167,19 +167,19 @@ const T1  = 'rgba(255,255,255,0.92)'
 const T2  = 'rgba(255,255,255,0.55)'
 const T3  = 'rgba(255,255,255,0.32)'
 const BO  = 'rgba(255,255,255,0.08)'
-/* Neumorphic cool grey system */
-const LBG  = '#E0E5EC'
-const LBG2 = '#D9DFE7'
+/* White base system */
+const LBG  = '#FFFFFF'
+const LBG2 = '#F5F7FA'
 const LT1  = '#3D4852'
 const LT2  = '#6B7280'
 const LT3  = '#8B95A5'
-const LBO  = '#C8D0DA'
-/* Neumorphic shadows */
-const NEU_SHADOW = '9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255,0.5)'
-const NEU_HOVER  = '12px 12px 20px rgb(163,177,198,0.7), -12px -12px 20px rgba(255,255,255,0.6)'
-const NEU_INSET  = 'inset 6px 6px 10px rgb(163,177,198,0.6), inset -6px -6px 10px rgba(255,255,255,0.5)'
-const NEU_INSET_DEEP = 'inset 10px 10px 20px rgb(163,177,198,0.7), inset -10px -10px 20px rgba(255,255,255,0.6)'
-const NEU_SMALL  = '5px 5px 10px rgb(163,177,198,0.6), -5px -5px 10px rgba(255,255,255,0.5)'
+const LBO  = '#E2E8F0'
+/* Shadows — dark only on white (light highlight invisible on white) */
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_HOVER  = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
+const NEU_INSET  = 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8px rgba(255,255,255,0.9)'
+const NEU_INSET_DEEP = 'inset 8px 8px 18px rgba(163,177,198,0.55), inset -6px -6px 12px rgba(255,255,255,0.95)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function HomePage() {
@@ -262,8 +262,7 @@ export default function HomePage() {
               {/* Badge */}
               <motion.div variants={fadeUp}>
                 <div className="liquid-glass rounded-full inline-flex items-center gap-2 mb-10"
-                  style={{ padding: '6px 16px 6px 10px' }}>
-                  <span className="afrione-gradient w-2 h-2 rounded-full flex-shrink-0 animate-pulse-soft" />
+                  style={{ padding: '6px 20px' }}>
                   <span style={{ ...mono, fontSize: '11px', color: T2, letterSpacing: '0.1em' }}>PLATEFORME #1 · ABIDJAN</span>
                 </div>
               </motion.div>
