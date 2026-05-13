@@ -156,27 +156,35 @@ function parseJumiaHtml(html: string): JumiaHit[] {
 }
 
 // ─── Fetch + parse Jumia CI ───────────────────────────────────────────────────
+// Sur Vercel (AWS Lambda), Jumia bloque les IPs datacenter.
+// Si SCRAPERAPI_KEY est défini, on passe par ScraperAPI (proxy résidentiel CI).
+// En local, fetch direct. scraperapi.com — tier gratuit : 1000 req/mois.
 async function scrapeJumia(query: string): Promise<{ products: JumiaHit[]; debug: string }> {
-  const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
+  const target = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
+  const apiKey = process.env.SCRAPERAPI_KEY
+  const fetchUrl = apiKey
+    ? `http://api.scraperapi.com?api_key=${apiKey}&url=${encodeURIComponent(target)}&country_code=ci&render=false`
+    : target
+
   try {
-    const res = await fetch(url, {
-      headers: {
+    const res = await fetch(fetchUrl, {
+      headers: apiKey ? {} : {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'fr-FR,fr;q=0.9',
         'Referer': 'https://www.jumia.ci/',
       },
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(25_000),
     })
-    if (!res.ok) return { products: [], debug: `HTTP ${res.status} ${res.statusText}` }
+    if (!res.ok) return { products: [], debug: `HTTP ${res.status} ${res.statusText} (proxy:${!!apiKey})` }
     const html = await res.text()
     const products = parseJumiaHtml(html)
     const debug = products.length > 0
-      ? `OK (${products.length} produits)`
-      : `HTTP 200 mais 0 produits — html:${html.length}c hasPrc:${html.includes('class="prc"')} hasCore:${html.includes('class="core"')}`
+      ? `OK — ${products.length} produits (proxy:${!!apiKey})`
+      : `HTTP 200, 0 produits — html:${html.length}c hasPrc:${html.includes('class="prc"')} hasCore:${html.includes('class="core"')} (proxy:${!!apiKey})`
     return { products, debug }
   } catch (e: any) {
-    return { products: [], debug: `ERREUR: ${e.message}` }
+    return { products: [], debug: `ERREUR: ${e.message} (proxy:${!!apiKey})` }
   }
 }
 

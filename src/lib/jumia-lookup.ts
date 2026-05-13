@@ -40,16 +40,20 @@ function parseJumiaHtml(html: string): JumiaProduct[] {
 }
 
 async function fetchJumiaProducts(query: string): Promise<JumiaProduct[]> {
-  const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
+  const target = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
+  const apiKey = process.env.SCRAPERAPI_KEY
+  const url = apiKey
+    ? `http://api.scraperapi.com?api_key=${apiKey}&url=${encodeURIComponent(target)}&country_code=ci&render=false`
+    : target
   try {
     const res = await fetch(url, {
-      headers: {
+      headers: apiKey ? {} : {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'fr-FR,fr;q=0.9',
         'Referer': 'https://www.jumia.ci/',
       },
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(20_000),
     })
     if (!res.ok) return []
     return parseJumiaHtml(await res.text())
