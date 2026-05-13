@@ -151,7 +151,7 @@ export default function WarRoomPage() {
 
       const { data: missionData } = await supabase
         .from('missions')
-        .select('*, scheduled_at, artisan_pros(id, user_id, metier, users(name, avatar_url, phone))')
+        .select('*, scheduled_at, artisan_pros(id, user_id, metier, users(name, avatar_url, phone)), users!missions_client_id_fkey(name, avatar_url)')
         .eq('id', missionId)
         .single()
       setMission(missionData)
@@ -668,6 +668,11 @@ export default function WarRoomPage() {
   const artisanName   = mission?.artisan_pros?.users?.name   || 'Artisan'
   const artisanMetier = mission?.artisan_pros?.metier         || ''
   const artisanPhone  = mission?.artisan_pros?.users?.phone   || null
+  const clientName    = mission?.users?.name || 'Client'
+  // Nom et avatar de l'interlocuteur (l'autre personne, pas soi-même)
+  const otherName     = isArtisan ? clientName : artisanName
+  const otherAvatar   = isArtisan ? mission?.users?.avatar_url : mission?.artisan_pros?.users?.avatar_url
+  const otherSub      = isArtisan ? 'Client' : artisanMetier
   const isClosed = status === 'completed' || status === 'cancelled'
 
   return (
@@ -972,13 +977,13 @@ export default function WarRoomPage() {
             <ArrowLeft size={18} />
           </Link>
           <div style={{width:'36px',height:'36px',background:'#1A2018',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',border:'1px solid rgba(255,255,255,0.1)',overflow:'hidden',flexShrink:0}}>
-            {mission?.artisan_pros?.users?.avatar_url
-              ? <img src={mission.artisan_pros.users.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
-              : '🔧'}
+            {otherAvatar
+              ? <img src={otherAvatar} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
+              : isArtisan ? '👤' : '🔧'}
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,fontSize:'14px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{artisanName}</div>
-            <div style={{fontSize:'11px',color:'#7A7A6E'}}>{artisanMetier}</div>
+            <div style={{fontWeight:700,fontSize:'14px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{otherName}</div>
+            <div style={{fontSize:'11px',color:'#7A7A6E'}}>{otherSub}</div>
           </div>
           {/* Appel rapide artisan (client uniquement) */}
           {!isArtisan && artisanPhone && (
