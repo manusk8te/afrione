@@ -374,14 +374,20 @@ export default function WarRoomPage() {
     // Simulation délai traitement Wave (2s)
     await new Promise(r => setTimeout(r, 2000))
 
-    // RPC SECURITY DEFINER — vérifie que l'appelant est bien le client de la mission
-    const { error: rpcError } = await supabase.rpc('credit_escrow', {
-      p_mission_id: missionId,
-      p_amount: pendingAmount,
+    // API server-side — crée le wallet artisan si absent + enregistre la transaction
+    const { data: { session } } = await supabase.auth.getSession()
+    const payRes = await fetch('/api/payment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || ''}`,
+      },
+      body: JSON.stringify({ mission_id: missionId, amount: pendingAmount }),
     })
-    if (rpcError) {
-      console.error('[credit_escrow] code:', rpcError.code, '| message:', rpcError.message, '| details:', rpcError.details)
-      toast.error(`Erreur: ${rpcError.message || rpcError.code || 'inconnue'}`)
+    if (!payRes.ok) {
+      const err = await payRes.json().catch(() => ({}))
+      console.error('[payment]', err)
+      toast.error(err.error || 'Erreur paiement')
       setPayStep('form')
       return
     }
