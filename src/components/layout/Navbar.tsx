@@ -166,14 +166,6 @@ export default function Navbar() {
                             <Building2 size={14} /> Espace Entreprise
                           </Link>
                         )}
-                        {!isEntrepriseAdmin && !isArtisan && userRole !== 'admin' && (
-                          <Link href="/entreprise-space/register" onClick={() => setDropdownOpen(false)}
-                            style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#7A7A6E',fontSize:'14px'}}
-                            onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
-                            onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
-                            <Building2 size={14} /> Créer un espace entreprise
-                          </Link>
-                        )}
                         {userRole === 'admin' && (
                           <Link href="/admin" onClick={() => setDropdownOpen(false)}
                             style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#C9A84C',fontSize:'14px'}}

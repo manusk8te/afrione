@@ -338,6 +338,49 @@ export default function HomePage() {
         </section>
       )}
 
+      {/* CTA ENTREPRISE */}
+      <section className="py-16 px-4">
+        <div className="page-container">
+          <div style={{
+            background: 'linear-gradient(135deg, #0F1E14 0%, #1A2F1E 100%)',
+            border: '1px solid rgba(96,165,250,0.2)',
+            borderRadius: '24px',
+            padding: '40px 48px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '32px',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ flex: 1, minWidth: '280px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ width: '36px', height: '36px', background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.3)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={18} color="#60a5fa" />
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Structures professionnelles</span>
+              </div>
+              <h2 className="font-display" style={{ fontSize: '28px', fontWeight: 700, color: '#FAFAF5', marginBottom: '10px', lineHeight: 1.2 }}>
+                Vous gérez une équipe<br />d'artisans ?
+              </h2>
+              <p style={{ fontSize: '14px', color: 'rgba(250,250,245,0.6)', lineHeight: 1.7 }}>
+                Créez un espace entreprise sur AfriOne. Gérez vos artisans, suivez vos missions et accédez à des clients professionnels à Abidjan.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}>
+              <Link href="/entreprise-space/register" style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '14px 28px', background: '#60a5fa', border: 'none',
+                borderRadius: '12px', color: 'white', fontSize: '15px', fontWeight: 700,
+                textDecoration: 'none', whiteSpace: 'nowrap',
+              }}>
+                <Building2 size={16} /> Créer mon espace entreprise
+              </Link>
+              <p style={{ fontSize: '11px', color: 'rgba(250,250,245,0.4)', textAlign: 'center' }}>Validation sous 24h · Gratuit</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA ARTISAN */}
       <section className="py-20 px-4 bg-accent">
         <div className="page-container text-center">
