@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Zap, LogOut, LayoutDashboard, Wrench, ShieldCheck } from 'lucide-react'
+import { Menu, X, Zap, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -39,10 +39,13 @@ export default function Navbar() {
   }, [menuOpen])
 
   const isArtisan = hasArtisanProfile || userRole === 'artisan'
+  const isEntrepriseAdmin = userRole === 'entreprise_admin'
   const artisanHref = hasArtisanProfile ? '/artisan-space/dashboard' : '/artisan-space/register'
 
   const roleBadge = userRole === 'admin'
     ? { label: isArtisan ? 'Admin · Artisan' : 'Admin', color: '#C9A84C' }
+    : isEntrepriseAdmin
+    ? { label: 'Entreprise', color: '#60a5fa' }
     : isArtisan
     ? { label: 'Artisan', color: '#E85D26' }
     : { label: 'Client', color: '#2B6B3E' }
@@ -95,6 +98,17 @@ export default function Navbar() {
                 <div style={{width:'80px',height:'36px',background:'#EDE8DE',borderRadius:'10px',opacity:0.5}} />
               ) : user ? (
                 <>
+                  {isEntrepriseAdmin && (
+                    <Link href="/entreprise-space/dashboard" style={{
+                      display:'flex',alignItems:'center',gap:'6px',
+                      padding:'8px 16px',borderRadius:'10px',textDecoration:'none',
+                      background:'rgba(96,165,250,0.15)',color:'#60a5fa',fontSize:'14px',fontWeight:600,
+                      border:'1px solid rgba(96,165,250,0.3)',
+                    }}>
+                      <Building2 size={14} /> Espace Entreprise
+                    </Link>
+                  )}
+
                   {isArtisan && (
                     <Link href={artisanHref} style={{
                       display:'flex',alignItems:'center',gap:'6px',
@@ -144,6 +158,22 @@ export default function Navbar() {
                           onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
                           <LayoutDashboard size={14} /> Espace Client
                         </Link>
+                        {isEntrepriseAdmin && (
+                          <Link href="/entreprise-space/dashboard" onClick={() => setDropdownOpen(false)}
+                            style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#60a5fa',fontSize:'14px'}}
+                            onMouseEnter={e => (e.currentTarget.style.background='rgba(96,165,250,0.06)')}
+                            onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                            <Building2 size={14} /> Espace Entreprise
+                          </Link>
+                        )}
+                        {!isEntrepriseAdmin && !isArtisan && userRole !== 'admin' && (
+                          <Link href="/entreprise-space/register" onClick={() => setDropdownOpen(false)}
+                            style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#7A7A6E',fontSize:'14px'}}
+                            onMouseEnter={e => (e.currentTarget.style.background='#F5F0E8')}
+                            onMouseLeave={e => (e.currentTarget.style.background='transparent')}>
+                            <Building2 size={14} /> Créer un espace entreprise
+                          </Link>
+                        )}
                         {userRole === 'admin' && (
                           <Link href="/admin" onClick={() => setDropdownOpen(false)}
                             style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',borderRadius:'8px',textDecoration:'none',color:'#C9A84C',fontSize:'14px'}}
@@ -199,6 +229,12 @@ export default function Navbar() {
             <div style={{padding:'8px 16px',marginTop:'8px',borderTop:'1px solid #D8D2C4',paddingTop:'16px',display:'flex',flexDirection:'column',gap:'8px'}}>
               {user ? (
                 <>
+                  {isEntrepriseAdmin && (
+                    <Link href="/entreprise-space/dashboard" onClick={() => setMenuOpen(false)}
+                      style={{display:'block',padding:'12px',textAlign:'center',background:'rgba(96,165,250,0.15)',color:'#60a5fa',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:700,border:'1px solid rgba(96,165,250,0.3)'}}>
+                      🏢 Espace Entreprise
+                    </Link>
+                  )}
                   {isArtisan && (
                     <Link href={artisanHref} onClick={() => setMenuOpen(false)}
                       style={{display:'block',padding:'12px',textAlign:'center',background:'#E85D26',color:'white',borderRadius:'10px',textDecoration:'none',fontSize:'14px',fontWeight:700}}>
