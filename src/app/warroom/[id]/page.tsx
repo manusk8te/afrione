@@ -105,6 +105,11 @@ export default function WarRoomPage() {
   const [adjHours, setAdjHours]         = useState('')
   const [adjReason, setAdjReason]       = useState('')
 
+  // Confirmation proposition finale (artisan)
+  const [showProposalConfirm, setShowProposalConfirm] = useState(false)
+  const [proposalDraft, setProposalDraft]             = useState<any>(null)
+  const [proposalTotal, setProposalTotal]             = useState('')
+
   // Modal paiement Wave (avant scheduling)
   const [showPayment, setShowPayment]       = useState(false)
   const [payStep, setPayStep]               = useState<'form'|'processing'|'success'>('form')
@@ -559,6 +564,22 @@ export default function WarRoomPage() {
     setLookingUp(false)
   }
 
+  // Client accepte ou refuse un matériau non prévu
+  const sendMatResponse = async (refId: string, name: string, action: 'approved' | 'rejected') => {
+    const payload = JSON.stringify({ ref_id: refId, name, action })
+    await supabase.from('chat_history').insert({
+      mission_id: missionId, sender_id: user.id,
+      sender_role: missionRole, text: payload, type: 'material_response',
+    })
+    const rid = getRecipientId(mission, user.id)
+    if (rid) notifyOther(
+      action === 'approved'
+        ? `✓ Matériau accepté : ${name}`
+        : `✗ Matériau refusé : ${name}`,
+      rid,
+    )
+  }
+
   // Artisan requalifie le temps — ajuste la MO
   const sendTimeAdj = async () => {
     const extra = parseFloat(adjHours)
@@ -585,12 +606,19 @@ export default function WarRoomPage() {
     setShowTimeAdj(false)
   }
 
-  // Artisan envoie la proposition finale — construite depuis les messages accumulés
-  const sendFinalProposal = async () => {
-    // S'assurer que le pricing est chargé avant de construire la proposition
+  // Artisan prépare la proposition — ouvre la confirmation avec total modifiable
+  const openFinalProposal = async () => {
     if (!pricingSuggestion) await loadPricingSuggestion()
+
+    const rejectedIds = new Set(
+      messages
+        .filter(m => m.type === 'material_response')
+        .map(m => { try { return JSON.parse(m.text) } catch { return null } })
+        .filter(m => m?.action === 'rejected')
+        .map(m => m.ref_id)
+    )
     const matSuggests = messages
-      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
+      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client' && !rejectedIds.has(m.id))
       .map(m => { try { return JSON.parse(m.text) } catch { return null } })
       .filter(Boolean)
     const timeAdjs = messages
@@ -601,7 +629,18 @@ export default function WarRoomPage() {
     const baseEstimate    = pricingSuggestion?.estimate ?? 0
     const extraMatTotal   = matSuggests.reduce((s: number, m: any) => s + (m.total || 0), 0)
     const extraLaborTotal = timeAdjs.reduce((s: number, t: any) => s + (t.labor_impact || 0), 0)
-    const total           = baseEstimate + extraMatTotal + extraLaborTotal
+    const autoTotal       = baseEstimate + extraMatTotal + extraLaborTotal
+
+    setProposalDraft({ baseEstimate, matSuggests, timeAdjs, extraMatTotal, extraLaborTotal })
+    setProposalTotal(String(autoTotal))
+    setShowProposalConfirm(true)
+  }
+
+  // Artisan envoie la proposition finale avec le total validé
+  const sendFinalProposal = async () => {
+    const total = parseInt(proposalTotal.replace(/\s/g, '')) || 0
+    if (!total || total <= 0) { toast.error('Montant invalide'); return }
+    const { baseEstimate, matSuggests, timeAdjs, extraMatTotal, extraLaborTotal } = proposalDraft || {}
 
     const payload = JSON.stringify({
       base_estimate:     baseEstimate,
@@ -613,6 +652,7 @@ export default function WarRoomPage() {
       decomp: pricingSuggestion?.decomp,
     })
     setActing(true)
+    setShowProposalConfirm(false)
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
       sender_role: missionRole, text: payload, type: 'price_proposal',
@@ -1356,6 +1396,9 @@ export default function WarRoomPage() {
           ) : messages.map((msg: any) => {
             const isMe = msg.sender_id === user?.id
 
+            // material_response — silencieux dans le chat (statut affiché sur la carte)
+            if (msg.type === 'material_response') return null
+
             // Message système — centré neutre
             if (msg.type === 'system') {
               return (
@@ -1534,6 +1577,16 @@ export default function WarRoomPage() {
               const localTotal = (d.price_market ?? 0) * (d.qty ?? 1)
               const webTotal   = (d.web_price ?? 0) * (d.qty ?? 1)
               const hasPrice   = localTotal > 0
+
+              // Réponse déjà donnée par le client ?
+              const matResponse = messages
+                .filter(m => m.type === 'material_response')
+                .map(m => { try { return JSON.parse(m.text) } catch { return null } })
+                .find(m => m?.ref_id === msg.id)
+              const isApproved = matResponse?.action === 'approved'
+              const isRejected = matResponse?.action === 'rejected'
+              const canRespond = missionRole === 'client' && !isMe && !matResponse
+
               return (
                 <div key={msg.id} style={{display:'flex',justifyContent:isMe?'flex-end':'flex-start'}}>
                   <div style={{maxWidth:'86%',background:'white',border:'1.5px solid rgba(201,168,76,0.45)',borderRadius:'16px',overflow:'hidden',boxShadow:'0 2px 12px rgba(201,168,76,0.08)'}}>
@@ -1608,6 +1661,28 @@ export default function WarRoomPage() {
                         Voir sur {d.source || 'Jumia'} →
                       </a>
                     )}
+
+                    {/* Validation client — boutons Accepter / Refuser */}
+                    {canRespond && (
+                      <div style={{display:'flex',gap:'8px',padding:'10px 14px',borderTop:'1px solid rgba(201,168,76,0.12)'}}>
+                        <button onClick={() => sendMatResponse(msg.id, d.name, 'approved')} style={{flex:1,padding:'9px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
+                          <CheckCircle size={13}/> Accepter
+                        </button>
+                        <button onClick={() => sendMatResponse(msg.id, d.name, 'rejected')} style={{flex:1,padding:'9px',background:'none',color:'#E85D26',border:'1.5px solid rgba(232,93,38,0.4)',borderRadius:'10px',fontWeight:700,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
+                          <X size={13}/> Refuser
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Badge statut — réponse déjà donnée */}
+                    {(isApproved || isRejected) && (
+                      <div style={{padding:'8px 14px',borderTop:'1px solid rgba(201,168,76,0.12)',display:'flex',alignItems:'center',gap:'6px'}}>
+                        <span style={{fontSize:'11px',fontWeight:700,color: isApproved ? '#2B6B3E' : '#E85D26'}}>
+                          {isApproved ? '✓ Accepté par le client' : '✗ Refusé — ne sera pas inclus dans le devis'}
+                        </span>
+                      </div>
+                    )}
+
                     <div style={{padding:'4px 14px 8px',fontSize:'10px',color:'#7A7A6E'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                   </div>
                 </div>
@@ -1872,7 +1947,7 @@ export default function WarRoomPage() {
                 </button>
                 {/* Proposition finale (si des ajustements existent) ou devis simple */}
                 {messages.some(m => m.type === 'material_suggest' || m.type === 'time_adjust') ? (
-                  <button onClick={sendFinalProposal} disabled={acting} style={{
+                  <button onClick={openFinalProposal} disabled={acting} style={{
                     width:'100%',marginTop:'4px',padding:'11px',background:'#0F1410',
                     color:'white',border:'none',borderRadius:'10px',
                     fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
@@ -1902,6 +1977,55 @@ export default function WarRoomPage() {
                 }}>
                   🧾 Déclarer les matériaux achetés
                 </button>
+              </div>
+            )}
+
+            {/* Confirmation proposition finale — artisan review + total modifiable */}
+            {showProposalConfirm && proposalDraft && (
+              <div style={{marginBottom:'8px',background:'white',border:'2px solid #0F1410',borderRadius:'16px',overflow:'hidden'}}>
+                <div style={{background:'#0F1410',padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>⚖️ CONFIRMATION PROPOSITION</span>
+                  <button onClick={() => setShowProposalConfirm(false)} style={{background:'none',border:'none',color:'rgba(255,255,255,0.5)',cursor:'pointer',padding:'2px'}}>
+                    <X size={14}/>
+                  </button>
+                </div>
+                <div style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:'6px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#7A7A6E'}}>
+                    <span>📋 Devis diagnostic</span>
+                    <span style={{fontFamily:'Space Mono',fontWeight:600,color:'#0F1410'}}>{(proposalDraft.baseEstimate||0).toLocaleString('fr')} F</span>
+                  </div>
+                  {(proposalDraft.matSuggests||[]).map((m: any, i: number) => (
+                    <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#C9A84C'}}>
+                      <span>📦 {m.qty>1?`${m.qty}× `:''}{m.name}</span>
+                      <span style={{fontFamily:'Space Mono',fontWeight:600}}>+{(m.total||0).toLocaleString('fr')} F</span>
+                    </div>
+                  ))}
+                  {(proposalDraft.timeAdjs||[]).map((t: any, i: number) => (
+                    <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#E85D26'}}>
+                      <span>⏱ +{t.extra_hours}h</span>
+                      <span style={{fontFamily:'Space Mono',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
+                    </div>
+                  ))}
+                  <div style={{borderTop:'1px solid #D8D2C4',paddingTop:'10px',marginTop:'2px'}}>
+                    <div style={{fontSize:'11px',color:'#7A7A6E',marginBottom:'6px'}}>Total final (modifiable)</div>
+                    <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                      <input
+                        type="number"
+                        value={proposalTotal}
+                        onChange={e => setProposalTotal(e.target.value)}
+                        style={{flex:1,padding:'10px 12px',border:'2px solid #0F1410',borderRadius:'10px',fontSize:'18px',fontFamily:'Space Mono',fontWeight:700,color:'#0F1410',outline:'none',textAlign:'right'}}
+                      />
+                      <span style={{fontSize:'12px',color:'#7A7A6E',whiteSpace:'nowrap'}}>FCFA</span>
+                    </div>
+                  </div>
+                  <button onClick={sendFinalProposal} disabled={acting} style={{
+                    marginTop:'4px',padding:'12px',background:'#0F1410',color:'white',border:'none',
+                    borderRadius:'10px',fontWeight:700,fontSize:'14px',cursor:'pointer',
+                    display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',opacity:acting?0.6:1,
+                  }}>
+                    <CheckCircle size={15}/> Envoyer la proposition
+                  </button>
+                </div>
               </div>
             )}
 
