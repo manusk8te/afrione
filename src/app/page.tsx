@@ -184,19 +184,11 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen" style={{ background: '#FAFAF8' }}>
       <Navbar />
 
       {/* ━━━━ HERO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="min-h-[100dvh] flex items-start md:items-center pt-24 pb-16 px-4 relative overflow-hidden">
-        {/* Background blobs */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div className="absolute top-12 right-[3%] w-[560px] h-[560px] rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(232,93,38,0.07) 0%, transparent 70%)' }} />
-          <div className="absolute bottom-20 left-4 w-[300px] h-[300px] rounded-full blur-3xl"
-            style={{ background: 'radial-gradient(circle, rgba(43,107,62,0.06) 0%, transparent 70%)' }} />
-        </div>
-
+      <section className="afrione-gradient min-h-[100dvh] flex items-start md:items-center pt-24 pb-16 px-4 relative overflow-hidden">
         <div className="page-container relative w-full">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_420px] gap-12 xl:gap-20 items-center">
 
@@ -204,24 +196,24 @@ export default function HomePage() {
             <motion.div variants={stagger} initial="hidden" animate="show">
               {/* Badge */}
               <motion.div variants={fadeUp} className="inline-flex items-center gap-2 mb-8"
-                style={{ background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '40px', padding: '6px 14px 6px 10px' }}>
-                <span className="w-2 h-2 rounded-full bg-accent animate-pulse-soft flex-shrink-0" />
-                <span className="font-mono text-xs text-accent tracking-wider">PLATEFORME #1 À ABIDJAN</span>
+                style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '40px', padding: '6px 14px 6px 10px' }}>
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse-soft flex-shrink-0" />
+                <span className="font-mono text-xs text-white tracking-wider" style={{ opacity: 0.9 }}>PLATEFORME #1 À ABIDJAN</span>
               </motion.div>
 
               {/* Headline */}
               <motion.h1 variants={fadeUp}
-                className="font-display font-bold text-dark tracking-tight leading-[0.9]"
+                className="font-display font-bold text-white tracking-tight leading-[0.9]"
                 style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: '20px' }}>
                 Trouver le bon<br />
-                <span className="text-accent">artisan</span>,<br />
+                artisan,<br />
                 au bon prix.
               </motion.h1>
 
               {/* Subtitle */}
               <motion.p variants={fadeUp}
-                className="font-body text-muted leading-relaxed"
-                style={{ fontSize: '17px', maxWidth: '50ch', marginBottom: '32px' }}>
+                className="font-body leading-relaxed"
+                style={{ fontSize: '17px', maxWidth: '50ch', marginBottom: '32px', color: 'rgba(255,255,255,0.8)' }}>
                 Artisans vérifiés, prix transparents, paiement sécurisé via Wave.
                 Votre chantier, géré de bout en bout.
               </motion.p>
@@ -229,20 +221,37 @@ export default function HomePage() {
               {/* Primary CTAs */}
               <motion.div variants={fadeUp} className="flex flex-wrap gap-3" style={{ marginBottom: '28px' }}>
                 <Link href="/diagnostic"
-                  className="btn-primary"
-                  style={{ fontSize: '15px', padding: '13px 26px', cursor: 'pointer' }}>
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '7px',
+                    padding: '13px 26px', borderRadius: '6px', fontSize: '15px',
+                    fontWeight: 700, fontFamily: "'Syne', sans-serif",
+                    background: 'white', color: '#0F1410', textDecoration: 'none', cursor: 'pointer',
+                    transition: 'transform 0.15s, box-shadow 0.15s',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                  }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 12px 32px rgba(0,0,0,0.3)' }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)' }}>
                   Décrire mon problème <ArrowRight size={17} />
                 </Link>
                 <Link href="/artisans"
-                  className="btn-outline"
-                  style={{ fontSize: '15px', padding: '13px 26px', cursor: 'pointer' }}>
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '7px',
+                    padding: '13px 26px', borderRadius: '6px', fontSize: '15px',
+                    fontWeight: 700, fontFamily: "'Syne', sans-serif",
+                    background: 'rgba(255,255,255,0.1)', color: 'white',
+                    border: '1.5px solid rgba(255,255,255,0.35)',
+                    textDecoration: 'none', cursor: 'pointer',
+                    transition: 'background 0.15s, border-color 0.15s',
+                  }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.2)'; el.style.borderColor = 'rgba(255,255,255,0.5)' }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.1)'; el.style.borderColor = 'rgba(255,255,255,0.35)' }}>
                   Voir les artisans
                 </Link>
               </motion.div>
 
               {/* Quick service chips */}
               <motion.div variants={fadeUp}>
-                <p className="font-mono text-xs text-muted uppercase tracking-widest mb-3">
+                <p className="font-mono text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.55)' }}>
                   Accès direct
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -251,20 +260,21 @@ export default function HomePage() {
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: '6px',
                         padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 500,
-                        background: 'white', border: '1px solid #D8D2C4', color: '#1A1A1A',
-                        cursor: 'pointer', textDecoration: 'none', transition: 'all 0.15s',
+                        background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)',
+                        color: 'rgba(255,255,255,0.9)', cursor: 'pointer', textDecoration: 'none',
+                        transition: 'all 0.15s',
                       }}
                       onMouseEnter={e => {
                         const el = e.currentTarget as HTMLElement
-                        el.style.borderColor = '#E85D26'
-                        el.style.color = '#E85D26'
-                        el.style.background = 'rgba(232,93,38,0.05)'
+                        el.style.background = 'rgba(255,255,255,0.22)'
+                        el.style.borderColor = 'rgba(255,255,255,0.45)'
+                        el.style.color = 'white'
                       }}
                       onMouseLeave={e => {
                         const el = e.currentTarget as HTMLElement
-                        el.style.borderColor = '#D8D2C4'
-                        el.style.color = '#1A1A1A'
-                        el.style.background = 'white'
+                        el.style.background = 'rgba(255,255,255,0.12)'
+                        el.style.borderColor = 'rgba(255,255,255,0.22)'
+                        el.style.color = 'rgba(255,255,255,0.9)'
                       }}>
                       <Icon size={13} />
                       {label}
@@ -276,47 +286,43 @@ export default function HomePage() {
               {/* Trust micro-line */}
               <motion.div variants={fadeUp} className="flex flex-wrap gap-5 mt-8">
                 {[
-                  { Icon: Shield,      text: 'Artisans vérifiés KYC', color: 'text-accent2' },
-                  { Icon: Zap,         text: 'Réponse en 30 min',     color: 'text-accent'  },
-                  { Icon: CheckCircle, text: 'Paiement sécurisé Wave', color: 'text-accent2' },
-                ].map(({ Icon, text, color }) => (
+                  { Icon: Shield,      text: 'Artisans vérifiés KYC' },
+                  { Icon: Zap,         text: 'Réponse en 30 min'     },
+                  { Icon: CheckCircle, text: 'Paiement sécurisé Wave' },
+                ].map(({ Icon, text }) => (
                   <div key={text} className="flex items-center gap-2">
-                    <Icon size={14} className={color} />
-                    <span style={{ fontSize: '13px', color: '#7A7A6E' }}>{text}</span>
+                    <Icon size={14} style={{ color: 'rgba(255,255,255,0.7)' }} />
+                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)' }}>{text}</span>
                   </div>
                 ))}
               </motion.div>
             </motion.div>
 
-            {/* Right: stats panel (desktop) */}
+            {/* Right: stats panel (desktop) — white card floating on gradient */}
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ type: 'spring', stiffness: 65, damping: 17, delay: 0.4 }}
               className="hidden md:block"
             >
-              <div className="bg-dark rounded-xl p-7 relative overflow-hidden"
-                style={{ border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
-                {/* Glow */}
-                <div className="absolute top-0 right-0 w-52 h-52 rounded-full blur-3xl pointer-events-none"
-                  style={{ background: 'radial-gradient(circle, rgba(232,93,38,0.12) 0%, transparent 70%)' }} aria-hidden="true" />
-
-                <p className="font-mono uppercase tracking-widest mb-5 relative"
-                  style={{ fontSize: '10px', color: 'rgba(250,250,245,0.35)' }}>
+              <div className="bg-white rounded-xl p-7"
+                style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.22)' }}>
+                <p className="font-mono uppercase tracking-widest mb-5"
+                  style={{ fontSize: '10px', color: '#9A9A8E' }}>
                   Activité en direct
                 </p>
 
                 {/* Stats 2×2 */}
-                <div className="grid grid-cols-2 gap-px rounded-lg overflow-hidden mb-5 relative"
-                  style={{ background: 'rgba(255,255,255,0.04)' }}>
+                <div className="grid grid-cols-2 gap-px rounded-lg overflow-hidden mb-5"
+                  style={{ background: '#EDE8DE' }}>
                   {STATS_DISPLAY.map(s => (
-                    <div key={s.label} className="bg-dark2 p-5">
+                    <div key={s.label} style={{ background: 'white', padding: '20px' }}>
                       <div className="font-display font-bold text-accent"
                         style={{ fontSize: '30px', letterSpacing: '-0.02em', lineHeight: 1 }}>
                         {s.value}
                       </div>
                       <div className="font-mono mt-1"
-                        style={{ fontSize: '10px', color: 'rgba(250,250,245,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        style={{ fontSize: '10px', color: '#9A9A8E', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                         {s.label}
                       </div>
                     </div>
@@ -324,10 +330,10 @@ export default function HomePage() {
                 </div>
 
                 {/* Status */}
-                <div className="flex items-center gap-3 pt-4 relative"
-                  style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-                  <span className="font-mono" style={{ fontSize: '10px', color: 'rgba(250,250,245,0.35)' }}>
+                <div className="flex items-center gap-3 pt-4"
+                  style={{ borderTop: '1px solid #EDE8DE' }}>
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                  <span className="font-mono" style={{ fontSize: '10px', color: '#9A9A8E' }}>
                     Plateforme opérationnelle · Abidjan
                   </span>
                 </div>
@@ -335,35 +341,18 @@ export default function HomePage() {
             </motion.div>
           </div>
 
-          {/* Mobile stats strip */}
+          {/* Mobile stats strip — semi-transparent on gradient */}
           <div className="md:hidden grid grid-cols-2 gap-3 mt-10">
             {STATS_DISPLAY.map(s => (
-              <div key={s.label} className="bg-dark rounded-lg p-4"
-                style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div className="font-display font-bold text-accent" style={{ fontSize: '24px' }}>{s.value}</div>
-                <div className="font-mono mt-0.5" style={{ fontSize: '10px', color: 'rgba(250,250,245,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
+              <div key={s.label} className="rounded-lg p-4"
+                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                <div className="font-display font-bold text-white" style={{ fontSize: '24px' }}>{s.value}</div>
+                <div className="font-mono mt-0.5" style={{ fontSize: '10px', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
-
-      {/* ━━━━ MARQUEE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="bg-dark overflow-hidden py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }} aria-hidden="true">
-        <motion.div
-          animate={{ x: ['0%', '-50%'] }}
-          transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
-          style={{ display: 'flex', whiteSpace: 'nowrap', willChange: 'transform' }}
-        >
-          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <span key={i} className="font-mono"
-              style={{ padding: '0 20px', fontSize: '11px', color: 'rgba(250,250,245,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {item}
-              <span style={{ margin: '0 12px', color: '#E85D26', opacity: 0.5 }}>·</span>
-            </span>
-          ))}
-        </motion.div>
-      </div>
 
       {/* ━━━━ SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-20 px-4">
