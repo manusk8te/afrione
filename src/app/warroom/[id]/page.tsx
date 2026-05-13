@@ -636,9 +636,9 @@ export default function WarRoomPage() {
     setShowProposalConfirm(true)
   }
 
-  // Artisan envoie la proposition finale avec le total validé
+  // Artisan envoie la proposition finale avec le total calculé
   const sendFinalProposal = async () => {
-    const total = parseInt(proposalTotal.replace(/\s/g, '')) || 0
+    const total = parseInt(proposalTotal) || 0
     if (!total || total <= 0) { toast.error('Montant invalide'); return }
     const { baseEstimate, matSuggests, timeAdjs, extraMatTotal, extraLaborTotal } = proposalDraft || {}
 
@@ -2006,16 +2006,11 @@ export default function WarRoomPage() {
                       <span style={{fontFamily:'Space Mono',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
                     </div>
                   ))}
-                  <div style={{borderTop:'1px solid #D8D2C4',paddingTop:'10px',marginTop:'2px'}}>
-                    <div style={{fontSize:'11px',color:'#7A7A6E',marginBottom:'6px'}}>Total final (modifiable)</div>
-                    <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
-                      <input
-                        type="number"
-                        value={proposalTotal}
-                        onChange={e => setProposalTotal(e.target.value)}
-                        style={{flex:1,padding:'10px 12px',border:'2px solid #0F1410',borderRadius:'10px',fontSize:'18px',fontFamily:'Space Mono',fontWeight:700,color:'#0F1410',outline:'none',textAlign:'right'}}
-                      />
-                      <span style={{fontSize:'12px',color:'#7A7A6E',whiteSpace:'nowrap'}}>FCFA</span>
+                  <div style={{borderTop:'1px solid #D8D2C4',paddingTop:'10px',marginTop:'2px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+                    <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>Total</span>
+                    <div>
+                      <span style={{fontFamily:'Space Mono',fontSize:'24px',fontWeight:700,color:'#0F1410'}}>{parseInt(proposalTotal||'0').toLocaleString('fr')}</span>
+                      <span style={{fontSize:'12px',color:'#7A7A6E',marginLeft:'4px'}}>FCFA</span>
                     </div>
                   </div>
                   <button onClick={sendFinalProposal} disabled={acting} style={{
