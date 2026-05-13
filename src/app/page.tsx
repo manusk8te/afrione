@@ -6,9 +6,11 @@ import Navbar from '@/components/layout/Navbar'
 import {
   ArrowRight, Shield, Zap, Star, CheckCircle, ChevronRight, Building2,
   Droplets, Hammer, Paintbrush, Ruler, Wind, Lock, LayoutGrid,
-  Cpu, Users, CreditCard, Camera, Wrench,
+  Cpu, Users, CreditCard, Camera, Wrench, MapPin, Clock,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+
+/* ─── Static data ─────────────────────────────────────────────────────────── */
 
 const SERVICES = [
   { Icon: Droplets,   label: 'Plomberie',     metier: 'Plomberie'     },
@@ -22,36 +24,76 @@ const SERVICES = [
 ]
 
 const METIER_ICON_MAP: Record<string, React.ElementType> = {
-  'Plomberie':     Droplets,
-  'Électricité':   Zap,
-  'Maçonnerie':    Hammer,
-  'Peinture':      Paintbrush,
-  'Menuiserie':    Ruler,
-  'Climatisation': Wind,
-  'Serrurerie':    Lock,
-  'Carrelage':     LayoutGrid,
+  'Plomberie': Droplets, 'Électricité': Zap, 'Maçonnerie': Hammer,
+  'Peinture': Paintbrush, 'Menuiserie': Ruler, 'Climatisation': Wind,
+  'Serrurerie': Lock, 'Carrelage': LayoutGrid,
 }
 
 const STEPS = [
-  { num: '01', title: 'Décrivez votre besoin',  desc: "L'IA analyse votre problème et estime le prix en quelques secondes", Icon: Cpu        },
-  { num: '02', title: 'Choisissez un artisan',  desc: 'Parmi les profils sélectionnés selon votre zone et votre budget',    Icon: Users      },
-  { num: '03', title: 'Confirmez & payez',       desc: "Paiement sécurisé via Wave, les fonds sont bloqués jusqu'à la fin",  Icon: CreditCard },
-  { num: '04', title: 'Mission réalisée',        desc: "Validez la photo de fin de chantier et notez l'artisan",            Icon: Camera     },
+  { num: '01', title: 'Décrivez votre besoin',  desc: "L'IA analyse votre problème et estime le prix en quelques secondes.", Icon: Cpu        },
+  { num: '02', title: 'Choisissez un artisan',  desc: 'Profils sélectionnés selon votre quartier et votre budget.',           Icon: Users      },
+  { num: '03', title: 'Confirmez & payez',       desc: "Paiement sécurisé Wave. Les fonds sont bloqués jusqu'à la fin.",       Icon: CreditCard },
+  { num: '04', title: 'Mission validée',         desc: "Validez la photo de fin de chantier et notez l'artisan.",             Icon: Camera     },
 ]
 
-const staggerContainer = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.09 } },
+const TRUST_PILLARS = [
+  {
+    Icon: Shield,
+    title: 'Artisans vérifiés KYC',
+    desc: "Chaque artisan passe une vérification d'identité et de compétence avant d'être admis sur la plateforme.",
+    stat: '100% contrôlés',
+    color: '#2B6B3E',
+    bg: 'rgba(43,107,62,0.08)',
+  },
+  {
+    Icon: CreditCard,
+    title: 'Escrow Wave',
+    desc: "Votre argent est sécurisé jusqu'à la fin de la mission. Libéré uniquement après votre validation.",
+    stat: 'Paiement garanti',
+    color: '#E85D26',
+    bg: 'rgba(232,93,38,0.08)',
+  },
+  {
+    Icon: Star,
+    title: 'Qualité garantie',
+    desc: 'Chaque mission est notée. Les artisans sous 3/5 sont automatiquement suspendus de la plateforme.',
+    stat: '4.8★ en moyenne',
+    color: '#C9A84C',
+    bg: 'rgba(201,168,76,0.08)',
+  },
+  {
+    Icon: Clock,
+    title: 'Réponse en 30 min',
+    desc: 'Un artisan qualifié de votre quartier vous contacte en moins de 30 minutes après votre demande.',
+    stat: 'Rapide et local',
+    color: '#60a5fa',
+    bg: 'rgba(96,165,250,0.08)',
+  },
+]
+
+const MARQUEE_ITEMS = [
+  'Plomberie', 'Électricité', 'Maçonnerie', 'Peinture', 'Menuiserie',
+  'Climatisation', 'Serrurerie', 'Carrelage', 'Soudure', 'Toiture',
+  'Cocody', 'Yopougon', 'Plateau', 'Adjamé', 'Marcory',
+]
+
+/* ─── Animation variants ──────────────────────────────────────────────────── */
+
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.08 } } }
+const fadeUp  = {
+  hidden: { opacity: 0, y: 24 },
+  show:   { opacity: 1, y: 0,  transition: { type: 'spring' as const, stiffness: 90, damping: 18 } },
+}
+const fadeIn  = {
+  hidden: { opacity: 0 },
+  show:   { opacity: 1, transition: { duration: 0.4 } },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 22 },
-  show:   { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 20 } },
-}
+/* ─── Component ───────────────────────────────────────────────────────────── */
 
 export default function HomePage() {
-  const [stats, setStats]               = useState({ artisans: 500, missions: 2400, rating: 4.8, satisfaction: 98 })
-  const [topArtisans, setTopArtisans]   = useState<any[]>([])
+  const [stats, setStats]             = useState({ artisans: 500, missions: 2400, rating: 4.8, satisfaction: 98 })
+  const [topArtisans, setTopArtisans] = useState<any[]>([])
   const [topEntreprises, setTopEntreprises] = useState<any[]>([])
   const [serviceCounts, setServiceCounts]   = useState<Record<string, number>>({})
   const [loadingArtisans, setLoadingArtisans] = useState(true)
@@ -69,16 +111,13 @@ export default function HomePage() {
         supabase.from('artisan_pros').select('rating_avg').eq('kyc_status', 'approved').not('rating_avg', 'is', null),
         supabase.from('artisan_pros').select('metier').eq('kyc_status', 'approved'),
       ])
-
       const ratings = ratingsData?.map((a: any) => a.rating_avg).filter(Boolean) || []
       const avgRating = ratings.length
         ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
         : 4.8
-
       const counts: Record<string, number> = {}
       allArtisans?.forEach((a: any) => { counts[a.metier] = (counts[a.metier] || 0) + 1 })
       setServiceCounts(counts)
-
       setStats({
         artisans:     Math.max(artisanCount || 0, 500),
         missions:     Math.max(missionCount  || 0, 2400),
@@ -91,7 +130,7 @@ export default function HomePage() {
       const [artisanRes, entrepriseRes] = await Promise.all([
         supabase
           .from('artisan_pros')
-          .select('id, metier, tarif_min, rating_avg, rating_count, mission_count, users!artisan_pros_user_id_fkey(name, quartier, avatar_url)')
+          .select('id, metier, tarif_min, tarif_max, rating_avg, mission_count, users!artisan_pros_user_id_fkey(name, quartier, avatar_url)')
           .eq('kyc_status', 'approved')
           .order('rating_avg', { ascending: false })
           .limit(3),
@@ -113,101 +152,159 @@ export default function HomePage() {
   }, [])
 
   const STATS_DISPLAY = [
-    { value: stats.artisans >= 500 ? `${stats.artisans}+` : `${stats.artisans}`,
-      label: 'Artisans vérifiés' },
-    { value: `${stats.rating}★`,
-      label: 'Note moyenne' },
-    { value: stats.missions >= 2400
-        ? `${stats.missions.toLocaleString()}+`
-        : `${stats.missions.toLocaleString()}`,
-      label: 'Missions réalisées' },
-    { value: `${stats.satisfaction}%`,
-      label: 'Clients satisfaits' },
+    { value: `${stats.artisans}+`, label: 'Artisans vérifiés' },
+    { value: `${stats.rating}★`,   label: 'Note moyenne'      },
+    { value: `${stats.missions.toLocaleString()}+`, label: 'Missions' },
+    { value: `${stats.satisfaction}%`, label: 'Clients satisfaits' },
   ]
 
   return (
     <div className="min-h-screen bg-bg">
       <Navbar />
 
-      {/* ── HERO ────────────────────────────────── */}
+      {/* ━━━━ HERO ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="min-h-[100dvh] flex items-start md:items-center pt-24 pb-16 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-16 right-[4%] w-[520px] h-[520px] bg-accent/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-16 left-6 w-[320px] h-[320px] bg-accent2/5 rounded-full blur-3xl" />
+        {/* Background blobs */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute top-12 right-[3%] w-[560px] h-[560px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(232,93,38,0.07) 0%, transparent 70%)' }} />
+          <div className="absolute bottom-20 left-4 w-[300px] h-[300px] rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(43,107,62,0.06) 0%, transparent 70%)' }} />
         </div>
 
         <div className="page-container relative w-full">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_420px] gap-12 xl:gap-20 items-center">
 
             {/* Left: content */}
-            <motion.div variants={staggerContainer} initial="hidden" animate="show">
-              <motion.div variants={fadeUp}
-                className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-2 mb-8">
-                <span className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
+            <motion.div variants={stagger} initial="hidden" animate="show">
+              {/* Badge */}
+              <motion.div variants={fadeUp} className="inline-flex items-center gap-2 mb-8"
+                style={{ background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '40px', padding: '6px 14px 6px 10px' }}>
+                <span className="w-2 h-2 rounded-full bg-accent animate-pulse-soft flex-shrink-0" />
                 <span className="font-mono text-xs text-accent tracking-wider">PLATEFORME #1 À ABIDJAN</span>
               </motion.div>
 
+              {/* Headline */}
               <motion.h1 variants={fadeUp}
-                className="font-display text-5xl sm:text-6xl lg:text-[72px] font-bold text-dark leading-[0.93] tracking-tight mb-6">
+                className="font-display font-bold text-dark tracking-tight leading-[0.9]"
+                style={{ fontSize: 'clamp(40px, 6vw, 76px)', marginBottom: '20px' }}>
                 Trouver le bon<br />
                 <span className="text-accent">artisan</span>,<br />
                 au bon prix.
               </motion.h1>
 
+              {/* Subtitle */}
               <motion.p variants={fadeUp}
-                className="text-lg text-muted max-w-[52ch] mb-10 leading-relaxed font-body">
-                AfriOne met en relation les clients avec des artisans qualifiés et vérifiés à Abidjan.
-                Rapide, sécurisé, transparent. Paiement via Wave.
+                className="font-body text-muted leading-relaxed"
+                style={{ fontSize: '17px', maxWidth: '50ch', marginBottom: '32px' }}>
+                Artisans vérifiés, prix transparents, paiement sécurisé via Wave.
+                Votre chantier, géré de bout en bout.
               </motion.p>
 
-              <motion.div variants={fadeUp} className="flex flex-wrap gap-4 mb-10">
+              {/* Primary CTAs */}
+              <motion.div variants={fadeUp} className="flex flex-wrap gap-3" style={{ marginBottom: '28px' }}>
                 <Link href="/diagnostic"
-                  className="btn-primary flex items-center gap-2 text-base py-4 px-8 active:scale-[0.98] transition-transform">
-                  Décrire mon problème <ArrowRight size={18} />
+                  className="btn-primary"
+                  style={{ fontSize: '15px', padding: '13px 26px', cursor: 'pointer' }}>
+                  Décrire mon problème <ArrowRight size={17} />
                 </Link>
                 <Link href="/artisans"
-                  className="btn-outline flex items-center gap-2 text-base py-4 px-8 active:scale-[0.98] transition-transform">
+                  className="btn-outline"
+                  style={{ fontSize: '15px', padding: '13px 26px', cursor: 'pointer' }}>
                   Voir les artisans
                 </Link>
               </motion.div>
 
-              <motion.div variants={fadeUp} className="flex flex-wrap gap-6">
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <Shield size={15} className="text-accent2" /><span>Artisans vérifiés KYC</span>
+              {/* Quick service chips */}
+              <motion.div variants={fadeUp}>
+                <p className="font-mono text-xs text-muted uppercase tracking-widest mb-3">
+                  Accès direct
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {SERVICES.map(({ Icon, label, metier }) => (
+                    <Link key={metier} href={`/artisans?metier=${encodeURIComponent(metier)}`}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        padding: '7px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 500,
+                        background: 'white', border: '1px solid #D8D2C4', color: '#1A1A1A',
+                        cursor: 'pointer', textDecoration: 'none', transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => {
+                        const el = e.currentTarget as HTMLElement
+                        el.style.borderColor = '#E85D26'
+                        el.style.color = '#E85D26'
+                        el.style.background = 'rgba(232,93,38,0.05)'
+                      }}
+                      onMouseLeave={e => {
+                        const el = e.currentTarget as HTMLElement
+                        el.style.borderColor = '#D8D2C4'
+                        el.style.color = '#1A1A1A'
+                        el.style.background = 'white'
+                      }}>
+                      <Icon size={13} />
+                      {label}
+                    </Link>
+                  ))}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <Zap size={15} className="text-accent" /><span>Réponse en moins de 30 min</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted">
-                  <CheckCircle size={15} className="text-accent2" /><span>Paiement sécurisé Wave</span>
-                </div>
+              </motion.div>
+
+              {/* Trust micro-line */}
+              <motion.div variants={fadeUp} className="flex flex-wrap gap-5 mt-8">
+                {[
+                  { Icon: Shield,      text: 'Artisans vérifiés KYC', color: 'text-accent2' },
+                  { Icon: Zap,         text: 'Réponse en 30 min',     color: 'text-accent'  },
+                  { Icon: CheckCircle, text: 'Paiement sécurisé Wave', color: 'text-accent2' },
+                ].map(({ Icon, text, color }) => (
+                  <div key={text} className="flex items-center gap-2">
+                    <Icon size={14} className={color} />
+                    <span style={{ fontSize: '13px', color: '#7A7A6E' }}>{text}</span>
+                  </div>
+                ))}
               </motion.div>
             </motion.div>
 
-            {/* Right: stats panel (desktop only) */}
+            {/* Right: stats panel (desktop) */}
             <motion.div
-              initial={{ opacity: 0, x: 36 }}
+              initial={{ opacity: 0, x: 40 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ type: 'spring', stiffness: 70, damping: 18, delay: 0.35 }}
+              transition={{ type: 'spring', stiffness: 65, damping: 17, delay: 0.4 }}
               className="hidden md:block"
             >
-              <div className="bg-dark rounded-3xl p-7 border border-border/50 relative overflow-hidden
-                              shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-accent/6 rounded-full blur-2xl" />
-                <p className="font-mono text-[10px] text-muted uppercase tracking-widest mb-5 relative">
+              <div className="bg-dark rounded-3xl p-7 relative overflow-hidden"
+                style={{ border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+                {/* Glow */}
+                <div className="absolute top-0 right-0 w-52 h-52 rounded-full blur-3xl pointer-events-none"
+                  style={{ background: 'radial-gradient(circle, rgba(232,93,38,0.12) 0%, transparent 70%)' }} aria-hidden="true" />
+
+                <p className="font-mono uppercase tracking-widest mb-5 relative"
+                  style={{ fontSize: '10px', color: 'rgba(250,250,245,0.35)' }}>
                   Activité en direct
                 </p>
-                <div className="grid grid-cols-2 gap-px bg-border/20 rounded-2xl overflow-hidden mb-5 relative">
+
+                {/* Stats 2×2 */}
+                <div className="grid grid-cols-2 gap-px rounded-2xl overflow-hidden mb-5 relative"
+                  style={{ background: 'rgba(255,255,255,0.04)' }}>
                   {STATS_DISPLAY.map(s => (
                     <div key={s.label} className="bg-dark2 p-5">
-                      <div className="font-display text-3xl font-bold text-accent mb-1">{s.value}</div>
-                      <div className="font-mono text-[10px] text-muted uppercase tracking-wider">{s.label}</div>
+                      <div className="font-display font-bold text-accent"
+                        style={{ fontSize: '30px', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                        {s.value}
+                      </div>
+                      <div className="font-mono mt-1"
+                        style={{ fontSize: '10px', color: 'rgba(250,250,245,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        {s.label}
+                      </div>
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center gap-3 pt-4 border-t border-border/20 relative">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse flex-shrink-0" />
-                  <span className="font-mono text-[10px] text-muted">Plateforme opérationnelle · Abidjan</span>
+
+                {/* Status */}
+                <div className="flex items-center gap-3 pt-4 relative"
+                  style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+                  <span className="font-mono" style={{ fontSize: '10px', color: 'rgba(250,250,245,0.35)' }}>
+                    Plateforme opérationnelle · Abidjan
+                  </span>
                 </div>
               </div>
             </motion.div>
@@ -216,109 +313,140 @@ export default function HomePage() {
           {/* Mobile stats strip */}
           <div className="md:hidden grid grid-cols-2 gap-3 mt-10">
             {STATS_DISPLAY.map(s => (
-              <div key={s.label} className="bg-dark rounded-2xl p-4 border border-border/50">
-                <div className="font-display text-2xl font-bold text-accent">{s.value}</div>
-                <div className="font-mono text-[10px] text-muted uppercase tracking-wider mt-1">{s.label}</div>
+              <div key={s.label} className="bg-dark rounded-2xl p-4"
+                style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="font-display font-bold text-accent" style={{ fontSize: '24px' }}>{s.value}</div>
+                <div className="font-mono mt-0.5" style={{ fontSize: '10px', color: 'rgba(250,250,245,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── SERVICES ────────────────────────────── */}
+      {/* ━━━━ MARQUEE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="bg-dark overflow-hidden py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }} aria-hidden="true">
+        <motion.div
+          animate={{ x: ['0%', '-50%'] }}
+          transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+          style={{ display: 'flex', whiteSpace: 'nowrap', willChange: 'transform' }}
+        >
+          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
+            <span key={i} className="font-mono"
+              style={{ padding: '0 20px', fontSize: '11px', color: 'rgba(250,250,245,0.3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {item}
+              <span style={{ margin: '0 12px', color: '#E85D26', opacity: 0.5 }}>·</span>
+            </span>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* ━━━━ SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-20 px-4">
         <div className="page-container">
           <div className="mb-10">
             <span className="section-label">NOS SERVICES</span>
-            <h2 className="font-display text-4xl font-bold text-dark mt-2 tracking-tight">
+            <h2 className="font-display font-bold text-dark tracking-tight mt-2"
+              style={{ fontSize: 'clamp(28px, 3.5vw, 44px)', lineHeight: 1.05 }}>
               Tous vos services,<br />au même endroit.
             </h2>
-            <p className="text-muted mt-3 max-w-[52ch]">Des artisans vérifiés dans chaque domaine</p>
+            <p className="text-muted mt-3" style={{ maxWidth: '48ch', fontSize: '15px' }}>
+              Des artisans qualifiés dans chaque corps de métier, disponibles à Abidjan.
+            </p>
           </div>
 
           <motion.div
-            variants={staggerContainer}
+            variants={stagger}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: '-80px' }}
             className="grid grid-cols-2 sm:grid-cols-4 gap-3"
           >
-            {SERVICES.map((s, i) => {
-              const { Icon } = s
-              const isFeatured = i === 0
-              return (
-                <motion.div key={s.label} variants={fadeUp}
-                  className={isFeatured ? 'col-span-2 sm:col-span-2' : ''}>
-                  <Link href={`/artisans?metier=${encodeURIComponent(s.metier)}`}
-                    className={`card group cursor-pointer hover:border-accent/30 hover:-translate-y-1
-                      active:scale-[0.98] transition-all duration-200 block
-                      ${isFeatured ? 'flex items-center gap-5 py-6' : ''}`}>
-                    <div className={`flex items-center justify-center rounded-xl bg-bg2
-                      group-hover:bg-accent/10 transition-colors flex-shrink-0
-                      ${isFeatured ? 'w-14 h-14' : 'w-10 h-10 mb-3'}`}>
-                      <Icon size={isFeatured ? 22 : 17} className="text-accent" />
-                    </div>
-                    <div>
-                      <div className="font-display font-bold text-dark group-hover:text-accent transition-colors">
-                        {s.label}
-                      </div>
-                      <div className="font-mono text-xs text-muted mt-1">
-                        {serviceCounts[s.metier]
-                          ? `${serviceCounts[s.metier]} artisan${serviceCounts[s.metier] > 1 ? 's' : ''}`
-                          : 'Disponible'}
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              )
-            })}
+            {SERVICES.map(({ Icon, label, metier }, i) => (
+              <motion.div key={label} variants={fadeUp}>
+                <Link href={`/artisans?metier=${encodeURIComponent(metier)}`}
+                  className="card group block"
+                  style={{ cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)', textDecoration: 'none' }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.transform = 'translateY(-4px)'
+                    el.style.borderColor = 'rgba(232,93,38,0.35)'
+                    el.style.boxShadow = '0 8px 24px rgba(232,93,38,0.08)'
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.transform = 'translateY(0)'
+                    el.style.borderColor = '#D8D2C4'
+                    el.style.boxShadow = 'none'
+                  }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-bg2"
+                    style={{ transition: 'background 0.2s' }}>
+                    <Icon size={17} className="text-accent" />
+                  </div>
+                  <div className="font-display font-bold text-dark" style={{ fontSize: '14px', transition: 'color 0.2s' }}>
+                    {label}
+                  </div>
+                  <div className="font-mono mt-1" style={{ fontSize: '11px', color: '#7A7A6E' }}>
+                    {serviceCounts[metier]
+                      ? `${serviceCounts[metier]} artisan${serviceCounts[metier] > 1 ? 's' : ''}`
+                      : 'Disponible'}
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ────────────────────────── */}
+      {/* ━━━━ HOW IT WORKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-20 px-4 bg-dark">
         <div className="page-container">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1.7fr] gap-16 items-start">
 
-            {/* Left: heading */}
+            {/* Left: heading (sticky on desktop) */}
             <div className="md:sticky md:top-24">
               <span className="font-mono text-xs text-muted uppercase tracking-wider">COMMENT ÇA MARCHE</span>
-              <h2 className="font-display text-4xl font-bold text-cream mt-3 mb-5 tracking-tight leading-tight">
+              <h2 className="font-display font-bold text-cream tracking-tight mt-3 mb-4"
+                style={{ fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.05 }}>
                 Simple.<br />Rapide.<br />Sécurisé.
               </h2>
-              <p className="text-muted text-sm leading-relaxed max-w-[38ch]">
+              <p className="text-muted leading-relaxed" style={{ fontSize: '14px', maxWidth: '38ch' }}>
                 De la description du problème à la validation finale, tout se passe sur AfriOne.
+                Transparent, à chaque étape.
               </p>
-              <Link href="/diagnostic" className="btn-primary inline-flex items-center gap-2 mt-8 active:scale-[0.98] transition-transform">
-                Essayer maintenant <ArrowRight size={16} />
+              <Link href="/diagnostic"
+                className="btn-primary inline-flex items-center gap-2 mt-8"
+                style={{ cursor: 'pointer' }}>
+                Essayer maintenant <ArrowRight size={15} />
               </Link>
             </div>
 
-            {/* Right: steps */}
+            {/* Right: numbered steps */}
             <motion.div
-              variants={staggerContainer}
+              variants={stagger}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: '-60px' }}
-              className="flex flex-col"
             >
               {STEPS.map((step, i) => {
                 const { Icon } = step
                 const isLast = i === STEPS.length - 1
                 return (
                   <motion.div key={step.num} variants={fadeUp}
-                    className={`flex gap-5 ${!isLast ? 'pb-8 mb-8 border-b border-border/15' : ''}`}>
-                    <div className="flex-shrink-0 flex flex-col items-center gap-2 pt-1">
-                      <div className="w-11 h-11 rounded-2xl bg-accent/10 border border-accent/20
-                                      flex items-center justify-center">
+                    className="flex gap-5"
+                    style={{ paddingBottom: !isLast ? '32px' : undefined, marginBottom: !isLast ? '32px' : undefined, borderBottom: !isLast ? '1px solid rgba(255,255,255,0.06)' : undefined }}>
+                    {/* Icon + number */}
+                    <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', paddingTop: '2px' }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Icon size={19} className="text-accent" />
                       </div>
-                      <span className="font-mono text-[9px] text-accent/40 tracking-wider">{step.num}</span>
+                      <span className="font-mono" style={{ fontSize: '9px', color: 'rgba(232,93,38,0.35)', letterSpacing: '0.05em' }}>{step.num}</span>
                     </div>
-                    <div className="pt-1">
-                      <h3 className="font-display font-bold text-cream text-lg mb-2">{step.title}</h3>
-                      <p className="text-sm text-muted leading-relaxed">{step.desc}</p>
+                    {/* Text */}
+                    <div style={{ paddingTop: '4px' }}>
+                      <h3 className="font-display font-bold text-cream" style={{ fontSize: '17px', marginBottom: '6px' }}>
+                        {step.title}
+                      </h3>
+                      <p className="text-muted leading-relaxed" style={{ fontSize: '14px' }}>{step.desc}</p>
                     </div>
                   </motion.div>
                 )
@@ -328,37 +456,42 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── TOP ARTISANS ────────────────────────── */}
+      {/* ━━━━ TOP ARTISANS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-20 px-4">
         <div className="page-container">
           <div className="flex items-end justify-between mb-10">
             <div>
               <span className="section-label">ARTISANS EN VEDETTE</span>
-              <h2 className="font-display text-4xl font-bold text-dark mt-2 tracking-tight">Les mieux notés</h2>
-              <p className="text-muted mt-2">Tous vérifiés, tous fiables</p>
+              <h2 className="font-display font-bold text-dark tracking-tight mt-2"
+                style={{ fontSize: 'clamp(26px, 3vw, 40px)' }}>
+                Les mieux notés
+              </h2>
+              <p className="text-muted mt-1" style={{ fontSize: '14px' }}>Tous vérifiés, tous fiables</p>
             </div>
             <Link href="/artisans"
-              className="hidden sm:flex items-center gap-1 text-sm font-medium text-accent hover:gap-2 transition-all">
-              Voir tous <ChevronRight size={16} />
+              className="hidden sm:flex items-center gap-1 text-accent font-semibold hover:gap-2 transition-all"
+              style={{ fontSize: '14px', cursor: 'pointer', textDecoration: 'none' }}>
+              Voir tous <ChevronRight size={15} />
             </Link>
           </div>
 
           {loadingArtisans ? (
-            <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
+            /* Skeleton matching 2fr+1fr layout */
+            <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-5">
               <div className="card animate-pulse">
-                <div className="w-16 h-16 bg-bg2 rounded-2xl mb-6" />
-                <div className="h-5 bg-bg2 rounded w-2/3 mb-3" />
-                <div className="h-4 bg-bg2 rounded w-1/2 mb-8" />
-                <div className="h-px bg-bg2 mb-6" />
-                <div className="h-10 bg-bg2 rounded-xl" />
+                <div className="w-16 h-16 rounded-2xl bg-bg2 mb-5" />
+                <div className="h-5 bg-bg2 rounded-lg w-2/3 mb-2" />
+                <div className="h-4 bg-bg2 rounded-lg w-1/2 mb-8" />
+                <div className="h-px bg-bg2 mb-5" />
+                <div className="h-11 bg-bg2 rounded-xl" />
               </div>
               <div className="flex flex-col gap-4">
                 {[1, 2].map(i => (
                   <div key={i} className="card animate-pulse flex gap-4">
-                    <div className="w-12 h-12 bg-bg2 rounded-2xl flex-shrink-0" />
+                    <div className="w-12 h-12 rounded-2xl bg-bg2 flex-shrink-0" />
                     <div className="flex-1">
-                      <div className="h-4 bg-bg2 rounded w-2/3 mb-2" />
-                      <div className="h-3 bg-bg2 rounded w-1/2" />
+                      <div className="h-4 bg-bg2 rounded-lg w-2/3 mb-2" />
+                      <div className="h-3 bg-bg2 rounded-lg w-1/2" />
                     </div>
                   </div>
                 ))}
@@ -366,21 +499,23 @@ export default function HomePage() {
             </div>
           ) : topArtisans.length > 0 ? (
             <motion.div
-              variants={staggerContainer}
+              variants={stagger}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true }}
-              className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6"
+              className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-5"
             >
-              {/* Featured first artisan */}
+              {/* Featured artisan */}
               {topArtisans[0] && (() => {
                 const a = topArtisans[0]
                 const MetierIcon = METIER_ICON_MAP[a.metier] || Wrench
                 return (
-                  <motion.div variants={fadeUp}
-                    className="card group hover:-translate-y-1 transition-all duration-200">
+                  <motion.div variants={fadeUp} className="card"
+                    style={{ transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)', cursor: 'default' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 32px rgba(0,0,0,0.08)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = '' }}>
                     <div className="flex items-start justify-between mb-5">
-                      <div className="w-16 h-16 bg-bg2 rounded-2xl overflow-hidden flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-2xl bg-bg2 overflow-hidden flex items-center justify-center">
                         {a.users?.avatar_url
                           ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                           : <MetierIcon size={26} className="text-accent" />
@@ -388,66 +523,84 @@ export default function HomePage() {
                       </div>
                       <span className="badge-green">Vérifié</span>
                     </div>
-                    <h3 className="font-display font-bold text-dark text-xl mb-1">
-                      {a.users?.name || a.metier || 'Artisan'}
+
+                    <h3 className="font-display font-bold text-dark" style={{ fontSize: '20px', marginBottom: '4px' }}>
+                      {a.users?.name || a.metier}
                     </h3>
-                    <p className="text-sm text-muted mb-6">
-                      {a.metier} · {a.users?.quartier || 'Abidjan'}
-                    </p>
-                    <div className="flex items-center gap-6 pt-4 border-t border-border mb-6">
+                    <div className="flex items-center gap-2 mb-6" style={{ fontSize: '13px', color: '#7A7A6E' }}>
+                      <span>{a.metier}</span>
+                      {a.users?.quartier && (
+                        <>
+                          <span style={{ color: '#D8D2C4' }}>·</span>
+                          <MapPin size={11} />
+                          <span>{a.users.quartier}</span>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-5 pt-4 mb-6" style={{ borderTop: '1px solid #D8D2C4' }}>
                       <div className="flex items-center gap-1">
                         <Star size={14} className="text-gold fill-gold" />
-                        <span className="font-semibold text-sm">{(a.rating_avg || 0).toFixed(1)}</span>
+                        <span className="font-semibold" style={{ fontSize: '14px' }}>
+                          {(a.rating_avg || 0).toFixed(1)}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-muted">
-                        <CheckCircle size={13} className="text-accent2" />
+                      <div className="flex items-center gap-1 text-muted" style={{ fontSize: '13px' }}>
+                        <CheckCircle size={12} className="text-accent2" />
                         {a.mission_count || 0} missions
                       </div>
-                      <div className="ml-auto font-bold text-sm text-dark">
-                        Dès {(a.tarif_min || 0).toLocaleString()} FCFA
-                      </div>
+                      {a.tarif_min > 0 && (
+                        <div className="ml-auto font-bold text-dark" style={{ fontSize: '14px' }}>
+                          Dès {a.tarif_min.toLocaleString()} F
+                        </div>
+                      )}
                     </div>
+
                     <Link href={`/artisans/${a.id}`}
-                      className="block btn-primary text-sm text-center py-3 active:scale-[0.98] transition-transform">
+                      className="btn-primary block text-center"
+                      style={{ fontSize: '14px', padding: '12px', cursor: 'pointer', textDecoration: 'none' }}>
                       Voir le profil <ArrowRight size={14} className="inline ml-1" />
                     </Link>
                   </motion.div>
                 )
               })()}
 
-              {/* Two smaller artisans stacked */}
+              {/* Two compact artisans */}
               <div className="flex flex-col gap-4">
                 {topArtisans.slice(1, 3).map(a => {
                   const MetierIcon = METIER_ICON_MAP[a.metier] || Wrench
                   return (
-                    <motion.div key={a.id} variants={fadeUp}
-                      className="card group hover:-translate-y-1 transition-all duration-200">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-bg2 rounded-2xl flex-shrink-0 overflow-hidden
-                                        flex items-center justify-center">
+                    <motion.div key={a.id} variants={fadeUp} className="card"
+                      style={{ transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)', cursor: 'default' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.07)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = '' }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-bg2 flex-shrink-0 overflow-hidden flex items-center justify-center">
                           {a.users?.avatar_url
                             ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                            : <MetierIcon size={19} className="text-accent" />
+                            : <MetierIcon size={18} className="text-accent" />
                           }
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-display font-bold text-dark text-sm truncate">
-                            {a.users?.name || a.metier || 'Artisan'}
+                          <div className="font-display font-bold text-dark truncate" style={{ fontSize: '14px' }}>
+                            {a.users?.name || a.metier}
                           </div>
-                          <div className="text-xs text-muted mt-0.5">
-                            {a.metier} · {a.users?.quartier || 'Abidjan'}
+                          <div style={{ fontSize: '12px', color: '#7A7A6E', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                            {a.metier}
+                            {a.users?.quartier && <><span style={{ color: '#D8D2C4' }}>·</span><MapPin size={10} />{a.users.quartier}</>}
                           </div>
                         </div>
-                        <span className="badge-green flex-shrink-0">Vérifié</span>
+                        <span className="badge-green flex-shrink-0" style={{ fontSize: '11px' }}>Vérifié</span>
                       </div>
-                      <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border">
+                      <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: '1px solid #D8D2C4' }}>
                         <div className="flex items-center gap-1">
                           <Star size={12} className="text-gold fill-gold" />
-                          <span className="text-sm font-semibold">{(a.rating_avg || 0).toFixed(1)}</span>
+                          <span className="font-semibold" style={{ fontSize: '13px' }}>{(a.rating_avg || 0).toFixed(1)}</span>
                         </div>
-                        <span className="text-xs text-muted">{a.mission_count || 0} missions</span>
+                        <span style={{ fontSize: '12px', color: '#7A7A6E' }}>{a.mission_count || 0} missions</span>
                         <Link href={`/artisans/${a.id}`}
-                          className="ml-auto text-xs font-semibold text-accent flex items-center gap-1 hover:gap-2 transition-all">
+                          className="ml-auto text-accent font-semibold flex items-center gap-1 hover:gap-2 transition-all"
+                          style={{ fontSize: '12px', cursor: 'pointer', textDecoration: 'none' }}>
                           Voir <ChevronRight size={12} />
                         </Link>
                       </div>
@@ -457,65 +610,113 @@ export default function HomePage() {
               </div>
             </motion.div>
           ) : (
-            <div className="text-center py-16 border border-dashed border-border rounded-2xl">
-              <Wrench size={30} className="text-muted mx-auto mb-4" />
-              <p className="text-muted mb-6">Nos artisans complètent leur inscription — revenez bientôt !</p>
-              <Link href="/diagnostic" className="btn-primary inline-flex items-center gap-2">
-                Décrire mon besoin <ArrowRight size={16} />
+            <div className="text-center py-16 rounded-2xl" style={{ border: '1.5px dashed #D8D2C4' }}>
+              <Wrench size={28} className="text-muted mx-auto mb-4" />
+              <p className="text-muted mb-6" style={{ fontSize: '15px' }}>Nos artisans complètent leur inscription — revenez bientôt !</p>
+              <Link href="/diagnostic" className="btn-primary inline-flex items-center gap-2" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+                Décrire mon besoin <ArrowRight size={15} />
               </Link>
             </div>
           )}
         </div>
       </section>
 
-      {/* ── ENTREPRISES PARTENAIRES ─────────────── */}
+      {/* ━━━━ TRUST ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="py-20 px-4 bg-dark">
+        <div className="page-container">
+          <div className="mb-12">
+            <span className="font-mono text-xs text-muted uppercase tracking-wider">POURQUOI AFRIONE</span>
+            <h2 className="font-display font-bold text-cream tracking-tight mt-2"
+              style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', lineHeight: 1.05, maxWidth: '18ch' }}>
+              Construit pour que vous ayez confiance.
+            </h2>
+          </div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-5"
+          >
+            {TRUST_PILLARS.map(({ Icon, title, desc, stat, color, bg }) => (
+              <motion.div key={title} variants={fadeUp}
+                className="rounded-2xl p-6"
+                style={{ background: bg, border: `1px solid ${color}22` }}>
+                <div className="flex items-start gap-4 mb-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: `${color}18`, border: `1px solid ${color}28` }}>
+                    <Icon size={18} style={{ color }} />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-cream" style={{ fontSize: '16px', marginBottom: '4px' }}>
+                      {title}
+                    </h3>
+                    <span className="font-mono" style={{ fontSize: '10px', color, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {stat}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-muted leading-relaxed" style={{ fontSize: '13px', paddingLeft: '56px' }}>
+                  {desc}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ━━━━ ENTREPRISES PARTENAIRES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {topEntreprises.length > 0 && (
-        <section className="py-20 px-4 bg-dark">
+        <section className="py-20 px-4">
           <div className="page-container">
             <div className="flex items-end justify-between mb-10">
               <div>
-                <span className="font-mono text-xs text-muted uppercase tracking-wider">STRUCTURES PARTENAIRES</span>
-                <h2 className="font-display text-4xl font-bold text-cream mt-2 tracking-tight">
+                <span className="section-label">STRUCTURES PARTENAIRES</span>
+                <h2 className="font-display font-bold text-dark tracking-tight mt-2"
+                  style={{ fontSize: 'clamp(26px, 3vw, 40px)' }}>
                   Entreprises multi-corps
                 </h2>
-                <p className="text-muted mt-2">Des équipes complètes pour vos grands travaux</p>
+                <p className="text-muted mt-1" style={{ fontSize: '14px' }}>Des équipes complètes pour vos grands travaux</p>
               </div>
               <Link href="/entreprises"
-                className="hidden sm:flex items-center gap-1 text-sm font-medium text-accent hover:gap-2 transition-all">
-                Voir tout <ChevronRight size={16} />
+                className="hidden sm:flex items-center gap-1 text-accent font-semibold hover:gap-2 transition-all"
+                style={{ fontSize: '14px', cursor: 'pointer', textDecoration: 'none' }}>
+                Voir tout <ChevronRight size={15} />
               </Link>
             </div>
 
             <motion.div
-              variants={staggerContainer}
+              variants={stagger}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true }}
             >
-              {/* Top 2: side by side */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+              {/* First 2 side-by-side */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4">
                 {topEntreprises.slice(0, 2).map(e => (
                   <motion.div key={e.id} variants={fadeUp}>
                     <Link href={`/entreprise-space/dashboard?id=${e.id}`} style={{ textDecoration: 'none' }}>
-                      <div className="card hover:-translate-y-1 transition-all duration-200 overflow-hidden group"
-                        style={{ padding: 0 }}>
-                        <div style={{
-                          height: '120px',
-                          background: e.banner_url ? '#1A1A1A' : 'linear-gradient(135deg,#1A2F1E,#0F1410)',
-                          overflow: 'hidden', position: 'relative',
-                        }}>
+                      <div className="card overflow-hidden group"
+                        style={{ padding: 0, transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)', cursor: 'pointer' }}
+                        onMouseEnter={el => { (el.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'; (el.currentTarget as HTMLElement).style.boxShadow = '0 12px 32px rgba(0,0,0,0.09)' }}
+                        onMouseLeave={el => { (el.currentTarget as HTMLElement).style.transform = ''; (el.currentTarget as HTMLElement).style.boxShadow = '' }}>
+                        <div style={{ height: '120px', overflow: 'hidden', background: e.banner_url ? '#1A1A1A' : 'linear-gradient(135deg,#1A2F1E,#0F1410)', position: 'relative' }}>
                           {e.banner_url
                             ? <img src={e.banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
                             : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                                <Building2 size={40} color="rgba(255,255,255,0.12)" />
+                                <Building2 size={38} color="rgba(255,255,255,0.1)" />
                               </div>
                           }
                         </div>
                         <div style={{ padding: '16px 20px 20px' }}>
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-display font-bold text-dark group-hover:text-accent transition-colors"
-                              style={{ fontSize: '15px' }}>{e.name}</h3>
-                            <span className="badge-green" style={{ flexShrink: 0, marginLeft: '8px' }}>Vérifié</span>
+                            <h3 className="font-display font-bold text-dark" style={{ fontSize: '15px', transition: 'color 0.15s' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#E85D26')}
+                              onMouseLeave={e => (e.currentTarget.style.color = '')}>
+                              {e.name}
+                            </h3>
+                            <span className="badge-green" style={{ flexShrink: 0, marginLeft: '8px', fontSize: '11px' }}>Vérifié</span>
                           </div>
                           {e.description && (
                             <p style={{ fontSize: '12px', color: '#7A7A6E', marginBottom: '10px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
@@ -526,17 +727,13 @@ export default function HomePage() {
                             {(e.secteurs || []).slice(0, 3).map((s: string) => (
                               <span key={s} style={{ fontSize: '11px', background: '#F5F3EE', border: '1px solid #D8D2C4', padding: '2px 8px', borderRadius: '10px', color: '#7A7A6E' }}>{s}</span>
                             ))}
-                            {(e.secteurs || []).length > 3 && (
-                              <span style={{ fontSize: '11px', color: '#7A7A6E' }}>+{e.secteurs.length - 3}</span>
-                            )}
+                            {(e.secteurs || []).length > 3 && <span style={{ fontSize: '11px', color: '#7A7A6E' }}>+{e.secteurs.length - 3}</span>}
                           </div>
-                          <div className="flex items-center justify-between pt-3 border-t border-border">
+                          <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid #D8D2C4' }}>
                             <span style={{ fontSize: '12px', color: '#7A7A6E' }}>
                               {(e.artisan_pros || []).length} artisan{(e.artisan_pros || []).length !== 1 ? 's' : ''}
                             </span>
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#E85D26' }}>
-                              Voir l'équipe →
-                            </span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#E85D26' }}>Voir l'équipe →</span>
                           </div>
                         </div>
                       </div>
@@ -545,33 +742,29 @@ export default function HomePage() {
                 ))}
               </div>
 
-              {/* Third: full-width horizontal compact card */}
+              {/* Third enterprise: horizontal compact card */}
               {topEntreprises[2] && (
                 <motion.div variants={fadeUp}>
                   <Link href={`/entreprise-space/dashboard?id=${topEntreprises[2].id}`} style={{ textDecoration: 'none' }}>
-                    <div className="card hover:-translate-y-1 transition-all duration-200 group flex items-center gap-5"
-                      style={{ padding: '14px 20px' }}>
-                      <div style={{
-                        width: '56px', height: '56px', flexShrink: 0, borderRadius: '14px',
-                        background: topEntreprises[2].banner_url ? '#1A1A1A' : 'linear-gradient(135deg,#1A2F1E,#0F1410)',
-                        overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
+                    <div className="card flex items-center gap-4 group"
+                      style={{ padding: '14px 20px', cursor: 'pointer', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.07)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = '' }}>
+                      <div style={{ width: '52px', height: '52px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden', background: topEntreprises[2].banner_url ? '#1A1A1A' : 'linear-gradient(135deg,#1A2F1E,#0F1410)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {topEntreprises[2].banner_url
                           ? <img src={topEntreprises[2].banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
-                          : <Building2 size={22} color="rgba(255,255,255,0.18)" />
+                          : <Building2 size={20} color="rgba(255,255,255,0.18)" />
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-display font-bold text-dark group-hover:text-accent transition-colors">
-                          {topEntreprises[2].name}
-                        </h3>
-                        <p className="text-xs text-muted mt-0.5">
+                        <div className="font-display font-bold text-dark" style={{ fontSize: '14px' }}>{topEntreprises[2].name}</div>
+                        <div style={{ fontSize: '12px', color: '#7A7A6E', marginTop: '2px' }}>
                           {(topEntreprises[2].artisan_pros || []).length} artisans
                           {(topEntreprises[2].secteurs || []).length > 0 && ` · ${(topEntreprises[2].secteurs || []).slice(0, 2).join(', ')}`}
-                        </p>
+                        </div>
                       </div>
-                      <span className="badge-green flex-shrink-0">Vérifié</span>
-                      <ChevronRight size={15} className="text-muted group-hover:text-accent transition-colors flex-shrink-0" />
+                      <span className="badge-green flex-shrink-0" style={{ fontSize: '11px' }}>Vérifié</span>
+                      <ChevronRight size={14} className="text-muted flex-shrink-0" style={{ transition: 'color 0.15s' }} />
                     </div>
                   </Link>
                 </motion.div>
@@ -581,51 +774,37 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── CTA ENTREPRISE ──────────────────────── */}
-      <section className="py-16 px-4">
+      {/* ━━━━ CTA ENTREPRISE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className={`py-16 px-4 ${topEntreprises.length > 0 ? 'bg-bg2' : ''}`}>
         <div className="page-container">
-          <div style={{
-            background: 'linear-gradient(135deg, #0F1E14 0%, #1A2F1E 100%)',
-            border: '1px solid rgba(96,165,250,0.15)',
-            borderRadius: '24px',
-            padding: '40px 48px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '32px',
-            flexWrap: 'wrap',
-          }}>
-            <div style={{ flex: 1, minWidth: '280px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                <div style={{
-                  width: '36px', height: '36px',
-                  background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.22)',
-                  borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Building2 size={17} color="#60a5fa" />
+          <div className="rounded-3xl p-10 flex flex-wrap items-center justify-between gap-8"
+            style={{ background: 'linear-gradient(135deg, #0F1E14 0%, #1A2F1E 60%, #0F1E14 100%)', border: '1px solid rgba(96,165,250,0.12)' }}>
+            <div style={{ flex: 1, minWidth: '260px' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div style={{ width: '34px', height: '34px', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={16} color="#60a5fa" />
                 </div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <span className="font-mono" style={{ fontSize: '11px', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
                   Structures professionnelles
                 </span>
               </div>
-              <h2 className="font-display" style={{ fontSize: '28px', fontWeight: 700, color: '#FAFAF5', marginBottom: '10px', lineHeight: 1.2 }}>
+              <h2 className="font-display font-bold text-cream"
+                style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', lineHeight: 1.15, marginBottom: '10px' }}>
                 Vous gérez une équipe<br />d'artisans ?
               </h2>
-              <p style={{ fontSize: '14px', color: 'rgba(250,250,245,0.55)', lineHeight: 1.7 }}>
-                Créez un espace entreprise sur AfriOne. Gérez vos artisans, suivez vos missions
+              <p style={{ fontSize: '14px', color: 'rgba(250,250,245,0.5)', lineHeight: 1.7, maxWidth: '46ch' }}>
+                Créez un espace entreprise sur AfriOne. Gérez vos artisans, vos missions
                 et accédez à des clients professionnels à Abidjan.
               </p>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}>
-              <Link href="/entreprise-space/register" style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '14px 28px', background: '#60a5fa',
-                borderRadius: '12px', color: 'white', fontSize: '15px', fontWeight: 700,
-                textDecoration: 'none', whiteSpace: 'nowrap',
-              }}>
-                <Building2 size={16} /> Créer mon espace entreprise
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+              <Link href="/entreprise-space/register"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '13px 26px', background: '#60a5fa', borderRadius: '12px', color: 'white', fontSize: '15px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#3b82f6'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#60a5fa'}>
+                <Building2 size={15} /> Créer mon espace entreprise
               </Link>
-              <p style={{ fontSize: '11px', color: 'rgba(250,250,245,0.3)', textAlign: 'center' }}>
+              <p style={{ fontSize: '11px', color: 'rgba(250,250,245,0.28)', textAlign: 'center' }}>
                 Validation sous 24h · Gratuit
               </p>
             </div>
@@ -633,25 +812,30 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA ARTISAN ─────────────────────────── */}
+      {/* ━━━━ CTA ARTISAN ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className="py-20 px-4 bg-accent">
         <div className="page-container">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-10 items-center">
             <div>
-              <h2 className="font-display text-4xl font-bold text-white mb-4 tracking-tight">
+              <h2 className="font-display font-bold text-white tracking-tight"
+                style={{ fontSize: 'clamp(26px, 3.5vw, 40px)', marginBottom: '12px' }}>
                 Vous êtes artisan ?
               </h2>
-              <p className="text-white/80 text-lg max-w-[52ch] leading-relaxed">
-                Rejoignez AfriOne et accédez à des centaines de clients qualifiés à Abidjan. Inscription gratuite.
+              <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.65, maxWidth: '50ch' }}>
+                Rejoignez AfriOne et accédez à des centaines de clients qualifiés à Abidjan.
+                Inscription gratuite, paiement garanti.
               </p>
             </div>
-            <div className="flex flex-wrap gap-4">
-              <Link href="/auth" className="btn-secondary active:scale-[0.98] transition-transform">
+            <div className="flex flex-wrap gap-3">
+              <Link href="/auth"
+                className="btn-secondary"
+                style={{ cursor: 'pointer', textDecoration: 'none', transition: 'opacity 0.15s' }}>
                 S'inscrire comme artisan
               </Link>
               <Link href="/aide"
-                className="bg-white/10 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl
-                           hover:bg-white/20 active:scale-[0.98] transition-all">
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textDecoration: 'none', transition: 'background 0.15s' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.18)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
                 En savoir plus
               </Link>
             </div>
@@ -659,25 +843,35 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── FOOTER ──────────────────────────────── */}
+      {/* ━━━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <footer className="bg-dark py-12 px-4">
         <div className="page-container">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-                <Zap size={16} className="text-white fill-white" />
+                <Zap size={15} className="text-white fill-white" />
               </div>
-              <span className="font-display font-bold text-xl text-cream">AFRI<span className="text-accent">ONE</span></span>
+              <span className="font-display font-bold text-cream" style={{ fontSize: '18px' }}>
+                AFRI<span className="text-accent">ONE</span>
+              </span>
             </div>
-            <p className="font-mono text-xs text-muted text-center">
+            <p className="font-mono text-muted text-center" style={{ fontSize: '11px' }}>
               © 2025 AFRIONE — Abidjan, Côte d'Ivoire · Tous droits réservés
             </p>
-            <div className="flex gap-6">
-              <Link href="/artisans"   className="text-xs text-muted hover:text-cream transition-colors">Artisans</Link>
-              <Link href="/diagnostic" className="text-xs text-muted hover:text-cream transition-colors">Services</Link>
-              <Link href="/aide"       className="text-xs text-muted hover:text-cream transition-colors">Contact</Link>
-              <Link href="/aide"       className="text-xs text-muted hover:text-cream transition-colors">CGU</Link>
-            </div>
+            <nav className="flex gap-5">
+              {[
+                { href: '/artisans',   label: 'Artisans'  },
+                { href: '/diagnostic', label: 'Services'  },
+                { href: '/aide',       label: 'Contact'   },
+                { href: '/aide',       label: 'CGU'       },
+              ].map(({ href, label }) => (
+                <Link key={label} href={href}
+                  className="text-muted hover:text-cream transition-colors"
+                  style={{ fontSize: '12px', textDecoration: 'none', cursor: 'pointer' }}>
+                  {label}
+                </Link>
+              ))}
+            </nav>
           </div>
         </div>
       </footer>
