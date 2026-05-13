@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
       found:        true,
       name:         result.name || name,
       brand:        null,
-      price_market: Math.round(result.price * 0.45),   // local ≈ 45% du prix Jumia
+      price_market: Math.round(result.price * 0.88),   // Jumia CI déjà en FCFA, marché physique ≈ 88%
       web_price:    result.price,
       photo_url:    result.photo_url || null,
       source_url:   result.url || null,

@@ -13,33 +13,33 @@ interface JumiaProduct {
   url:       string
 }
 
-function mapJumia(arr: any[]): JumiaProduct[] {
-  return arr.map(p => ({
-    name:      (p.displayName || p.name || '') as string,
-    brand:     (p.brand || 'Jumia CI') as string,
-    price:     Math.round(parseFloat(p.prices?.rawPrice || p.price || '0')),
-    photo_url: (p.image || p.images?.[0] || '') as string,
-    url:       `https://www.jumia.ci${p.url || ''}`,
-  })).filter(p => p.price > 0)
-}
-
-function extractArr(html: string, key: string): any[] | null {
-  const idx = html.indexOf(key)
-  if (idx === -1) return null
-  const start = html.indexOf('[', idx)
-  if (start === -1) return null
-  let depth = 0, i = start
-  for (; i < html.length; i++) {
-    if (html[i] === '[') depth++
-    else if (html[i] === ']') { depth--; if (depth === 0) break }
+// Jumia CI utilise des attributs HTML (data-gtm-name, class="prc", data-src)
+// Les prix sont directement en FCFA — pas de conversion.
+function parseJumiaHtml(html: string): JumiaProduct[] {
+  const results: JumiaProduct[] = []
+  const cardRe = /href="(\/[a-z0-9][a-z0-9-]+-\d+\.html)"[^>]+class="core"[^>]+data-gtm-name="([^"]+)"[^>]+data-gtm-brand="([^"]+)"/g
+  let m: RegExpExecArray | null
+  while ((m = cardRe.exec(html)) !== null) {
+    const after = html.slice(m.index, m.index + 2000)
+    const priceM = after.match(/class="prc">([0-9,]+) FCFA/)
+    if (!priceM) continue
+    const price = parseInt(priceM[1].replace(/,/g, ''), 10)
+    if (!price) continue
+    const imgM = after.match(/data-src="(https:\/\/ci\.jumia\.is\/[^"]+)"/)
+    results.push({
+      name:      m[2],
+      brand:     m[3] === 'Generic' ? 'Jumia CI' : m[3],
+      price,
+      photo_url: imgM ? imgM[1] : '',
+      url:       `https://www.jumia.ci${m[1]}`,
+    })
   }
-  try { return JSON.parse(html.slice(start, i + 1)) } catch { return null }
+  return results
 }
 
-// Extrait les produits du HTML Jumia CI — 3 stratégies en cascade
+// Extrait les produits du HTML Jumia CI
 async function fetchJumiaProducts(query: string): Promise<JumiaProduct[]> {
   const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
-  let html = ''
   try {
     const res = await fetch(url, {
       headers: {
@@ -51,34 +51,10 @@ async function fetchJumiaProducts(query: string): Promise<JumiaProduct[]> {
       signal: AbortSignal.timeout(8_000),
     })
     if (!res.ok) return []
-    html = await res.text()
+    return parseJumiaHtml(await res.text())
   } catch {
     return []
   }
-
-  // Stratégie 1 : __NEXT_DATA__
-  const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)
-  if (m) {
-    try {
-      const pp = JSON.parse(m[1])?.props?.pageProps
-      for (const arr of [pp?.catalog?.products, pp?.data?.catalog?.products, pp?.initialData?.catalog?.products, pp?.products, pp?.catalog?.items]) {
-        if (Array.isArray(arr) && arr.length > 0) {
-          const r = mapJumia(arr)
-          if (r.length > 0) return r
-        }
-      }
-    } catch {}
-  }
-
-  // Stratégie 2 : "products":
-  const p2 = extractArr(html, '"products":')
-  if (p2) { const r = mapJumia(p2); if (r.length > 0) return r }
-
-  // Stratégie 3 : "items":
-  const p3 = extractArr(html, '"items":')
-  if (p3) { const r = mapJumia(p3.filter(p => p.prices?.rawPrice || p.price)); if (r.length > 0) return r }
-
-  return []
 }
 
 // Vérifie si un produit est pertinent pour l'item recherché
@@ -124,18 +100,17 @@ export async function lookupItemOnJumia(item: string, category: string): Promise
     .ilike('name', `%${item}%`)
     .maybeSingle()
 
-  // Jumia = prix e-commerce retail importé ≈ 2–3× marché physique Abidjan
-  // web_price conserve le vrai prix Jumia pour affichage
-  // price_market = estimation marché local (Adjamé/Koumassi) ≈ 45% du prix Jumia
-  // price_min    = bas du marché local ≈ 25% du prix Jumia
-  // price_max    = prix Jumia (plafond, si l'artisan achète en ligne)
+  // Prix Jumia CI déjà en FCFA (marketplace locale).
+  // price_market ≈ marché physique Adjamé (légèrement sous Jumia, ~88%)
+  // price_min    = bas du marché (soldeur, fin de stock) ≈ 75%
+  // price_max    = prix Jumia (plafond achat en ligne)
   const payload = {
     name:            item,
     category,
     unit:            'unité',
     tier:            'standard',
-    price_market:    Math.round(best.price * 0.45),
-    price_min:       Math.round(best.price * 0.25),
+    price_market:    Math.round(best.price * 0.88),
+    price_min:       Math.round(best.price * 0.75),
     price_max:       best.price,
     source:          'Jumia CI',
     brand:           best.brand,

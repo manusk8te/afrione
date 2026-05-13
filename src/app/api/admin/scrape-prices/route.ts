@@ -127,91 +127,52 @@ const MATERIALS: {
 
 type JumiaHit = { name: string; brand: string; price: number; photo_url: string; url: string; rating: number; reviews: number }
 
-function mapProducts(arr: any[]): JumiaHit[] {
-  return arr.map(p => ({
-    name:      (p.displayName || p.name || '') as string,
-    brand:     (p.brand || 'Jumia CI') as string,
-    price:     Math.round(parseFloat(p.prices?.rawPrice || p.price || '0')),
-    photo_url: (p.image || p.images?.[0] || '') as string,
-    url:       `https://www.jumia.ci${p.url || ''}`,
-    rating:    p.rating?.average || 0,
-    reviews:   p.rating?.totalRatings || 0,
-  })).filter(p => p.price > 0)
-}
-
-function extractJsonArray(html: string, key: string): any[] | null {
-  const idx = html.indexOf(key)
-  if (idx === -1) return null
-  const start = html.indexOf('[', idx)
-  if (start === -1) return null
-  let depth = 0, i = start
-  for (; i < html.length; i++) {
-    if (html[i] === '[') depth++
-    else if (html[i] === ']') { depth--; if (depth === 0) break }
+// Jumia CI ne retourne plus de JSON embarqué — on parse les attributs HTML directement.
+// Structure réelle : <a href="/slug-id.html" class="core" data-gtm-name="..." data-gtm-brand="...">
+//   <img data-src="https://ci.jumia.is/..."> ... <div class="prc">X,XXX FCFA</div>
+// Les prix sont directement en FCFA — pas de conversion nécessaire.
+function parseJumiaHtml(html: string): JumiaHit[] {
+  const results: JumiaHit[] = []
+  // Capture l'ancre produit avec URL, nom, marque sur le même tag <a>
+  const cardRe = /href="(\/[a-z0-9][a-z0-9-]+-\d+\.html)"[^>]+class="core"[^>]+data-gtm-name="([^"]+)"[^>]+data-gtm-brand="([^"]+)"/g
+  let m: RegExpExecArray | null
+  while ((m = cardRe.exec(html)) !== null) {
+    const after = html.slice(m.index, m.index + 2000)
+    const priceM = after.match(/class="prc">([0-9,]+) FCFA/)
+    if (!priceM) continue
+    const price = parseInt(priceM[1].replace(/,/g, ''), 10)
+    if (!price) continue
+    const imgM = after.match(/data-src="(https:\/\/ci\.jumia\.is\/[^"]+)"/)
+    results.push({
+      name:      m[2],
+      brand:     m[3] === 'Generic' ? 'Jumia CI' : m[3],
+      price,
+      photo_url: imgM ? imgM[1] : '',
+      url:       `https://www.jumia.ci${m[1]}`,
+      rating: 0, reviews: 0,
+    })
   }
-  try { return JSON.parse(html.slice(start, i + 1)) } catch { return null }
+  return results
 }
 
-// ─── Parser HTML Jumia — 3 stratégies en cascade ─────────────────────────────
+// ─── Fetch + parse Jumia CI ───────────────────────────────────────────────────
 async function scrapeJumia(query: string): Promise<JumiaHit[]> {
   const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
-  let html = ''
   try {
     const res = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'fr-FR,fr;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
         'Referer': 'https://www.jumia.ci/',
       },
       signal: AbortSignal.timeout(12_000),
     })
     if (!res.ok) return []
-    html = await res.text()
+    return parseJumiaHtml(await res.text())
   } catch {
     return []
   }
-
-  // Stratégie 1 : __NEXT_DATA__ (Next.js SSR — structure la plus fiable)
-  const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)
-  if (m) {
-    try {
-      const nd = JSON.parse(m[1])
-      const pp = nd?.props?.pageProps
-      const candidates = [
-        pp?.catalog?.products,
-        pp?.data?.catalog?.products,
-        pp?.initialData?.catalog?.products,
-        pp?.products,
-        pp?.catalog?.items,
-        pp?.data?.products,
-      ]
-      for (const arr of candidates) {
-        if (Array.isArray(arr) && arr.length > 0) {
-          const result = mapProducts(arr)
-          if (result.length > 0) return result
-        }
-      }
-    } catch {}
-  }
-
-  // Stratégie 2 : "products": quelque part dans le HTML
-  const byProducts = extractJsonArray(html, '"products":')
-  if (byProducts) {
-    const result = mapProducts(byProducts)
-    if (result.length > 0) return result
-  }
-
-  // Stratégie 3 : "items": quelque part dans le HTML
-  const byItems = extractJsonArray(html, '"items":')
-  if (byItems) {
-    const result = mapProducts(byItems.filter(p => p.prices?.rawPrice || p.price))
-    if (result.length > 0) return result
-  }
-
-  return []
 }
 
 // ─── Sélection des 3 tiers ────────────────────────────────────────────────────
@@ -275,9 +236,9 @@ export async function POST(req: NextRequest) {
 
     for (const [tier, product] of Object.entries(tiers) as ['economique'|'standard'|'premium', any][]) {
       const name = `${mat.material_name}${tier === 'premium' ? ' premium' : tier === 'economique' ? ' éco' : ''}`
-      // Jumia = retail e-commerce, 2-3× marché physique Abidjan
-      // price_market = estimation marché local selon tier
-      const localFactor = tier === 'economique' ? 0.30 : tier === 'standard' ? 0.45 : 0.70
+      // Les prix Jumia CI sont déjà en FCFA (marketplace locale, pas import)
+      // price_market ≈ marché physique Adjamé/Treichville : légèrement sous Jumia
+      const localFactor = tier === 'economique' ? 0.80 : tier === 'standard' ? 0.88 : 1.0
       const localPrice  = Math.round(product.price * localFactor)
 
       // UPDATE si existe, INSERT sinon
