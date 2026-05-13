@@ -270,7 +270,7 @@ export default function HomePage() {
               transition={{ type: 'spring', stiffness: 65, damping: 17, delay: 0.4 }}
               className="hidden md:block"
             >
-              <div className="bg-dark rounded-3xl p-7 relative overflow-hidden"
+              <div className="bg-dark rounded-xl p-7 relative overflow-hidden"
                 style={{ border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
                 {/* Glow */}
                 <div className="absolute top-0 right-0 w-52 h-52 rounded-full blur-3xl pointer-events-none"
@@ -282,7 +282,7 @@ export default function HomePage() {
                 </p>
 
                 {/* Stats 2×2 */}
-                <div className="grid grid-cols-2 gap-px rounded-2xl overflow-hidden mb-5 relative"
+                <div className="grid grid-cols-2 gap-px rounded-lg overflow-hidden mb-5 relative"
                   style={{ background: 'rgba(255,255,255,0.04)' }}>
                   {STATS_DISPLAY.map(s => (
                     <div key={s.label} className="bg-dark2 p-5">
@@ -313,7 +313,7 @@ export default function HomePage() {
           {/* Mobile stats strip */}
           <div className="md:hidden grid grid-cols-2 gap-3 mt-10">
             {STATS_DISPLAY.map(s => (
-              <div key={s.label} className="bg-dark rounded-2xl p-4"
+              <div key={s.label} className="bg-dark rounded-lg p-4"
                 style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="font-display font-bold text-accent" style={{ fontSize: '24px' }}>{s.value}</div>
                 <div className="font-mono mt-0.5" style={{ fontSize: '10px', color: 'rgba(250,250,245,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
@@ -436,7 +436,7 @@ export default function HomePage() {
                     style={{ paddingBottom: !isLast ? '32px' : undefined, marginBottom: !isLast ? '32px' : undefined, borderBottom: !isLast ? '1px solid rgba(255,255,255,0.06)' : undefined }}>
                     {/* Icon + number */}
                     <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', paddingTop: '2px' }}>
-                      <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Icon size={19} className="text-accent" />
                       </div>
                       <span className="font-mono" style={{ fontSize: '9px', color: 'rgba(232,93,38,0.35)', letterSpacing: '0.05em' }}>{step.num}</span>
@@ -641,7 +641,7 @@ export default function HomePage() {
           >
             {TRUST_PILLARS.map(({ Icon, title, desc, stat, color, bg }) => (
               <motion.div key={title} variants={fadeUp}
-                className="rounded-2xl p-6"
+                className="rounded-xl p-6"
                 style={{ background: bg, border: `1px solid ${color}22` }}>
                 <div className="flex items-start gap-4 mb-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -750,7 +750,7 @@ export default function HomePage() {
                       style={{ padding: '14px 20px', cursor: 'pointer', transition: 'all 0.2s' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(0,0,0,0.07)' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = '' }}>
-                      <div style={{ width: '52px', height: '52px', flexShrink: 0, borderRadius: '12px', overflow: 'hidden', background: topEntreprises[2].banner_url ? '#1A1A1A' : 'linear-gradient(135deg,#1A2F1E,#0F1410)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '52px', height: '52px', flexShrink: 0, borderRadius: '8px', overflow: 'hidden', background: topEntreprises[2].banner_url ? '#1A1A1A' : 'linear-gradient(135deg,#1A2F1E,#0F1410)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {topEntreprises[2].banner_url
                           ? <img src={topEntreprises[2].banner_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
                           : <Building2 size={20} color="rgba(255,255,255,0.18)" />
@@ -777,7 +777,7 @@ export default function HomePage() {
       {/* ━━━━ CTA ENTREPRISE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section className={`py-16 px-4 ${topEntreprises.length > 0 ? 'bg-bg2' : ''}`}>
         <div className="page-container">
-          <div className="rounded-3xl p-10 flex flex-wrap items-center justify-between gap-8"
+          <div className="rounded-2xl p-10 flex flex-wrap items-center justify-between gap-8"
             style={{ background: 'linear-gradient(135deg, #0F1E14 0%, #1A2F1E 60%, #0F1E14 100%)', border: '1px solid rgba(96,165,250,0.12)' }}>
             <div style={{ flex: 1, minWidth: '260px' }}>
               <div className="flex items-center gap-3 mb-4">
@@ -799,7 +799,7 @@ export default function HomePage() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
               <Link href="/entreprise-space/register"
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '13px 26px', background: '#60a5fa', borderRadius: '12px', color: 'white', fontSize: '15px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#60a5fa', borderRadius: '6px', color: 'white', fontSize: '14px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', transition: 'background 0.15s', whiteSpace: 'nowrap', fontFamily: "'Syne', sans-serif" }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#3b82f6'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#60a5fa'}>
                 <Building2 size={15} /> Créer mon espace entreprise
@@ -833,7 +833,7 @@ export default function HomePage() {
                 S'inscrire comme artisan
               </Link>
               <Link href="/aide"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer', textDecoration: 'none', transition: 'background 0.15s' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 22px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none', transition: 'background 0.15s', fontFamily: "'Syne', sans-serif" }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.18)'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
                 En savoir plus
