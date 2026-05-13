@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   Zap, Star, Clock, CheckCircle, Wallet, Camera, Calendar,
   Edit3, Save, X, Plus, Trash2, MapPin, Briefcase, Upload,
-  Image as ImageIcon, MessageCircle, Bell
+  Image as ImageIcon, MessageCircle, Bell, Building2, Search, LogOut
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -59,6 +59,12 @@ export default function ArtisanDashboardPage() {
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([])
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null)
 
+  // Entreprise
+  const [artisanEntreprise, setArtisanEntreprise] = useState<any>(null)
+  const [entrepriseSearch, setEntrepriseSearch] = useState('')
+  const [entrepriseResults, setEntrepriseResults] = useState<any[]>([])
+  const [joiningEntreprise, setJoiningEntreprise] = useState(false)
+
   // Recalcule le nombre de messages non lus en temps réel
   const refreshUnread = async (artisanId: string, artisanUserId: string, missionIds: string[]) => {
     if (!missionIds.length) return
@@ -88,6 +94,16 @@ export default function ArtisanDashboardPage() {
 
       if (artisanData) {
         setArtisan(artisanData)
+
+        if (artisanData.entreprise_id) {
+          const { data: ent } = await supabase
+            .from('entreprises')
+            .select('id, name, banner_url, secteurs')
+            .eq('id', artisanData.entreprise_id)
+            .single()
+          if (ent) setArtisanEntreprise(ent)
+        }
+
         setBio(artisanData.bio || '')
         setSpecialties(artisanData.specialties || [])
         setQuartiers(artisanData.quartiers || [])
@@ -229,6 +245,38 @@ export default function ArtisanDashboardPage() {
     const updated = portfolioUrls.filter(u => u !== url)
     await supabase.from('artisan_pros').update({ portfolio: updated }).eq('id', artisan.id)
     setPortfolioUrls(updated)
+  }
+
+  // ── Entreprise ─────────────────────────────────────────────────────────
+  const searchEntreprises = async (q: string) => {
+    setEntrepriseSearch(q)
+    if (q.trim().length < 2) { setEntrepriseResults([]); return }
+    const { data } = await supabase
+      .from('entreprises')
+      .select('id, name, secteurs, banner_url')
+      .eq('kyc_status', 'approved')
+      .ilike('name', `%${q.trim()}%`)
+      .limit(5)
+    setEntrepriseResults(data || [])
+  }
+
+  const joinEntreprise = async (ent: any) => {
+    if (!artisan) return
+    setJoiningEntreprise(true)
+    await supabase.from('artisan_pros').update({ entreprise_id: ent.id }).eq('id', artisan.id)
+    setArtisanEntreprise(ent)
+    setEntrepriseSearch('')
+    setEntrepriseResults([])
+    toast.success(`Vous avez rejoint ${ent.name} ✓`)
+    setJoiningEntreprise(false)
+  }
+
+  const leaveEntreprise = async () => {
+    if (!artisan || !artisanEntreprise) return
+    await supabase.from('artisan_pros').update({ entreprise_id: null }).eq('id', artisan.id)
+    const name = artisanEntreprise.name
+    setArtisanEntreprise(null)
+    toast(`Vous avez quitté ${name}`)
   }
 
   // Sauvegarder le profil
@@ -675,6 +723,65 @@ export default function ArtisanDashboardPage() {
                   <Plus size={14} /> Ajouter
                 </button>
               </div>
+            </div>
+
+            {/* Mon entreprise */}
+            <div className="card">
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px'}}>
+                <Building2 size={16} color="#60a5fa" /> Mon entreprise
+              </h3>
+              <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'16px'}}>Rattachez-vous à une structure pour apparaître dans son catalogue.</p>
+
+              {artisanEntreprise ? (
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',padding:'12px 14px',background:'rgba(96,165,250,0.06)',border:'1px solid rgba(96,165,250,0.2)',borderRadius:'12px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'10px',minWidth:0}}>
+                    <div style={{width:'36px',height:'36px',background:'rgba(96,165,250,0.15)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <Building2 size={16} color="#60a5fa" />
+                    </div>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontSize:'14px',fontWeight:700,color:'#0F1410',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{artisanEntreprise.name}</div>
+                      <div style={{fontSize:'11px',color:'#7A7A6E'}}>{(artisanEntreprise.secteurs||[]).slice(0,2).join(' · ')}</div>
+                    </div>
+                  </div>
+                  <button onClick={leaveEntreprise} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer',flexShrink:0,fontWeight:600}}>
+                    <LogOut size={12}/> Quitter
+                  </button>
+                </div>
+              ) : (
+                <div style={{position:'relative'}}>
+                  <div style={{position:'relative'}}>
+                    <Search size={14} style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',color:'#7A7A6E'}} />
+                    <input
+                      value={entrepriseSearch}
+                      onChange={e => searchEntreprises(e.target.value)}
+                      placeholder="Rechercher une entreprise par nom…"
+                      style={{width:'100%',padding:'11px 12px 11px 36px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',color:'#0F1410',outline:'none',boxSizing:'border-box'}}
+                    />
+                  </div>
+                  {entrepriseResults.length > 0 && (
+                    <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',overflow:'hidden',zIndex:20,boxShadow:'0 8px 24px rgba(0,0,0,0.1)'}}>
+                      {entrepriseResults.map(e => (
+                        <button key={e.id} onClick={() => joinEntreprise(e)} disabled={joiningEntreprise}
+                          style={{width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'12px 14px',background:'none',border:'none',borderBottom:'1px solid #F5F3EE',cursor:'pointer',textAlign:'left'}}
+                          onMouseEnter={el => (el.currentTarget.style.background='#F5F3EE')}
+                          onMouseLeave={el => (el.currentTarget.style.background='none')}>
+                          <div style={{width:'32px',height:'32px',background:'rgba(96,165,250,0.1)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                            <Building2 size={14} color="#60a5fa" />
+                          </div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:'13px',fontWeight:600,color:'#0F1410'}}>{e.name}</div>
+                            <div style={{fontSize:'11px',color:'#7A7A6E'}}>{(e.secteurs||[]).slice(0,3).join(' · ')}</div>
+                          </div>
+                          <span style={{fontSize:'12px',color:'#60a5fa',fontWeight:600,flexShrink:0}}>Rejoindre</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {entrepriseSearch.length >= 2 && entrepriseResults.length === 0 && (
+                    <p style={{fontSize:'12px',color:'#7A7A6E',marginTop:'8px'}}>Aucune entreprise trouvée. <Link href="/entreprise-space/register" style={{color:'#E85D26'}}>Créer la vôtre →</Link></p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Bouton save */}
