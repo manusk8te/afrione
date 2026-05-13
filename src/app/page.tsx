@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase'
 
 /* ─── Video URLs ──────────────────────────────────────────────────────────── */
 const HERO_VIDEO     = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4'
-const SERVICES_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_094631_d30ab262-45ee-4b7d-99f3-5d5848c8ef13.mp4'
+const SERVICES_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_155101_f2540600-6fe9-433e-8e48-b3f4b72f0727.mp4'
 
 /* ─── FadingVideo (rAF crossfade — no CSS transitions) ───────────────────── */
 const FADE_MS       = 500
