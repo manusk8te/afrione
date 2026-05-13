@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
-import { ArrowRight, Shield, Zap, Star, CheckCircle, ChevronRight } from 'lucide-react'
+import { ArrowRight, Shield, Zap, Star, CheckCircle, ChevronRight, Building2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const SERVICES = [
@@ -32,6 +32,7 @@ const STEPS = [
 export default function HomePage() {
   const [stats, setStats] = useState({ artisans: 500, missions: 2400, rating: 4.8, satisfaction: 98 })
   const [topArtisans, setTopArtisans] = useState<any[]>([])
+  const [topEntreprises, setTopEntreprises] = useState<any[]>([])
   const [serviceCounts, setServiceCounts] = useState<Record<string, number>>({})
   const [loadingArtisans, setLoadingArtisans] = useState(true)
 
@@ -63,13 +64,23 @@ export default function HomePage() {
     }
 
     const fetchArtisans = async () => {
-      const { data } = await supabase
-        .from('artisan_pros')
-        .select('id, metier, tarif_min, rating_avg, rating_count, mission_count, users!artisan_pros_user_id_fkey(name, quartier, avatar_url)')
-        .eq('kyc_status', 'approved')
-        .order('rating_avg', { ascending: false })
-        .limit(3)
-      setTopArtisans(data || [])
+      const [artisanRes, entrepriseRes] = await Promise.all([
+        supabase
+          .from('artisan_pros')
+          .select('id, metier, tarif_min, rating_avg, rating_count, mission_count, users!artisan_pros_user_id_fkey(name, quartier, avatar_url)')
+          .eq('kyc_status', 'approved')
+          .order('rating_avg', { ascending: false })
+          .limit(3),
+        supabase
+          .from('entreprises')
+          .select('id, name, description, banner_url, secteurs, artisan_pros(id)')
+          .eq('kyc_status', 'approved')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(3),
+      ])
+      setTopArtisans(artisanRes.data || [])
+      setTopEntreprises(entrepriseRes.data || [])
       setLoadingArtisans(false)
     }
 
@@ -274,6 +285,58 @@ export default function HomePage() {
           )}
         </div>
       </section>
+
+      {/* ENTREPRISES PARTENAIRES */}
+      {topEntreprises.length > 0 && (
+        <section className="py-20 px-4 bg-dark">
+          <div className="page-container">
+            <div className="flex items-end justify-between mb-12">
+              <div>
+                <span className="font-mono text-xs text-muted uppercase tracking-wider">STRUCTURES PARTENAIRES</span>
+                <h2 className="font-display text-4xl font-bold text-cream mt-2">Entreprises multi-corps</h2>
+                <p className="text-muted mt-2">Des équipes complètes pour vos grands travaux</p>
+              </div>
+              <Link href="/artisans" className="hidden sm:flex items-center gap-1 text-sm font-medium text-accent hover:gap-2 transition-all">
+                Voir tout <ChevronRight size={16} />
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-6">
+              {topEntreprises.map(e => (
+                <Link key={e.id} href={`/entreprise-space/dashboard?id=${e.id}`} style={{textDecoration:'none'}}>
+                  <div className="card group hover:-translate-y-1 transition-all duration-200 overflow-hidden" style={{padding:0}}>
+                    {/* Banner */}
+                    <div style={{height:'120px',background: e.banner_url ? '#1A1A1A' : 'linear-gradient(135deg,#1A2F1E,#0F1410)',overflow:'hidden',position:'relative'}}>
+                      {e.banner_url
+                        ? <img src={e.banner_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover',opacity:0.8}} />
+                        : <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%'}}><Building2 size={40} color="rgba(255,255,255,0.15)" /></div>
+                      }
+                    </div>
+                    <div style={{padding:'16px 20px 20px'}}>
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-display font-bold text-dark group-hover:text-accent transition-colors" style={{fontSize:'15px'}}>{e.name}</h3>
+                        <span className="badge-green" style={{flexShrink:0,marginLeft:'8px'}}>Vérifié</span>
+                      </div>
+                      {e.description && (
+                        <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'10px',overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{e.description}</p>
+                      )}
+                      <div style={{display:'flex',flexWrap:'wrap',gap:'4px',marginBottom:'12px'}}>
+                        {(e.secteurs||[]).slice(0,3).map((s: string) => (
+                          <span key={s} style={{fontSize:'11px',background:'#F5F3EE',border:'1px solid #D8D2C4',padding:'2px 8px',borderRadius:'10px',color:'#7A7A6E'}}>{s}</span>
+                        ))}
+                        {(e.secteurs||[]).length > 3 && <span style={{fontSize:'11px',color:'#7A7A6E'}}>+{e.secteurs.length-3}</span>}
+                      </div>
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <span style={{fontSize:'12px',color:'#7A7A6E'}}>{(e.artisan_pros||[]).length} artisan{(e.artisan_pros||[]).length!==1?'s':''}</span>
+                        <span style={{fontSize:'12px',fontWeight:600,color:'#E85D26'}}>Voir l'équipe →</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA ARTISAN */}
       <section className="py-20 px-4 bg-accent">

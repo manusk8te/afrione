@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
-import { Search, Star, MapPin, Clock } from 'lucide-react'
+import { Search, Star, MapPin, Clock, Building2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -29,7 +29,7 @@ export default function ArtisansPage() {
     const fetchArtisans = async () => {
       const { data, error } = await supabase
         .from('artisan_pros')
-        .select(`*, users!artisan_pros_user_id_fkey(name, quartier, avatar_url)`)
+        .select(`*, users!artisan_pros_user_id_fkey(name, quartier, avatar_url), entreprises(id, name)`)
         .eq('kyc_status', 'approved')
         .order('rating_avg', { ascending: false })
 
@@ -154,12 +154,20 @@ export default function ArtisansPage() {
                       {/* Contenu */}
                       <div style={{padding:'16px 20px 20px',paddingTop:'36px'}}>
                         <h3 className="font-display" style={{fontSize:'17px',fontWeight:800,color:'#0F1410',marginBottom:'2px'}}>{name}</h3>
-                        <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#7A7A6E',marginBottom:'12px'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#7A7A6E',marginBottom:'8px'}}>
                           <span style={{fontWeight:600,color:'#E85D26'}}>{METIER_ICONS[a.metier]} {a.metier}</span>
                           <span>·</span>
                           <MapPin size={11} />
                           <span>{a.users?.quartier || 'Abidjan'}</span>
                         </div>
+                        {a.entreprises && (
+                          <div style={{marginBottom:'10px'}}>
+                            <Link href={`/entreprise-space/dashboard?id=${a.entreprises.id}`} onClick={e => e.stopPropagation()}
+                              style={{display:'inline-flex',alignItems:'center',gap:'5px',fontSize:'11px',color:'#60a5fa',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'3px 10px',borderRadius:'12px',textDecoration:'none',fontWeight:600}}>
+                              <Building2 size={10}/> {a.entreprises.name}
+                            </Link>
+                          </div>
+                        )}
 
                         {/* Étoiles */}
                         <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'16px'}}>

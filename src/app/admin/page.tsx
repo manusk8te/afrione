@@ -41,6 +41,11 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([])
   const [usersFilter, setUsersFilter] = useState<'all'|'client'|'artisan'|'admin'>('all')
 
+  // Entreprises
+  const [entreprises, setEntreprises]           = useState<any[]>([])
+  const [entreprisesFilter, setEntreprisesFilter] = useState<'all'|'pending'|'approved'|'rejected'>('all')
+  const [selectedEntreprise, setSelectedEntreprise] = useState<any>(null)
+
   // Litiges
   const [litiges, setLitiges]               = useState<any[]>([])
   const [selectedLitige, setSelectedLitige] = useState<any>(null)
@@ -72,13 +77,14 @@ export default function AdminDashboard() {
 
     // Toutes les requêtes admin passent par l'API server-side (supabaseAdmin / service_role)
     // pour bypasser RLS et voir toutes les données (pending, users joints, etc.)
-    const [statsRes, missionsRes, kycRes, txRes, litigesRes, usersRes] = await Promise.all([
+    const [statsRes, missionsRes, kycRes, txRes, litigesRes, usersRes, entreprisesRes] = await Promise.all([
       fetch('/api/admin/data?type=stats').then(r => r.json()),
       fetch('/api/admin/data?type=missions').then(r => r.json()),
       fetch('/api/admin/data?type=kyc').then(r => r.json()),
       fetch('/api/admin/data?type=transactions').then(r => r.json()),
       fetch('/api/admin/data?type=litiges').then(r => r.json()),
       fetch('/api/admin/data?type=users').then(r => r.json()),
+      fetch('/api/admin/data?type=entreprises').then(r => r.json()),
     ])
 
     setStats({ missions: statsRes.missions || 0, artisans: statsRes.artisans || 0, revenue: statsRes.revenue || 0 })
@@ -88,6 +94,7 @@ export default function AdminDashboard() {
     setTransactions(Array.isArray(txRes) ? txRes : [])
     setLitiges(Array.isArray(litigesRes) ? litigesRes : [])
     setUsers(Array.isArray(usersRes) ? usersRes : [])
+    setEntreprises(Array.isArray(entreprisesRes) ? entreprisesRes : [])
 
     setLoading(false)
   }, [])
@@ -857,6 +864,180 @@ export default function AdminDashboard() {
                       </div>
                     )}
                   </div>
+                </div>
+              )
+            })()}
+
+            {/* ===== ENTREPRISES ===== */}
+            {tab === 'entreprises' && (() => {
+              const kpis = [
+                { label: 'Total',    value: entreprises.length,                                    color: '#FAFAF5' },
+                { label: 'En attente', value: entreprises.filter(e => e.kyc_status === 'pending').length,  color: '#C9A84C' },
+                { label: 'Approuvées', value: entreprises.filter(e => e.kyc_status === 'approved').length, color: '#2B6B3E' },
+                { label: 'Rejetées',   value: entreprises.filter(e => e.kyc_status === 'rejected').length, color: '#ef4444' },
+              ]
+              const filtered = entreprisesFilter === 'all'
+                ? entreprises
+                : entreprises.filter(e => e.kyc_status === entreprisesFilter)
+
+              const approveEntreprise = async (id: string) => {
+                await fetch('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_entreprise', entrepriseId: id }) })
+                setEntreprises(es => es.map(e => e.id === id ? { ...e, kyc_status: 'approved', is_active: true } : e))
+                flash('✓ Entreprise approuvée')
+              }
+              const rejectEntreprise = async (id: string) => {
+                await fetch('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject_entreprise', entrepriseId: id }) })
+                setEntreprises(es => es.map(e => e.id === id ? { ...e, kyc_status: 'rejected', is_active: false } : e))
+                flash('Entreprise rejetée')
+              }
+
+              return (
+                <div style={{display:'flex',flexDirection:'column',gap:'24px'}}>
+                  {/* KPIs */}
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'12px'}}>
+                    {kpis.map(k => (
+                      <div key={k.label} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'14px',padding:'16px 20px'}}>
+                        <div style={{fontSize:'24px',fontWeight:700,color:k.color,fontFamily:'Space Mono'}}>{k.value}</div>
+                        <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'4px'}}>{k.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Filtres */}
+                  <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                    {(['all','pending','approved','rejected'] as const).map(f => (
+                      <button key={f} onClick={() => setEntreprisesFilter(f)} style={{
+                        padding:'6px 16px',borderRadius:'20px',fontSize:'12px',fontWeight:600,cursor:'pointer',border:'none',
+                        background: entreprisesFilter === f ? '#E85D26' : 'rgba(255,255,255,0.07)',
+                        color: entreprisesFilter === f ? 'white' : '#7A7A6E',
+                      }}>
+                        {f === 'all' ? 'Toutes' : f === 'pending' ? 'En attente' : f === 'approved' ? 'Approuvées' : 'Rejetées'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Liste */}
+                  {filtered.length === 0 ? (
+                    <div style={{textAlign:'center',padding:'64px 20px',color:'#7A7A6E'}}>
+                      <p style={{fontSize:'36px',marginBottom:'12px'}}>🏢</p>
+                      <p style={{fontSize:'15px',color:'#FAFAF5',fontWeight:600,marginBottom:'8px'}}>Aucune entreprise</p>
+                      <p style={{fontSize:'13px'}}>Les structures multi-artisans apparaîtront ici.</p>
+                    </div>
+                  ) : (
+                    <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                      {filtered.map(e => {
+                        const artisans = e.artisan_pros || []
+                        const isSelected = selectedEntreprise?.id === e.id
+                        const kycColor = e.kyc_status === 'approved' ? '#2B6B3E' : e.kyc_status === 'rejected' ? '#ef4444' : '#C9A84C'
+                        const kycBg = e.kyc_status === 'approved' ? 'rgba(43,107,62,0.12)' : e.kyc_status === 'rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(201,168,76,0.1)'
+                        return (
+                          <div key={e.id} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'16px',overflow:'hidden'}}>
+                            {/* Header entreprise */}
+                            <div style={{padding:'16px 20px',display:'flex',alignItems:'center',gap:'14px',cursor:'pointer'}} onClick={() => setSelectedEntreprise(isSelected ? null : e)}>
+                              <div style={{width:'44px',height:'44px',borderRadius:'12px',background:'rgba(232,93,38,0.15)',border:'1px solid rgba(232,93,38,0.3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
+                                {e.logo_url
+                                  ? <img src={e.logo_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                                  : <span style={{fontSize:'20px'}}>🏢</span>}
+                              </div>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
+                                  <span style={{fontWeight:700,fontSize:'15px',color:'#FAFAF5'}}>{e.name}</span>
+                                  <span style={{fontSize:'10px',fontWeight:700,padding:'2px 9px',borderRadius:'20px',background:kycBg,color:kycColor,border:`1px solid ${kycColor}33`}}>
+                                    {e.kyc_status === 'approved' ? '✓ Approuvée' : e.kyc_status === 'rejected' ? '✗ Rejetée' : '⏳ En attente'}
+                                  </span>
+                                  {e.is_active && <span style={{fontSize:'10px',fontWeight:700,padding:'2px 9px',borderRadius:'20px',background:'rgba(43,107,62,0.12)',color:'#2B6B3E',border:'1px solid rgba(43,107,62,0.25)'}}>● Active</span>}
+                                </div>
+                                <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'3px'}}>
+                                  Admin : {e.users?.name || '—'} · {artisans.length} artisan{artisans.length !== 1 ? 's' : ''}
+                                  {e.secteurs?.length > 0 && ` · ${e.secteurs.join(', ')}`}
+                                </div>
+                              </div>
+                              <div style={{display:'flex',gap:'8px',flexShrink:0}}>
+                                {e.kyc_status === 'pending' && (
+                                  <>
+                                    <button onClick={ev => { ev.stopPropagation(); approveEntreprise(e.id) }} style={{padding:'7px 14px',background:'rgba(43,107,62,0.15)',border:'1px solid rgba(43,107,62,0.4)',borderRadius:'8px',color:'#2B6B3E',fontWeight:700,fontSize:'12px',cursor:'pointer'}}>
+                                      ✓ Approuver
+                                    </button>
+                                    <button onClick={ev => { ev.stopPropagation(); rejectEntreprise(e.id) }} style={{padding:'7px 14px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'8px',color:'#ef4444',fontWeight:700,fontSize:'12px',cursor:'pointer'}}>
+                                      ✗ Rejeter
+                                    </button>
+                                  </>
+                                )}
+                                {e.kyc_status === 'approved' && (
+                                  <button onClick={ev => { ev.stopPropagation(); rejectEntreprise(e.id) }} style={{padding:'7px 14px',background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontWeight:600,fontSize:'11px',cursor:'pointer'}}>
+                                    Suspendre
+                                  </button>
+                                )}
+                                {e.kyc_status === 'rejected' && (
+                                  <button onClick={ev => { ev.stopPropagation(); approveEntreprise(e.id) }} style={{padding:'7px 14px',background:'rgba(43,107,62,0.1)',border:'1px solid rgba(43,107,62,0.3)',borderRadius:'8px',color:'#2B6B3E',fontWeight:600,fontSize:'11px',cursor:'pointer'}}>
+                                    Réactiver
+                                  </button>
+                                )}
+                                <span style={{padding:'7px 8px',color:'#7A7A6E',fontSize:'14px'}}>{isSelected ? '▲' : '▼'}</span>
+                              </div>
+                            </div>
+
+                            {/* Détails dépliants */}
+                            {isSelected && (
+                              <div style={{borderTop:'1px solid rgba(255,255,255,0.07)',padding:'16px 20px',display:'flex',flexDirection:'column',gap:'14px'}}>
+                                {/* Infos */}
+                                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px'}}>
+                                  {[
+                                    { label:'Email', val: e.email || e.users?.email || '—' },
+                                    { label:'Téléphone', val: e.phone || '—' },
+                                    { label:'Inscrite le', val: new Date(e.created_at).toLocaleDateString('fr-FR') },
+                                  ].map(item => (
+                                    <div key={item.label} style={{background:'rgba(255,255,255,0.03)',borderRadius:'10px',padding:'10px 14px'}}>
+                                      <div style={{fontSize:'10px',color:'#7A7A6E',marginBottom:'3px',fontFamily:'Space Mono'}}>{item.label.toUpperCase()}</div>
+                                      <div style={{fontSize:'12px',color:'#FAFAF5',fontWeight:500}}>{item.val}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {e.description && (
+                                  <div style={{background:'rgba(255,255,255,0.03)',borderRadius:'10px',padding:'10px 14px'}}>
+                                    <div style={{fontSize:'10px',color:'#7A7A6E',marginBottom:'4px',fontFamily:'Space Mono'}}>DESCRIPTION</div>
+                                    <p style={{fontSize:'12px',color:'rgba(255,255,255,0.7)',lineHeight:'1.6',margin:0}}>{e.description}</p>
+                                  </div>
+                                )}
+                                {/* Équipe artisans */}
+                                {artisans.length > 0 && (
+                                  <div>
+                                    <div style={{fontSize:'10px',fontWeight:700,color:'#7A7A6E',fontFamily:'Space Mono',marginBottom:'8px'}}>ÉQUIPE ({artisans.length} ARTISANS)</div>
+                                    <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
+                                      {artisans.map((a: any) => (
+                                        <div key={a.id} style={{display:'flex',alignItems:'center',gap:'7px',padding:'6px 10px',background:'rgba(255,255,255,0.05)',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.08)'}}>
+                                          <div style={{width:'26px',height:'26px',borderRadius:'7px',background:'rgba(232,93,38,0.15)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',flexShrink:0}}>
+                                            {a.users?.avatar_url ? <img src={a.users.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" /> : <span style={{fontSize:'11px'}}>🔧</span>}
+                                          </div>
+                                          <div>
+                                            <div style={{fontSize:'11px',fontWeight:600,color:'#FAFAF5'}}>{a.users?.name || a.metier}</div>
+                                            <div style={{fontSize:'10px',color:'#7A7A6E'}}>{a.metier}</div>
+                                          </div>
+                                          <span style={{fontSize:'9px',padding:'1px 7px',borderRadius:'10px',fontWeight:700,
+                                            background: a.kyc_status === 'approved' ? 'rgba(43,107,62,0.15)' : 'rgba(201,168,76,0.12)',
+                                            color: a.kyc_status === 'approved' ? '#2B6B3E' : '#C9A84C',
+                                          }}>
+                                            {a.kyc_status === 'approved' ? 'KYC ✓' : 'En attente'}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {/* Lien espace entreprise */}
+                                <div style={{display:'flex',gap:'8px',paddingTop:'4px'}}>
+                                  <a href={`/entreprise-space/dashboard?id=${e.id}`} target="_blank" rel="noreferrer"
+                                    style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 14px',background:'rgba(232,93,38,0.1)',border:'1px solid rgba(232,93,38,0.3)',borderRadius:'10px',color:'#E85D26',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>
+                                    <ExternalLink size={12}/> Voir l'espace entreprise
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })()}

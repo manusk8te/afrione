@@ -3,7 +3,7 @@ import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
-import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight, Building2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 function MatchingContent() {
@@ -13,6 +13,7 @@ function MatchingContent() {
   const category = searchParams.get('category') || 'Plomberie'
 
   const [artisans, setArtisans] = useState<any[]>([])
+  const [entreprises, setEntreprises] = useState<any[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -23,18 +24,31 @@ function MatchingContent() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) setUserId(session.user.id)
 
-      // Chercher artisans disponibles pour cette catégorie
-      const { data } = await supabase
-        .from('artisan_pros')
-        .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
-        .eq('kyc_status', 'approved')
-        .eq('is_available', true)
-        .ilike('metier', `%${category.split(' ')[0]}%`)
-        .order('rating_avg', { ascending: false })
-        .limit(5)
+      const catWord = category.split(' ')[0]
 
-      // Si pas d'artisans pour cette catégorie exacte → prendre les meilleurs dispo
-      if (!data || data.length === 0) {
+      // Artisans + entreprises en parallèle
+      const [artisanRes, entrepriseRes] = await Promise.all([
+        supabase
+          .from('artisan_pros')
+          .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
+          .eq('kyc_status', 'approved')
+          .eq('is_available', true)
+          .ilike('metier', `%${catWord}%`)
+          .order('rating_avg', { ascending: false })
+          .limit(5),
+        supabase
+          .from('entreprises')
+          .select('id, name, description, banner_url, logo_url, secteurs, quartiers, artisan_pros(id)')
+          .eq('kyc_status', 'approved')
+          .eq('is_active', true)
+          .contains('secteurs', [category]),
+      ])
+
+      // Entreprises qui couvrent ce secteur
+      setEntreprises(entrepriseRes.data || [])
+
+      // Fallback artisans
+      if (!artisanRes.data || artisanRes.data.length === 0) {
         const { data: fallback } = await supabase
           .from('artisan_pros')
           .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
@@ -44,7 +58,7 @@ function MatchingContent() {
           .limit(5)
         setArtisans(fallback || [])
       } else {
-        setArtisans(data)
+        setArtisans(artisanRes.data)
       }
       setLoading(false)
     }
@@ -120,6 +134,57 @@ function MatchingContent() {
             </h1>
             <p className="text-muted mt-2">{category} · Sélectionnés selon disponibilité et notes</p>
           </div>
+
+          {/* Structures entreprises — si la mission peut nécessiter plusieurs corps */}
+          {!loading && entreprises.length > 0 && (
+            <div style={{marginBottom:'32px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
+                <Building2 size={16} style={{color:'#60a5fa'}} />
+                <span style={{fontSize:'13px',fontWeight:700,color:'#0F1410'}}>Structures professionnelles</span>
+                <span style={{fontSize:'11px',color:'#7A7A6E',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'2px 8px',borderRadius:'10px'}}>multi-corps d'état</span>
+              </div>
+              <div className="space-y-3">
+                {entreprises.map(e => (
+                  <Link key={e.id} href={`/entreprise-space/dashboard?id=${e.id}`} style={{textDecoration:'none',display:'block'}}>
+                    <div style={{borderRadius:'16px',padding:'0',border:'2px solid rgba(96,165,250,0.25)',background:'rgba(96,165,250,0.03)',overflow:'hidden',transition:'all 0.2s'}}
+                      onMouseEnter={el => { (el.currentTarget as HTMLElement).style.borderColor='#60a5fa'; (el.currentTarget as HTMLElement).style.background='rgba(96,165,250,0.06)' }}
+                      onMouseLeave={el => { (el.currentTarget as HTMLElement).style.borderColor='rgba(96,165,250,0.25)'; (el.currentTarget as HTMLElement).style.background='rgba(96,165,250,0.03)' }}>
+                      {e.banner_url && (
+                        <div style={{height:'80px',overflow:'hidden',background:'#1A1A1A'}}>
+                          <img src={e.banner_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover',opacity:0.7}} />
+                        </div>
+                      )}
+                      <div style={{padding:'16px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}}>
+                            <Building2 size={14} style={{color:'#60a5fa',flexShrink:0}} />
+                            <span style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>{e.name}</span>
+                          </div>
+                          {e.description && (
+                            <p style={{fontSize:'12px',color:'#7A7A6E',margin:'0 0 8px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.description}</p>
+                          )}
+                          <div style={{display:'flex',flexWrap:'wrap',gap:'6px'}}>
+                            {(e.secteurs||[]).slice(0,4).map((s: string) => (
+                              <span key={s} style={{fontSize:'11px',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'2px 8px',borderRadius:'10px',color:'#60a5fa',fontWeight:500}}>{s}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{textAlign:'right',flexShrink:0}}>
+                          <div style={{fontSize:'13px',fontWeight:700,color:'#0F1410'}}>{(e.artisan_pros||[]).length} artisan{(e.artisan_pros||[]).length !== 1 ? 's' : ''}</div>
+                          <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'2px'}}>dans l'équipe</div>
+                          <div style={{display:'flex',alignItems:'center',gap:'4px',marginTop:'8px',fontSize:'12px',color:'#60a5fa',fontWeight:600}}>
+                            Voir l'espace <ChevronRight size={12} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div style={{height:'1px',background:'#D8D2C4',margin:'24px 0'}} />
+              <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'16px'}}>Ou choisissez un artisan indépendant :</p>
+            </div>
+          )}
 
           {loading ? (
             <div style={{textAlign:'center',padding:'64px 0'}}>

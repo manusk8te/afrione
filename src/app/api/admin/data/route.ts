@@ -73,7 +73,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data)
   }
 
-  return NextResponse.json({ error: 'type requis: kyc | artisans | missions | transactions | stats | litiges' }, { status: 400 })
+  if (type === 'entreprises') {
+    const { data, error } = await supabaseAdmin
+      .from('entreprises')
+      .select('*, users!entreprises_owner_id_fkey(name, email, avatar_url), artisan_pros(id, metier, kyc_status, users!artisan_pros_user_id_fkey(name, avatar_url))')
+      .order('created_at', { ascending: false })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data || [])
+  }
+
+  return NextResponse.json({ error: 'type requis: kyc | artisans | missions | transactions | stats | litiges | entreprises' }, { status: 400 })
 }
 
 // POST /api/admin/data  { action, artisanId, kycId?, favor? }
@@ -108,9 +117,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  if (action === 'approve_entreprise') {
+    const { entrepriseId } = body
+    await supabaseAdmin.from('entreprises').update({ kyc_status: 'approved', is_active: true }).eq('id', entrepriseId)
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === 'reject_entreprise') {
+    const { entrepriseId } = body
+    await supabaseAdmin.from('entreprises').update({ kyc_status: 'rejected', is_active: false }).eq('id', entrepriseId)
+    return NextResponse.json({ ok: true })
+  }
+
   if (action === 'set_role') {
     const { userId, role } = body
-    if (!['client', 'artisan', 'admin'].includes(role)) {
+    if (!['client', 'artisan', 'admin', 'entreprise_admin'].includes(role)) {
       return NextResponse.json({ error: 'role invalide' }, { status: 400 })
     }
     const { error } = await supabaseAdmin.from('users').update({ role }).eq('id', userId)
