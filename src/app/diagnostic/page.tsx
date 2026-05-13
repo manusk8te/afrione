@@ -167,7 +167,8 @@ export default function DiagnosticPage() {
         body: JSON.stringify({ mode: 'start', text, photos }),
       })
       const data = await res.json()
-      if (data.done) {
+      const isEmpty = !data.question || (data.type === 'choice' && (!data.options || data.options.length < 2))
+      if (data.done || isEmpty) {
         await finalizeWithQA([])
       } else {
         setCurrentQ({ question: data.question, type: data.type, options: data.options })
@@ -206,7 +207,8 @@ export default function DiagnosticPage() {
         body: JSON.stringify({ mode: 'next', text, photos, qa: newQA, index: newQA.length }),
       })
       const data = await res.json()
-      if (data.done) {
+      const isEmpty = !data.question || (data.type === 'choice' && (!data.options || data.options.length < 2))
+      if (data.done || isEmpty) {
         await finalizeWithQA(newQA)
       } else {
         setCurrentQ({ question: data.question, type: data.type, options: data.options })

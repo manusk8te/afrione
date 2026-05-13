@@ -126,6 +126,33 @@ async function callOpenAI(messages: any[], max_tokens = 600) {
   return JSON.parse(content)
 }
 
+// ─── Normalise la réponse question de l'IA ───────────────────────────────────
+function normalizeQuestion(raw: any, fallbackIndex: number): {
+  question: string; type: 'yesno'|'choice'|'text'; options?: string[]; done: boolean
+} {
+  if (raw.done === true) return { question: '', type: 'text', done: true }
+
+  const question = (raw.question || '').trim()
+  if (!question) return { question: '', type: 'text', done: true }
+
+  let type: 'yesno'|'choice'|'text' =
+    raw.type === 'yesno' ? 'yesno' :
+    raw.type === 'choice' ? 'choice' : 'text'
+
+  // choice sans options valides → text
+  const rawOptions: string[] = Array.isArray(raw.options)
+    ? raw.options.filter((o: any) => typeof o === 'string' && o.trim())
+    : []
+  if (type === 'choice' && rawOptions.length < 2) type = 'text'
+
+  return {
+    question,
+    type,
+    options: type === 'choice' ? rawOptions : undefined,
+    done: false,
+  }
+}
+
 function buildMessages(text: string, photos: string[], systemPrompt: string, extra = '') {
   const userText = extra ? `${extra}\n\n${text}` : text
   const userContent = photos?.length
@@ -204,8 +231,8 @@ EXEMPLES de bonnes questions choice :
 - "Combien de pièces sont touchées ?" → options: ["Une seule pièce", "Plusieurs pièces", "Tout l'appartement"]
 - "C'est apparu comment ?" → options: ["Brusquement", "Ça empire progressivement depuis quelques jours"]`
 
-      const result = await callOpenAI(buildMessages(text, photos, systemStart))
-      return NextResponse.json(result)
+      const raw = await callOpenAI(buildMessages(text, photos, systemStart))
+      return NextResponse.json(normalizeQuestion(raw, 0))
     }
 
     // ── MODE NEXT : question suivante ─────────────────────────────────────────
@@ -245,8 +272,8 @@ Décide :
 Réponds UNIQUEMENT en JSON (même format que pour la première question — choice/yesno/text ou done:true)`
 
       const extra = `ÉCHANGES PRÉCÉDENTS :\n${qaBlock}\n\nPROBLÈME INITIAL DU CLIENT :`
-      const result = await callOpenAI(buildMessages(text, photos, systemNext, extra))
-      return NextResponse.json(result)
+      const raw = await callOpenAI(buildMessages(text, photos, systemNext, extra))
+      return NextResponse.json(normalizeQuestion(raw, index))
     }
 
     // ── MODE FINALIZE : diagnostic complet ────────────────────────────────────
