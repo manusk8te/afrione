@@ -49,6 +49,7 @@ export default function WarRoomPage() {
 
   const [messages, setMessages]       = useState<any[]>([])
   const [input, setInput]             = useState('')
+  const [prefillMsg, setPrefillMsg]   = useState('')
   const [user, setUser]               = useState<any>(null)
   const [userRole, setUserRole]       = useState<string>('client')
   const [missionRole, setMissionRole] = useState<'client'|'artisan'|'admin'>('client')
@@ -208,7 +209,12 @@ export default function WarRoomPage() {
             }
             setDiagData(diag)
             if (mr === 'client') {
-              setInput(diag.ai_summary || '')
+              const artName = missionData?.artisan_pros?.users?.name || 'Artisan'
+              const greeting = diag.ai_summary
+                ? `Bonjour ${artName}, ${diag.ai_summary.charAt(0).toLowerCase()}${diag.ai_summary.slice(1)}`
+                : `Bonjour ${artName}, je vous contacte pour une intervention.`
+              setInput(greeting)
+              setPrefillMsg(greeting)
             }
             // Charger les liens d'achat des matériaux dès l'init (artisan uniquement)
             if (mr !== 'client' && diag.items_needed?.length) {
@@ -2306,10 +2312,10 @@ export default function WarRoomPage() {
             )}
 
             {/* Label résumé pré-rempli (client uniquement) */}
-            {!isArtisan && diagData && input === diagData.ai_summary && (
+            {!isArtisan && prefillMsg && input === prefillMsg && (
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px',padding:'6px 10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:'8px'}}>
                 <span style={{fontSize:'11px',color:'#C9A84C',fontWeight:600,display:'flex',alignItems:'center',gap:'5px'}}>
-                  📋 Résumé de votre diagnostic — envoyez-le ou modifiez-le
+                  📋 Message pré-rédigé — envoyez-le ou modifiez-le
                 </span>
                 <button onClick={() => setInput('')} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E',padding:'0',lineHeight:0}}>
                   <X size={12} />
