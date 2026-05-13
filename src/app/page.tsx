@@ -12,8 +12,7 @@ import {
 import { supabase } from '@/lib/supabase'
 
 /* ─── Video URLs ──────────────────────────────────────────────────────────── */
-const HERO_VIDEO     = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4'
-const SERVICES_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_155101_f2540600-6fe9-433e-8e48-b3f4b72f0727.mp4'
+const HERO_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4'
 
 /* ─── FadingVideo (rAF crossfade — no CSS transitions) ───────────────────── */
 const FADE_MS       = 500
@@ -349,11 +348,8 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ CAPABILITIES / SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="relative overflow-hidden" style={{ minHeight: '90vh', background: BG0 }}>
-        <FadingVideo src={SERVICES_VIDEO} className="absolute inset-0 w-full h-full object-cover z-0" />
-        <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: 'rgba(6,6,4,0.52)' }} />
-
-        <div className="relative z-10 page-container py-24">
+      <section className="relative overflow-hidden" style={{ minHeight: '90vh', background: BG1 }}>
+        <div className="page-container py-24">
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
 
             <motion.p variants={fadeUp} style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '20px' }}>
