@@ -156,7 +156,7 @@ function parseJumiaHtml(html: string): JumiaHit[] {
 }
 
 // ─── Fetch + parse Jumia CI ───────────────────────────────────────────────────
-async function scrapeJumia(query: string): Promise<JumiaHit[]> {
+async function scrapeJumia(query: string): Promise<{ products: JumiaHit[]; debug: string }> {
   const url = `https://www.jumia.ci/catalog/?q=${encodeURIComponent(query)}`
   try {
     const res = await fetch(url, {
@@ -168,10 +168,15 @@ async function scrapeJumia(query: string): Promise<JumiaHit[]> {
       },
       signal: AbortSignal.timeout(12_000),
     })
-    if (!res.ok) return []
-    return parseJumiaHtml(await res.text())
-  } catch {
-    return []
+    if (!res.ok) return { products: [], debug: `HTTP ${res.status} ${res.statusText}` }
+    const html = await res.text()
+    const products = parseJumiaHtml(html)
+    const debug = products.length > 0
+      ? `OK (${products.length} produits)`
+      : `HTTP 200 mais 0 produits — html:${html.length}c hasPrc:${html.includes('class="prc"')} hasCore:${html.includes('class="core"')}`
+    return { products, debug }
+  } catch (e: any) {
+    return { products: [], debug: `ERREUR: ${e.message}` }
   }
 }
 
@@ -188,10 +193,10 @@ export async function POST(req: NextRequest) {
   const errors: any[]  = []
 
   for (const mat of materials) {
-    const products = await scrapeJumia(mat.query)
+    const { products, debug } = await scrapeJumia(mat.query)
 
     if (!products.length) {
-      skipped.push({ material: mat.material_name, reason: 'no_results_jumia' })
+      skipped.push({ material: mat.material_name, query: mat.query, debug })
       continue
     }
 
@@ -263,8 +268,8 @@ export async function GET(req: NextRequest) {
       // Extrait un aperçu du contenu autour de __NEXT_DATA__
       const ndIdx = html.indexOf('__NEXT_DATA__')
       const snippet = ndIdx !== -1 ? html.slice(ndIdx, ndIdx + 500) : html.slice(0, 500)
-      const products = await scrapeJumia(q)
-      return NextResponse.json({ status, htmlLen, hasNextData, hasProducts, hasItems, productsFound: products.length, snippet, products: products.slice(0, 3) })
+      const { products, debug } = await scrapeJumia(q)
+      return NextResponse.json({ status, htmlLen, hasNextData, hasProducts, hasItems, productsFound: products.length, snippet, debug, products: products.slice(0, 3) })
     } catch (e: any) {
       return NextResponse.json({ error: e.message })
     }
