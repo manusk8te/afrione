@@ -1,0 +1,20 @@
+name: Scrape Jumia CI
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # Chaque dimanche à 3h du matin
+  workflow_dispatch:        # Déclenchement manuel depuis l'onglet Actions
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Scrape Jumia CI et indexer dans Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/scrape-jumia.mjs
