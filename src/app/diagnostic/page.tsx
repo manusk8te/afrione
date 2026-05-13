@@ -10,8 +10,8 @@ import toast from 'react-hot-toast'
 
 type Step = 'input' | 'questioning' | 'summarizing' | 'confirming'
 
-type QAType = 'yesno' | 'text'
-interface QA { question: string; type: QAType; answer: string }
+type QAType = 'yesno' | 'choice' | 'text'
+interface QA { question: string; type: QAType; options?: string[]; answer: string }
 
 
 interface DiagResult {
@@ -102,7 +102,7 @@ export default function DiagnosticPage() {
   const [photos, setPhotos]           = useState<string[]>([])
   const [uploading, setUploading]     = useState(false)
   const [qa, setQA]                   = useState<QA[]>([])
-  const [currentQ, setCurrentQ]       = useState<{ question: string; type: QAType } | null>(null)
+  const [currentQ, setCurrentQ]       = useState<{ question: string; type: QAType; options?: string[] } | null>(null)
   const [currentAnswer, setCurrentAnswer] = useState('')
   const [showPrecise, setShowPrecise] = useState(false)
   const [preciseText, setPreciseText] = useState('')
@@ -170,7 +170,7 @@ export default function DiagnosticPage() {
       if (data.done) {
         await finalizeWithQA([])
       } else {
-        setCurrentQ({ question: data.question, type: data.type })
+        setCurrentQ({ question: data.question, type: data.type, options: data.options })
         setStep('questioning')
       }
     } catch {
@@ -209,7 +209,7 @@ export default function DiagnosticPage() {
       if (data.done) {
         await finalizeWithQA(newQA)
       } else {
-        setCurrentQ({ question: data.question, type: data.type })
+        setCurrentQ({ question: data.question, type: data.type, options: data.options })
         setLoading(false)
       }
     } catch {
@@ -482,7 +482,35 @@ export default function DiagnosticPage() {
                   <p style={{ fontSize: '15px', color: '#0F1410', margin: 0, lineHeight: '1.5' }}>{currentQ.question}</p>
                 </div>
 
-                {/* Réponse oui/non */}
+                {/* Choix multiple (options spécifiques) */}
+                {currentQ.type === 'choice' && currentQ.options && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {currentQ.options.map(opt => (
+                      <button key={opt} onClick={() => setCurrentAnswer(opt)} style={{
+                        padding: '14px 16px', borderRadius: '14px', fontWeight: 600, fontSize: '14px',
+                        cursor: 'pointer', transition: 'all 0.12s', textAlign: 'left',
+                        background: currentAnswer === opt ? '#E85D26' : 'white',
+                        color: currentAnswer === opt ? 'white' : '#0F1410',
+                        border: `2px solid ${currentAnswer === opt ? '#E85D26' : '#D8D2C4'}`,
+                      }}>
+                        {currentAnswer === opt ? '✓ ' : ''}{opt}
+                      </button>
+                    ))}
+                    <button onClick={() => setShowPrecise(p => !p)} style={{
+                      padding: '10px', background: 'transparent', border: '1.5px dashed #D8D2C4', borderRadius: '12px',
+                      cursor: 'pointer', fontSize: '13px', color: '#7A7A6E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    }}>
+                      ✏️ {showPrecise ? 'Masquer' : 'Autre réponse…'}
+                    </button>
+                    {showPrecise && (
+                      <input type="text" value={preciseText} onChange={e => { setPreciseText(e.target.value); setCurrentAnswer(e.target.value) }} placeholder="Décrivez en quelques mots…"
+                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #D8D2C4', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: '#0F1410' }}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Oui / Non */}
                 {currentQ.type === 'yesno' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -501,7 +529,7 @@ export default function DiagnosticPage() {
                       padding: '10px', background: 'transparent', border: '1.5px dashed #D8D2C4', borderRadius: '12px',
                       cursor: 'pointer', fontSize: '13px', color: '#7A7A6E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     }}>
-                      ✏️ {showPrecise ? 'Masquer le détail' : 'Préciser ma réponse'}
+                      ✏️ {showPrecise ? 'Masquer' : 'Préciser ma réponse'}
                     </button>
                     {showPrecise && (
                       <input type="text" value={preciseText} onChange={e => setPreciseText(e.target.value)} placeholder="Précisez en quelques mots…"

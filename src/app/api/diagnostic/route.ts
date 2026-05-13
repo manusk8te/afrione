@@ -92,13 +92,18 @@ CONTEXTE ABIDJAN : béton, humidité tropicale, coupures CIE, matériaux Wavin/C
 ${EXPERT_PLAYBOOK}
 
 RÈGLES STRICTES :
-1. UNE seule question à la fois
-2. Priorité diagnostic (N1) → puis prix (N2) → puis "matériaux déjà achetés ?"
+1. UNE seule question à la fois — courte, claire, vocabulaire du quotidien (pas technique)
+2. Priorité diagnostic (N1) → puis prix (N2)
 3. Jamais redemander ce qui est déjà dans la description
-4. Questions avec options concrètes : "A ou B ?" pour aller vite
-5. Urgence réelle (étincelles, inondation) → done:true immédiatement
-6. Maximum 4 questions — la dernière doit toujours extraire un signal de quantité/surface si pas encore eu
-7. Si superficie ou quantité déjà connue → ne pas redemander`
+4. Urgence réelle (étincelles, inondation active) → done:true immédiatement
+5. Maximum 4 questions — la dernière doit extraire surface/quantité si pas encore connue
+6. Si superficie ou quantité déjà connue → ne pas redemander
+7. JAMAIS poser de question sur le budget, les matériaux ou les fournitures
+
+TYPES DE RÉPONSE :
+- "choice" + "options": ["...", "..."] → quand il y a 2 à 4 options concrètes distinctes (préférer ce type)
+- "yesno" → UNIQUEMENT pour de vraies questions oui/non sans ambiguïté (ex: "Y a-t-il une odeur de brûlé ?")
+- "text" → pour des mesures, descriptions libres, localisations (ex: "Environ combien de m² ?")`
 
 // ─── Appel OpenAI ─────────────────────────────────────────────────────────────
 async function callOpenAI(messages: any[], max_tokens = 600) {
@@ -180,12 +185,24 @@ Le client décrit son problème pour la première fois. Identifie le domaine (pl
 
 Si la description est déjà très complète et précise, mets done:true.
 
-Réponds UNIQUEMENT en JSON :
-{"question": "Ta question experte ici", "type": "yesno ou text", "done": false}
+Réponds UNIQUEMENT en JSON (un de ces formats) :
 
-Choix du type :
-- "yesno" : question binaire (A ou B, oui ou non) — client choisit parmi des options
-- "text" : question ouverte nécessitant une réponse libre (mesures, description, localisation floue)`
+Question avec options concrètes :
+{"question": "Question courte ?", "type": "choice", "options": ["Option A", "Option B", "Option C"], "done": false}
+
+Question oui/non pure :
+{"question": "Question oui/non ?", "type": "yesno", "done": false}
+
+Question ouverte (mesure, description) :
+{"question": "Question ouverte ?", "type": "text", "done": false}
+
+Diagnostic terminé :
+{"done": true}
+
+EXEMPLES de bonnes questions choice :
+- "C'est quoi exactement ?" → options: ["Robinet qui goutte", "Tuyau qui fuit sous l'évier", "Humidité dans le mur"]
+- "Combien de pièces sont touchées ?" → options: ["Une seule pièce", "Plusieurs pièces", "Tout l'appartement"]
+- "C'est apparu comment ?" → options: ["Brusquement", "Ça empire progressivement depuis quelques jours"]`
 
       const result = await callOpenAI(buildMessages(text, photos, systemStart))
       return NextResponse.json(result)
@@ -225,8 +242,7 @@ Décide :
 - Tu as assez d'infos pour un diagnostic et un prix précis → done:true
 - Il manque une info clé → pose la question la plus utile pour le pricing
 
-Réponds UNIQUEMENT en JSON :
-{"question": "Ta question", "type": "yesno|text", "done": true|false}`
+Réponds UNIQUEMENT en JSON (même format que pour la première question — choice/yesno/text ou done:true)`
 
       const extra = `ÉCHANGES PRÉCÉDENTS :\n${qaBlock}\n\nPROBLÈME INITIAL DU CLIENT :`
       const result = await callOpenAI(buildMessages(text, photos, systemNext, extra))
