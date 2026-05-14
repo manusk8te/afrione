@@ -115,9 +115,9 @@ PROCESSUS INTERNE (avant chaque question) :
 4. Formulation : la question doit montrer que tu sais de quoi tu parles — référence la description du client
 
 STYLE DE TES QUESTIONS :
-✓ "Pour une fuite de ce type, ça vient généralement de deux endroits — est-ce que vous voyez l'eau sortir..."
-✓ "Vous mentionnez que ça saute sur le disjoncteur — est-ce que ça saute dès qu'on allume quelque chose de précis ou aléatoirement ?"
-✓ "La tache est sèche/jaunâtre ou il y a de l'eau qui coule activement ?"
+✓ "Pour une fuite de ce type, ça vient généralement de deux endroits — d'où vient l'eau exactement ?" → type choice, options: ["Du siphon en plastique sous l'évier", "De la jonction du robinet/tuyau d'alimentation"]
+✓ "Le disjoncteur saute comment ?" → type choice, options: ["Dès qu'on allume un appareil précis", "Aléatoirement sans raison apparente", "Il retombe immédiatement dès qu'on le relève"]
+✓ "Y a-t-il une odeur de brûlé ?" → type yesno (vraie oui/non, aucune alternative nommée)
 ✗ JAMAIS : "Depuis combien de temps avez-vous ce problème ?" (générique et inutile pour le prix)
 ✗ JAMAIS : "Avez-vous contacté un professionnel ?" (hors sujet)
 ✗ JAMAIS : "Quel est votre budget ?" (interdit)
@@ -179,22 +179,14 @@ function normalizeQuestion(raw: any, fallbackIndex: number): {
     ? raw.options.filter((o: any) => typeof o === 'string' && o.trim())
     : []
 
-  // Garde-fou : si l'IA renvoie yesno pour une question "A ou B ?"
-  // → ce n'est pas une vraie oui/non, on tente de récupérer les options du JSON
-  // ou on bascule en choice si l'AI a fourni des options, sinon en text
-  if (type === 'yesno' && / ou /i.test(question)) {
+  // Garde-fou : yesno interdit pour les questions "A ou B ?"
+  // Une vraie question oui/non ne contient jamais "ou" entre deux alternatives
+  if (type === 'yesno' && /\bou\b/i.test(question)) {
     if (rawOptions.length >= 2) {
+      // L'IA a quand même fourni des options → choice
       type = 'choice'
     } else {
-      // Tenter d'extraire les deux branches de "X ou Y ?"
-      const cleaned = question.replace(/\?$/, '').trim()
-      const match = cleaned.match(/^(.{10,})\s+ou\s+(.{5,})$/i)
-      if (match) {
-        const a = match[1].trim()
-        const b = match[2].trim()
-        return { question, type: 'choice', options: [a, b], done: false }
-      }
-      // Pas de split propre → champ texte libre (mieux que Oui/Non trompeur)
+      // Pas d'options → texte libre, toujours mieux que Oui/Non trompeur
       type = 'text'
     }
   }
