@@ -31,11 +31,16 @@ const METIERS = [
 const QUARTIERS = ['Cocody','Plateau','Marcory','Treichville','Yopougon','Adjamé','Abobo','Port-Bouët','Koumassi']
 
 /* ─── Design tokens ───────────────────────────────────────────────────────── */
-const BG   = '#060604'
-const SURF = '#141412'
-const T2   = 'rgba(255,255,255,0.55)'
-const T3   = 'rgba(255,255,255,0.32)'
-const BO   = 'rgba(255,255,255,0.09)'
+const W    = '#FFFFFF'
+const W2   = '#F5F7FA'
+const T1   = '#3D4852'
+const T2   = '#6B7280'
+const T3   = '#8B95A5'
+const BO   = '#E2E8F0'
+const ORANGE = '#E85D26'
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 const syne = { fontFamily: "'Syne', sans-serif" }        as const
 const body = { fontFamily: "'Bricolage Grotesque', sans-serif" } as const
 const mono = { fontFamily: "'Space Mono', monospace" }   as const
@@ -60,27 +65,27 @@ function StepItem({ number, text, active }: { number: number; text: string; acti
     <div style={{
       display: 'flex', alignItems: 'center', gap: '12px',
       padding: '10px 14px', borderRadius: '12px',
-      background: active ? 'white' : '#1A1A1A',
-      border:     active ? '1px solid white' : 'none',
+      background: active ? W : 'rgba(255,255,255,0.15)',
+      border: active ? '1px solid white' : 'none',
     }}>
       <div style={{
         width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '11px', fontWeight: 700, ...mono,
-        background: active ? BG : 'rgba(255,255,255,0.1)',
-        color:      active ? 'white' : 'rgba(255,255,255,0.4)',
+        background: active ? ORANGE : 'rgba(255,255,255,0.2)',
+        color: 'white',
       }}>
         {number}
       </div>
-      <span style={{ fontSize: '14px', fontWeight: 600, ...syne, color: active ? '#0F1410' : 'white' }}>
+      <span style={{ fontSize: '14px', fontWeight: 600, ...syne, color: active ? T1 : 'white' }}>
         {text}
       </span>
     </div>
   )
 }
 
-/* ─── DarkInput ───────────────────────────────────────────────────────────── */
-function DarkInput(props: React.InputHTMLAttributes<HTMLInputElement> & { extraStyle?: React.CSSProperties }) {
+/* ─── LightInput ──────────────────────────────────────────────────────────── */
+function LightInput(props: React.InputHTMLAttributes<HTMLInputElement> & { extraStyle?: React.CSSProperties }) {
   const [focused, setFocused] = useState(false)
   const { extraStyle, ...rest } = props
   return (
@@ -89,10 +94,10 @@ function DarkInput(props: React.InputHTMLAttributes<HTMLInputElement> & { extraS
       onFocus={e => { setFocused(true); props.onFocus?.(e) }}
       onBlur={e => { setFocused(false); props.onBlur?.(e) }}
       style={{
-        width: '100%', background: SURF,
-        border: `1px solid ${focused ? '#E85D26' : BO}`,
+        width: '100%', background: W,
+        border: `1.5px solid ${focused ? ORANGE : BO}`,
         borderRadius: '12px', padding: '12px 14px',
-        fontSize: '15px', ...body, color: 'white', outline: 'none',
+        fontSize: '15px', ...body, color: T1, outline: 'none',
         transition: 'border-color 0.15s',
         ...extraStyle,
       }}
@@ -100,8 +105,8 @@ function DarkInput(props: React.InputHTMLAttributes<HTMLInputElement> & { extraS
   )
 }
 
-/* ─── DarkSelect ──────────────────────────────────────────────────────────── */
-function DarkSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+/* ─── LightSelect ─────────────────────────────────────────────────────────── */
+function LightSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   const [focused, setFocused] = useState(false)
   return (
     <select
@@ -109,18 +114,18 @@ function DarkSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
       onFocus={e => { setFocused(true); props.onFocus?.(e) }}
       onBlur={e => { setFocused(false); props.onBlur?.(e) }}
       style={{
-        width: '100%', background: SURF,
-        border: `1px solid ${focused ? '#E85D26' : BO}`,
+        width: '100%', background: W,
+        border: `1.5px solid ${focused ? ORANGE : BO}`,
         borderRadius: '12px', padding: '12px 14px',
-        fontSize: '15px', ...body, color: 'white', outline: 'none',
+        fontSize: '15px', ...body, color: T1, outline: 'none',
         transition: 'border-color 0.15s', appearance: 'none',
       }}
     />
   )
 }
 
-/* ─── DarkTextarea ────────────────────────────────────────────────────────── */
-function DarkTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+/* ─── LightTextarea ───────────────────────────────────────────────────────── */
+function LightTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const [focused, setFocused] = useState(false)
   return (
     <textarea
@@ -128,10 +133,10 @@ function DarkTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) 
       onFocus={e => { setFocused(true); props.onFocus?.(e) }}
       onBlur={e => { setFocused(false); props.onBlur?.(e) }}
       style={{
-        width: '100%', background: SURF,
-        border: `1px solid ${focused ? '#E85D26' : BO}`,
+        width: '100%', background: W,
+        border: `1.5px solid ${focused ? ORANGE : BO}`,
         borderRadius: '12px', padding: '12px 14px',
-        fontSize: '15px', ...body, color: 'white', outline: 'none',
+        fontSize: '15px', ...body, color: T1, outline: 'none',
         transition: 'border-color 0.15s', resize: 'none', minHeight: '80px',
       }}
     />
@@ -182,14 +187,16 @@ function GhostBtn({ children, onClick }: { children: React.ReactNode; onClick?: 
       type="button" onClick={onClick}
       style={{
         width: '100%', padding: '14px', borderRadius: '12px',
-        background: 'transparent', color: 'white',
-        border: `1px solid ${BO}`, cursor: 'pointer',
+        background: W, color: T1,
+        border: `1.5px solid ${BO}`,
+        boxShadow: NEU_SMALL,
+        cursor: 'pointer',
         fontSize: '15px', fontWeight: 600, ...syne,
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        transition: 'background 0.15s',
+        transition: 'box-shadow 0.15s',
       }}
-      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'}
-      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = '8px 8px 20px rgba(163,177,198,0.65), -5px -5px 14px rgba(255,255,255,1)'}
+      onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SMALL}
     >
       {children}
     </button>
@@ -207,7 +214,7 @@ function Spinner() {
 function ErrorBox({ msg }: { msg: string }) {
   if (!msg) return null
   return (
-    <div style={{ background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '10px', padding: '12px 16px', fontSize: '13px', color: '#FF8A65', ...body }}>
+    <div style={{ background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '10px', padding: '12px 16px', fontSize: '13px', color: ORANGE, ...body }}>
       {msg}
     </div>
   )
@@ -218,7 +225,7 @@ function BackBtn({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} type="button"
       style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: T2, marginBottom: '24px', padding: 0, ...body, transition: 'color 0.15s' }}
-      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'white'}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = T1}
       onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = T2}>
       <ArrowLeft size={15} /> Retour
     </button>
@@ -303,11 +310,11 @@ function AuthPageInner() {
 
   /* ─────────────────────────────────────────────────────────────────────────── */
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: BG, color: 'white' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: W2, color: T1 }}>
 
       {/* ━━━━ LEFT — video + hero ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="hidden lg:flex"
-        style={{ width: '52%', position: 'sticky', top: 0, height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: '120px', paddingLeft: '48px', paddingRight: '48px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.4)' }}>
+        style={{ width: '52%', position: 'sticky', top: 0, height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: '120px', paddingLeft: '48px', paddingRight: '48px', borderRadius: '24px', overflow: 'hidden', boxShadow: NEU_SHADOW }}>
 
         {/* Video — no overlay */}
         <video
@@ -337,7 +344,7 @@ function AuthPageInner() {
             <h1 style={{ ...syne, fontWeight: 500, fontSize: '36px', letterSpacing: '-0.03em', color: 'white', lineHeight: 1.1, marginBottom: '10px', whiteSpace: 'nowrap' }}>
               {isArtisanFlow ? 'Espace artisan' : 'Rejoignez AfriOne'}
             </h1>
-            <p style={{ ...body, fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.65, paddingLeft: '4px' }}>
+            <p style={{ ...body, fontSize: '13px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.65, paddingLeft: '4px' }}>
               {isArtisanFlow
                 ? 'Complétez votre profil pour accéder à vos premières missions.'
                 : 'Artisans vérifiés KYC, paiement Wave sécurisé, à Abidjan.'
@@ -355,7 +362,7 @@ function AuthPageInner() {
       </div>
 
       {/* ━━━━ RIGHT — form ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 16px', overflowY: 'auto' }}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 16px', overflowY: 'auto', background: W2 }}
         className="sm:px-12 lg:px-16 xl:px-24">
 
         <motion.div variants={rightFade} initial="hidden" animate="show"
@@ -366,13 +373,13 @@ function AuthPageInner() {
             <div className="afrione-gradient" style={{ width: '28px', height: '28px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Zap size={14} color="white" />
             </div>
-            <span style={{ ...syne, fontWeight: 700, fontSize: '16px', color: 'white' }}>AFRI<span className="afrione-gradient-text">ONE</span></span>
+            <span style={{ ...syne, fontWeight: 700, fontSize: '16px', color: T1 }}>AFRI<span className="afrione-gradient-text">ONE</span></span>
           </Link>
 
           {/* ── CHOICE ── */}
           {step === 'choice' && (<>
             <div>
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '28px', letterSpacing: '-0.02em', color: 'white', marginBottom: '6px' }}>Bienvenue</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '28px', letterSpacing: '-0.02em', color: T1, marginBottom: '6px' }}>Bienvenue</h2>
               <p style={{ ...body, fontSize: '13px', color: T2 }}>Connectez-vous ou créez votre compte AfriOne</p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -386,7 +393,7 @@ function AuthPageInner() {
             <p style={{ ...body, fontSize: '12px', color: T3, textAlign: 'center' }}>
               Vous êtes artisan ?{' '}
               <button onClick={() => { setRole('artisan'); setStep('register') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E85D26', fontWeight: 600, ...body, fontSize: '12px' }}>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ORANGE, fontWeight: 600, ...body, fontSize: '12px' }}>
                 Inscrivez-vous ici
               </button>
             </p>
@@ -396,19 +403,19 @@ function AuthPageInner() {
           {step === 'login' && (<>
             <div>
               <BackBtn onClick={() => setStep('choice')} />
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '28px', letterSpacing: '-0.02em', color: 'white', marginBottom: '6px' }}>Connexion</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '28px', letterSpacing: '-0.02em', color: T1, marginBottom: '6px' }}>Connexion</h2>
               <p style={{ ...body, fontSize: '13px', color: T2 }}>Accédez à votre espace AfriOne</p>
             </div>
             <ErrorBox msg={error} />
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <FieldLabel>Email</FieldLabel>
-                <DarkInput type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" required />
+                <LightInput type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" required />
               </div>
               <div>
                 <FieldLabel>Mot de passe</FieldLabel>
                 <div style={{ position: 'relative' }}>
-                  <DarkInput type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Votre mot de passe" extraStyle={{ paddingRight: '44px' }} required />
+                  <LightInput type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Votre mot de passe" extraStyle={{ paddingRight: '44px' }} required />
                   <button type="button" onClick={() => setShowPass(!showPass)}
                     style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: T2 }}>
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -422,14 +429,14 @@ function AuthPageInner() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
               <button onClick={() => setStep('forgot')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', ...body, fontSize: '13px', color: T2, transition: 'color 0.15s' }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'white'}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = T1}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = T2}>
                 Mot de passe oublié ?
               </button>
               <p style={{ ...body, fontSize: '13px', color: T2 }}>
                 Pas de compte ?{' '}
                 <button onClick={() => setStep('register')}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E85D26', fontWeight: 600, ...body, fontSize: '13px' }}>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: ORANGE, fontWeight: 600, ...body, fontSize: '13px' }}>
                   S'inscrire
                 </button>
               </p>
@@ -440,12 +447,12 @@ function AuthPageInner() {
           {step === 'forgot' && (<>
             <div>
               <BackBtn onClick={() => setStep('login')} />
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '28px', letterSpacing: '-0.02em', color: 'white', marginBottom: '6px' }}>Mot de passe oublié</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '28px', letterSpacing: '-0.02em', color: T1, marginBottom: '6px' }}>Mot de passe oublié</h2>
               <p style={{ ...body, fontSize: '13px', color: T2 }}>Entrez votre email — nous vous envoyons un lien.</p>
             </div>
             <ErrorBox msg={error} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <DarkInput type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" required />
+              <LightInput type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" required />
               <PrimaryBtn loading={loading} onClick={async () => {
                 if (!email.trim()) { setError('Entrez votre email'); return }
                 setLoading(true); setError('')
@@ -464,9 +471,9 @@ function AuthPageInner() {
               <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(43,107,62,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                 <CheckCircle size={36} color="#2B6B3E" />
               </div>
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: 'white', marginBottom: '10px' }}>Email envoyé !</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: T1, marginBottom: '10px' }}>Email envoyé !</h2>
               <p style={{ ...body, fontSize: '13px', color: T2, marginBottom: '6px' }}>Un lien de réinitialisation a été envoyé à</p>
-              <p style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white', marginBottom: '28px' }}>{email}</p>
+              <p style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1, marginBottom: '28px' }}>{email}</p>
               <GhostBtn onClick={() => setStep('login')}>Retour à la connexion</GhostBtn>
             </div>
           )}
@@ -475,23 +482,23 @@ function AuthPageInner() {
           {step === 'register' && (<>
             <div>
               <BackBtn onClick={() => setStep('choice')} />
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '28px', letterSpacing: '-0.02em', color: 'white', marginBottom: '6px' }}>Créer un compte</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '28px', letterSpacing: '-0.02em', color: T1, marginBottom: '6px' }}>Créer un compte</h2>
               <p style={{ ...body, fontSize: '13px', color: T2 }}>Rejoignez AfriOne gratuitement</p>
             </div>
             <ErrorBox msg={error} />
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <FieldLabel>Nom complet</FieldLabel>
-                <DarkInput type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Aya Konaté" required />
+                <LightInput type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Aya Konaté" required />
               </div>
               <div>
                 <FieldLabel>Email</FieldLabel>
-                <DarkInput type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" required />
+                <LightInput type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vous@exemple.com" required />
               </div>
               <div>
                 <FieldLabel>Mot de passe</FieldLabel>
                 <div style={{ position: 'relative' }}>
-                  <DarkInput type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 caractères" extraStyle={{ paddingRight: '44px' }} required minLength={6} />
+                  <LightInput type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 caractères" extraStyle={{ paddingRight: '44px' }} required minLength={6} />
                   <button type="button" onClick={() => setShowPass(!showPass)}
                     style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: T2 }}>
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -509,20 +516,21 @@ function AuthPageInner() {
                       style={{
                         flex: 1, padding: '14px 10px', borderRadius: '12px',
                         border: role === r.id ? '1.5px solid #E85D26' : `1.5px solid ${BO}`,
-                        background: role === r.id ? 'rgba(232,93,38,0.08)' : SURF,
+                        background: role === r.id ? 'rgba(232,93,38,0.06)' : W,
+                        boxShadow: role === r.id ? 'none' : NEU_SMALL,
                         cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
                         transition: 'all 0.15s',
                       }}>
                       <span style={{ fontSize: '22px' }}>{r.icon}</span>
-                      <span style={{ ...syne, fontSize: '12px', fontWeight: 700, color: role === r.id ? '#E85D26' : 'white' }}>{r.label}</span>
+                      <span style={{ ...syne, fontSize: '12px', fontWeight: 700, color: role === r.id ? ORANGE : T1 }}>{r.label}</span>
                       <span style={{ ...body, fontSize: '11px', color: T2 }}>{r.sub}</span>
                     </button>
                   ))}
                 </div>
               </div>
               {role === 'artisan' && (
-                <div style={{ background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.18)', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: '#FF8A65', ...body, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                  <Zap size={13} style={{ flexShrink: 0, marginTop: '1px', color: '#E85D26' }} />
+                <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.18)', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: ORANGE, ...body, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                  <Zap size={13} style={{ flexShrink: 0, marginTop: '1px', color: ORANGE }} />
                   Après création, vous complèterez votre profil artisan en 2 minutes.
                 </div>
               )}
@@ -533,7 +541,7 @@ function AuthPageInner() {
             <p style={{ ...body, fontSize: '13px', color: T2, textAlign: 'center' }}>
               Déjà un compte ?{' '}
               <button onClick={() => setStep('login')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E85D26', fontWeight: 600, ...body, fontSize: '13px' }}>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: ORANGE, fontWeight: 600, ...body, fontSize: '13px' }}>
                 Se connecter
               </button>
             </p>
@@ -545,11 +553,11 @@ function AuthPageInner() {
               <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(43,107,62,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                 <CheckCircle size={36} color="#2B6B3E" />
               </div>
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: 'white', marginBottom: '10px' }}>Vérifiez votre email</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: T1, marginBottom: '10px' }}>Vérifiez votre email</h2>
               <p style={{ ...body, fontSize: '13px', color: T2, marginBottom: '6px' }}>Un lien de confirmation a été envoyé à</p>
-              <p style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white', marginBottom: '20px' }}>{email}</p>
+              <p style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1, marginBottom: '20px' }}>{email}</p>
               {role === 'artisan' && (
-                <div style={{ background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.18)', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: '#FF8A65', ...body, textAlign: 'left', marginBottom: '20px' }}>
+                <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.18)', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: ORANGE, ...body, textAlign: 'left', marginBottom: '20px' }}>
                   <strong>Artisan :</strong> après confirmation, connectez-vous ici pour compléter votre profil.
                 </div>
               )}
@@ -572,7 +580,7 @@ function AuthPageInner() {
             <div>
               <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
                 {[0, 1, 2].map(i => (
-                  <div key={i} style={{ height: '2px', flex: 1, borderRadius: '2px', background: i <= artisanStep ? '#E85D26' : BO, transition: 'background 0.3s' }} />
+                  <div key={i} style={{ height: '3px', flex: 1, borderRadius: '2px', background: i <= artisanStep ? ORANGE : BO, transition: 'background 0.3s' }} />
                 ))}
               </div>
               <p style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -586,21 +594,21 @@ function AuthPageInner() {
           {/* ── Artisan Step 0 : Téléphone ── */}
           {step === 'artisan_phone' && (<>
             <div>
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: 'white', marginBottom: '6px' }}>Votre numéro Wave</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: T1, marginBottom: '6px' }}>Votre numéro Wave</h2>
               <p style={{ ...body, fontSize: '13px', color: T2 }}>Pour recevoir vos paiements directement</p>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', background: SURF, border: `1px solid ${BO}`, borderRadius: '12px', padding: '12px 14px', ...mono, fontSize: '13px', color: 'white', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', background: W, border: `1.5px solid ${BO}`, borderRadius: '12px', padding: '12px 14px', ...mono, fontSize: '13px', color: T1, flexShrink: 0, boxShadow: NEU_SMALL }}>
                 🇨🇮 +225
               </div>
-              <DarkInput type="tel" value={artisan.phone} onChange={e => updateArtisan('phone', e.target.value)} placeholder="07 00 00 00 00" />
+              <LightInput type="tel" value={artisan.phone} onChange={e => updateArtisan('phone', e.target.value)} placeholder="07 00 00 00 00" />
             </div>
             <PrimaryBtn disabled={artisan.phone.length < 8} onClick={() => { setArtisanStep(1); setStep('artisan_profile') }}>
               Continuer <ArrowRight size={15} />
             </PrimaryBtn>
             <p style={{ ...body, fontSize: '11px', color: T3, textAlign: 'center' }}>
               En continuant, vous acceptez nos{' '}
-              <Link href="/aide" style={{ color: '#E85D26', textDecoration: 'none' }}>CGU</Link>
+              <Link href="/aide" style={{ color: ORANGE, textDecoration: 'none' }}>CGU</Link>
             </p>
           </>)}
 
@@ -608,7 +616,7 @@ function AuthPageInner() {
           {step === 'artisan_profile' && (<>
             <div>
               <BackBtn onClick={() => { setArtisanStep(0); setStep('artisan_phone') }} />
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: 'white', marginBottom: '6px' }}>Votre profil</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: T1, marginBottom: '6px' }}>Votre profil</h2>
               <p style={{ ...body, fontSize: '13px', color: T2 }}>Ces informations seront visibles par les clients</p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -616,33 +624,33 @@ function AuthPageInner() {
                 <FieldLabel>Nom complet</FieldLabel>
                 <div style={{ position: 'relative' }}>
                   <User size={15} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: T3 }} />
-                  <DarkInput type="text" value={name} readOnly extraStyle={{ paddingLeft: '40px', opacity: 0.6 }} />
+                  <LightInput type="text" value={name} readOnly extraStyle={{ paddingLeft: '40px', opacity: 0.6 }} />
                 </div>
               </div>
               <div>
                 <FieldLabel>Quartier principal</FieldLabel>
                 <div style={{ position: 'relative' }}>
                   <MapPin size={15} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: T3, zIndex: 1 }} />
-                  <DarkSelect value={artisan.quartier} onChange={e => updateArtisan('quartier', e.target.value)}
+                  <LightSelect value={artisan.quartier} onChange={e => updateArtisan('quartier', e.target.value)}
                     style={{ paddingLeft: '40px' }}>
-                    <option value="" style={{ background: SURF }}>Choisir un quartier</option>
-                    {QUARTIERS.map(q => <option key={q} value={q} style={{ background: SURF }}>{q}</option>)}
-                  </DarkSelect>
+                    <option value="">Choisir un quartier</option>
+                    {QUARTIERS.map(q => <option key={q} value={q}>{q}</option>)}
+                  </LightSelect>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <FieldLabel>Années d'exp.</FieldLabel>
-                  <DarkInput type="number" value={artisan.exp} onChange={e => updateArtisan('exp', e.target.value)} placeholder="Ex : 5" />
+                  <LightInput type="number" value={artisan.exp} onChange={e => updateArtisan('exp', e.target.value)} placeholder="Ex : 5" />
                 </div>
                 <div>
                   <FieldLabel>Tarif min (FCFA)</FieldLabel>
-                  <DarkInput type="number" value={artisan.tarif} onChange={e => updateArtisan('tarif', e.target.value)} placeholder="Ex : 8000" />
+                  <LightInput type="number" value={artisan.tarif} onChange={e => updateArtisan('tarif', e.target.value)} placeholder="Ex : 8000" />
                 </div>
               </div>
               <div>
                 <FieldLabel>Bio courte</FieldLabel>
-                <DarkTextarea value={artisan.bio} onChange={e => updateArtisan('bio', e.target.value)} placeholder="Décrivez votre expertise en quelques mots..." />
+                <LightTextarea value={artisan.bio} onChange={e => updateArtisan('bio', e.target.value)} placeholder="Décrivez votre expertise en quelques mots..." />
               </div>
               <PrimaryBtn disabled={!artisan.quartier} onClick={() => { setArtisanStep(2); setStep('artisan_metier') }}>
                 Continuer <ArrowRight size={15} />
@@ -654,7 +662,7 @@ function AuthPageInner() {
           {step === 'artisan_metier' && (<>
             <div>
               <BackBtn onClick={() => { setArtisanStep(1); setStep('artisan_profile') }} />
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: 'white', marginBottom: '6px' }}>Votre métier</h2>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: T1, marginBottom: '6px' }}>Votre métier</h2>
               <p style={{ ...body, fontSize: '13px', color: T2 }}>Choisissez votre domaine principal</p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -663,12 +671,13 @@ function AuthPageInner() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '10px', padding: '14px',
                     borderRadius: '12px', border: artisan.metier === m.id ? '1.5px solid #E85D26' : `1.5px solid ${BO}`,
-                    background: artisan.metier === m.id ? 'rgba(232,93,38,0.08)' : SURF,
+                    background: artisan.metier === m.id ? 'rgba(232,93,38,0.06)' : W,
+                    boxShadow: artisan.metier === m.id ? 'none' : NEU_SMALL,
                     cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
                   }}>
                   <span style={{ fontSize: '22px' }}>{m.icon}</span>
-                  <span style={{ ...syne, fontSize: '13px', fontWeight: 600, color: artisan.metier === m.id ? '#E85D26' : 'white' }}>{m.label}</span>
-                  {artisan.metier === m.id && <CheckCircle size={13} style={{ color: '#E85D26', marginLeft: 'auto' }} />}
+                  <span style={{ ...syne, fontSize: '13px', fontWeight: 600, color: artisan.metier === m.id ? ORANGE : T1 }}>{m.label}</span>
+                  {artisan.metier === m.id && <CheckCircle size={13} style={{ color: ORANGE, marginLeft: 'auto' }} />}
                 </button>
               ))}
             </div>
@@ -683,8 +692,8 @@ function AuthPageInner() {
               <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(43,107,62,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                 <CheckCircle size={36} color="#2B6B3E" />
               </div>
-              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: 'white', marginBottom: '8px' }}>Compte créé !</h2>
-              <p style={{ ...body, fontSize: '13px', color: T2, marginBottom: '6px' }}>Bienvenue sur AfriOne, <strong style={{ color: 'white' }}>{name}</strong>.</p>
+              <h2 style={{ ...syne, fontWeight: 500, fontSize: '26px', color: T1, marginBottom: '8px' }}>Compte créé !</h2>
+              <p style={{ ...body, fontSize: '13px', color: T2, marginBottom: '6px' }}>Bienvenue sur AfriOne, <strong style={{ color: T1 }}>{name}</strong>.</p>
               <p style={{ ...body, fontSize: '13px', color: T2, marginBottom: '28px' }}>Il reste à vérifier votre identité pour activer votre profil.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <PrimaryBtn onClick={() => router.push('/artisan-space/kyc')}>

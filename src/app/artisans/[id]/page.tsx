@@ -10,6 +10,9 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 
 type Photo = { url: string; category: string; date: string | null; notes?: string }
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 export default function ArtisanProfilePage() {
   const params = useParams()
   const isMobile = useIsMobile()
@@ -89,16 +92,16 @@ export default function ArtisanProfilePage() {
   }, [lightbox, closeLightbox, prevPhoto, nextPhoto])
 
   if (loading) return (
-    <div className="min-h-screen bg-bg flex items-center justify-center">
-      <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+    <div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '40px', height: '40px', border: '4px solid rgba(232,93,38,0.2)', borderTop: '4px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
     </div>
   )
 
   if (!artisan) return (
-    <div className="min-h-screen bg-bg flex items-center justify-center">
-      <div className="text-center">
-        <p style={{fontSize:'48px'}}>404</p>
-        <Link href="/artisans" style={{color:'#E85D26'}}>← Retour</Link>
+    <div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ fontSize: '48px' }}>404</p>
+        <Link href="/artisans" className="afrione-gradient-text">← Retour</Link>
       </div>
     </div>
   )
@@ -149,31 +152,31 @@ export default function ArtisanProfilePage() {
   const allPhotos: Photo[] = [...portfolioPhotos, ...missionPhotos].slice(0, 18)
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div style={{ minHeight: '100vh', background: '#F5F7FA' }}>
       <Navbar />
 
       {/* Lightbox */}
       {lightbox && (
         <div onClick={closeLightbox} style={{
-          position:'fixed',inset:0,zIndex:9999,background:'rgba(10,14,11,0.95)',
-          display:'flex',alignItems:'center',justifyContent:'center',
+          position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,14,11,0.95)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {/* Bouton fermer */}
-          <button onClick={closeLightbox} style={{position:'absolute',top:'20px',right:'20px',background:'rgba(255,255,255,0.1)',border:'none',borderRadius:'50%',width:'44px',height:'44px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'white'}}>
+          <button onClick={closeLightbox} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
             <X size={20} />
           </button>
 
           {/* Compteur */}
-          <div style={{position:'absolute',top:'24px',left:'50%',transform:'translateX(-50%)',fontSize:'13px',color:'rgba(255,255,255,0.5)',fontFamily:'Space Mono'}}>
+          <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontFamily: 'Space Mono' }}>
             {lightbox.index + 1} / {lightbox.photos.length}
           </div>
 
           {/* Prev */}
           {lightbox.index > 0 && (
             <button onClick={e => { e.stopPropagation(); prevPhoto() }} style={{
-              position:'absolute',left:'20px',background:'rgba(255,255,255,0.1)',border:'none',
-              borderRadius:'50%',width:'48px',height:'48px',display:'flex',alignItems:'center',
-              justifyContent:'center',cursor:'pointer',color:'white',
+              position: 'absolute', left: '20px', background: 'rgba(255,255,255,0.1)', border: 'none',
+              borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', cursor: 'pointer', color: 'white',
             }}>
               <ChevronLeft size={24} />
             </button>
@@ -182,30 +185,30 @@ export default function ArtisanProfilePage() {
           {/* Next */}
           {lightbox.index < lightbox.photos.length - 1 && (
             <button onClick={e => { e.stopPropagation(); nextPhoto() }} style={{
-              position:'absolute',right:'20px',background:'rgba(255,255,255,0.1)',border:'none',
-              borderRadius:'50%',width:'48px',height:'48px',display:'flex',alignItems:'center',
-              justifyContent:'center',cursor:'pointer',color:'white',
+              position: 'absolute', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none',
+              borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', cursor: 'pointer', color: 'white',
             }}>
               <ChevronRight size={24} />
             </button>
           )}
 
           {/* Image */}
-          <div onClick={e => e.stopPropagation()} style={{maxWidth:'90vw',maxHeight:'80vh',display:'flex',flexDirection:'column',alignItems:'center',gap:'16px'}}>
+          <div onClick={e => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
             <img
               src={lightbox.photos[lightbox.index].url}
               alt={lightbox.photos[lightbox.index].category}
-              style={{maxWidth:'100%',maxHeight:'70vh',objectFit:'contain',borderRadius:'12px'}}
+              style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '12px' }}
             />
-            <div style={{textAlign:'center'}}>
-              <div style={{fontSize:'14px',fontWeight:600,color:'white'}}>{lightbox.photos[lightbox.index].category}</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'white' }}>{lightbox.photos[lightbox.index].category}</div>
               {lightbox.photos[lightbox.index].date && (
-                <div style={{fontSize:'12px',color:'rgba(255,255,255,0.5)',marginTop:'4px'}}>
-                  {new Date(lightbox.photos[lightbox.index].date!).toLocaleDateString('fr-FR', { month:'long', year:'numeric' })}
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+                  {new Date(lightbox.photos[lightbox.index].date!).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
                 </div>
               )}
               {lightbox.photos[lightbox.index].notes && (
-                <div style={{fontSize:'13px',color:'rgba(255,255,255,0.7)',marginTop:'8px',maxWidth:'480px',lineHeight:'1.5'}}>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '8px', maxWidth: '480px', lineHeight: '1.5' }}>
                   {lightbox.photos[lightbox.index].notes}
                 </div>
               )}
@@ -215,18 +218,18 @@ export default function ArtisanProfilePage() {
           {/* Thumbnails */}
           {lightbox.photos.length > 1 && (
             <div onClick={e => e.stopPropagation()} style={{
-              position:'absolute',bottom:'20px',left:'50%',transform:'translateX(-50%)',
-              display:'flex',gap:'6px',overflowX:'auto',maxWidth:'80vw',padding:'4px',
+              position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+              display: 'flex', gap: '6px', overflowX: 'auto', maxWidth: '80vw', padding: '4px',
             }}>
               {lightbox.photos.map((p, i) => (
-                <div key={i} onClick={() => setLightbox(l => l ? {...l, index:i} : l)} style={{
-                  width:'48px',height:'48px',borderRadius:'8px',overflow:'hidden',
-                  flexShrink:0,cursor:'pointer',
+                <div key={i} onClick={() => setLightbox(l => l ? { ...l, index: i } : l)} style={{
+                  width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden',
+                  flexShrink: 0, cursor: 'pointer',
                   border: i === lightbox.index ? '2px solid #E85D26' : '2px solid transparent',
                   opacity: i === lightbox.index ? 1 : 0.5,
-                  transition:'all 0.15s',
+                  transition: 'all 0.15s',
                 }}>
-                  <img src={p.url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                  <img src={p.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               ))}
             </div>
@@ -234,74 +237,82 @@ export default function ArtisanProfilePage() {
         </div>
       )}
 
-      <div style={{paddingTop:'80px',paddingBottom:'64px'}}>
+      <div style={{ paddingTop: '80px', paddingBottom: '64px' }}>
 
-        {/* Hero sombre */}
-        <div style={{background:'#0F1410',color:'#FAFAF5'}}>
-          <div className="page-container" style={{padding:isMobile?'16px':'32px',maxWidth:'896px'}}>
-            <Link href="/artisans" style={{display:'inline-flex',alignItems:'center',gap:'8px',fontSize:'14px',color:'#7A7A6E',textDecoration:'none',marginBottom:'24px'}}>
+        {/* Hero blanc/neumorphique */}
+        <div style={{ background: '#FFFFFF', borderBottom: '1.5px solid #E2E8F0', boxShadow: '0 4px 20px rgba(163,177,198,0.3)' }}>
+          <div className="page-container" style={{ padding: isMobile ? '16px' : '32px', maxWidth: '896px' }}>
+            <Link href="/artisans" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6B7280', textDecoration: 'none', marginBottom: '24px' }}>
               <ArrowLeft size={16} /> Retour aux artisans
             </Link>
-            <div style={{display:'flex',alignItems:'flex-start',gap:isMobile?'14px':'24px'}}>
-              <div style={{width:'96px',height:'96px',borderRadius:'20px',flexShrink:0,border:'2px solid rgba(232,93,38,0.4)',overflow:'hidden',background:'#1A1F1B',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                {avatarUrl ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : <span style={{fontSize:'40px'}}>👷</span>}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? '14px' : '24px' }}>
+              <div style={{
+                width: '96px', height: '96px', borderRadius: '20px', flexShrink: 0,
+                border: '2px solid rgba(232,93,38,0.3)', overflow: 'hidden',
+                background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: NEU_SMALL,
+              }}>
+                {avatarUrl ? <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '40px' }}>👷</span>}
               </div>
-              <div style={{flex:1}}>
-                <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'8px'}}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
                   {artisan.kyc_status === 'approved' && (
-                    <span style={{fontSize:'11px',color:'#2B6B3E',background:'rgba(43,107,62,0.15)',border:'1px solid rgba(43,107,62,0.3)',padding:'3px 10px',borderRadius:'20px'}}>✓ KYC Vérifié</span>
+                    <span style={{ fontSize: '11px', color: '#2B6B3E', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.25)', padding: '3px 10px', borderRadius: '20px' }}>✓ KYC Vérifié</span>
                   )}
                   {artisan.is_available && (
-                    <span style={{display:'inline-flex',alignItems:'center',gap:'4px',fontSize:'11px',color:'#2B6B3E',background:'rgba(43,107,62,0.1)',border:'1px solid rgba(43,107,62,0.2)',padding:'3px 10px',borderRadius:'20px'}}>
-                      <span style={{width:'6px',height:'6px',background:'#2B6B3E',borderRadius:'50%'}} /> Disponible
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#2B6B3E', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
+                      <span style={{ width: '6px', height: '6px', background: '#2B6B3E', borderRadius: '50%' }} /> Disponible
                     </span>
                   )}
                 </div>
-                <div className="font-display" style={{fontSize:'32px',fontWeight:800,color:'#FAFAF5',lineHeight:1.1}}>{artisan.metier}</div>
-                <div style={{fontSize:'15px',color:'#7A7A6E',marginTop:'4px',display:'flex',alignItems:'center',gap:'8px'}}>
+                <div className="font-display" style={{ fontSize: '32px', fontWeight: 800, color: '#3D4852', lineHeight: 1.1 }}>{artisan.metier}</div>
+                <div style={{ fontSize: '15px', color: '#6B7280', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>{name}</span><span>·</span>
-                  <span style={{display:'inline-flex',alignItems:'center',gap:'4px'}}><MapPin size={12}/> {user?.quartier || 'Abidjan'}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><MapPin size={12} /> {user?.quartier || 'Abidjan'}</span>
                 </div>
-                <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'12px'}}>
-                  <div style={{display:'flex',gap:'2px'}}>
-                    {Array.from({length:5}).map((_,i) => (
-                      <Star key={i} size={16} style={{color: i < stars ? '#C9A84C' : '#3A3A30'}} fill={i < stars ? '#C9A84C' : 'none'} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                  <div style={{ display: 'flex', gap: '2px' }}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={16} style={{ color: i < stars ? '#C9A84C' : '#E2E8F0' }} fill={i < stars ? '#C9A84C' : 'none'} />
                     ))}
                   </div>
-                  <span className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#FAFAF5'}}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
-                  <span style={{fontSize:'13px',color:'#7A7A6E'}}>({artisan.rating_count || 0} avis)</span>
+                  <span className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852' }}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
+                  <span style={{ fontSize: '13px', color: '#6B7280' }}>({artisan.rating_count || 0} avis)</span>
                 </div>
               </div>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:'12px',borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:'20px',marginTop:'20px'}}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: '12px', borderTop: '1.5px solid #E2E8F0', paddingTop: '20px', marginTop: '20px' }}>
               {[
-                {value: artisan.mission_count || missions.length, label:'Missions'},
-                {value: `${artisan.years_experience||0}ans`, label:'Expérience'},
-                {value: `${artisan.success_rate||0}%`, label:'Satisfaction'},
-                {value: `${artisan.response_time_min||30}min`, label:'Réponse'},
+                { value: artisan.mission_count || missions.length, label: 'Missions' },
+                { value: `${artisan.years_experience || 0}ans`, label: 'Expérience' },
+                { value: `${artisan.success_rate || 0}%`, label: 'Satisfaction' },
+                { value: `${artisan.response_time_min || 30}min`, label: 'Réponse' },
               ].map(s => (
-                <div key={s.label} style={{textAlign:'center'}}>
-                  <div className="font-display" style={{fontSize:'22px',fontWeight:700,color:'#FAFAF5'}}>{s.value}</div>
-                  <div style={{fontSize:'11px',color:'#7A7A6E',fontFamily:'Space Mono'}}>{s.label}</div>
+                <div key={s.label} style={{
+                  textAlign: 'center', padding: '12px', background: '#F5F7FA', borderRadius: '12px',
+                  border: '1px solid #E2E8F0',
+                }}>
+                  <div className="font-display" style={{ fontSize: '22px', fontWeight: 700, color: '#3D4852' }}>{s.value}</div>
+                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Space Mono' }}>{s.label}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="page-container" style={{padding:isMobile?'16px':'32px',maxWidth:'896px'}}>
-          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 320px',gap:'20px',alignItems:'start'}}>
-            <div style={{display:'flex',flexDirection:'column',gap:'24px'}}>
+        <div className="page-container" style={{ padding: isMobile ? '16px' : '32px', maxWidth: '896px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: '20px', alignItems: 'start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
               {/* RÉALISATIONS — section mise en avant */}
-              <div className="card" style={{padding:0,overflow:'hidden'}}>
-                <div style={{padding:'20px 24px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:'1px solid #EDE8DE'}}>
-                  <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',margin:0}}>
+              <div style={{ background: '#FFFFFF', borderRadius: '20px', overflow: 'hidden', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
+                <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1.5px solid #E2E8F0' }}>
+                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852', margin: 0 }}>
                     Réalisations
-                    {allPhotos.length > 0 && <span style={{marginLeft:'8px',fontSize:'14px',fontWeight:400,color:'#7A7A6E'}}>({allPhotos.length} photos)</span>}
+                    {allPhotos.length > 0 && <span style={{ marginLeft: '8px', fontSize: '14px', fontWeight: 400, color: '#6B7280' }}>({allPhotos.length} photos)</span>}
                   </h2>
                   {allPhotos.length > 0 && (
-                    <span style={{fontSize:'12px',color:'#7A7A6E',fontFamily:'Space Mono'}}>Cliquez pour agrandir</span>
+                    <span style={{ fontSize: '12px', color: '#8B95A5', fontFamily: 'Space Mono' }}>Cliquez pour agrandir</span>
                   )}
                 </div>
 
@@ -310,51 +321,51 @@ export default function ArtisanProfilePage() {
                     {/* Grande première photo */}
                     <div
                       onClick={() => setLightbox({ photos: allPhotos, index: 0 })}
-                      style={{cursor:'pointer',position:'relative',height:'280px',background:'#1A1A1A',overflow:'hidden'}}
+                      style={{ cursor: 'pointer', position: 'relative', height: '280px', background: '#E2E8F0', overflow: 'hidden' }}
                     >
-                      <img src={allPhotos[0].url} alt={allPhotos[0].category} style={{width:'100%',height:'100%',objectFit:'cover',transition:'transform 0.3s'}}
-                        onMouseEnter={e => (e.currentTarget.style.transform='scale(1.03)')}
-                        onMouseLeave={e => (e.currentTarget.style.transform='scale(1)')}
+                      <img src={allPhotos[0].url} alt={allPhotos[0].category} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
+                        onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.03)')}
+                        onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
                       />
-                      <div style={{position:'absolute',inset:0,background:'linear-gradient(transparent 50%,rgba(15,20,16,0.7))'}} />
-                      <div style={{position:'absolute',bottom:'16px',left:'20px',right:'20px',display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent 50%,rgba(61,72,82,0.5))' }} />
+                      <div style={{ position: 'absolute', bottom: '16px', left: '20px', right: '20px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
                         <div>
-                          <span style={{fontSize:'13px',fontWeight:600,color:'white',background:'rgba(232,93,38,0.8)',padding:'4px 12px',borderRadius:'20px'}}>{allPhotos[0].category}</span>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: 'white', background: 'rgba(232,93,38,0.85)', padding: '4px 12px', borderRadius: '20px' }}>{allPhotos[0].category}</span>
                           {allPhotos[0].date && (
-                            <div style={{fontSize:'12px',color:'rgba(255,255,255,0.7)',marginTop:'6px'}}>
-                              {new Date(allPhotos[0].date).toLocaleDateString('fr-FR', { month:'long', year:'numeric' })}
+                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '6px' }}>
+                              {new Date(allPhotos[0].date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
                             </div>
                           )}
                         </div>
-                        <span style={{fontSize:'12px',color:'rgba(255,255,255,0.8)',background:'rgba(0,0,0,0.4)',padding:'4px 10px',borderRadius:'20px'}}>Voir en grand →</span>
+                        <span style={{ fontSize: '12px', color: 'white', background: 'rgba(61,72,82,0.55)', padding: '4px 10px', borderRadius: '20px' }}>Voir en grand →</span>
                       </div>
                     </div>
 
                     {/* Grille des autres photos */}
                     {allPhotos.length > 1 && (
-                      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'3px',padding:'3px'}}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '3px', padding: '3px' }}>
                         {allPhotos.slice(1, 7).map((p, i) => {
                           const isLast = i === 5 && allPhotos.length > 7
                           return (
                             <div
                               key={i}
                               onClick={() => setLightbox({ photos: allPhotos, index: i + 1 })}
-                              style={{position:'relative',aspectRatio:'1',overflow:'hidden',background:'#EDE8DE',cursor:'pointer'}}
+                              style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: '#F5F7FA', cursor: 'pointer' }}
                             >
-                              <img src={p.url} alt={p.category} style={{width:'100%',height:'100%',objectFit:'cover',transition:'transform 0.3s'}}
-                                onMouseEnter={e => (e.currentTarget.style.transform='scale(1.05)')}
-                                onMouseLeave={e => (e.currentTarget.style.transform='scale(1)')}
+                              <img src={p.url} alt={p.category} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
+                                onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
+                                onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
                               />
                               {/* Overlay catégorie */}
-                              <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(15,20,16,0.7))',padding:'6px 8px'}}>
-                                <div style={{fontSize:'10px',color:'#FAFAF5',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.category}</div>
+                              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent,rgba(61,72,82,0.6))', padding: '6px 8px' }}>
+                                <div style={{ fontSize: '10px', color: 'white', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.category}</div>
                               </div>
                               {/* Overlay "voir plus" sur la dernière */}
                               {isLast && (
-                                <div style={{position:'absolute',inset:0,background:'rgba(15,20,16,0.65)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                                  <div style={{textAlign:'center',color:'white'}}>
-                                    <div style={{fontSize:'22px',fontWeight:700}}>+{allPhotos.length - 7}</div>
-                                    <div style={{fontSize:'11px',opacity:0.8}}>photos</div>
+                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(61,72,82,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <div style={{ textAlign: 'center', color: 'white' }}>
+                                    <div style={{ fontSize: '22px', fontWeight: 700 }}>+{allPhotos.length - 7}</div>
+                                    <div style={{ fontSize: '11px', opacity: 0.8 }}>photos</div>
                                   </div>
                                 </div>
                               )}
@@ -365,114 +376,114 @@ export default function ArtisanProfilePage() {
                     )}
                   </div>
                 ) : missions.length > 0 ? (
-                  <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:'10px'}}>
+                  <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {missions.map((m: any) => (
-                      <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px',background:'#F5F3EE',borderRadius:'12px'}}>
-                        <div style={{width:'40px',height:'40px',background:'rgba(232,93,38,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                          <Briefcase size={18} style={{color:'#E85D26'}} />
+                      <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F5F7FA', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                        <div style={{ width: '40px', height: '40px', background: 'rgba(232,93,38,0.08)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Briefcase size={18} style={{ color: '#E85D26' }} />
                         </div>
-                        <div style={{flex:1}}>
-                          <div style={{fontWeight:600,fontSize:'14px',color:'#0F1410'}}>{m.category || m.diagnostics?.[0]?.category_detected || 'Intervention'}</div>
-                          <div style={{fontSize:'12px',color:'#7A7A6E'}}>{m.quartier||'Abidjan'} · {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: '14px', color: '#3D4852' }}>{m.category || m.diagnostics?.[0]?.category_detected || 'Intervention'}</div>
+                          <div style={{ fontSize: '12px', color: '#6B7280' }}>{m.quartier || 'Abidjan'} · {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''}</div>
                         </div>
-                        <CheckCircle size={16} style={{color:'#2B6B3E'}} />
+                        <CheckCircle size={16} style={{ color: '#2B6B3E' }} />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div style={{textAlign:'center',padding:'48px 0',color:'#7A7A6E'}}>
-                    <Camera size={32} style={{margin:'0 auto 12px',opacity:0.3}} />
-                    <p style={{fontSize:'14px'}}>Les réalisations apparaîtront au fil des missions</p>
+                  <div style={{ textAlign: 'center', padding: '48px 0', color: '#8B95A5' }}>
+                    <Camera size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+                    <p style={{ fontSize: '14px' }}>Les réalisations apparaîtront au fil des missions</p>
                   </div>
                 )}
               </div>
 
               {artisan.bio && (
-                <div className="card">
-                  <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',marginBottom:'12px'}}>À propos</h2>
-                  <p style={{fontSize:'14px',color:'#7A7A6E',lineHeight:'1.7'}}>{artisan.bio}</p>
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
+                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>À propos</h2>
+                  <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.7' }}>{artisan.bio}</p>
                 </div>
               )}
 
               {artisan.specialties?.length > 0 && (
-                <div className="card">
-                  <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',marginBottom:'12px'}}>Spécialités</h2>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
+                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>Spécialités</h2>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {artisan.specialties.map((s: string) => (
-                      <span key={s} style={{padding:'6px 14px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'20px',fontSize:'13px',color:'#E85D26',fontWeight:500}}>{s}</span>
+                      <span key={s} className="afrione-gradient-text" style={{ padding: '6px 14px', background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.18)', borderRadius: '20px', fontSize: '13px', fontWeight: 500 }}>{s}</span>
                     ))}
                   </div>
                 </div>
               )}
 
               {artisan.quartiers?.length > 0 && (
-                <div className="card">
-                  <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',marginBottom:'12px',display:'flex',alignItems:'center',gap:'8px'}}>
-                    <MapPin size={16} style={{color:'#E85D26'}}/> Zones d'intervention
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
+                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MapPin size={16} style={{ color: '#E85D26' }} /> Zones d'intervention
                   </h2>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {artisan.quartiers.map((q: string) => (
-                      <span key={q} style={{padding:'6px 14px',background:'#F5F3EE',border:'1px solid #D8D2C4',borderRadius:'20px',fontSize:'13px',color:'#0F1410'}}>{q}</span>
+                      <span key={q} style={{ padding: '6px 14px', background: '#F5F7FA', border: '1.5px solid #E2E8F0', borderRadius: '20px', fontSize: '13px', color: '#3D4852' }}>{q}</span>
                     ))}
                   </div>
                 </div>
               )}
 
               {/* Avis + Certifs */}
-              <div className="card">
-                <div style={{display:'flex',borderBottom:'1px solid #EDE8DE',marginBottom:'24px'}}>
+              <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', borderBottom: '1.5px solid #E2E8F0', marginBottom: '24px' }}>
                   {[
-                    {id:'avis' as const, label:`Avis (${reviews.length})`},
-                    {id:'certifs' as const, label:'Certifications'},
+                    { id: 'avis' as const, label: `Avis (${reviews.length})` },
+                    { id: 'certifs' as const, label: 'Certifications' },
                   ].map(t => (
                     <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-                      padding:'0 4px',paddingBottom:'12px',marginRight:'24px',fontSize:'14px',fontWeight:500,
-                      border:'none',background:'none',cursor:'pointer',
-                      borderBottom: activeTab===t.id ? '2px solid #E85D26' : '2px solid transparent',
-                      color: activeTab===t.id ? '#0F1410' : '#7A7A6E',
+                      padding: '0 4px', paddingBottom: '12px', marginRight: '24px', fontSize: '14px', fontWeight: 500,
+                      border: 'none', background: 'none', cursor: 'pointer',
+                      borderBottom: activeTab === t.id ? '2px solid #E85D26' : '2px solid transparent',
+                      color: activeTab === t.id ? '#3D4852' : '#6B7280',
                     }}>{t.label}</button>
                   ))}
                 </div>
 
                 {activeTab === 'avis' && (
-                  <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {reviews.length === 0 ? (
-                      <div style={{textAlign:'center',padding:'48px 0',color:'#7A7A6E'}}>
-                        <Star size={32} style={{margin:'0 auto 12px',opacity:0.3}} />
-                        <p style={{fontSize:'14px'}}>Aucun avis pour l'instant</p>
+                      <div style={{ textAlign: 'center', padding: '48px 0', color: '#8B95A5' }}>
+                        <Star size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+                        <p style={{ fontSize: '14px' }}>Aucun avis pour l'instant</p>
                       </div>
                     ) : reviews.map((r: any, i: number) => (
-                      <div key={i} style={{paddingBottom:'16px',borderBottom:'1px solid #EDE8DE'}}>
-                        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
-                          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                            <div style={{width:'32px',height:'32px',background:'#EDE8DE',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:'13px'}}>
-                              {(r.missions?.users?.name||'C')[0]}
+                      <div key={i} style={{ paddingBottom: '16px', borderBottom: '1.5px solid #E2E8F0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '32px', height: '32px', background: '#F5F7FA', border: '1.5px solid #E2E8F0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '13px', color: '#3D4852' }}>
+                              {(r.missions?.users?.name || 'C')[0]}
                             </div>
-                            <span style={{fontWeight:500,fontSize:'14px',color:'#0F1410'}}>{r.missions?.users?.name||'Client'}</span>
+                            <span style={{ fontWeight: 500, fontSize: '14px', color: '#3D4852' }}>{r.missions?.users?.name || 'Client'}</span>
                           </div>
-                          <div style={{display:'flex',gap:'2px'}}>
-                            {Array.from({length:5}).map((_,j) => (
-                              <Star key={j} size={12} style={{color: r.sentiment_score && j < Math.round(r.sentiment_score*5) ? '#C9A84C' : '#D8D2C4'}} fill={r.sentiment_score && j < Math.round(r.sentiment_score*5) ? '#C9A84C' : 'none'} />
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            {Array.from({ length: 5 }).map((_, j) => (
+                              <Star key={j} size={12} style={{ color: r.sentiment_score && j < Math.round(r.sentiment_score * 5) ? '#C9A84C' : '#E2E8F0' }} fill={r.sentiment_score && j < Math.round(r.sentiment_score * 5) ? '#C9A84C' : 'none'} />
                             ))}
                           </div>
                         </div>
-                        <p style={{fontSize:'14px',color:'#7A7A6E',lineHeight:'1.6'}}>{r.raw_text}</p>
+                        <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.6' }}>{r.raw_text}</p>
                       </div>
                     ))}
                   </div>
                 )}
 
                 {activeTab === 'certifs' && (
-                  <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                    {(artisan.certifications||[]).length === 0 ? (
-                      <div style={{textAlign:'center',padding:'48px 0',color:'#7A7A6E'}}>
-                        <Shield size={32} style={{margin:'0 auto 12px',opacity:0.3}} />
-                        <p style={{fontSize:'14px'}}>Aucune certification renseignée</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {(artisan.certifications || []).length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '48px 0', color: '#8B95A5' }}>
+                        <Shield size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+                        <p style={{ fontSize: '14px' }}>Aucune certification renseignée</p>
                       </div>
                     ) : artisan.certifications.map((c: string) => (
-                      <div key={c} style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px 16px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'12px'}}>
-                        <Shield size={16} style={{color:'#2B6B3E'}} />
-                        <span style={{fontSize:'14px',color:'#0F1410',fontWeight:500}}>{c}</span>
+                      <div key={c} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'rgba(43,107,62,0.04)', border: '1px solid rgba(43,107,62,0.18)', borderRadius: '12px' }}>
+                        <Shield size={16} style={{ color: '#2B6B3E' }} />
+                        <span style={{ fontSize: '14px', color: '#3D4852', fontWeight: 500 }}>{c}</span>
                       </div>
                     ))}
                   </div>
@@ -482,57 +493,62 @@ export default function ArtisanProfilePage() {
 
             {/* Sidebar CTA */}
             <div>
-              <div className="card" style={isMobile?{}:{position:'sticky',top:'96px'}}>
-                <div style={{textAlign:'center',marginBottom:'20px'}}>
-                  <div style={{width:'64px',height:'64px',borderRadius:'16px',overflow:'hidden',background:'#EDE8DE',margin:'0 auto 12px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <div style={{
+                background: '#FFFFFF', borderRadius: '20px', padding: '24px',
+                boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0',
+                ...(isMobile ? {} : { position: 'sticky', top: '96px' }),
+              }}>
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '16px', overflow: 'hidden', background: '#F5F7FA', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: NEU_SMALL, border: '1.5px solid #E2E8F0' }}>
                     {avatarUrl
-                      ? <img src={avatarUrl} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                      : <span style={{fontSize:'28px'}}>👷</span>
+                      ? <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <span style={{ fontSize: '28px' }}>👷</span>
                     }
                   </div>
-                  <p style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>{name}</p>
-                  <p style={{fontSize:'13px',color:'#7A7A6E'}}>{artisan.metier}</p>
-                  <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',marginTop:'6px'}}>
-                    <Star size={13} fill='#C9A84C' style={{color:'#C9A84C'}} />
-                    <span style={{fontWeight:600,fontSize:'13px',color:'#0F1410'}}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
-                    <span style={{fontSize:'12px',color:'#7A7A6E'}}>· {artisan.mission_count || 0} missions</span>
+                  <p style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852' }}>{name}</p>
+                  <p style={{ fontSize: '13px', color: '#6B7280' }}>{artisan.metier}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '6px' }}>
+                    <Star size={13} fill='#C9A84C' style={{ color: '#C9A84C' }} />
+                    <span style={{ fontWeight: 600, fontSize: '13px', color: '#3D4852' }}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
+                    <span style={{ fontSize: '12px', color: '#6B7280' }}>· {artisan.mission_count || 0} missions</span>
                   </div>
                 </div>
-                <div style={{display:'flex',flexDirection:'column',gap:'10px',marginBottom:'20px'}}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                   {[
-                    {icon:Clock, text:`Réponse en ${artisan.response_time_min||30} min`},
-                    {icon:ThumbsUp, text:`${artisan.success_rate||0}% de satisfaction`},
-                    {icon:Shield, text:'Paiement sécurisé via Wave'},
+                    { icon: Clock, text: `Réponse en ${artisan.response_time_min || 30} min` },
+                    { icon: ThumbsUp, text: `${artisan.success_rate || 0}% de satisfaction` },
+                    { icon: Shield, text: 'Paiement sécurisé via Wave' },
                   ].map(item => (
-                    <div key={item.text} style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'13px',color:'#7A7A6E'}}>
-                      <item.icon size={14} style={{color:'#2B6B3E',flexShrink:0}} /> {item.text}
+                    <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#6B7280' }}>
+                      <item.icon size={14} style={{ color: '#2B6B3E', flexShrink: 0 }} /> {item.text}
                     </div>
                   ))}
                 </div>
-                <button onClick={handleReserver} disabled={reserving} style={{
-                  width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
-                  padding:'14px',background: reserving ? '#D8D2C4' : '#E85D26',color:'white',
-                  border:'none',borderRadius:'12px',fontSize:'15px',fontWeight:700,cursor:'pointer',marginBottom:'12px'
+                <button onClick={handleReserver} disabled={reserving} className={reserving ? '' : 'btn-primary'} style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '14px', background: reserving ? '#E2E8F0' : undefined, color: reserving ? '#6B7280' : 'white',
+                  border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '12px'
                 }}>
                   {reserving
-                    ? <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> En cours...</>
+                    ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> En cours...</>
                     : existingMission
-                    ? <><MessageCircle size={16}/> Continuer la conversation</>
-                    : <><Zap size={16}/> Réserver cet artisan</>
+                    ? <><MessageCircle size={16} /> Continuer la conversation</>
+                    : <><Zap size={16} /> Réserver cet artisan</>
                   }
                 </button>
                 {!existingMission && (
-                  <Link href={`/diagnostic?artisan=${id}`} className="btn-outline" style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',fontSize:'13px'}}>
-                    Faire un diagnostic d'abord <ChevronRight size={14}/>
+                  <Link href={`/diagnostic?artisan=${id}`} className="btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px' }}>
+                    Faire un diagnostic d'abord <ChevronRight size={14} />
                   </Link>
                 )}
-                <div style={{marginTop:'16px',paddingTop:'16px',borderTop:'1px solid #EDE8DE',display:'flex',gap:'8px'}}>
-                  <button style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontSize:'12px',color:'#7A7A6E',background:'none',border:'none',cursor:'pointer',padding:'8px',borderRadius:'8px'}}>
-                    <Phone size={14}/> Appeler
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1.5px solid #E2E8F0', display: 'flex', gap: '8px' }}>
+                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: '#6B7280', background: '#F5F7FA', border: '1.5px solid #E2E8F0', cursor: 'pointer', padding: '8px', borderRadius: '8px', boxShadow: NEU_SMALL }}>
+                    <Phone size={14} /> Appeler
                   </button>
                   <button onClick={() => existingMission ? router.push(`/warroom/${existingMission.id}`) : handleReserver()}
-                    style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'4px',fontSize:'12px',color: existingMission ? '#E85D26' : '#7A7A6E',background:'none',border:'none',cursor:'pointer',padding:'8px',borderRadius:'8px',fontWeight: existingMission ? 600 : 400}}>
-                    <MessageCircle size={14}/> {existingMission ? 'Ouvrir le chat' : 'Message'}
+                    className={existingMission ? 'afrione-gradient-text' : ''}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: existingMission ? undefined : '#6B7280', background: '#F5F7FA', border: '1.5px solid #E2E8F0', cursor: 'pointer', padding: '8px', borderRadius: '8px', fontWeight: existingMission ? 600 : 400, boxShadow: NEU_SMALL }}>
+                    <MessageCircle size={14} /> {existingMission ? 'Ouvrir le chat' : 'Message'}
                   </button>
                 </div>
               </div>

@@ -8,6 +8,10 @@ import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_INSET  = 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8px rgba(255,255,255,0.9)'
+
 type Step = 'input' | 'questioning' | 'summarizing' | 'confirming'
 
 type QAType = 'yesno' | 'choice' | 'text'
@@ -83,10 +87,10 @@ function materialEmoji(name: string): string {
 }
 
 const URGENCY = {
-  low:       { label: 'Pas urgent', color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)',  icon: '🟢' },
-  medium:    { label: 'Normal',     color: '#C9A84C', bg: 'rgba(201,168,76,0.1)', icon: '🟡' },
-  high:      { label: 'Urgent',     color: '#E85D26', bg: 'rgba(232,93,38,0.1)',  icon: '🟠' },
-  emergency: { label: 'Urgence !',  color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  icon: '🔴' },
+  low:       { label: 'Pas urgent', color: '#2B6B3E', bg: 'rgba(43,107,62,0.08)',  icon: '🟢' },
+  medium:    { label: 'Normal',     color: '#C9A84C', bg: 'rgba(201,168,76,0.08)', icon: '🟡' },
+  high:      { label: 'Urgent',     color: '#E85D26', bg: 'rgba(232,93,38,0.08)',  icon: '🟠' },
+  emergency: { label: 'Urgence !',  color: '#ef4444', bg: 'rgba(239,68,68,0.08)',  icon: '🔴' },
 }
 
 const EXAMPLES = [
@@ -223,7 +227,6 @@ export default function DiagnosticPage() {
     setPricing(null)
     setPricingLoading(true)
     try {
-      // Pricing MC + tiers en parallèle
       const [pricingRes, tiersRes] = await Promise.all([
         fetch('/api/pricing', {
           method: 'POST',
@@ -331,31 +334,31 @@ export default function DiagnosticPage() {
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F0E8' }}>
+    <div style={{ minHeight: '100vh', background: '#F5F7FA', position: 'relative', color: '#3D4852' }}>
       <Navbar />
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '96px 16px 64px' }}>
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '96px 16px 64px', position: 'relative' }}>
 
         {/* Header */}
         <div style={{ marginBottom: '28px' }}>
-          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#7A7A6E', fontSize: '13px', textDecoration: 'none', marginBottom: '16px' }}>
+          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#8B95A5', fontSize: '13px', textDecoration: 'none', marginBottom: '16px' }}>
             <ArrowLeft size={14} /> Retour
           </Link>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#E85D26', letterSpacing: '0.12em', marginBottom: '8px', fontFamily: 'Space Mono' }}>
+          <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', marginBottom: '8px', fontFamily: 'Space Mono' }}>
             DIAGNOSTIC IA
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: '#0F1410', margin: '0 0 6px' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: '#3D4852', margin: '0 0 6px' }}>
             {step === 'input'      ? 'Décrivez votre problème' :
              step === 'questioning'? 'Quelques questions...' :
              step === 'summarizing'? 'Analyse en cours...' :
                                     'Voici mon diagnostic'}
           </h1>
           {step === 'input' && (
-            <p style={{ color: '#7A7A6E', fontSize: '14px', margin: 0 }}>
+            <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>
               L'IA analyse et pose quelques questions pour affiner le diagnostic — vous pouvez aussi envoyer des photos
             </p>
           )}
           {step === 'questioning' && (
-            <p style={{ color: '#7A7A6E', fontSize: '14px', margin: 0 }}>
+            <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>
               Répondez aux questions pour un diagnostic précis · {qa.length}/4 questions
             </p>
           )}
@@ -366,16 +369,16 @@ export default function DiagnosticPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
             {/* Description */}
-            <div style={{ background: 'white', borderRadius: '20px', border: '2px solid #D8D2C4', overflow: 'hidden' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #E2E8F0', overflow: 'hidden', boxShadow: NEU_SHADOW }}>
               <textarea
                 value={text}
                 onChange={e => setText(e.target.value)}
                 placeholder="Décrivez votre problème : lieu précis, symptômes, depuis quand..."
-                style={{ width: '100%', minHeight: '130px', border: 'none', outline: 'none', resize: 'none', fontSize: '15px', lineHeight: '1.6', color: '#0F1410', fontFamily: 'inherit', background: 'transparent', boxSizing: 'border-box', padding: '18px 20px' }}
+                style={{ width: '100%', minHeight: '130px', border: 'none', outline: 'none', resize: 'none', fontSize: '15px', lineHeight: '1.6', color: '#3D4852', fontFamily: 'inherit', background: 'transparent', boxSizing: 'border-box', padding: '18px 20px' }}
                 maxLength={1000}
               />
-              <div style={{ padding: '0 20px 12px', display: 'flex', justifyContent: 'flex-end' }}>
-                <span style={{ fontSize: '11px', color: '#7A7A6E', fontFamily: 'Space Mono' }}>{text.length}/1000</span>
+              <div style={{ padding: '0 20px 12px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0' }}>
+                <span style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Space Mono' }}>{text.length}/1000</span>
               </div>
             </div>
 
@@ -383,33 +386,34 @@ export default function DiagnosticPage() {
             <input ref={photoInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotoUpload} />
             {photos.length === 0 ? (
               <button onClick={() => photoInputRef.current?.click()} disabled={uploading} style={{
-                width: '100%', padding: '18px', border: '2px dashed #D8D2C4', borderRadius: '16px',
-                background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#7A7A6E',
+                width: '100%', padding: '18px', border: '2px dashed #E2E8F0', borderRadius: '16px',
+                background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#8B95A5',
+                boxShadow: NEU_SMALL,
               }}>
                 {uploading
                   ? <div style={{ width: '18px', height: '18px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                  : <Camera size={18} color="#D8D2C4" />
+                  : <Camera size={18} color="#8B95A5" />
                 }
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600 }}>{uploading ? 'Upload en cours…' : 'Ajouter des photos'}</div>
-                  <div style={{ fontSize: '11px', color: '#A09A8E', marginTop: '2px' }}>L'IA peut analyser les photos du problème</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280' }}>{uploading ? 'Upload en cours…' : 'Ajouter des photos'}</div>
+                  <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>L'IA peut analyser les photos du problème</div>
                 </div>
               </button>
             ) : (
-              <div style={{ background: 'white', borderRadius: '16px', padding: '14px', border: '1px solid #D8D2C4' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#7A7A6E', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '14px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>
                   📸 {photos.length} PHOTO{photos.length > 1 ? 'S' : ''} AJOUTÉE{photos.length > 1 ? 'S' : ''}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                   {photos.map((url, i) => (
-                    <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: '#EDE8DE' }}>
+                    <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: '#F5F7FA' }}>
                       <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <button onClick={() => setPhotos(p => p.filter((_, j) => j !== i))} style={{ position: 'absolute', top: '3px', right: '3px', width: '20px', height: '20px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <button onClick={() => setPhotos(p => p.filter((_, j) => j !== i))} style={{ position: 'absolute', top: '3px', right: '3px', width: '20px', height: '20px', background: 'rgba(61,72,82,0.7)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={10} />
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => photoInputRef.current?.click()} style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed #D8D2C4', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', color: '#7A7A6E', fontSize: '10px' }}>
+                  <button onClick={() => photoInputRef.current?.click()} style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed #E2E8F0', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', color: '#8B95A5', fontSize: '10px' }}>
                     <Camera size={14} /> <span>Ajouter</span>
                   </button>
                 </div>
@@ -418,18 +422,18 @@ export default function DiagnosticPage() {
 
             {/* Exemples */}
             <div>
-              <p style={{ fontSize: '10px', fontFamily: 'Space Mono', color: '#7A7A6E', letterSpacing: '0.1em', marginBottom: '8px' }}>EXEMPLES</p>
+              <p style={{ fontSize: '10px', fontFamily: 'Space Mono', color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '8px' }}>EXEMPLES</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {EXAMPLES.map(ex => (
-                  <button key={ex} onClick={() => setText(ex)} style={{ textAlign: 'left', padding: '11px 14px', background: 'white', border: '1px solid #D8D2C4', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', color: '#7A7A6E' }}>
+                  <button key={ex} onClick={() => setText(ex)} style={{ textAlign: 'left', padding: '11px 14px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', color: '#6B7280', boxShadow: NEU_SMALL }}>
                     "{ex}"
                   </button>
                 ))}
               </div>
             </div>
 
-            <button onClick={startDiagnostic} disabled={text.length < 10 || loading} style={{
-              width: '100%', padding: '16px', background: text.length >= 10 ? '#E85D26' : '#D8D2C4', color: 'white',
+            <button onClick={startDiagnostic} disabled={text.length < 10 || loading} className={text.length >= 10 ? 'btn-primary' : ''} style={{
+              width: '100%', padding: '16px', background: text.length >= 10 ? undefined : '#E2E8F0', color: text.length >= 10 ? 'white' : '#8B95A5',
               border: 'none', borderRadius: '16px', fontWeight: 700, fontSize: '15px', cursor: text.length >= 10 ? 'pointer' : 'default',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.7 : 1,
             }}>
@@ -446,9 +450,9 @@ export default function DiagnosticPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
             {/* Résumé du problème initial */}
-            <div style={{ background: 'white', borderRadius: '16px', padding: '16px', border: '1px solid #D8D2C4' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#7A7A6E', letterSpacing: '0.1em', marginBottom: '6px', fontFamily: 'Space Mono' }}>VOTRE PROBLÈME</div>
-              <p style={{ fontSize: '13px', color: '#0F1410', lineHeight: '1.5', margin: 0 }}>{text}</p>
+            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '6px', fontFamily: 'Space Mono' }}>VOTRE PROBLÈME</div>
+              <p style={{ fontSize: '13px', color: '#3D4852', lineHeight: '1.5', margin: 0 }}>{text}</p>
               {photos.length > 0 && (
                 <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
                   {photos.map((url, i) => (
@@ -462,13 +466,13 @@ export default function DiagnosticPage() {
             {qa.map((item, i) => (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {/* Question */}
-                <div style={{ background: 'rgba(232,93,38,0.05)', border: '1px solid rgba(232,93,38,0.15)', borderRadius: '14px 14px 14px 4px', padding: '12px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#E85D26', marginBottom: '4px', fontFamily: 'Space Mono' }}>IA · Question {i + 1}</div>
-                  <p style={{ fontSize: '14px', color: '#0F1410', margin: 0, lineHeight: '1.4' }}>{item.question}</p>
+                <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '12px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px', fontFamily: 'Space Mono' }}>IA · Question {i + 1}</div>
+                  <p style={{ fontSize: '14px', color: '#3D4852', margin: 0, lineHeight: '1.4' }}>{item.question}</p>
                 </div>
                 {/* Réponse */}
-                <div style={{ background: '#0F1410', borderRadius: '14px 14px 4px 14px', padding: '10px 14px', alignSelf: 'flex-end', maxWidth: '80%' }}>
-                  <p style={{ fontSize: '14px', color: 'white', margin: 0 }}>
+                <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px 14px 4px 14px', padding: '10px 14px', alignSelf: 'flex-end', maxWidth: '80%', boxShadow: NEU_SMALL }}>
+                  <p style={{ fontSize: '14px', color: '#3D4852', margin: 0 }}>
                     {item.answer === 'Oui' ? '✓ Oui' : item.answer === 'Non' ? '✗ Non' : item.answer}
                   </p>
                 </div>
@@ -478,34 +482,35 @@ export default function DiagnosticPage() {
             {/* Question en cours */}
             {currentQ && !loading && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ background: 'rgba(232,93,38,0.05)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '14px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#E85D26', marginBottom: '5px', fontFamily: 'Space Mono' }}>IA · Question {qa.length + 1}</div>
-                  <p style={{ fontSize: '15px', color: '#0F1410', margin: 0, lineHeight: '1.5' }}>{currentQ.question}</p>
+                <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '14px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '5px', fontFamily: 'Space Mono' }}>IA · Question {qa.length + 1}</div>
+                  <p style={{ fontSize: '15px', color: '#3D4852', margin: 0, lineHeight: '1.5' }}>{currentQ.question}</p>
                 </div>
 
-                {/* Choix multiple (options spécifiques) */}
+                {/* Choix multiple */}
                 {currentQ.type === 'choice' && currentQ.options && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {currentQ.options.map(opt => (
-                      <button key={opt} onClick={() => setCurrentAnswer(opt)} style={{
+                      <button key={opt} onClick={() => setCurrentAnswer(opt)} className={currentAnswer === opt ? 'afrione-gradient' : ''} style={{
                         padding: '14px 16px', borderRadius: '14px', fontWeight: 600, fontSize: '14px',
                         cursor: 'pointer', transition: 'all 0.12s', textAlign: 'left',
-                        background: currentAnswer === opt ? '#E85D26' : 'white',
-                        color: currentAnswer === opt ? 'white' : '#0F1410',
-                        border: `2px solid ${currentAnswer === opt ? '#E85D26' : '#D8D2C4'}`,
+                        background: currentAnswer === opt ? undefined : '#FFFFFF',
+                        color: currentAnswer === opt ? 'white' : '#3D4852',
+                        border: `1.5px solid ${currentAnswer === opt ? '#E85D26' : '#E2E8F0'}`,
+                        boxShadow: currentAnswer === opt ? 'none' : NEU_SMALL,
                       }}>
                         {currentAnswer === opt ? '✓ ' : ''}{opt}
                       </button>
                     ))}
                     <button onClick={() => setShowPrecise(p => !p)} style={{
-                      padding: '10px', background: 'transparent', border: '1.5px dashed #D8D2C4', borderRadius: '12px',
-                      cursor: 'pointer', fontSize: '13px', color: '#7A7A6E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      padding: '10px', background: '#FFFFFF', border: '1.5px dashed #E2E8F0', borderRadius: '12px',
+                      cursor: 'pointer', fontSize: '13px', color: '#8B95A5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     }}>
                       ✏️ {showPrecise ? 'Masquer' : 'Autre réponse…'}
                     </button>
                     {showPrecise && (
                       <input type="text" value={preciseText} onChange={e => { setPreciseText(e.target.value); setCurrentAnswer(e.target.value) }} placeholder="Décrivez en quelques mots…"
-                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #D8D2C4', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: '#0F1410' }}
+                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: '#3D4852', background: '#FFFFFF' }}
                       />
                     )}
                   </div>
@@ -516,25 +521,26 @@ export default function DiagnosticPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       {['Oui', 'Non'].map(opt => (
-                        <button key={opt} onClick={() => { setCurrentAnswer(opt); setShowPrecise(false) }} style={{
+                        <button key={opt} onClick={() => { setCurrentAnswer(opt); setShowPrecise(false) }} className={currentAnswer === opt ? 'afrione-gradient' : ''} style={{
                           padding: '14px', borderRadius: '14px', fontWeight: 700, fontSize: '15px', cursor: 'pointer', transition: 'all 0.12s',
-                          background: currentAnswer === opt ? '#E85D26' : 'white',
-                          color: currentAnswer === opt ? 'white' : '#0F1410',
-                          border: `2px solid ${currentAnswer === opt ? '#E85D26' : '#D8D2C4'}`,
+                          background: currentAnswer === opt ? undefined : '#FFFFFF',
+                          color: currentAnswer === opt ? 'white' : '#3D4852',
+                          border: `1.5px solid ${currentAnswer === opt ? '#E85D26' : '#E2E8F0'}`,
+                          boxShadow: currentAnswer === opt ? 'none' : NEU_SMALL,
                         }}>
                           {opt === 'Oui' ? '✓  Oui' : '✗  Non'}
                         </button>
                       ))}
                     </div>
                     <button onClick={() => setShowPrecise(p => !p)} style={{
-                      padding: '10px', background: 'transparent', border: '1.5px dashed #D8D2C4', borderRadius: '12px',
-                      cursor: 'pointer', fontSize: '13px', color: '#7A7A6E', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      padding: '10px', background: '#FFFFFF', border: '1.5px dashed #E2E8F0', borderRadius: '12px',
+                      cursor: 'pointer', fontSize: '13px', color: '#8B95A5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     }}>
                       ✏️ {showPrecise ? 'Masquer' : 'Préciser ma réponse'}
                     </button>
                     {showPrecise && (
                       <input type="text" value={preciseText} onChange={e => setPreciseText(e.target.value)} placeholder="Précisez en quelques mots…"
-                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #D8D2C4', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: '#0F1410' }}
+                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: '#3D4852', background: '#FFFFFF' }}
                       />
                     )}
                   </div>
@@ -545,14 +551,13 @@ export default function DiagnosticPage() {
                   <textarea value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && currentAnswer.trim()) { e.preventDefault(); answerQuestion() } }}
                     placeholder="Votre réponse…" rows={3}
-                    style={{ width: '100%', padding: '13px 16px', borderRadius: '14px', border: '1.5px solid #D8D2C4', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', color: '#0F1410', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '13px 16px', borderRadius: '14px', border: '1.5px solid #E2E8F0', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', color: '#3D4852', background: '#FFFFFF', boxSizing: 'border-box' }}
                   />
                 )}
 
-
                 <button onClick={answerQuestion} disabled={!currentAnswer.trim()}
                   style={{
-                    padding: '13px 20px', background: '#0F1410', color: 'white', border: 'none', borderRadius: '14px',
+                    padding: '13px 20px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '14px',
                     fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     opacity: !currentAnswer.trim() ? 0.3 : 1, alignSelf: 'flex-end',
                   }}
@@ -564,7 +569,7 @@ export default function DiagnosticPage() {
 
             {/* Loading */}
             {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', color: '#7A7A6E', fontSize: '13px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', color: '#8B95A5', fontSize: '13px' }}>
                 <div style={{ width: '16px', height: '16px', border: '2px solid rgba(232,93,38,0.2)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
                 L'IA analyse votre réponse…
               </div>
@@ -572,10 +577,10 @@ export default function DiagnosticPage() {
 
             {/* Progress bar */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '4px' }}>
-              <div style={{ flex: 1, height: '3px', background: '#D8D2C4', borderRadius: '2px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', background: '#E85D26', borderRadius: '2px', width: `${(qa.length / 4) * 100}%`, transition: 'width 0.4s ease' }} />
+              <div style={{ flex: 1, height: '3px', background: '#E2E8F0', borderRadius: '2px', overflow: 'hidden' }}>
+                <div className="afrione-gradient" style={{ height: '100%', borderRadius: '2px', width: `${(qa.length / 4) * 100}%`, transition: 'width 0.4s ease' }} />
               </div>
-              <span style={{ fontSize: '10px', color: '#7A7A6E', fontFamily: 'Space Mono', whiteSpace: 'nowrap' }}>{qa.length} / 4</span>
+              <span style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'Space Mono', whiteSpace: 'nowrap' }}>{qa.length} / 4</span>
             </div>
 
             <div ref={bottomRef} />
@@ -585,14 +590,14 @@ export default function DiagnosticPage() {
         {/* ══ ÉTAPE 3 : Génération du résumé ══ */}
         {step === 'summarizing' && (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{ width: '72px', height: '72px', background: 'rgba(232,93,38,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <Zap size={32} color="#E85D26" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <div className="afrione-gradient" style={{ width: '72px', height: '72px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 0 40px rgba(232,93,38,0.3)' }}>
+              <Zap size={32} color="white" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 700, color: '#0F1410', marginBottom: '8px' }}>Génération du diagnostic…</h2>
-            <p style={{ color: '#7A7A6E', fontSize: '14px', marginBottom: '24px' }}>L'IA synthétise toutes vos réponses</p>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>Génération du diagnostic…</h2>
+            <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>L'IA synthétise toutes vos réponses</p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-              {['Analyse', 'Estimation prix', 'Fiche technique'].map((l, i) => (
-                <div key={l} style={{ fontSize: '11px', color: '#7A7A6E', background: 'white', padding: '6px 12px', borderRadius: '20px', border: '1px solid #D8D2C4', opacity: 0.8 }}>{l}</div>
+              {['Analyse', 'Estimation prix', 'Fiche technique'].map((l) => (
+                <div key={l} style={{ fontSize: '11px', color: '#6B7280', background: '#FFFFFF', padding: '6px 12px', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>{l}</div>
               ))}
             </div>
           </div>
@@ -603,58 +608,58 @@ export default function DiagnosticPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
             {/* Résumé IA */}
-            <div style={{ background: 'white', borderRadius: '20px', border: '2px solid #E85D26', padding: '22px' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid rgba(232,93,38,0.3)', padding: '22px', boxShadow: NEU_SHADOW }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <div style={{ width: '34px', height: '34px', background: 'rgba(232,93,38,0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Zap size={16} color="#E85D26" />
+                <div className="afrione-gradient" style={{ width: '34px', height: '34px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Zap size={16} color="white" />
                 </div>
                 <div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#E85D26', letterSpacing: '0.1em', fontFamily: 'Space Mono' }}>ANALYSE IA</div>
-                  <div style={{ fontSize: '11px', color: '#7A7A6E' }}>Résumé de votre situation</div>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'Space Mono' }}>ANALYSE IA</div>
+                  <div style={{ fontSize: '11px', color: '#8B95A5' }}>Résumé de votre situation</div>
                 </div>
               </div>
-              <p style={{ fontSize: '15px', color: '#0F1410', lineHeight: '1.7', margin: 0 }}>{result.summary}</p>
+              <p style={{ fontSize: '15px', color: '#3D4852', lineHeight: '1.7', margin: 0 }}>{result.summary}</p>
             </div>
 
             {/* Infos clés */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {[
-                { icon: <Wrench size={18} color="#E85D26" />, label: 'Catégorie',  value: result.category,           color: '#0F1410' },
+                { icon: <Wrench size={18} color="#E85D26" />, label: 'Catégorie',  value: result.category,          color: '#3D4852' },
                 { icon: <span style={{ fontSize: '18px', lineHeight: 1 }}>{urgConf.icon}</span>, label: 'Urgence', value: urgConf.label, color: urgConf.color },
-                { icon: <Clock size={18} color="#C9A84C" />, label: 'Durée',       value: result.duration_estimate,  color: '#0F1410' },
+                { icon: <Clock size={18} color="#C9A84C" />, label: 'Durée',       value: result.duration_estimate, color: '#3D4852' },
               ].map(k => (
-                <div key={k.label} style={{ background: 'white', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid #D8D2C4' }}>
+                <div key={k.label} style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
                   <div style={{ marginBottom: '8px' }}>{k.icon}</div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: k.color, lineHeight: '1.2' }}>{k.value}</div>
-                  <div style={{ fontSize: '10px', color: '#7A7A6E', fontFamily: 'Space Mono', marginTop: '3px' }}>{k.label}</div>
+                  <div style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'Space Mono', marginTop: '3px' }}>{k.label}</div>
                 </div>
               ))}
             </div>
 
             {/* Prix — Moteur Monte Carlo */}
-            <div style={{ background: '#0F1410', borderRadius: '20px', padding: '22px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Space Mono', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid #E2E8F0', boxShadow: NEU_SHADOW }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Space Mono', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>ESTIMATION AFRIONE</span>
                 {!pricingLoading && pricing && (
-                  <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.18)', fontFamily: 'Space Mono' }}>10 000 SIMULATIONS MC</span>
+                  <span style={{ fontSize: '9px', color: '#8B95A5', fontFamily: 'Space Mono' }}>10 000 SIMULATIONS MC</span>
                 )}
               </div>
 
               {pricingLoading ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Calcul stochastique…</span>
-                  <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.2)', fontSize: '11px', fontFamily: 'Space Mono' }}>
+                  <span style={{ color: '#8B95A5', fontSize: '13px' }}>Calcul stochastique…</span>
+                  <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'Space Mono' }}>
                     {result.price_min.toLocaleString()} – {result.price_max.toLocaleString()} FCFA
                   </span>
                 </div>
               ) : pricing ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontFamily: 'Space Mono', fontSize: '36px', fontWeight: 700, color: '#E85D26', lineHeight: 1 }}>{pricing.estimate.toLocaleString()}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', fontFamily: 'Space Mono' }}>FCFA</span>
+                    <span className="afrione-gradient-text" style={{ fontFamily: 'Space Mono', fontSize: '36px', fontWeight: 700, lineHeight: 1 }}>{pricing.estimate.toLocaleString()}</span>
+                    <span style={{ color: '#8B95A5', fontSize: '13px', fontFamily: 'Space Mono' }}>FCFA</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', fontFamily: 'Space Mono', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Space Mono', marginBottom: '16px' }}>
                     [{pricing.interval.low.toLocaleString()} – {pricing.interval.high.toLocaleString()}] IC 95%
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
@@ -662,16 +667,16 @@ export default function DiagnosticPage() {
                       { key: 'labor',     label: "Main-d'œuvre", color: '#E85D26' },
                       { key: 'materials', label: 'Matériaux',    color: '#C9A84C' },
                       { key: 'transport', label: 'Transport',    color: '#2B6B3E' },
-                      { key: 'premium',   label: 'Commission',   color: 'rgba(255,255,255,0.22)' },
+                      { key: 'premium',   label: 'Commission',   color: '#E2E8F0' },
                     ] as const).map(({ key, label, color }) => {
                       const item = pricing.decomposition[key]
                       return (
                         <div key={key}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.38)' }}>{label}</span>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.55)', fontFamily: 'Space Mono' }}>{item.pct}% · {item.median.toLocaleString()} FCFA</span>
+                            <span style={{ fontSize: '10px', color: '#6B7280' }}>{label}</span>
+                            <span style={{ fontSize: '10px', color: '#6B7280', fontFamily: 'Space Mono' }}>{item.pct}% · {item.median.toLocaleString()} FCFA</span>
                           </div>
-                          <div style={{ height: '3px', background: 'rgba(255,255,255,0.07)', borderRadius: '2px', overflow: 'hidden' }}>
+                          <div style={{ height: '3px', background: '#F5F7FA', borderRadius: '2px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${item.pct}%`, background: color, borderRadius: '2px' }} />
                           </div>
                         </div>
@@ -681,24 +686,24 @@ export default function DiagnosticPage() {
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                  <span style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, color: '#E85D26', lineHeight: 1 }}>{result.price_min.toLocaleString()}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '20px' }}>—</span>
-                  <span style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, color: '#FAFAF5', lineHeight: 1 }}>{result.price_max.toLocaleString()}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontFamily: 'Space Mono' }}>FCFA</span>
+                  <span className="afrione-gradient-text" style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, lineHeight: 1 }}>{result.price_min.toLocaleString()}</span>
+                  <span style={{ color: '#8B95A5', fontSize: '20px' }}>—</span>
+                  <span style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, color: '#3D4852', lineHeight: 1 }}>{result.price_max.toLocaleString()}</span>
+                  <span style={{ color: '#8B95A5', fontSize: '12px', fontFamily: 'Space Mono' }}>FCFA</span>
                 </div>
               )}
 
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '12px', margin: '12px 0 0' }}>
+              <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', margin: '12px 0 0' }}>
                 {pricing
                   ? `Artisan perçoit ~${pricing.artisan_share.toLocaleString()} FCFA · Prix exact confirmé par l'artisan`
                   : "Indicatif · Prix exact confirmé par l'artisan"}
               </p>
             </div>
 
-            {/* Sélecteur qualité matériaux — client choisit son tier */}
+            {/* Sélecteur qualité matériaux */}
             {materialTiers.length > 0 && (
-              <div style={{ background: 'white', borderRadius: '20px', border: '1px solid #D8D2C4', padding: '20px' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#7A7A6E', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'Space Mono' }}>
+              <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '20px', boxShadow: NEU_SHADOW }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'Space Mono' }}>
                   QUALITÉ DES MATÉRIAUX
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -712,7 +717,7 @@ export default function DiagnosticPage() {
                     const hasVendorQuartier = !isJumia && !!activeTierData?.vendor_quartier
                     return (
                       <div key={mat.name}>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#0F1410', marginBottom: '7px' }}>{mat.name}</div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#3D4852', marginBottom: '7px' }}>{mat.name}</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                           {(['economique', 'standard', 'premium'] as const).map(tier => {
                             const t = mat.tiers[tier]
@@ -725,37 +730,37 @@ export default function DiagnosticPage() {
                                 updatePricingForTier(result!, next)
                               }} style={{
                                 padding: '9px 4px', borderRadius: '12px', cursor: 'pointer', textAlign: 'center',
-                                border: `1.5px solid ${active ? color : '#D8D2C4'}`,
-                                background: active ? `${color}12` : '#FAFAF8',
+                                border: `1.5px solid ${active ? color : '#E2E8F0'}`,
+                                background: active ? `${color}12` : '#FFFFFF',
                                 transition: 'all 0.14s',
+                                boxShadow: active ? 'none' : NEU_SMALL,
                               }}>
-                                <div style={{ fontSize: '9px', fontWeight: 700, color: active ? color : '#7A7A6E', letterSpacing: '0.06em' }}>{TIER_LABELS[tier]}</div>
-                                <div style={{ fontSize: '12px', fontWeight: 700, color: active ? color : '#0F1410', marginTop: '3px', fontFamily: 'Space Mono' }}>
+                                <div style={{ fontSize: '9px', fontWeight: 700, color: active ? color : '#8B95A5', letterSpacing: '0.06em' }}>{TIER_LABELS[tier]}</div>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: active ? color : '#3D4852', marginTop: '3px', fontFamily: 'Space Mono' }}>
                                   {t?.price_market?.toLocaleString('fr') ?? '—'}
                                 </div>
                                 {t?.brand && (
-                                  <div style={{ fontSize: '8px', color: '#A09A8E', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.brand}</div>
+                                  <div style={{ fontSize: '8px', color: '#8B95A5', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.brand}</div>
                                 )}
                               </button>
                             )
                           })}
                         </div>
 
-                        {/* Carte produit — Jumia (photo cliquable) ou vendeur physique (emoji) */}
+                        {/* Carte produit */}
                         {(hasPhoto || hasVendorQuartier) && (() => {
                           const proximityColor = hasVendorQuartier && activeTierData.km_to_client <= 3 ? '#2B6B3E' : '#C9A84C'
-                          const proximityBg    = hasVendorQuartier && activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.07)' : 'rgba(201,168,76,0.07)'
-                          const proximityBd    = hasVendorQuartier && activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.2)' : 'rgba(201,168,76,0.2)'
+                          const proximityBg    = hasVendorQuartier && activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.06)' : 'rgba(201,168,76,0.06)'
+                          const proximityBd    = hasVendorQuartier && activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.15)' : 'rgba(201,168,76,0.15)'
                           return (
-                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: hasPhoto ? '#FAFAF8' : proximityBg, borderRadius: '10px', border: `1px solid ${hasPhoto ? '#EDE8DE' : proximityBd}` }}>
+                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: hasPhoto ? '#F5F7FA' : proximityBg, borderRadius: '10px', border: `1px solid ${hasPhoto ? '#E2E8F0' : proximityBd}` }}>
 
-                              {/* Visuel : photo Jumia cliquable ou emoji produit */}
                               {hasPhoto ? (
                                 <a href={activeTierData.source_url || '#'} target="_blank" rel="noreferrer" style={{ flexShrink: 0, display: 'block', lineHeight: 0 }}>
                                   <img
                                     src={activeTierData.photo_url}
                                     alt={mat.name}
-                                    style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', background: '#EDE8DE', display: 'block' }}
+                                    style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', background: '#E2E8F0', display: 'block' }}
                                     onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                                   />
                                 </a>
@@ -765,26 +770,24 @@ export default function DiagnosticPage() {
                                 </div>
                               )}
 
-                              {/* Infos */}
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#0F1410', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#3D4852', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {activeTierData.brand || mat.name}
                                 </div>
                                 {hasPhoto && activeTierData.source_url && (
-                                  <a href={activeTierData.source_url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#E85D26', fontWeight: 600, textDecoration: 'none' }}>
+                                  <a href={activeTierData.source_url} target="_blank" rel="noreferrer" className="afrione-gradient-text" style={{ fontSize: '11px', fontWeight: 600, textDecoration: 'none' }}>
                                     Voir sur Jumia CI →
                                   </a>
                                 )}
                                 {hasVendorQuartier && (
                                   <div style={{ fontSize: '10px', color: proximityColor, fontWeight: 500 }}>
                                     📍 {activeTierData.vendor_quartier}
-                                    {activeTierData.km_to_client != null && <span style={{ color: '#7A7A6E', fontWeight: 400 }}> · {activeTierData.km_to_client} km de vous</span>}
+                                    {activeTierData.km_to_client != null && <span style={{ color: '#6B7280', fontWeight: 400 }}> · {activeTierData.km_to_client} km de vous</span>}
                                   </div>
                                 )}
                               </div>
 
-                              {/* Tag source */}
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', flexShrink: 0, whiteSpace: 'nowrap', background: hasPhoto ? 'rgba(232,93,38,0.08)' : proximityBg, color: hasPhoto ? '#E85D26' : proximityColor, border: `1px solid ${hasPhoto ? 'rgba(232,93,38,0.2)' : proximityBd}` }}>
+                              <span className={hasPhoto ? 'afrione-gradient-text' : ''} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', flexShrink: 0, whiteSpace: 'nowrap', background: hasPhoto ? 'rgba(232,93,38,0.07)' : proximityBg, color: hasPhoto ? undefined : proximityColor, border: `1px solid ${hasPhoto ? 'rgba(232,93,38,0.15)' : proximityBd}` }}>
                                 {hasPhoto ? 'Jumia CI' : activeTierData.vendor_quartier}
                               </span>
                             </div>
@@ -795,9 +798,9 @@ export default function DiagnosticPage() {
                   })}
                 </div>
 
-                {/* Badge économies vs marché traditionnel */}
+                {/* Badge économies */}
                 {pricing?.below_market && pricing.savings_vs_market != null && pricing.savings_vs_market > 0 && (
-                  <div style={{ marginTop: '14px', background: 'rgba(43,107,62,0.07)', border: '1px solid rgba(43,107,62,0.2)', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ marginTop: '14px', background: 'rgba(43,107,62,0.06)', border: '1px solid rgba(43,107,62,0.15)', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '18px' }}>💰</span>
                     <div style={{ fontSize: '12px', color: '#2B6B3E', fontWeight: 600 }}>
                       Vous économisez{' '}
@@ -811,11 +814,11 @@ export default function DiagnosticPage() {
 
             {/* Matériel probable */}
             {result.items_needed.length > 0 && (
-              <div style={{ background: 'white', borderRadius: '16px', padding: '16px', border: '1px solid #D8D2C4' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#7A7A6E', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>MATÉRIEL PROBABLE</div>
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>MATÉRIEL PROBABLE</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {result.items_needed.map(item => (
-                    <span key={item.name} style={{ fontSize: '12px', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '4px 12px', borderRadius: '20px', color: '#E85D26', fontWeight: 500 }}>
+                    <span key={item.name} className="afrione-gradient-text" style={{ fontSize: '12px', background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.15)', padding: '4px 12px', borderRadius: '20px', fontWeight: 500 }}>
                       {item.qty > 1 ? `${item.qty}× ` : ''}{item.name}
                     </span>
                   ))}
@@ -825,8 +828,8 @@ export default function DiagnosticPage() {
 
             {/* Photos jointes */}
             {photos.length > 0 && (
-              <div style={{ background: 'white', borderRadius: '16px', padding: '16px', border: '1px solid #D8D2C4' }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#7A7A6E', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>📸 VOS PHOTOS JOINTES</div>
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>📸 VOS PHOTOS JOINTES</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                   {photos.map((url, i) => (
                     <img key={i} src={url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px' }} />
@@ -836,18 +839,18 @@ export default function DiagnosticPage() {
             )}
 
             {/* Affiner */}
-            <div style={{ background: 'white', borderRadius: '16px', padding: '16px', border: '1.5px dashed #D8D2C4' }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: '#7A7A6E', marginBottom: '10px' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1.5px dashed #E2E8F0', boxShadow: NEU_SMALL }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#8B95A5', marginBottom: '10px' }}>
                 ✏️ Ce résumé n'est pas exact ? Précisez :
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input type="text" value={refineText} onChange={e => setRefineText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && refineResult()}
                   placeholder="Ex : c'est en fait le robinet de la salle de bain…"
-                  style={{ flex: 1, padding: '11px 14px', borderRadius: '12px', border: '1.5px solid #D8D2C4', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#0F1410' }}
+                  style={{ flex: 1, padding: '11px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#3D4852', background: '#FFFFFF' }}
                 />
                 <button onClick={refineResult} disabled={!refineText.trim() || refining} style={{
-                  padding: '11px 16px', background: '#0F1410', color: 'white', border: 'none', borderRadius: '12px',
+                  padding: '11px 16px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '12px',
                   cursor: 'pointer', fontWeight: 600, fontSize: '13px', opacity: (!refineText.trim() || refining) ? 0.4 : 1, whiteSpace: 'nowrap',
                 }}>
                   {refining ? '…' : 'Affiner'}
@@ -866,11 +869,12 @@ export default function DiagnosticPage() {
                 router.push(href)
               }}
               disabled={navigating}
+              className="btn-primary"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                padding: '18px', background: '#E85D26', color: 'white', border: 'none',
+                padding: '18px', color: 'white', border: 'none',
                 borderRadius: '16px', fontWeight: 700, fontSize: '16px', cursor: navigating ? 'not-allowed' : 'pointer',
-                boxShadow: '0 8px 24px rgba(232,93,38,0.3)', width: '100%', opacity: navigating ? 0.8 : 1,
+                boxShadow: '0 8px 24px rgba(232,93,38,0.25)', width: '100%', opacity: navigating ? 0.8 : 1,
               }}
             >
               {navigating
@@ -880,16 +884,17 @@ export default function DiagnosticPage() {
             </button>
 
             <button onClick={() => { setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null); setMaterialTiers([]) }} style={{
-              padding: '13px', background: 'transparent', border: '1.5px solid #D8D2C4', borderRadius: '14px',
-              fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#7A7A6E',
+              padding: '13px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '14px',
+              fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#6B7280',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              boxShadow: NEU_SMALL,
             }}>
               <RotateCcw size={14} /> Recommencer
             </button>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '14px', padding: '14px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '14px', padding: '14px' }}>
               <AlertCircle size={14} color="#C9A84C" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <p style={{ fontSize: '12px', color: '#7A7A6E', margin: 0, lineHeight: '1.6' }}>
+              <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: '1.6' }}>
                 Ce résumé et la fiche technique seront envoyés automatiquement à l'artisan pour qu'il arrive préparé.
               </p>
             </div>

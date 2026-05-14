@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { Globe, Store, Plus, CheckCircle, Trash2, RefreshCw, Package, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 type Source = {
   id: string
   name: string
@@ -111,7 +114,6 @@ export default function AdminSourcesPage() {
     setScraping(source.id)
     setMsg(null)
     try {
-      // Pour l'instant seul Jumia est scrappable — on passe la requête à scrape-prices
       const res = await fetch('/api/admin/scrape-prices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +121,6 @@ export default function AdminSourcesPage() {
       })
       const data = await res.json()
       flash(data.summary || `Scraping terminé`)
-      // Recharge les matériaux de cette source
       const res2 = await fetch(`/api/sources?source_id=${source.id}`)
       const mats = await res2.json()
       setMaterials(m => ({ ...m, [source.id]: Array.isArray(mats) ? mats : [] }))
@@ -162,17 +163,17 @@ export default function AdminSourcesPage() {
   const magasins = sources.filter(s => s.type === 'magasin')
 
   return (
-    <div className="min-h-screen bg-dark text-cream flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F5F7FA' }}>
       <AdminSidebar activeId="sources" />
 
       <main className="flex-1 p-6" style={{ maxWidth: '1100px', minWidth: 0 }}>
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-display text-2xl font-bold text-cream">Sources de prix</h1>
-            <p className="text-muted text-sm mt-0.5">Sites web scrappables + magasins physiques ajoutés par les artisans</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#3D4852' }}>Sources de prix</h1>
+            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '2px' }}>Sites web scrappables + magasins physiques ajoutés par les artisans</p>
           </div>
           {msg && (
-            <div style={{ background: 'rgba(43,107,62,0.2)', border: '1px solid #2B6B3E', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', color: '#7EC893' }}>
+            <div style={{ background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', color: '#2B6B3E' }}>
               {msg}
             </div>
           )}
@@ -186,48 +187,50 @@ export default function AdminSourcesPage() {
             </h2>
             <button
               onClick={() => setShowWebForm(v => !v)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
+              className="afrione-gradient"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
             >
               <Plus size={14} /> Ajouter un site
             </button>
           </div>
 
           {showWebForm && (
-            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '16px', color: '#FAFAF5' }}>Nouveau site web</h3>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', marginBottom: '16px', boxShadow: NEU_SHADOW }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '16px', color: '#3D4852' }}>Nouveau site web</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#7A7A6E', marginBottom: '4px' }}>Nom du site *</label>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>Nom du site *</label>
                   <input value={webName} onChange={e => setWebName(e.target.value)} placeholder="ex: CasaShop CI"
-                    style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#FAFAF5', fontSize: '13px', outline: 'none' }} />
+                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#7A7A6E', marginBottom: '4px' }}>URL catalogue *</label>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>URL catalogue *</label>
                   <input value={webUrl} onChange={e => setWebUrl(e.target.value)} placeholder="https://..."
-                    style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#FAFAF5', fontSize: '13px', outline: 'none' }} />
+                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#7A7A6E', marginBottom: '4px' }}>Type de scraper</label>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>Type de scraper</label>
                   <select value={webScraper} onChange={e => setWebScraper(e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', background: '#1A1F1B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#FAFAF5', fontSize: '13px' }}>
+                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px' }}>
                     {SCRAPER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#7A7A6E', marginBottom: '4px' }}>Notes (format de la page, spécificités…)</label>
+                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>Notes (format de la page, spécificités…)</label>
                   <input value={webNotes} onChange={e => setWebNotes(e.target.value)} placeholder="ex: JSON dans window.__data.products"
-                    style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#FAFAF5', fontSize: '13px', outline: 'none' }} />
+                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={addWebsite} disabled={saving}
-                  style={{ padding: '8px 20px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600, opacity: saving ? 0.6 : 1 }}>
+                  className="afrione-gradient"
+                  style={{ padding: '8px 20px', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600, opacity: saving ? 0.6 : 1 }}>
                   {saving ? 'Ajout…' : 'Ajouter'}
                 </button>
                 <button onClick={() => setShowWebForm(false)}
-                  style={{ padding: '8px 14px', background: 'rgba(255,255,255,0.06)', color: '#7A7A6E', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                  style={{ padding: '8px 14px', background: '#F5F7FA', color: '#6B7280', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
                   Annuler
                 </button>
               </div>
@@ -235,9 +238,9 @@ export default function AdminSourcesPage() {
           )}
 
           {loading ? (
-            <div style={{ color: '#7A7A6E', fontSize: '13px' }}>Chargement…</div>
+            <div style={{ color: '#6B7280', fontSize: '13px' }}>Chargement…</div>
           ) : websites.length === 0 ? (
-            <div style={{ color: '#7A7A6E', fontSize: '13px', fontStyle: 'italic' }}>Aucun site web configuré. Ajoutez Jumia CI, CasaShop CI, etc.</div>
+            <div style={{ color: '#8B95A5', fontSize: '13px', fontStyle: 'italic' }}>Aucun site web configuré. Ajoutez Jumia CI, CasaShop CI, etc.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {websites.map(src => (
@@ -266,11 +269,11 @@ export default function AdminSourcesPage() {
             <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#C9A84C', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Store size={16} /> Magasins physiques ({magasins.length})
             </h2>
-            <span style={{ fontSize: '12px', color: '#7A7A6E' }}>Ajoutés par les artisans · à valider</span>
+            <span style={{ fontSize: '12px', color: '#8B95A5' }}>Ajoutés par les artisans · à valider</span>
           </div>
 
           {loading ? null : magasins.length === 0 ? (
-            <div style={{ color: '#7A7A6E', fontSize: '13px', fontStyle: 'italic' }}>Aucun magasin soumis par les artisans pour l'instant.</div>
+            <div style={{ color: '#8B95A5', fontSize: '13px', fontStyle: 'italic' }}>Aucun magasin soumis par les artisans pour l'instant.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {magasins.map(src => (
@@ -314,27 +317,28 @@ function SourceCard({
   onConfirmMaterial: (id: string) => void
 }) {
   const isWeb = source.type === 'website'
+  const NEU_SMALL = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
 
   return (
-    <div style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${source.verified ? 'rgba(43,107,62,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '12px', overflow: 'hidden' }}>
+    <div style={{ background: '#FFFFFF', border: `1px solid ${source.verified ? 'rgba(43,107,62,0.3)' : '#E2E8F0'}`, borderRadius: '12px', overflow: 'hidden', boxShadow: NEU_SMALL }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer' }} onClick={onToggle}>
-        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: isWeb ? 'rgba(201,168,76,0.15)' : 'rgba(232,93,38,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: isWeb ? 'rgba(201,168,76,0.1)' : 'rgba(232,93,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           {isWeb ? <Globe size={15} color="#C9A84C" /> : <Store size={15} color="#E85D26" />}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: 600, fontSize: '14px', color: '#FAFAF5' }}>{source.name}</span>
+            <span style={{ fontWeight: 600, fontSize: '14px', color: '#3D4852' }}>{source.name}</span>
             {source.verified
-              ? <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(43,107,62,0.2)', color: '#7EC893', fontWeight: 600 }}>Vérifié</span>
-              : <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', color: '#7A7A6E', fontWeight: 600 }}>En attente</span>
+              ? <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(43,107,62,0.1)', color: '#2B6B3E', fontWeight: 600 }}>Vérifié</span>
+              : <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: '#F5F7FA', color: '#6B7280', fontWeight: 600, border: '1px solid #E2E8F0' }}>En attente</span>
             }
             {source.scraper_type && isWeb && (
-              <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(201,168,76,0.1)', color: '#C9A84C' }}>{source.scraper_type}</span>
+              <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.2)' }}>{source.scraper_type}</span>
             )}
           </div>
-          <div style={{ fontSize: '12px', color: '#7A7A6E', marginTop: '2px' }}>
+          <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
             {source.quartier ? `📍 ${source.quartier}` : source.url ? source.url.replace(/^https?:\/\//, '').split('/')[0] : ''}
           </div>
         </div>
@@ -342,30 +346,30 @@ function SourceCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
           {isWeb && onScrape && (
             <button onClick={onScrape} disabled={scraping}
-              style={{ padding: '5px 10px', background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '6px', color: '#C9A84C', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', opacity: scraping ? 0.6 : 1 }}>
+              style={{ padding: '5px 10px', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '6px', color: '#C9A84C', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', opacity: scraping ? 0.6 : 1 }}>
               <RefreshCw size={11} style={{ animation: scraping ? 'spin 1s linear infinite' : 'none' }} />
               {scraping ? 'Scraping…' : 'Scraper'}
             </button>
           )}
           {!source.verified && (
             <button onClick={onVerify}
-              style={{ padding: '5px 10px', background: 'rgba(43,107,62,0.15)', border: '1px solid rgba(43,107,62,0.4)', borderRadius: '6px', color: '#7EC893', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              style={{ padding: '5px 10px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '6px', color: '#2B6B3E', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <CheckCircle size={11} /> Valider
             </button>
           )}
           <button onClick={onDelete}
-            style={{ padding: '5px 8px', background: isConfirmingDelete ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.08)', border: `1px solid ${isConfirmingDelete ? 'rgba(239,68,68,0.6)' : 'rgba(239,68,68,0.2)'}`, borderRadius: '6px', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontWeight: isConfirmingDelete ? 700 : 400, whiteSpace: 'nowrap' }}>
+            style={{ padding: '5px 8px', background: isConfirmingDelete ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.05)', border: `1px solid ${isConfirmingDelete ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.15)'}`, borderRadius: '6px', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontWeight: isConfirmingDelete ? 700 : 400, whiteSpace: 'nowrap' }}>
             {isConfirmingDelete ? '⚠️ Confirmer ?' : <Trash2 size={11} />}
           </button>
-          {expanded ? <ChevronUp size={14} color="#7A7A6E" /> : <ChevronDown size={14} color="#7A7A6E" />}
+          {expanded ? <ChevronUp size={14} color="#8B95A5" /> : <ChevronDown size={14} color="#8B95A5" />}
         </div>
       </div>
 
       {/* Expanded — liste des articles */}
       {expanded && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '12px 16px' }}>
+        <div style={{ borderTop: '1px solid #E2E8F0', padding: '12px 16px', background: '#F5F7FA' }}>
           {source.notes && (
-            <p style={{ fontSize: '12px', color: '#7A7A6E', marginBottom: '12px', fontStyle: 'italic' }}>{source.notes}</p>
+            <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '12px', fontStyle: 'italic' }}>{source.notes}</p>
           )}
           {source.url && (
             <a href={source.url} target="_blank" rel="noopener noreferrer"
@@ -375,40 +379,40 @@ function SourceCard({
           )}
 
           {matLoading ? (
-            <div style={{ color: '#7A7A6E', fontSize: '12px' }}>Chargement…</div>
+            <div style={{ color: '#6B7280', fontSize: '12px' }}>Chargement…</div>
           ) : !materials || materials.length === 0 ? (
-            <div style={{ color: '#7A7A6E', fontSize: '12px', fontStyle: 'italic' }}>
+            <div style={{ color: '#8B95A5', fontSize: '12px', fontStyle: 'italic' }}>
               <Package size={13} style={{ display: 'inline', marginRight: '6px' }} />
               Aucun article enregistré pour cette source.
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#FFFFFF', borderRadius: '8px', overflow: 'hidden' }}>
               <thead>
-                <tr style={{ color: '#7A7A6E' }}>
-                  <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>Article</th>
-                  <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 500 }}>Catégorie</th>
-                  <th style={{ textAlign: 'right', padding: '4px 8px', fontWeight: 500 }}>Prix marché</th>
-                  <th style={{ textAlign: 'right', padding: '4px 8px', fontWeight: 500 }}>Prix web</th>
-                  <th style={{ textAlign: 'center', padding: '4px 8px', fontWeight: 500 }}>Statut</th>
+                <tr style={{ background: '#F5F7FA', borderBottom: '1px solid #E2E8F0' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Article</th>
+                  <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Catégorie</th>
+                  <th style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Prix marché</th>
+                  <th style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Prix web</th>
+                  <th style={{ textAlign: 'center', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Statut</th>
                 </tr>
               </thead>
               <tbody>
                 {materials.map(mat => (
-                  <tr key={mat.id} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    <td style={{ padding: '6px 8px', color: '#FAFAF5' }}>{mat.name}</td>
-                    <td style={{ padding: '6px 8px', color: '#7A7A6E' }}>{mat.category}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#C9A84C', fontWeight: 600 }}>
+                  <tr key={mat.id} style={{ borderTop: '1px solid #E2E8F0' }}>
+                    <td style={{ padding: '8px 10px', color: '#3D4852' }}>{mat.name}</td>
+                    <td style={{ padding: '8px 10px', color: '#6B7280' }}>{mat.category}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#C9A84C', fontWeight: 600 }}>
                       {mat.price_market?.toLocaleString('fr')} F
                     </td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#7A7A6E' }}>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#6B7280' }}>
                       {mat.web_price ? `${mat.web_price.toLocaleString('fr')} F` : '—'}
                     </td>
-                    <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                    <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                       {mat.confirmed_at ? (
-                        <span style={{ fontSize: '10px', color: '#7EC893' }}>✓ Confirmé</span>
+                        <span style={{ fontSize: '10px', color: '#2B6B3E', fontWeight: 600 }}>✓ Confirmé</span>
                       ) : (
                         <button onClick={() => onConfirmMaterial(mat.id)}
-                          style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(43,107,62,0.12)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '6px', color: '#7EC893', cursor: 'pointer' }}>
+                          style={{ fontSize: '10px', padding: '3px 10px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.2)', borderRadius: '6px', color: '#2B6B3E', cursor: 'pointer' }}>
                           Confirmer
                         </button>
                       )}

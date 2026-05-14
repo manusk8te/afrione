@@ -3,11 +3,14 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ChevronLeft, ChevronRight, Check, X } from 'lucide-react'
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const HOURS = ['08h', '09h', '10h', '11h', '12h', '13h', '14h', '15h', '16h', '17h', '18h']
 
 const MISSIONS = [
-  { day: 1, hour: '10h', label: 'Mission #AF-2847', color: 'bg-accent text-white' },
+  { day: 1, hour: '10h', label: 'Mission #AF-2847', color: 'afrione-gradient text-white' },
   { day: 3, hour: '14h', label: 'Mission #AF-2831', color: 'bg-accent2/20 text-accent2' },
   { day: 4, hour: '09h', label: 'RDV client', color: 'bg-gold/20 text-yellow-700' },
 ]
@@ -24,13 +27,14 @@ export default function PlanningPage() {
     MISSIONS.find(m => m.day === dayIdx && m.hour === hour)
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="bg-dark text-cream">
+    <div className="min-h-screen" style={{background:'#F5F7FA'}}>
+      {/* Header bar */}
+      <div style={{background:'#FFFFFF',borderBottom:'1px solid #E2E8F0',boxShadow:NEU_SMALL}}>
         <div className="page-container py-4 flex items-center gap-3 max-w-3xl">
-          <Link href="/artisan-space/dashboard" className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+          <Link href="/artisan-space/dashboard" style={{padding:'4px',borderRadius:'8px',display:'flex',alignItems:'center',color:'#6B7280',textDecoration:'none'}}>
             <ArrowLeft size={18} />
           </Link>
-          <div className="font-display font-bold">Mon Planning</div>
+          <div className="font-display font-bold" style={{color:'#3D4852'}}>Mon Planning</div>
         </div>
       </div>
 
@@ -38,8 +42,8 @@ export default function PlanningPage() {
         <div className="max-w-3xl mx-auto">
 
           {/* Availability toggles */}
-          <div className="card mb-6">
-            <h2 className="font-display font-bold text-dark mb-4">Jours disponibles</h2>
+          <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',marginBottom:'24px'}}>
+            <h2 className="font-display font-bold" style={{color:'#3D4852',marginBottom:'16px'}}>Jours disponibles</h2>
             <div className="flex gap-2 flex-wrap">
               {DAYS.map((d, i) => {
                 const key = d.toLowerCase().slice(0, 3)
@@ -48,11 +52,16 @@ export default function PlanningPage() {
                   <button
                     key={d}
                     onClick={() => toggle(key)}
-                    className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl border-2 transition-all ${
-                      isAvail ? 'border-accent2 bg-accent2/5 text-accent2' : 'border-border text-muted hover:border-dark/30'
-                    }`}
+                    style={{
+                      display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',
+                      padding:'12px 16px',borderRadius:'12px',cursor:'pointer',transition:'all 0.2s',
+                      border: isAvail ? '2px solid #E85D26' : '2px solid #E2E8F0',
+                      background: isAvail ? 'rgba(232,93,38,0.05)' : '#FFFFFF',
+                      boxShadow: NEU_SMALL,
+                      color: isAvail ? '#E85D26' : '#8B95A5',
+                    }}
                   >
-                    <span className="text-xs font-mono font-bold">{d}</span>
+                    <span style={{fontSize:'12px',fontFamily:'Space Mono',fontWeight:700}}>{d}</span>
                     {isAvail ? <Check size={14} /> : <X size={14} />}
                   </button>
                 )
@@ -61,15 +70,21 @@ export default function PlanningPage() {
           </div>
 
           {/* Calendar week */}
-          <div className="card overflow-x-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-bold text-dark">Semaine en cours</h2>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setWeek(w => w - 1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg2 transition-colors">
+          <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',overflowX:'auto'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
+              <h2 className="font-display font-bold" style={{color:'#3D4852'}}>Semaine en cours</h2>
+              <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                <button
+                  onClick={() => setWeek(w => w - 1)}
+                  style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px',border:'1px solid #E2E8F0',background:'#FFFFFF',boxShadow:NEU_SMALL,cursor:'pointer',color:'#6B7280'}}
+                >
                   <ChevronLeft size={16} />
                 </button>
-                <span className="font-mono text-xs text-muted">10 – 16 Mar 2025</span>
-                <button onClick={() => setWeek(w => w + 1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg2 transition-colors">
+                <span style={{fontFamily:'Space Mono',fontSize:'12px',color:'#8B95A5'}}>10 – 16 Mar 2025</span>
+                <button
+                  onClick={() => setWeek(w => w + 1)}
+                  style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px',border:'1px solid #E2E8F0',background:'#FFFFFF',boxShadow:NEU_SMALL,cursor:'pointer',color:'#6B7280'}}
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -81,10 +96,10 @@ export default function PlanningPage() {
                 <div className="text-xs text-muted font-mono" />
                 {DAYS.map((d, i) => (
                   <div key={d} className="text-center">
-                    <div className="text-xs font-mono text-muted">{d}</div>
+                    <div style={{fontSize:'12px',fontFamily:'Space Mono',color:'#8B95A5'}}>{d}</div>
                     <div className={`text-sm font-bold mt-0.5 w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
-                      i === 0 ? 'bg-accent text-white' : 'text-dark'
-                    }`}>{10 + i}</div>
+                      i === 0 ? 'afrione-gradient text-white' : ''
+                    }`} style={{color: i === 0 ? undefined : '#3D4852'}}>{10 + i}</div>
                   </div>
                 ))}
               </div>
@@ -92,7 +107,7 @@ export default function PlanningPage() {
               {/* Hour rows */}
               {HOURS.map(h => (
                 <div key={h} className="grid grid-cols-8 gap-1 mb-1">
-                  <div className="text-xs font-mono text-muted flex items-center pr-2">{h}</div>
+                  <div style={{fontSize:'12px',fontFamily:'Space Mono',color:'#8B95A5',display:'flex',alignItems:'center',paddingRight:'8px'}}>{h}</div>
                   {DAYS.map((d, i) => {
                     const mission = getMission(i, h)
                     const dayKey = d.toLowerCase().slice(0, 3)
@@ -101,10 +116,18 @@ export default function PlanningPage() {
                       <div
                         key={d}
                         className={`h-8 rounded-lg text-xs flex items-center justify-center cursor-pointer transition-colors ${
-                          mission ? mission.color + ' font-semibold text-center px-1 truncate' :
-                          avail ? 'hover:bg-accent2/10 hover:border hover:border-accent2/30' :
-                          'bg-bg2 opacity-40'
+                          mission ? mission.color + ' font-semibold text-center px-1 truncate' : ''
                         }`}
+                        style={{
+                          background: !mission && !avail ? '#F5F7FA' : !mission && avail ? undefined : undefined,
+                          opacity: !mission && !avail ? 0.4 : 1,
+                        }}
+                        onMouseEnter={e => {
+                          if (!mission && avail) (e.currentTarget as HTMLElement).style.background = 'rgba(232,93,38,0.08)'
+                        }}
+                        onMouseLeave={e => {
+                          if (!mission && avail) (e.currentTarget as HTMLElement).style.background = ''
+                        }}
                       >
                         {mission ? <span className="truncate px-1 text-xs">{mission.label.split(' ')[1]}</span> : null}
                       </div>
@@ -116,15 +139,18 @@ export default function PlanningPage() {
           </div>
 
           {/* Legend */}
-          <div className="flex gap-4 mt-4 text-xs text-muted">
+          <div style={{display:'flex',gap:'16px',marginTop:'16px',fontSize:'12px',color:'#8B95A5'}}>
             {[
-              { color: 'bg-accent', label: 'Mission confirmée' },
+              { color: 'afrione-gradient', label: 'Mission confirmée' },
               { color: 'bg-accent2/20', label: 'Mission en cours' },
               { color: 'bg-gold/20', label: 'RDV' },
-              { color: 'bg-bg2', label: 'Non disponible' },
+              { colorStyle: '#F5F7FA', label: 'Non disponible' },
             ].map(item => (
-              <div key={item.label} className="flex items-center gap-1.5">
-                <div className={`w-3 h-3 rounded ${item.color}`} />
+              <div key={item.label} style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                {'colorStyle' in item
+                  ? <div style={{width:'12px',height:'12px',borderRadius:'4px',background:item.colorStyle,border:'1px solid #E2E8F0'}} />
+                  : <div className={`w-3 h-3 rounded ${item.color}`} />
+                }
                 {item.label}
               </div>
             ))}

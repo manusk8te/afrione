@@ -140,7 +140,7 @@ function MatchingContent() {
             <div style={{marginBottom:'32px'}}>
               <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
                 <Building2 size={16} style={{color:'#60a5fa'}} />
-                <span style={{fontSize:'13px',fontWeight:700,color:'#0F1410'}}>Structures professionnelles</span>
+                <span style={{fontSize:'13px',fontWeight:700,color:'#3D4852'}}>Structures professionnelles</span>
                 <span style={{fontSize:'11px',color:'#7A7A6E',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'2px 8px',borderRadius:'10px'}}>multi-corps d'état</span>
               </div>
               <div className="space-y-3">
@@ -158,7 +158,7 @@ function MatchingContent() {
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}}>
                             <Building2 size={14} style={{color:'#60a5fa',flexShrink:0}} />
-                            <span style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>{e.name}</span>
+                            <span style={{fontWeight:700,fontSize:'15px',color:'#3D4852'}}>{e.name}</span>
                           </div>
                           {e.description && (
                             <p style={{fontSize:'12px',color:'#7A7A6E',margin:'0 0 8px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.description}</p>
@@ -170,7 +170,7 @@ function MatchingContent() {
                           </div>
                         </div>
                         <div style={{textAlign:'right',flexShrink:0}}>
-                          <div style={{fontSize:'13px',fontWeight:700,color:'#0F1410'}}>{(e.artisan_pros||[]).length} artisan{(e.artisan_pros||[]).length !== 1 ? 's' : ''}</div>
+                          <div style={{fontSize:'13px',fontWeight:700,color:'#3D4852'}}>{(e.artisan_pros||[]).length} artisan{(e.artisan_pros||[]).length !== 1 ? 's' : ''}</div>
                           <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'2px'}}>dans l'équipe</div>
                           <div style={{display:'flex',alignItems:'center',gap:'4px',marginTop:'8px',fontSize:'12px',color:'#60a5fa',fontWeight:600}}>
                             Voir l'espace <ChevronRight size={12} />
@@ -194,7 +194,7 @@ function MatchingContent() {
           ) : artisans.length === 0 ? (
             <div className="card" style={{textAlign:'center',padding:'48px'}}>
               <p style={{fontSize:'48px',marginBottom:'16px'}}>😔</p>
-              <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#0F1410',marginBottom:'8px'}}>Aucun artisan disponible</h3>
+              <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#3D4852',marginBottom:'8px'}}>Aucun artisan disponible</h3>
               <p style={{color:'#7A7A6E',fontSize:'14px',marginBottom:'24px'}}>Tous nos artisans {category} sont actuellement occupés.</p>
               <Link href="/artisans" className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
                 Voir tous les artisans
@@ -230,13 +230,13 @@ function MatchingContent() {
                       <div style={{flex:1}}>
                         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}}>
                           <div>
-                            <h3 className="font-display" style={{fontWeight:700,color:'#0F1410',fontSize:'16px'}}>{a.users?.name || a.metier || 'Artisan'}</h3>
+                            <h3 className="font-display" style={{fontWeight:700,color:'#3D4852',fontSize:'16px'}}>{a.users?.name || a.metier || 'Artisan'}</h3>
                             <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#7A7A6E',marginTop:'2px'}}>
                               <MapPin size={12} /> {a.users?.quartier || 'Abidjan'}
                             </div>
                           </div>
                           <div style={{textAlign:'right',flexShrink:0}}>
-                            <div className="font-display" style={{fontWeight:700,color:'#0F1410',fontSize:'16px'}}>{(a.tarif_min || 0).toLocaleString()} FCFA</div>
+                            <div className="font-display" style={{fontWeight:700,color:'#3D4852',fontSize:'16px'}}>{(a.tarif_min || 0).toLocaleString()} FCFA</div>
                             <div style={{fontSize:'11px',color:'#7A7A6E'}}>tarif min</div>
                           </div>
                         </div>
@@ -244,7 +244,7 @@ function MatchingContent() {
                         <div style={{display:'flex',flexWrap:'wrap',gap:'16px',marginTop:'12px'}}>
                           <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px'}}>
                             <Star size={13} style={{color:'#C9A84C',fill:'#C9A84C'}} />
-                            <span style={{fontWeight:600,color:'#0F1410'}}>{(a.rating_avg || 0).toFixed(1)}</span>
+                            <span style={{fontWeight:600,color:'#3D4852'}}>{(a.rating_avg || 0).toFixed(1)}</span>
                             <span style={{color:'#7A7A6E'}}>({a.rating_count || 0})</span>
                           </div>
                           <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#7A7A6E'}}>
@@ -272,7 +272,7 @@ function MatchingContent() {
                     </div>
 
                     {selected === a.id && (
-                      <div style={{display:'flex',alignItems:'center',gap:'6px',marginTop:'16px',fontSize:'13px',color:'#E85D26',fontWeight:500}}>
+                      <div className="afrione-gradient-text" style={{display:'flex',alignItems:'center',gap:'6px',marginTop:'16px',fontSize:'13px',fontWeight:500}}>
                         <CheckCircle size={14} /> Sélectionné
                       </div>
                     )}

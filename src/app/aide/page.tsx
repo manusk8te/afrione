@@ -20,19 +20,30 @@ const FAQS = {
   ],
 }
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 function Accordion({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
     <button
       onClick={() => setOpen(o => !o)}
-      className="w-full text-left border border-border rounded-2xl overflow-hidden transition-all hover:border-dark/30"
+      style={{
+        width: '100%', textAlign: 'left',
+        background: '#FFFFFF',
+        border: '1.5px solid #E2E8F0',
+        borderRadius: '16px', overflow: 'hidden',
+        transition: 'all 0.2s',
+        boxShadow: NEU_SMALL,
+        cursor: 'pointer', padding: 0,
+      }}
     >
-      <div className="flex items-center justify-between p-5 bg-white">
-        <span className="font-display font-bold text-dark text-sm pr-4">{q}</span>
-        <ChevronDown size={16} className={`text-muted flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px' }}>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '14px', paddingRight: '16px' }}>{q}</span>
+        <ChevronDown size={16} style={{ color: '#8B95A5', flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </div>
       {open && (
-        <div className="px-5 pb-5 bg-bg2 text-sm text-muted leading-relaxed">
+        <div style={{ padding: '0 20px 20px', background: '#F5F7FA', fontSize: '14px', color: '#6B7280', lineHeight: '1.7' }}>
           {a}
         </div>
       )}
@@ -44,64 +55,98 @@ export default function AidePage() {
   const [tab, setTab] = useState<'client' | 'artisan'>('client')
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div style={{ minHeight: '100vh', background: '#F5F7FA' }}>
       <Navbar />
-      <div className="pt-24 pb-16 px-4">
-        <div className="page-container max-w-3xl">
+      <div style={{ paddingTop: '96px', paddingBottom: '64px', paddingLeft: '16px', paddingRight: '16px' }}>
+        <div className="page-container" style={{ maxWidth: '768px' }}>
 
           {/* Header */}
-          <div className="text-center mb-12">
-            <span className="section-label block mb-2">CENTRE D'AIDE</span>
-            <h1 className="font-display text-4xl font-bold text-dark mb-3">Comment pouvons-nous<br />vous aider ?</h1>
-            <p className="text-muted">Trouvez des réponses à vos questions ci-dessous</p>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <span className="section-label" style={{ display: 'block', marginBottom: '8px' }}>CENTRE D'AIDE</span>
+            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '36px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>
+              Comment pouvons-nous<br />vous aider ?
+            </h1>
+            <p style={{ color: '#6B7280' }}>Trouvez des réponses à vos questions ci-dessous</p>
           </div>
 
           {/* Quick links */}
-          <div className="grid sm:grid-cols-3 gap-4 mb-12">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '48px' }}>
             {[
-              { icon: Zap, title: 'Faire un diagnostic', href: '/diagnostic', color: 'text-accent' },
-              { icon: MessageCircle, title: 'Nous écrire', href: 'mailto:support@afrione.ci', color: 'text-accent2' },
-              { icon: Phone, title: '+225 XX XX XX XX', href: 'tel:+225XXXXXXXX', color: 'text-gold' },
+              { icon: Zap, title: 'Faire un diagnostic', href: '/diagnostic', color: '#E85D26' },
+              { icon: MessageCircle, title: 'Nous écrire', href: 'mailto:support@afrione.ci', color: '#E85D26' },
+              { icon: Phone, title: '+225 XX XX XX XX', href: 'tel:+225XXXXXXXX', color: '#C9A84C' },
             ].map(item => (
               <Link key={item.title} href={item.href}
-                className="card flex flex-col items-center text-center gap-3 hover:border-dark/30 hover:-translate-y-0.5 transition-all">
-                <item.icon size={24} className={item.color} />
-                <span className="font-display font-bold text-dark text-sm">{item.title}</span>
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '12px',
+                  padding: '24px 16px', background: '#FFFFFF', borderRadius: '16px',
+                  border: '1.5px solid #E2E8F0',
+                  boxShadow: NEU_SHADOW,
+                  textDecoration: 'none',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'
+                  ;(e.currentTarget as HTMLElement).style.boxShadow = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
+                  ;(e.currentTarget as HTMLElement).style.boxShadow = NEU_SHADOW
+                }}
+              >
+                <item.icon size={24} style={{ color: item.color }} />
+                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '14px' }}>{item.title}</span>
               </Link>
             ))}
           </div>
 
           {/* Tab */}
-          <div className="flex bg-bg2 border border-border rounded-2xl p-1 mb-8">
+          <div style={{ display: 'flex', background: '#F5F7FA', border: '1.5px solid #E2E8F0', borderRadius: '16px', padding: '4px', marginBottom: '32px', boxShadow: 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8px rgba(255,255,255,0.9)' }}>
             {[
               { id: 'client' as const, label: '🏠 Questions clients' },
               { id: 'artisan' as const, label: '🔧 Questions artisans' },
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all ${
-                  tab === t.id ? 'bg-white text-dark shadow-sm' : 'text-muted hover:text-dark'
-                }`}>
+                style={{
+                  flex: 1, padding: '10px', fontSize: '14px', fontWeight: 600, borderRadius: '12px', border: 'none', cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  background: tab === t.id ? '#FFFFFF' : 'transparent',
+                  color: tab === t.id ? '#3D4852' : '#6B7280',
+                  boxShadow: tab === t.id ? NEU_SMALL : 'none',
+                }}>
                 {t.label}
               </button>
             ))}
           </div>
 
           {/* FAQ */}
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {FAQS[tab].map(faq => <Accordion key={faq.q} q={faq.q} a={faq.a} />)}
           </div>
 
           {/* Contact CTA */}
-          <div className="mt-12 bg-dark rounded-2xl p-8 text-center">
-            <h2 className="font-display text-2xl font-bold text-cream mb-2">Vous n'avez pas trouvé votre réponse ?</h2>
-            <p className="text-muted text-sm mb-6">Notre équipe répond en moins de 2h en heures ouvrées</p>
-            <div className="flex flex-wrap gap-3 justify-center">
+          <div style={{
+            marginTop: '48px', background: '#FFFFFF', borderRadius: '20px', padding: '32px', textAlign: 'center',
+            boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0',
+          }}>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '22px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
+              Vous n'avez pas trouvé votre réponse ?
+            </h2>
+            <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>Notre équipe répond en moins de 2h en heures ouvrées</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
               <Link href="mailto:support@afrione.ci"
-                className="flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors text-sm">
+                className="afrione-gradient"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', padding: '12px 24px', borderRadius: '12px', fontWeight: 600, textDecoration: 'none', fontSize: '14px' }}>
                 <Mail size={16} /> Envoyer un email
               </Link>
               <Link href="https://wa.me/225XXXXXXXX" target="_blank"
-                className="flex items-center gap-2 bg-white/10 border border-white/20 text-cream px-6 py-3 rounded-xl font-semibold hover:bg-white/20 transition-colors text-sm">
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  background: '#FFFFFF', border: '1.5px solid #E2E8F0',
+                  color: '#3D4852', padding: '12px 24px', borderRadius: '12px', fontWeight: 600,
+                  textDecoration: 'none', fontSize: '14px',
+                  boxShadow: NEU_SMALL, transition: 'box-shadow 0.15s',
+                }}>
                 <MessageCircle size={16} /> WhatsApp
               </Link>
             </div>

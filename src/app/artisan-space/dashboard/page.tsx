@@ -13,6 +13,9 @@ import toast from 'react-hot-toast'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 const TABS = [
   { id: 'missions',   label: 'Missions',    icon: Clock },
   { id: 'messages',   label: 'Messages',    icon: MessageCircle },
@@ -166,7 +169,7 @@ export default function ArtisanDashboardPage() {
               setConversations(prev => [{ ...newM, lastMessage: null }, ...prev])
             }
             toast('🔔 Nouvelle mission reçue !', {
-              style: { background: '#0F1410', color: '#FAFAF5', fontWeight: 600 },
+              style: { background: '#FFFFFF', color: '#3D4852', fontWeight: 600, boxShadow: NEU_SMALL },
               duration: 5000,
             })
           })
@@ -351,21 +354,21 @@ export default function ArtisanDashboardPage() {
   const allPhotos = [...missionPhotos, ...manualPhotos]
 
   if (loading) return (
-    <div className="min-h-screen bg-bg flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{background:'#F5F7FA'}}>
       <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen" style={{background:'#F5F7FA'}}>
       {/* Navbar */}
-      <div style={{background:'#0F1410',color:'#FAFAF5',position:'sticky',top:0,zIndex:50}}>
+      <div style={{background:'#FFFFFF',borderBottom:'1px solid #E2E8F0',position:'sticky',top:0,zIndex:50,boxShadow:NEU_SMALL}}>
         <div className="page-container" style={{padding:isMobile?'12px 16px':'16px 32px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <Link href="/" style={{display:'flex',alignItems:'center',gap:'8px',textDecoration:'none'}}>
-            <div style={{width:'28px',height:'28px',background:'#E85D26',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div className="afrione-gradient" style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Zap size={14} color="white" />
             </div>
-            <span className="font-display" style={{fontWeight:700,fontSize:'18px',color:'#FAFAF5'}}>AFRI<span style={{color:'#E85D26'}}>ONE</span></span>
+            <span className="font-display" style={{fontWeight:700,fontSize:'18px',color:'#3D4852'}}>AFRI<span className="afrione-gradient-text">ONE</span></span>
           </Link>
           <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
             {saveMsg && <span style={{fontSize:'12px',color:'#2B6B3E',background:'rgba(43,107,62,0.15)',padding:'4px 12px',borderRadius:'20px'}}>{saveMsg}</span>}
@@ -375,14 +378,14 @@ export default function ArtisanDashboardPage() {
             </span>
             <div
               onClick={() => fileInputRef.current?.click()}
-              style={{width:'36px',height:'36px',borderRadius:'50%',overflow:'hidden',cursor:'pointer',border:'2px solid #E85D26',flexShrink:0,background:'#EDE8DE',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
+              style={{width:'36px',height:'36px',borderRadius:'50%',overflow:'hidden',cursor:'pointer',border:'2px solid #E85D26',flexShrink:0,background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
               title="Changer la photo"
             >
               {uploadingAvatar
                 ? <div style={{width:'16px',height:'16px',border:'2px solid rgba(232,93,38,0.3)',borderTop:'2px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
                 : avatarUrl
                   ? <img src={avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                  : <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>{userName[0].toUpperCase()}</span>
+                  : <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>{userName[0].toUpperCase()}</span>
               }
             </div>
             <input ref={fileInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleAvatarUpload} />
@@ -392,15 +395,15 @@ export default function ArtisanDashboardPage() {
 
       <div className="page-container" style={{padding:isMobile?'16px':'32px',maxWidth:'896px'}}>
         {/* Header card */}
-        <div className="card" style={{marginBottom:'20px',display:'flex',alignItems:'center',gap:'14px',flexWrap:isMobile?'wrap':'nowrap'}}>
+        <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'14px',flexWrap:isMobile?'wrap':'nowrap'}}>
           <div
             onClick={() => fileInputRef.current?.click()}
-            style={{width:'72px',height:'72px',borderRadius:'16px',overflow:'hidden',cursor:'pointer',border:'2px dashed #D8D2C4',flexShrink:0,background:'#F5F3EE',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
+            style={{width:'72px',height:'72px',borderRadius:'16px',overflow:'hidden',cursor:'pointer',border:'2px dashed #E2E8F0',flexShrink:0,background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
             title="Changer la photo"
           >
             {avatarUrl
               ? <img src={avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
-              : <Camera size={24} style={{color:'#7A7A6E'}} />
+              : <Camera size={24} style={{color:'#8B95A5'}} />
             }
             <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.4)',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:'opacity 0.2s'}}
               onMouseEnter={e => (e.currentTarget.style.opacity='1')}
@@ -410,46 +413,47 @@ export default function ArtisanDashboardPage() {
             </div>
           </div>
           <div style={{flex:1}}>
-            <h1 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#0F1410'}}>{userName}</h1>
-            <p style={{fontSize:'14px',color:'#7A7A6E'}}>{artisan?.metier || 'Artisan'} · {user?.user_metadata?.quartier || 'Abidjan'}</p>
+            <h1 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#3D4852'}}>{userName}</h1>
+            <p style={{fontSize:'14px',color:'#6B7280'}}>{artisan?.metier || 'Artisan'} · {user?.user_metadata?.quartier || 'Abidjan'}</p>
             {artisan && (
               <div style={{display:'flex',alignItems:'center',gap:'16px',marginTop:'8px'}}>
-                <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#0F1410'}}>
+                <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#3D4852'}}>
                   <Star size={14} color="#C9A84C" fill="#C9A84C" /> {artisan.rating_avg?.toFixed(1) || '0.0'}
-                  <span style={{color:'#7A7A6E',fontSize:'12px'}}>({artisan.rating_count || 0})</span>
+                  <span style={{color:'#6B7280',fontSize:'12px'}}>({artisan.rating_count || 0})</span>
                 </span>
-                <span style={{fontSize:'13px',color:'#7A7A6E'}}>{artisan.mission_count || completedMissions.length} missions</span>
+                <span style={{fontSize:'13px',color:'#6B7280'}}>{artisan.mission_count || completedMissions.length} missions</span>
                 {artisan.kyc_status === 'approved' && (
                   <span style={{fontSize:'13px',color:'#2B6B3E',background:'rgba(43,107,62,0.1)',padding:'2px 8px',borderRadius:'20px'}}>✓ KYC Vérifié</span>
                 )}
               </div>
             )}
           </div>
-          <div style={{textAlign:isMobile?'left':'right',borderTop:isMobile?'1px solid #EDE8DE':'none',paddingTop:isMobile?'12px':'0',width:isMobile?'100%':'auto'}}>
-            <div className="font-display" style={{fontSize:'28px',fontWeight:700,color:'#E85D26'}}>
+          <div style={{textAlign:isMobile?'left':'right',borderTop:isMobile?'1px solid #E2E8F0':'none',paddingTop:isMobile?'12px':'0',width:isMobile?'100%':'auto'}}>
+            <div className="font-display afrione-gradient-text" style={{fontSize:'28px',fontWeight:700}}>
               {(wallet?.balance_available || 0).toLocaleString()}
             </div>
-            <div style={{fontSize:'12px',color:'#7A7A6E'}}>FCFA disponible</div>
+            <div style={{fontSize:'12px',color:'#6B7280'}}>FCFA disponible</div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div style={{display:'flex',background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',padding:'4px',marginBottom:'20px',gap:'4px',overflowX:'auto'}}>
+        <div style={{display:'flex',background:'#FFFFFF',border:'1px solid #E2E8F0',borderRadius:'12px',padding:'4px',marginBottom:'20px',gap:'4px',overflowX:'auto',boxShadow:NEU_SMALL}}>
           {TABS.map(t => {
             const isActive = tab === t.id
             const sharedStyle: React.CSSProperties = {
               flexShrink:0,padding:isMobile?'10px 12px':'10px',borderRadius:'8px',border:'none',cursor:'pointer',
               display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
               fontSize:isMobile?'12px':'13px',fontWeight:500,transition:'all 0.2s',position:'relative',
-              background: isActive ? '#0F1410' : 'transparent',
-              color: isActive ? '#FAFAF5' : '#7A7A6E',
+              background: isActive ? '#FFFFFF' : 'transparent',
+              boxShadow: isActive ? NEU_SMALL : 'none',
+              color: isActive ? '#E85D26' : '#6B7280',
               textDecoration:'none',
             }
             const content = (
               <>
                 <t.icon size={13} /> {isMobile ? t.label.split(' ')[0] : t.label}
                 {t.id === 'messages' && unreadCount > 0 && (
-                  <span style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',background:'#E85D26',borderRadius:'50%',fontSize:'10px',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
+                  <span className="afrione-gradient" style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',borderRadius:'50%',fontSize:'10px',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -473,7 +477,7 @@ export default function ArtisanDashboardPage() {
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}}>
                   <Calendar size={15} color="#C9A84C" />
-                  <span className="font-display" style={{fontSize:'15px',fontWeight:700,color:'#0F1410'}}>Prochaines interventions</span>
+                  <span className="font-display" style={{fontSize:'15px',fontWeight:700,color:'#3D4852'}}>Prochaines interventions</span>
                 </div>
                 {missions.filter(m => m.status === 'scheduled' && m.scheduled_at).map(m => {
                   const d = new Date(m.scheduled_at)
@@ -486,24 +490,24 @@ export default function ArtisanDashboardPage() {
                     : isTomorrow ? `Demain à ${timeStr}`
                     : `${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${timeStr}`
                   return (
-                    <div key={m.id} className="card" style={{display:'flex',alignItems:'center',gap:'14px',border:`2px solid ${isToday?'#E85D26':'rgba(201,168,76,0.4)'}`,marginBottom:'8px'}}>
+                    <div key={m.id} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px',display:'flex',alignItems:'center',gap:'14px',border:`2px solid ${isToday?'#E85D26':'rgba(201,168,76,0.4)'}`,marginBottom:'8px'}}>
                       <div style={{
                         width:'52px',height:'52px',flexShrink:0,borderRadius:'12px',
                         background: isToday ? 'rgba(232,93,38,0.08)' : 'rgba(201,168,76,0.08)',
                         display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
                       }}>
-                        <span style={{fontSize:'10px',fontWeight:700,color: isToday?'#E85D26':'#C9A84C',textTransform:'uppercase'}}>
+                        <span className={isToday ? 'afrione-gradient-text' : ''} style={{fontSize:'10px',fontWeight:700,color: isToday?undefined:'#C9A84C',textTransform:'uppercase'}}>
                           {d.toLocaleDateString('fr-FR',{month:'short'})}
                         </span>
-                        <span style={{fontSize:'22px',fontWeight:800,color:'#0F1410',lineHeight:1}}>{d.getDate()}</span>
+                        <span style={{fontSize:'22px',fontWeight:800,color:'#3D4852',lineHeight:1}}>{d.getDate()}</span>
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>{m.users?.name || 'Client'}</div>
-                        <div style={{fontSize:'13px',fontWeight:600,color:isToday?'#E85D26':'#C9A84C',marginTop:'2px'}}>{dateLabel}</div>
-                        {!isToday && diffDays > 0 && <div style={{fontSize:'12px',color:'#7A7A6E'}}>Dans {diffDays} jour{diffDays>1?'s':''}</div>}
+                        <div style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>{m.users?.name || 'Client'}</div>
+                        <div className={isToday ? 'afrione-gradient-text' : ''} style={{fontSize:'13px',fontWeight:600,color:isToday?undefined:'#C9A84C',marginTop:'2px'}}>{dateLabel}</div>
+                        {!isToday && diffDays > 0 && <div style={{fontSize:'12px',color:'#6B7280'}}>Dans {diffDays} jour{diffDays>1?'s':''}</div>}
                       </div>
-                      <Link href={`/suivi/${m.id}`} style={{
-                        padding:'8px 14px',background:'#E85D26',color:'white',borderRadius:'10px',
+                      <Link href={`/suivi/${m.id}`} className="afrione-gradient" style={{
+                        padding:'8px 14px',color:'white',borderRadius:'10px',
                         fontSize:'12px',fontWeight:700,textDecoration:'none',flexShrink:0,
                       }}>
                         🚗 Démarrer
@@ -515,29 +519,29 @@ export default function ArtisanDashboardPage() {
             )}
 
             {missions.length === 0 ? (
-              <div className="card" style={{textAlign:'center',padding:'48px'}}>
+              <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'48px',textAlign:'center'}}>
                 <p style={{fontSize:'48px',marginBottom:'16px'}}>📋</p>
-                <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#0F1410',marginBottom:'8px'}}>Aucune mission pour l'instant</h3>
-                <p style={{color:'#7A7A6E',fontSize:'14px'}}>Les nouvelles missions apparaîtront ici</p>
+                <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#3D4852',marginBottom:'8px'}}>Aucune mission pour l'instant</h3>
+                <p style={{color:'#6B7280',fontSize:'14px'}}>Les nouvelles missions apparaîtront ici</p>
               </div>
             ) : missions.map(m => (
-              <div key={m.id} className="card">
+              <div key={m.id} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px'}}>
                 <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'12px'}}>
                   <div>
-                    <div style={{fontWeight:600,color:'#0F1410',fontSize:'15px'}}>{m.users?.name || 'Client'}</div>
-                    <div style={{fontSize:'13px',color:'#7A7A6E'}}>{m.category || m.diagnostics?.[0]?.category_detected || '—'} · {m.users?.quartier || m.quartier || 'Abidjan'}</div>
+                    <div style={{fontWeight:600,color:'#3D4852',fontSize:'15px'}}>{m.users?.name || 'Client'}</div>
+                    <div style={{fontSize:'13px',color:'#6B7280'}}>{m.category || m.diagnostics?.[0]?.category_detected || '—'} · {m.users?.quartier || m.quartier || 'Abidjan'}</div>
                   </div>
-                  <span style={{
+                  <span className={m.status === 'en_cours' ? 'afrione-gradient-text' : ''} style={{
                     fontSize:'11px',padding:'3px 10px',borderRadius:'20px',fontWeight:600,
                     background: m.status === 'completed' ? 'rgba(43,107,62,0.1)' : m.status === 'en_cours' ? 'rgba(232,93,38,0.1)' : 'rgba(201,168,76,0.1)',
-                    color: m.status === 'completed' ? '#2B6B3E' : m.status === 'en_cours' ? '#E85D26' : '#C9A84C',
+                    color: m.status === 'completed' ? '#2B6B3E' : m.status === 'en_cours' ? undefined : '#C9A84C',
                   }}>
                     {m.status === 'completed' ? '✓ Terminée' : m.status === 'en_cours' ? '⚡ En cours' : m.status === 'matching' ? '🔔 Nouvelle demande' : m.status === 'negotiation' ? '💬 En discussion' : m.status}
                   </span>
                 </div>
                 {m.status === 'matching' && (
                   <div style={{marginBottom:'8px',padding:'10px',background:'rgba(232,93,38,0.06)',borderRadius:'10px',border:'1px dashed rgba(232,93,38,0.3)'}}>
-                    <p style={{fontSize:'13px',color:'#7A7A6E',margin:0}}>Nouveau client en attente — ouvrez le chat pour discuter et envoyer un devis.</p>
+                    <p style={{fontSize:'13px',color:'#6B7280',margin:0}}>Nouveau client en attente — ouvrez le chat pour discuter et envoyer un devis.</p>
                   </div>
                 )}
                 {(m.status === 'negotiation' || m.status === 'matching') && (
@@ -554,9 +558,9 @@ export default function ArtisanDashboardPage() {
                     }}>
                       💬 Chat
                     </Link>
-                    <Link href={`/suivi/${m.id}`} style={{
+                    <Link href={`/suivi/${m.id}`} className="afrione-gradient" style={{
                       flex:2,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
-                      padding:'10px',background:'#E85D26',borderRadius:'10px',
+                      padding:'10px',borderRadius:'10px',
                       color:'white',fontWeight:700,fontSize:'13px',textDecoration:'none',
                     }}>
                       🚗 Démarrer le suivi →
@@ -564,9 +568,9 @@ export default function ArtisanDashboardPage() {
                   </div>
                 )}
                 {m.status === 'en_route' && (
-                  <Link href={`/suivi/${m.id}`} style={{
+                  <Link href={`/suivi/${m.id}`} className="afrione-gradient" style={{
                     display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
-                    width:'100%',padding:'10px',background:'#E85D26',borderRadius:'10px',
+                    width:'100%',padding:'10px',borderRadius:'10px',
                     color:'white',fontWeight:700,fontSize:'13px',textDecoration:'none',
                   }}>
                     🚗 Voir le suivi en direct →
@@ -592,39 +596,39 @@ export default function ArtisanDashboardPage() {
           </div>
         )}
 
-        {/* ===== ONGLET PROFIL ===== */}
+        {/* ===== ONGLET MESSAGES ===== */}
         {tab === 'messages' && (
           <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
             {conversations.length === 0 ? (
-              <div className="card" style={{textAlign:'center',padding:'48px'}}>
-                <MessageCircle size={40} style={{margin:'0 auto 16px',color:'#D8D2C4'}} />
-                <h3 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#0F1410',marginBottom:'8px'}}>Aucune conversation</h3>
-                <p style={{color:'#7A7A6E',fontSize:'14px'}}>Les messages de vos clients apparaîtront ici</p>
+              <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'48px',textAlign:'center'}}>
+                <MessageCircle size={40} style={{margin:'0 auto 16px',color:'#E2E8F0'}} />
+                <h3 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#3D4852',marginBottom:'8px'}}>Aucune conversation</h3>
+                <p style={{color:'#6B7280',fontSize:'14px'}}>Les messages de vos clients apparaîtront ici</p>
               </div>
             ) : conversations.map(c => {
               const hasUnread = c.lastMessage && !c.lastMessage.read_at && c.lastMessage.sender_id !== artisan?.user_id
               return (
                 <Link key={c.id} href={`/warroom/${c.id}`} style={{textDecoration:'none'}}>
-                  <div className="card" style={{display:'flex',alignItems:'center',gap:'16px',cursor:'pointer',border: hasUnread ? '2px solid #E85D26' : '1px solid #D8D2C4',transition:'all 0.2s'}}>
+                  <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px',display:'flex',alignItems:'center',gap:'16px',cursor:'pointer',border: hasUnread ? '2px solid #E85D26' : '1px solid #E2E8F0',transition:'all 0.2s'}}>
                     <div style={{width:'48px',height:'48px',background:'rgba(232,93,38,0.1)',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
                       💬
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}}>
-                        <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>{c.users?.name || 'Client'}</span>
-                        <span style={{fontSize:'11px',color:'#7A7A6E',fontFamily:'Space Mono'}}>
+                        <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>{c.users?.name || 'Client'}</span>
+                        <span style={{fontSize:'11px',color:'#6B7280',fontFamily:'Space Mono'}}>
                           {c.lastMessage ? new Date(c.lastMessage.created_at).toLocaleDateString('fr-FR') : ''}
                         </span>
                       </div>
-                      <div style={{fontSize:'13px',color:'#7A7A6E',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                      <div style={{fontSize:'13px',color:'#6B7280',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                         {c.lastMessage?.text || 'Nouvelle mission — ' + (c.category || '')}
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'6px'}}>
-                        <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:'rgba(232,93,38,0.1)',color:'#E85D26'}}>{c.status}</span>
-                        <span style={{fontSize:'11px',color:'#7A7A6E'}}>{c.category || ''}</span>
+                        <span className="afrione-gradient-text" style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:'rgba(232,93,38,0.1)'}}>{c.status}</span>
+                        <span style={{fontSize:'11px',color:'#6B7280'}}>{c.category || ''}</span>
                       </div>
                     </div>
-                    {hasUnread && <div style={{width:'10px',height:'10px',background:'#E85D26',borderRadius:'50%',flexShrink:0}} />}
+                    {hasUnread && <div className="afrione-gradient" style={{width:'10px',height:'10px',borderRadius:'50%',flexShrink:0}} />}
                   </div>
                 </Link>
               )
@@ -636,51 +640,51 @@ export default function ArtisanDashboardPage() {
           <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
 
             {/* Bio */}
-            <div className="card">
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'12px'}}>Description / Bio</h3>
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'12px'}}>Description / Bio</h3>
               <textarea
                 value={bio}
                 onChange={e => setBio(e.target.value)}
                 placeholder="Décrivez votre expertise, vos années d'expérience, votre façon de travailler..."
                 rows={4}
-                style={{width:'100%',padding:'12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',color:'#0F1410',resize:'vertical',fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}
+                style={{width:'100%',padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',resize:'vertical',fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
               />
-              <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'4px',textAlign:'right'}}>{bio.length}/500 caractères</div>
+              <div style={{fontSize:'12px',color:'#6B7280',marginTop:'4px',textAlign:'right'}}>{bio.length}/500 caractères</div>
             </div>
 
             {/* Infos de base */}
-            <div className="card">
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'16px'}}>Informations</h3>
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'16px'}}>Informations</h3>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
                 <div>
-                  <label style={{fontSize:'13px',color:'#7A7A6E',display:'block',marginBottom:'6px'}}>Tarif minimum (FCFA)</label>
+                  <label style={{fontSize:'13px',color:'#6B7280',display:'block',marginBottom:'6px'}}>Tarif minimum (FCFA)</label>
                   <input
                     type="number"
                     value={tariMin}
                     onChange={e => setTarifMin(Number(e.target.value))}
-                    style={{width:'100%',padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',color:'#0F1410',outline:'none',boxSizing:'border-box'}}
+                    style={{width:'100%',padding:'10px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
                   />
                 </div>
                 <div>
-                  <label style={{fontSize:'13px',color:'#7A7A6E',display:'block',marginBottom:'6px'}}>Années d'expérience</label>
+                  <label style={{fontSize:'13px',color:'#6B7280',display:'block',marginBottom:'6px'}}>Années d'expérience</label>
                   <input
                     type="number"
                     value={yearsExp}
                     onChange={e => setYearsExp(Number(e.target.value))}
-                    style={{width:'100%',padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',color:'#0F1410',outline:'none',boxSizing:'border-box'}}
+                    style={{width:'100%',padding:'10px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
                   />
                 </div>
               </div>
             </div>
 
             {/* Spécialités */}
-            <div className="card">
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'12px'}}>Spécialités</h3>
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'12px'}}>Spécialités</h3>
               <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'12px'}}>
                 {specialties.map(s => (
-                  <span key={s} style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 12px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'20px',fontSize:'13px',color:'#E85D26'}}>
+                  <span key={s} className="afrione-gradient-text" style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 12px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'20px',fontSize:'13px'}}>
                     {s}
-                    <button onClick={() => setSpecialties(prev => prev.filter(x => x !== s))} style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',color:'#E85D26'}}>
+                    <button onClick={() => setSpecialties(prev => prev.filter(x => x !== s))} className="afrione-gradient-text" style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex'}}>
                       <X size={12} />
                     </button>
                   </span>
@@ -692,11 +696,12 @@ export default function ArtisanDashboardPage() {
                   onChange={e => setNewSpecialty(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && newSpecialty.trim()) { setSpecialties(p => [...p, newSpecialty.trim()]); setNewSpecialty('') }}}
                   placeholder="Ajouter une spécialité..."
-                  style={{flex:1,padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',color:'#0F1410',outline:'none'}}
+                  style={{flex:1,padding:'10px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF'}}
                 />
                 <button
                   onClick={() => { if (newSpecialty.trim()) { setSpecialties(p => [...p, newSpecialty.trim()]); setNewSpecialty('') }}}
-                  style={{padding:'10px 16px',background:'#E85D26',color:'white',border:'none',borderRadius:'10px',cursor:'pointer',display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',fontWeight:600}}
+                  className="afrione-gradient"
+                  style={{padding:'10px 16px',color:'white',border:'none',borderRadius:'10px',cursor:'pointer',display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',fontWeight:600}}
                 >
                   <Plus size={14} /> Ajouter
                 </button>
@@ -704,30 +709,31 @@ export default function ArtisanDashboardPage() {
             </div>
 
             {/* Zones d'intervention */}
-            <div className="card">
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'12px'}}>
-                <MapPin size={16} style={{display:'inline',marginRight:'6px',color:'#E85D26'}} />
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'12px'}}>
+                <MapPin size={16} className="afrione-gradient-text" style={{display:'inline',marginRight:'6px'}} />
                 Zones d'intervention (Abidjan)
               </h3>
               <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
                 {QUARTIERS_ABJ.map(q => (
                   <button key={q} onClick={() => toggleQuartier(q)} style={{
                     padding:'8px 16px',borderRadius:'20px',fontSize:'13px',fontWeight:500,cursor:'pointer',transition:'all 0.15s',border:'none',
-                    background: quartiers.includes(q) ? '#0F1410' : '#F5F3EE',
-                    color: quartiers.includes(q) ? '#FAFAF5' : '#7A7A6E',
+                    background: quartiers.includes(q) ? '#E85D26' : '#F5F7FA',
+                    boxShadow: quartiers.includes(q) ? 'none' : NEU_SMALL,
+                    color: quartiers.includes(q) ? '#FFFFFF' : '#6B7280',
                   }}>{q}</button>
                 ))}
               </div>
             </div>
 
             {/* Certifications */}
-            <div className="card">
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'12px'}}>Certifications & Diplômes</h3>
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'12px'}}>Certifications & Diplômes</h3>
               <div style={{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'12px'}}>
                 {certifications.map((c, i) => (
                   <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'10px'}}>
-                    <span style={{fontSize:'14px',color:'#0F1410'}}>{c}</span>
-                    <button onClick={() => setCertifications(prev => prev.filter((_, j) => j !== i))} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E',display:'flex'}}>
+                    <span style={{fontSize:'14px',color:'#3D4852'}}>{c}</span>
+                    <button onClick={() => setCertifications(prev => prev.filter((_, j) => j !== i))} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280',display:'flex'}}>
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -739,7 +745,7 @@ export default function ArtisanDashboardPage() {
                   onChange={e => setNewCertif(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && newCertif.trim()) { setCertifications(p => [...p, newCertif.trim()]); setNewCertif('') }}}
                   placeholder="Ex: CAP Plomberie, Habilitation électrique..."
-                  style={{flex:1,padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',color:'#0F1410',outline:'none'}}
+                  style={{flex:1,padding:'10px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF'}}
                 />
                 <button
                   onClick={() => { if (newCertif.trim()) { setCertifications(p => [...p, newCertif.trim()]); setNewCertif('') }}}
@@ -751,11 +757,11 @@ export default function ArtisanDashboardPage() {
             </div>
 
             {/* Mon entreprise */}
-            <div className="card">
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px'}}>
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px'}}>
                 <Building2 size={16} color="#60a5fa" /> Mon entreprise
               </h3>
-              <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'16px'}}>Rattachez-vous à une structure pour apparaître dans son catalogue.</p>
+              <p style={{fontSize:'12px',color:'#6B7280',marginBottom:'16px'}}>Rattachez-vous à une structure pour apparaître dans son catalogue.</p>
 
               {/* État 1 — affilié */}
               {artisanEntreprise && (
@@ -765,7 +771,7 @@ export default function ArtisanDashboardPage() {
                       <Building2 size={16} color="#60a5fa" />
                     </div>
                     <div style={{minWidth:0}}>
-                      <div style={{fontSize:'14px',fontWeight:700,color:'#0F1410',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{artisanEntreprise.name}</div>
+                      <div style={{fontSize:'14px',fontWeight:700,color:'#3D4852',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{artisanEntreprise.name}</div>
                       <div style={{fontSize:'11px',color:'#2B6B3E',fontWeight:600}}>✓ Membre actif</div>
                     </div>
                   </div>
@@ -784,7 +790,7 @@ export default function ArtisanDashboardPage() {
                         <Building2 size={16} color="#C9A84C" />
                       </div>
                       <div style={{minWidth:0}}>
-                        <div style={{fontSize:'14px',fontWeight:700,color:'#0F1410',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(pendingRequest.entreprises as any)?.name}</div>
+                        <div style={{fontSize:'14px',fontWeight:700,color:'#3D4852',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(pendingRequest.entreprises as any)?.name}</div>
                         <div style={{fontSize:'11px',color:'#C9A84C',fontWeight:600}}>⏳ En attente de validation</div>
                       </div>
                     </div>
@@ -792,7 +798,7 @@ export default function ArtisanDashboardPage() {
                       <X size={12}/> Annuler
                     </button>
                   </div>
-                  <p style={{fontSize:'11px',color:'#7A7A6E',marginTop:'8px',marginBottom:0}}>L'administrateur de l'entreprise doit valider votre demande.</p>
+                  <p style={{fontSize:'11px',color:'#6B7280',marginTop:'8px',marginBottom:0}}>L'administrateur de l'entreprise doit valider votre demande.</p>
                 </div>
               )}
 
@@ -800,27 +806,27 @@ export default function ArtisanDashboardPage() {
               {!artisanEntreprise && !pendingRequest && (
                 <div style={{position:'relative'}}>
                   <div style={{position:'relative'}}>
-                    <Search size={14} style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',color:'#7A7A6E'}} />
+                    <Search size={14} style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',color:'#6B7280'}} />
                     <input
                       value={entrepriseSearch}
                       onChange={e => searchEntreprises(e.target.value)}
                       placeholder="Rechercher une entreprise par nom…"
-                      style={{width:'100%',padding:'11px 12px 11px 36px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',color:'#0F1410',outline:'none',boxSizing:'border-box'}}
+                      style={{width:'100%',padding:'11px 12px 11px 36px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
                     />
                   </div>
                   {entrepriseResults.length > 0 && (
-                    <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'white',border:'1px solid #D8D2C4',borderRadius:'12px',overflow:'hidden',zIndex:20,boxShadow:'0 8px 24px rgba(0,0,0,0.1)'}}>
+                    <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'#FFFFFF',border:'1px solid #E2E8F0',borderRadius:'12px',overflow:'hidden',zIndex:20,boxShadow:'0 8px 24px rgba(163,177,198,0.35)'}}>
                       {entrepriseResults.map(e => (
                         <button key={e.id} onClick={() => requestJoinEntreprise(e)} disabled={joiningEntreprise}
-                          style={{width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'12px 14px',background:'none',border:'none',borderBottom:'1px solid #F5F3EE',cursor:'pointer',textAlign:'left'}}
-                          onMouseEnter={el => (el.currentTarget.style.background='#F5F3EE')}
+                          style={{width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'12px 14px',background:'none',border:'none',borderBottom:'1px solid #F5F7FA',cursor:'pointer',textAlign:'left'}}
+                          onMouseEnter={el => (el.currentTarget.style.background='#F5F7FA')}
                           onMouseLeave={el => (el.currentTarget.style.background='none')}>
                           <div style={{width:'32px',height:'32px',background:'rgba(96,165,250,0.1)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                             <Building2 size={14} color="#60a5fa" />
                           </div>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:'13px',fontWeight:600,color:'#0F1410'}}>{e.name}</div>
-                            <div style={{fontSize:'11px',color:'#7A7A6E'}}>{(e.secteurs||[]).slice(0,3).join(' · ')}</div>
+                            <div style={{fontSize:'13px',fontWeight:600,color:'#3D4852'}}>{e.name}</div>
+                            <div style={{fontSize:'11px',color:'#6B7280'}}>{(e.secteurs||[]).slice(0,3).join(' · ')}</div>
                           </div>
                           <span style={{fontSize:'12px',color:'#60a5fa',fontWeight:600,flexShrink:0}}>Demander →</span>
                         </button>
@@ -828,7 +834,7 @@ export default function ArtisanDashboardPage() {
                     </div>
                   )}
                   {entrepriseSearch.length >= 2 && entrepriseResults.length === 0 && (
-                    <p style={{fontSize:'12px',color:'#7A7A6E',marginTop:'8px'}}>Aucune entreprise trouvée. <Link href="/entreprise-space/register" style={{color:'#E85D26'}}>Créer la vôtre →</Link></p>
+                    <p style={{fontSize:'12px',color:'#6B7280',marginTop:'8px'}}>Aucune entreprise trouvée. <Link href="/entreprise-space/register" className="afrione-gradient-text">Créer la vôtre →</Link></p>
                   )}
                 </div>
               )}
@@ -838,10 +844,11 @@ export default function ArtisanDashboardPage() {
             <button
               onClick={saveProfile}
               disabled={saving}
-              style={{padding:'14px',background: saving ? '#D8D2C4' : '#E85D26',color:'white',border:'none',borderRadius:'12px',fontSize:'15px',fontWeight:700,cursor: saving ? 'not-allowed' : 'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}
+              className={saving ? '' : 'afrione-gradient'}
+              style={{padding:'14px',background: saving ? '#E2E8F0' : undefined,color: saving ? '#8B95A5' : 'white',border:'none',borderRadius:'12px',fontSize:'15px',fontWeight:700,cursor: saving ? 'not-allowed' : 'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}
             >
               {saving ? (
-                <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Sauvegarde...</>
+                <><div style={{width:'16px',height:'16px',border:'2px solid rgba(139,149,165,0.3)',borderTop:'2px solid #8B95A5',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Sauvegarde...</>
               ) : (
                 <><Save size={16} /> Sauvegarder le profil</>
               )}
@@ -852,18 +859,19 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET PORTFOLIO ===== */}
         {tab === 'portfolio' && (
           <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
-            <div className="card">
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
                 <div>
-                  <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#0F1410'}}>Galerie de réalisations</h3>
-                  <p style={{fontSize:'13px',color:'#7A7A6E',marginTop:'4px'}}>
+                  <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852'}}>Galerie de réalisations</h3>
+                  <p style={{fontSize:'13px',color:'#6B7280',marginTop:'4px'}}>
                     {missionPhotos.length} photos automatiques (missions terminées) · {manualPhotos.length} ajoutées manuellement
                   </p>
                 </div>
                 <button
                   onClick={() => portfolioInputRef.current?.click()}
                   disabled={saving}
-                  style={{padding:'10px 16px',background:'#E85D26',color:'white',border:'none',borderRadius:'10px',cursor:'pointer',display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',fontWeight:600,flexShrink:0}}
+                  className="afrione-gradient"
+                  style={{padding:'10px 16px',color:'white',border:'none',borderRadius:'10px',cursor:'pointer',display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',fontWeight:600,flexShrink:0}}
                 >
                   <Upload size={14} /> Ajouter des photos
                 </button>
@@ -873,16 +881,16 @@ export default function ArtisanDashboardPage() {
               {allPhotos.length === 0 ? (
                 <div
                   onClick={() => portfolioInputRef.current?.click()}
-                  style={{border:'2px dashed #D8D2C4',borderRadius:'16px',padding:'64px',textAlign:'center',cursor:'pointer',background:'#F5F3EE'}}
+                  style={{border:'2px dashed #E2E8F0',borderRadius:'16px',padding:'64px',textAlign:'center',cursor:'pointer',background:'#F5F7FA'}}
                 >
-                  <Camera size={40} style={{margin:'0 auto 16px',color:'#D8D2C4'}} />
-                  <p style={{fontWeight:600,color:'#0F1410',fontSize:'15px',marginBottom:'8px'}}>Aucune photo pour l'instant</p>
-                  <p style={{color:'#7A7A6E',fontSize:'13px'}}>Les photos de vos missions terminées apparaîtront ici automatiquement.<br/>Vous pouvez aussi en ajouter manuellement pour illustrer votre travail.</p>
+                  <Camera size={40} style={{margin:'0 auto 16px',color:'#E2E8F0'}} />
+                  <p style={{fontWeight:600,color:'#3D4852',fontSize:'15px',marginBottom:'8px'}}>Aucune photo pour l'instant</p>
+                  <p style={{color:'#6B7280',fontSize:'13px'}}>Les photos de vos missions terminées apparaîtront ici automatiquement.<br/>Vous pouvez aussi en ajouter manuellement pour illustrer votre travail.</p>
                 </div>
               ) : (
                 <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
                   {allPhotos.map((p, i) => (
-                    <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'12px',overflow:'hidden',background:'#EDE8DE',cursor:'pointer'}}
+                    <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'12px',overflow:'hidden',background:'#F5F7FA',cursor:'pointer'}}
                     onClick={() => { if (confirmDeletePhoto === p.url) setConfirmDeletePhoto(null) }}>
                       <img src={p.url} alt={p.category} style={{width:'100%',height:'100%',objectFit:'cover'}} />
                       {/* Confirmation overlay */}
@@ -899,11 +907,11 @@ export default function ArtisanDashboardPage() {
                           </button>
                         </div>
                       )}
-                      <div style={{position:'absolute',inset:0,background:'linear-gradient(transparent 40%,rgba(15,20,16,0.85))',display:'flex',flexDirection:'column',justifyContent:'space-between',padding:'8px',pointerEvents: confirmDeletePhoto === p.url ? 'none' : 'auto'}}>
+                      <div style={{position:'absolute',inset:0,background:'linear-gradient(transparent 40%,rgba(61,72,82,0.75))',display:'flex',flexDirection:'column',justifyContent:'space-between',padding:'8px',pointerEvents: confirmDeletePhoto === p.url ? 'none' : 'auto'}}>
                         {p.source === 'manual' && (
                           <button
                             onClick={e => { e.stopPropagation(); removePortfolioPhoto(p.url) }}
-                            style={{alignSelf:'flex-end',width:'24px',height:'24px',background:'rgba(0,0,0,0.6)',border:'none',borderRadius:'50%',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'white'}}
+                            style={{alignSelf:'flex-end',width:'24px',height:'24px',background:'rgba(0,0,0,0.4)',border:'none',borderRadius:'50%',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'white'}}
                           >
                             <X size={12} />
                           </button>
@@ -912,8 +920,8 @@ export default function ArtisanDashboardPage() {
                           <span style={{alignSelf:'flex-end',fontSize:'10px',color:'white',background:'rgba(43,107,62,0.85)',padding:'2px 8px',borderRadius:'4px',fontWeight:600}}>Mission</span>
                         )}
                         <div>
-                          <div style={{fontSize:'11px',color:'#FAFAF5',fontWeight:600}}>{p.category}</div>
-                          {p.date && <div style={{fontSize:'10px',color:'rgba(255,255,255,0.6)'}}>{new Date(p.date).toLocaleDateString('fr-FR')}</div>}
+                          <div style={{fontSize:'11px',color:'#FFFFFF',fontWeight:600}}>{p.category}</div>
+                          {p.date && <div style={{fontSize:'10px',color:'rgba(255,255,255,0.75)'}}>{new Date(p.date).toLocaleDateString('fr-FR')}</div>}
                         </div>
                       </div>
                     </div>
@@ -921,18 +929,18 @@ export default function ArtisanDashboardPage() {
                   {/* Zone d'ajout rapide */}
                   <div
                     onClick={() => portfolioInputRef.current?.click()}
-                    style={{aspectRatio:'1',borderRadius:'12px',border:'2px dashed #D8D2C4',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',cursor:'pointer',background:'#F5F3EE',transition:'all 0.2s'}}
+                    style={{aspectRatio:'1',borderRadius:'12px',border:'2px dashed #E2E8F0',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',cursor:'pointer',background:'#F5F7FA',transition:'all 0.2s'}}
                   >
-                    <Plus size={24} style={{color:'#D8D2C4'}} />
-                    <span style={{fontSize:'12px',color:'#7A7A6E'}}>Ajouter</span>
+                    <Plus size={24} style={{color:'#E2E8F0'}} />
+                    <span style={{fontSize:'12px',color:'#6B7280'}}>Ajouter</span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Info box */}
-            <div style={{padding:'16px',background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',fontSize:'13px',color:'#7A7A6E',lineHeight:'1.6'}}>
-              💡 <strong style={{color:'#0F1410'}}>Comment fonctionne votre portfolio ?</strong><br/>
+            <div style={{padding:'16px',background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',fontSize:'13px',color:'#6B7280',lineHeight:'1.6'}}>
+              💡 <strong style={{color:'#3D4852'}}>Comment fonctionne votre portfolio ?</strong><br/>
               Les photos "AVANT / APRÈS" que vous prenez à la fin de chaque mission sont automatiquement ajoutées ici.<br/>
               Vous pouvez aussi uploader des photos de missions passées pour enrichir votre profil dès aujourd'hui.
             </div>
@@ -942,12 +950,12 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET WALLET ===== */}
         {tab === 'wallet' && (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
-            <div className="card" style={{textAlign:'center',padding:'32px'}}>
-              <div style={{fontSize:'13px',color:'#7A7A6E',fontFamily:'Space Mono',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.1em'}}>Solde disponible</div>
-              <div className="font-display" style={{fontSize:'52px',fontWeight:700,color:'#0F1410',marginBottom:'4px'}}>
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'32px',textAlign:'center'}}>
+              <div style={{fontSize:'13px',color:'#6B7280',fontFamily:'Space Mono',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.1em'}}>Solde disponible</div>
+              <div className="font-display" style={{fontSize:'52px',fontWeight:700,color:'#3D4852',marginBottom:'4px'}}>
                 {(wallet?.balance_available || 0).toLocaleString()}
               </div>
-              <div style={{color:'#7A7A6E',marginBottom:'24px',fontFamily:'Space Mono',fontSize:'14px'}}>FCFA</div>
+              <div style={{color:'#6B7280',marginBottom:'24px',fontFamily:'Space Mono',fontSize:'14px'}}>FCFA</div>
               <button className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
                 Retirer vers Wave
               </button>
@@ -956,41 +964,41 @@ export default function ArtisanDashboardPage() {
               {[
                 { label: 'En escrow', value: wallet?.balance_escrow || 0, color: '#C9A84C' },
                 { label: 'Total gagné', value: wallet?.total_earned || 0, color: '#2B6B3E' },
-                { label: 'Missions', value: completedMissions.length, color: '#E85D26', suffix: '' },
+                { label: 'Missions', value: completedMissions.length, color: 'gradient', suffix: '' },
               ].map(item => (
-                <div key={item.label} className="card" style={{textAlign:'center',padding:'16px'}}>
-                  <div style={{fontSize:'11px',color:'#7A7A6E',marginBottom:'6px'}}>{item.label}</div>
-                  <div className="font-display" style={{fontSize:'20px',fontWeight:700,color:item.color}}>{item.value.toLocaleString()}</div>
-                  {'suffix' in item ? null : <div style={{fontSize:'10px',color:'#7A7A6E'}}>FCFA</div>}
+                <div key={item.label} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px',textAlign:'center'}}>
+                  <div style={{fontSize:'11px',color:'#6B7280',marginBottom:'6px'}}>{item.label}</div>
+                  <div className={`font-display${item.color === 'gradient' ? ' afrione-gradient-text' : ''}`} style={{fontSize:'20px',fontWeight:700,color:item.color === 'gradient' ? undefined : item.color}}>{item.value.toLocaleString()}</div>
+                  {'suffix' in item ? null : <div style={{fontSize:'10px',color:'#6B7280'}}>FCFA</div>}
                 </div>
               ))}
             </div>
 
             {/* Historique des transactions */}
-            <div className="card" style={{padding:'0',overflow:'hidden'}}>
-              <div style={{padding:'16px 20px',borderBottom:'1px solid #EDE8DE',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                <h3 style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>Historique</h3>
-                <span style={{fontSize:'12px',color:'#7A7A6E'}}>{completedMissions.length} mission{completedMissions.length !== 1 ? 's' : ''}</span>
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',overflow:'hidden'}}>
+              <div style={{padding:'16px 20px',borderBottom:'1px solid #E2E8F0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <h3 style={{fontWeight:700,fontSize:'15px',color:'#3D4852'}}>Historique</h3>
+                <span style={{fontSize:'12px',color:'#6B7280'}}>{completedMissions.length} mission{completedMissions.length !== 1 ? 's' : ''}</span>
               </div>
               {completedMissions.length === 0 ? (
-                <div style={{textAlign:'center',padding:'32px',color:'#7A7A6E',fontSize:'13px'}}>
+                <div style={{textAlign:'center',padding:'32px',color:'#6B7280',fontSize:'13px'}}>
                   Aucune mission terminée pour l'instant
                 </div>
               ) : (
                 <div>
                   {completedMissions.slice(0, 10).map((m: any, i: number) => (
-                    <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'14px 20px',borderBottom: i < Math.min(completedMissions.length, 10) - 1 ? '1px solid #F5F0E8' : 'none'}}>
+                    <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'14px 20px',borderBottom: i < Math.min(completedMissions.length, 10) - 1 ? '1px solid #F5F7FA' : 'none'}}>
                       <div style={{width:'36px',height:'36px',background:'rgba(43,107,62,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:'16px'}}>✅</div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:600,fontSize:'13px',color:'#0F1410'}}>{m.category || 'Intervention'}</div>
-                        <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'2px'}}>
+                        <div style={{fontWeight:600,fontSize:'13px',color:'#3D4852'}}>{m.category || 'Intervention'}</div>
+                        <div style={{fontSize:'11px',color:'#6B7280',marginTop:'2px'}}>
                           {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                         </div>
                       </div>
                       {m.total_price > 0 && (
                         <div style={{textAlign:'right',flexShrink:0}}>
                           <div style={{fontWeight:700,fontSize:'14px',color:'#2B6B3E',fontFamily:'Space Mono'}}>+{m.total_price.toLocaleString()}</div>
-                          <div style={{fontSize:'10px',color:'#7A7A6E'}}>FCFA</div>
+                          <div style={{fontSize:'10px',color:'#6B7280'}}>FCFA</div>
                         </div>
                       )}
                     </div>

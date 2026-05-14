@@ -39,7 +39,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   payment:     { label: '💳 Paiement',               color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
   completed:   { label: '✅ Mission terminée',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)'  },
   disputed:    { label: '⚠️ Litige en cours',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)'  },
-  cancelled:   { label: '✗ Annulée',                 color: '#7A7A6E', bg: 'rgba(122,122,110,0.1)' },
+  cancelled:   { label: '✗ Annulée',                 color: '#6B7280', bg: 'rgba(122,122,110,0.1)' },
 }
 
 export default function WarRoomPage() {
@@ -862,7 +862,7 @@ export default function WarRoomPage() {
             {payStep === 'form' && (
               <div>
                 {/* Bénéficiaire */}
-                <div style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'16px',padding:'14px 18px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'14px'}}>
+                <div style={{background:'#F5F7FA',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'16px',padding:'14px 18px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'14px'}}>
                   <div style={{width:'42px',height:'42px',borderRadius:'11px',background:'linear-gradient(135deg,#E85D26,#F87900)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     <Zap size={18} color="white" />
                   </div>
@@ -885,14 +885,14 @@ export default function WarRoomPage() {
                 </div>
 
                 {/* Séparateur */}
-                <div style={{height:'1px',background:'rgba(255,255,255,0.06)',margin:'0 0 20px'}} />
+                <div style={{height:'1px',background:'#F5F7FA',margin:'0 0 20px'}} />
 
                 {/* Numéro Wave */}
                 <div style={{marginBottom:'12px'}}>
                   <div style={{color:'rgba(255,255,255,0.4)',fontSize:'10px',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'10px'}}>Votre numéro Wave</div>
                   <div style={{
                     display:'flex',alignItems:'center',
-                    background:'rgba(255,255,255,0.05)',
+                    background:'#F5F7FA',
                     border:`1.5px solid ${wavePhone.trim() ? '#1DC6FF' : 'rgba(255,255,255,0.08)'}`,
                     borderRadius:'14px',overflow:'hidden',
                     transition:'border-color 0.2s',
@@ -988,7 +988,7 @@ export default function WarRoomPage() {
                 <div style={{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginBottom:'28px'}}>Transaction sécurisée par Wave</div>
 
                 {/* Reçu style Wave */}
-                <div style={{width:'100%',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',overflow:'hidden',marginBottom:'20px'}}>
+                <div style={{width:'100%',background:'#F5F7FA',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',overflow:'hidden',marginBottom:'20px'}}>
                   <div style={{padding:'18px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Montant</span>
                     <span style={{color:'white',fontWeight:900,fontSize:'20px',fontFamily:'Space Mono'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#1DC6FF',fontWeight:700}}>FCFA</span></span>
@@ -1034,26 +1034,26 @@ export default function WarRoomPage() {
       {/* ─── MODAL SCHEDULING ─────────────────────────────────────── */}
       {showScheduling && (
         <div onClick={() => { if (!acting) setShowScheduling(false) }} style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(10,14,11,0.96)',display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
-          <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:'480px',background:'#1A1F1B',borderRadius:'24px 24px 0 0',padding:'24px 20px 32px'}}>
+          <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:'480px',background:'#F5F7FA',borderRadius:'24px 24px 0 0',padding:'24px 20px 32px'}}>
             <div style={{width:'40px',height:'4px',background:'rgba(255,255,255,0.15)',borderRadius:'2px',margin:'0 auto 24px'}} />
 
             {schedMode === null && (
               <>
-                <h2 style={{fontWeight:800,fontSize:'21px',color:'#FAFAF5',marginBottom:'6px'}}>Quand intervenir ?</h2>
-                <p style={{fontSize:'13px',color:'#7A7A6E',marginBottom:'24px'}}>Le devis est accepté. Choisissez le moment.</p>
+                <h2 style={{fontWeight:800,fontSize:'21px',color:'#3D4852',marginBottom:'6px'}}>Quand intervenir ?</h2>
+                <p style={{fontSize:'13px',color:'#6B7280',marginBottom:'24px'}}>Le devis est accepté. Choisissez le moment.</p>
                 <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                  <button onClick={confirmNow} disabled={acting} style={{padding:'18px 16px',background:'#E85D26',color:'white',border:'none',borderRadius:'16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'14px',textAlign:'left',opacity:acting?0.6:1}}>
+                  <button onClick={confirmNow} disabled={acting} className="btn-primary" style={{padding:'18px 16px',border:'none',borderRadius:'16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'14px',textAlign:'left',opacity:acting?0.6:1,color:'white'}}>
                     <span style={{fontSize:'32px',lineHeight:1}}>⚡</span>
                     <div>
                       <div style={{fontWeight:700,fontSize:'15px'}}>Maintenant</div>
                       <div style={{fontSize:'12px',opacity:0.8,marginTop:'2px'}}>L'artisan part immédiatement — suivi GPS activé</div>
                     </div>
                   </button>
-                  <button onClick={() => setSchedMode('later')} style={{padding:'18px 16px',background:'rgba(255,255,255,0.06)',color:'#FAFAF5',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'14px',textAlign:'left'}}>
+                  <button onClick={() => setSchedMode('later')} style={{padding:'18px 16px',background:'#F5F7FA',color:'#3D4852',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'14px',textAlign:'left'}}>
                     <span style={{fontSize:'32px',lineHeight:1}}>📅</span>
                     <div>
                       <div style={{fontWeight:700,fontSize:'15px'}}>Programmer</div>
-                      <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>Choisir une date et une heure</div>
+                      <div style={{fontSize:'12px',color:'#6B7280',marginTop:'2px'}}>Choisir une date et une heure</div>
                     </div>
                   </button>
                 </div>
@@ -1062,13 +1062,13 @@ export default function WarRoomPage() {
 
             {schedMode === 'later' && (
               <>
-                <button onClick={() => setSchedMode(null)} style={{background:'none',border:'none',color:'#7A7A6E',fontSize:'13px',cursor:'pointer',padding:'0 0 16px',display:'flex',alignItems:'center',gap:'4px'}}>
+                <button onClick={() => setSchedMode(null)} style={{background:'none',border:'none',color:'#6B7280',fontSize:'13px',cursor:'pointer',padding:'0 0 16px',display:'flex',alignItems:'center',gap:'4px'}}>
                   ← Retour
                 </button>
-                <h2 style={{fontWeight:800,fontSize:'21px',color:'#FAFAF5',marginBottom:'6px'}}>Choisir la date</h2>
-                <p style={{fontSize:'13px',color:'#7A7A6E',marginBottom:'20px'}}>Sélectionnez le jour et l'heure d'intervention.</p>
+                <h2 style={{fontWeight:800,fontSize:'21px',color:'#3D4852',marginBottom:'6px'}}>Choisir la date</h2>
+                <p style={{fontSize:'13px',color:'#6B7280',marginBottom:'20px'}}>Sélectionnez le jour et l'heure d'intervention.</p>
                 <div style={{marginBottom:'16px'}}>
-                  <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'8px',letterSpacing:'0.08em'}}>DATE ET HEURE</label>
+                  <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'8px',letterSpacing:'0.08em'}}>DATE ET HEURE</label>
                   <input
                     type="datetime-local"
                     min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
@@ -1082,7 +1082,7 @@ export default function WarRoomPage() {
                     }}
                     style={{
                       width:'100%', padding:'14px', borderRadius:'12px', fontSize:'15px',
-                      background:'rgba(255,255,255,0.09)', color:'#FAFAF5',
+                      background:'rgba(255,255,255,0.09)', color:'#3D4852',
                       border: schedDate && schedTime ? '1px solid #E85D26' : '1px solid rgba(255,255,255,0.15)',
                       outline:'none', boxSizing:'border-box' as const,
                     }}
@@ -1096,7 +1096,8 @@ export default function WarRoomPage() {
                 <button
                   onClick={confirmScheduled}
                   disabled={acting}
-                  style={{width:'100%',padding:'16px',background:'#E85D26',color:'white',border:'none',borderRadius:'14px',fontSize:'15px',fontWeight:700,cursor:'pointer',opacity:acting?0.6:1}}
+                  className="btn-primary"
+                  style={{width:'100%',padding:'16px',color:'white',border:'none',borderRadius:'14px',fontSize:'15px',fontWeight:700,cursor:'pointer',opacity:acting?0.6:1}}
                 >
                   {acting ? 'Confirmation…' : 'Confirmer →'}
                 </button>
@@ -1108,19 +1109,19 @@ export default function WarRoomPage() {
       {/* ──────────────────────────────────────────────────────────── */}
 
       {/* Header */}
-      <div style={{background:'#0F1410',color:'#FAFAF5',flexShrink:0}}>
+      <div style={{background:'#FFFFFF',color:'#3D4852',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',maxWidth:'672px',margin:'0 auto'}}>
-          <Link href={isArtisan ? '/artisan-space/dashboard' : '/dashboard'} style={{color:'#FAFAF5',display:'flex',alignItems:'center',flexShrink:0}}>
+          <Link href={isArtisan ? '/artisan-space/dashboard' : '/dashboard'} style={{color:'#3D4852',display:'flex',alignItems:'center',flexShrink:0}}>
             <ArrowLeft size={18} />
           </Link>
-          <div style={{width:'36px',height:'36px',background:'#1A2018',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',border:'1px solid rgba(255,255,255,0.1)',overflow:'hidden',flexShrink:0}}>
+          <div style={{width:'36px',height:'36px',background:'#F5F7FA',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',border:'1px solid rgba(255,255,255,0.1)',overflow:'hidden',flexShrink:0}}>
             {otherAvatar
               ? <img src={otherAvatar} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
               : isArtisan ? '👤' : '🔧'}
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,fontSize:'14px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{otherName}</div>
-            <div style={{fontSize:'11px',color:'#7A7A6E'}}>{otherSub}</div>
+            <div style={{fontSize:'11px',color:'#6B7280'}}>{otherSub}</div>
           </div>
           {/* Appel rapide artisan (client uniquement) */}
           {!isArtisan && artisanPhone && (
@@ -1143,9 +1144,9 @@ export default function WarRoomPage() {
 
       {/* Bannière mission active → suivi */}
       {(status === 'en_route' || status === 'en_cours') && (
-        <Link href={`/suivi/${missionId}`} style={{
+        <Link href={`/suivi/${missionId}`} className="afrione-gradient" style={{
           display:'flex',alignItems:'center',justifyContent:'space-between',
-          background:'#E85D26',color:'white',padding:'10px 16px',
+          color:'white',padding:'10px 16px',
           textDecoration:'none',flexShrink:0,
         }}>
           <div style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'13px',fontWeight:700}}>
@@ -1158,26 +1159,26 @@ export default function WarRoomPage() {
 
       {/* ─── DRAWER : Matériau non prévu (artisan) ────────────────────── */}
       {showMatSuggest && isArtisan && (
-        <div style={{background:'#FAFAF5',borderTop:'2px solid #C9A84C',padding:'14px 16px',flexShrink:0}}>
+        <div style={{background:'#FFFFFF',borderTop:'2px solid #C9A84C',padding:'14px 16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
-              <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>📦 Matériau non prévu</span>
-              <button onClick={() => { setShowMatSuggest(false); setSuggestStep('input'); setSuggestPreview(null) }} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}><X size={16}/></button>
+              <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>📦 Matériau non prévu</span>
+              <button onClick={() => { setShowMatSuggest(false); setSuggestStep('input'); setSuggestPreview(null) }} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280'}}><X size={16}/></button>
             </div>
 
             {/* Étape 1 : saisie nom + quantité */}
             {suggestStep === 'input' && (
               <>
-                <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'10px',lineHeight:'1.5'}}>
+                <p style={{fontSize:'12px',color:'#6B7280',marginBottom:'10px',lineHeight:'1.5'}}>
                   Signalez un matériau absent du diagnostic — l'IA cherche son prix de marché à Abidjan.
                 </p>
                 <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:'8px',marginBottom:'10px'}}>
                   <input value={suggestName} onChange={e => setSuggestName(e.target.value)}
                     placeholder="ex: Joint torique DN20"
                     onKeyDown={e => e.key === 'Enter' && previewMatSuggest()}
-                    style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+                    style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#3D4852'}} />
                   <input type="number" value={suggestQty} onChange={e => setSuggestQty(e.target.value)} placeholder="Qté"
-                    style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+                    style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#3D4852'}} />
                 </div>
                 <button onClick={previewMatSuggest} disabled={lookingUp || !suggestName.trim()}
                   style={{width:'100%',padding:'10px',background:suggestName.trim()?'#C9A84C':'#D8D2C4',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:suggestName.trim()?'pointer':'default',opacity:lookingUp?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
@@ -1202,14 +1203,14 @@ export default function WarRoomPage() {
                       </div>
                     )}
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410',marginBottom:'2px'}}>{parseInt(suggestQty)||1 > 1 ? `${parseInt(suggestQty)||1}× ` : ''}{suggestName}</div>
+                      <div style={{fontWeight:700,fontSize:'13px',color:'#3D4852',marginBottom:'2px'}}>{parseInt(suggestQty)||1 > 1 ? `${parseInt(suggestQty)||1}× ` : ''}{suggestName}</div>
                       {suggestPreview.product_name && suggestPreview.product_name !== suggestName && (
-                        <div style={{fontSize:'11px',color:'#7A7A6E',fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{suggestPreview.product_name}</div>
+                        <div style={{fontSize:'11px',color:'#6B7280',fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{suggestPreview.product_name}</div>
                       )}
                       {suggestPreview.price > 0 ? (
                         <div style={{display:'flex',alignItems:'baseline',gap:'4px',marginTop:'4px'}}>
                           <span style={{fontFamily:'Space Mono',fontSize:'18px',fontWeight:700,color:'#C9A84C'}}>~{suggestPreview.total.toLocaleString('fr')}</span>
-                          <span style={{fontSize:'11px',color:'#7A7A6E'}}>FCFA</span>
+                          <span style={{fontSize:'11px',color:'#6B7280'}}>FCFA</span>
                         </div>
                       ) : (
                         <div style={{fontSize:'12px',color:'#E85D26',fontWeight:600,marginTop:'4px'}}>⚠️ Prix non trouvé — à discuter</div>
@@ -1219,7 +1220,7 @@ export default function WarRoomPage() {
                   {/* Impact sur l'estimation totale */}
                   {pricingSuggestion && suggestPreview.price > 0 && (
                     <div style={{padding:'8px 12px',borderTop:'1px solid rgba(201,168,76,0.15)',background:'rgba(232,93,38,0.04)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                      <span style={{fontSize:'11px',color:'#7A7A6E'}}>Nouveau total estimé</span>
+                      <span style={{fontSize:'11px',color:'#6B7280'}}>Nouveau total estimé</span>
                       <span style={{fontFamily:'Space Mono',fontSize:'14px',fontWeight:700,color:'#E85D26'}}>{suggestPreview.newEstimate.toLocaleString('fr')} <span style={{fontSize:'10px',fontWeight:400}}>FCFA</span></span>
                     </div>
                   )}
@@ -1227,7 +1228,7 @@ export default function WarRoomPage() {
 
                 <div style={{display:'flex',gap:'8px'}}>
                   <button onClick={() => { setSuggestStep('input'); setSuggestPreview(null) }}
-                    style={{flex:1,padding:'9px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'12px',cursor:'pointer'}}>
+                    style={{flex:1,padding:'9px',background:'none',color:'#6B7280',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'12px',cursor:'pointer'}}>
                     ← Modifier
                   </button>
                   <button onClick={sendMatSuggest} disabled={lookingUp}
@@ -1243,27 +1244,27 @@ export default function WarRoomPage() {
 
       {/* ─── DRAWER : Requalification du temps (artisan) ──────────────── */}
       {showTimeAdj && isArtisan && (
-        <div style={{background:'#FAFAF5',borderTop:'2px solid #E85D26',padding:'14px 16px',flexShrink:0}}>
+        <div style={{background:'#FFFFFF',borderTop:'2px solid #E85D26',padding:'14px 16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
-              <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>⏱ Requalifier le temps</span>
-              <button onClick={() => setShowTimeAdj(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}><X size={16}/></button>
+              <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>⏱ Requalifier le temps</span>
+              <button onClick={() => setShowTimeAdj(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280'}}><X size={16}/></button>
             </div>
             {pricingSuggestion && (
-              <div style={{background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'8px',padding:'8px 12px',marginBottom:'10px',fontSize:'12px',color:'#7A7A6E'}}>
-                Taux horaire actuel ≈ <strong style={{color:'#0F1410',fontFamily:'Space Mono'}}>
+              <div style={{background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'8px',padding:'8px 12px',marginBottom:'10px',fontSize:'12px',color:'#6B7280'}}>
+                Taux horaire actuel ≈ <strong style={{color:'#3D4852',fontFamily:'Space Mono'}}>
                   {Math.round(pricingSuggestion.decomp.labor / Math.max(0.25, parseDurLow(diagData?.duration_estimate || '2 heures'))).toLocaleString('fr')} FCFA/h
                 </strong>
               </div>
             )}
             <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:'8px',marginBottom:'10px'}}>
               <input type="number" value={adjHours} onChange={e => setAdjHours(e.target.value)} placeholder="Heures sup."
-                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#3D4852'}} />
               <input value={adjReason} onChange={e => setAdjReason(e.target.value)} placeholder="Raison (ex: découvert une fuite cachée)"
-                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410'}} />
+                style={{padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#3D4852'}} />
             </div>
             {adjHours && pricingSuggestion && (
-              <div style={{background:'rgba(232,93,38,0.06)',borderRadius:'8px',padding:'8px 12px',marginBottom:'10px',fontSize:'13px',color:'#0F1410'}}>
+              <div style={{background:'rgba(232,93,38,0.06)',borderRadius:'8px',padding:'8px 12px',marginBottom:'10px',fontSize:'13px',color:'#3D4852'}}>
                 Impact MO ≈ <strong style={{fontFamily:'Space Mono',color:'#E85D26'}}>
                   +{Math.round(parseFloat(adjHours) * pricingSuggestion.decomp.labor / Math.max(0.25, parseDurLow(diagData?.duration_estimate || '2 heures'))).toLocaleString('fr')} FCFA
                 </strong>
@@ -1282,8 +1283,8 @@ export default function WarRoomPage() {
         <div style={{background:'white',borderBottom:'2px solid #E85D26',padding:'16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
-              <span style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>💰 Proposer un devis</span>
-              <button onClick={() => setShowDevis(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}>
+              <span style={{fontWeight:700,fontSize:'15px',color:'#3D4852'}}>💰 Proposer un devis</span>
+              <button onClick={() => setShowDevis(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280'}}>
                 <X size={18} />
               </button>
             </div>
@@ -1291,7 +1292,7 @@ export default function WarRoomPage() {
             {pricingSugLoading && (
               <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 14px',background:'rgba(232,93,38,0.04)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'10px',marginBottom:'10px'}}>
                 <div style={{width:'12px',height:'12px',border:'2px solid rgba(232,93,38,0.3)',borderTop:'2px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite',flexShrink:0}} />
-                <span style={{fontSize:'11px',color:'#7A7A6E'}}>Calcul du moteur AfriOne…</span>
+                <span style={{fontSize:'11px',color:'#6B7280'}}>Calcul du moteur AfriOne…</span>
               </div>
             )}
             {!pricingSugLoading && pricingSuggestion && (
@@ -1299,15 +1300,16 @@ export default function WarRoomPage() {
                 <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.12em',fontFamily:'Space Mono',marginBottom:'8px'}}>SUGGESTION MOTEUR AFRIONE · MC 10K</div>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
                   <div>
-                    <span style={{fontFamily:'Space Mono',fontSize:'22px',fontWeight:700,color:'#0F1410'}}>{pricingSuggestion.estimate.toLocaleString()}</span>
-                    <span style={{fontSize:'11px',color:'#7A7A6E',marginLeft:'4px'}}>FCFA</span>
+                    <span style={{fontFamily:'Space Mono',fontSize:'22px',fontWeight:700,color:'#3D4852'}}>{pricingSuggestion.estimate.toLocaleString()}</span>
+                    <span style={{fontSize:'11px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
                     <div style={{fontSize:'10px',color:'#A09A8E',fontFamily:'Space Mono',marginTop:'1px'}}>
                       [{pricingSuggestion.interval.low.toLocaleString()} – {pricingSuggestion.interval.high.toLocaleString()}] IC 95%
                     </div>
                   </div>
                   <button
                     onClick={() => setDevisAmount(pricingSuggestion.estimate.toString())}
-                    style={{padding:'7px 14px',background:'#E85D26',color:'white',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:700,cursor:'pointer',flexShrink:0}}
+                    className="btn-primary"
+                    style={{padding:'7px 14px',color:'white',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:700,cursor:'pointer',flexShrink:0}}
                   >
                     Utiliser
                   </button>
@@ -1319,8 +1321,8 @@ export default function WarRoomPage() {
                     {label:"Tsp.",  val: pricingSuggestion.decomp.transport},
                     {label:"Com.",  val: pricingSuggestion.decomp.premium},
                   ].map(({label, val}) => (
-                    <div key={label} style={{fontSize:'10px',color:'#7A7A6E',background:'rgba(0,0,0,0.04)',padding:'3px 8px',borderRadius:'6px'}}>
-                      <span style={{color:'#0F1410',fontWeight:600}}>{label}</span> {val.toLocaleString()}
+                    <div key={label} style={{fontSize:'10px',color:'#6B7280',background:'rgba(0,0,0,0.04)',padding:'3px 8px',borderRadius:'6px'}}>
+                      <span style={{color:'#3D4852',fontWeight:600}}>{label}</span> {val.toLocaleString()}
                     </div>
                   ))}
                 </div>
@@ -1330,7 +1332,7 @@ export default function WarRoomPage() {
             {/* Matériaux demandés par le client + infos vendeur (photo, Jumia, proximité) */}
             {diagData?.items_needed?.length > 0 && (
               <div style={{marginBottom:'10px'}}>
-                <div style={{fontSize:'9px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.12em',fontFamily:'Space Mono',marginBottom:'7px'}}>MATÉRIAUX (CHOIX DU CLIENT)</div>
+                <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.12em',fontFamily:'Space Mono',marginBottom:'7px'}}>MATÉRIAUX (CHOIX DU CLIENT)</div>
                 <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
                   {diagData.items_needed.map((item: string) => {
                     const matData = materialsProximity.find((m: any) => m.name === item)
@@ -1400,7 +1402,7 @@ export default function WarRoomPage() {
 
             <div style={{display:'flex',gap:'10px',marginBottom:'10px'}}>
               <div style={{flex:1}}>
-                <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'4px'}}>MONTANT (FCFA)</label>
+                <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>MONTANT (FCFA)</label>
                 <input
                   type="text" inputMode="numeric"
                   value={devisAmount}
@@ -1411,7 +1413,7 @@ export default function WarRoomPage() {
               </div>
             </div>
             <div style={{marginBottom:'12px'}}>
-              <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'4px'}}>DESCRIPTION DU TRAVAIL</label>
+              <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>DESCRIPTION DU TRAVAIL</label>
               <input
                 type="text"
                 value={devisDesc}
@@ -1420,8 +1422,8 @@ export default function WarRoomPage() {
                 className="input"
               />
             </div>
-            <button onClick={sendDevis} disabled={acting}
-              style={{width:'100%',padding:'12px',background:'#E85D26',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',opacity:acting?0.6:1}}>
+            <button onClick={sendDevis} disabled={acting} className="btn-primary"
+              style={{width:'100%',padding:'12px',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',opacity:acting?0.6:1}}>
               {acting ? 'Envoi…' : 'Envoyer le devis →'}
             </button>
           </div>
@@ -1430,7 +1432,7 @@ export default function WarRoomPage() {
 
       {/* ─── FICHE TECHNIQUE ARTISAN (panel, invisible pour le client) ─── */}
       {isArtisan && diagData && showDiagPanel && (
-        <div style={{background:'#0F1410',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
+        <div style={{background:'#FFFFFF',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto',padding:'10px 14px'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
               <div style={{display:'flex',alignItems:'center',gap:'7px'}}>
@@ -1444,17 +1446,17 @@ export default function WarRoomPage() {
 
             {/* Infos clés */}
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'5px',marginBottom:'8px'}}>
-              <div style={{background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
-                <div style={{fontSize:'11px',fontWeight:700,color:'#FAFAF5',marginBottom:'1px'}}>{diagData.category || '—'}</div>
+              <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
+                <div style={{fontSize:'11px',fontWeight:700,color:'#3D4852',marginBottom:'1px'}}>{diagData.category || '—'}</div>
                 <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Space Mono'}}>CATÉGORIE</div>
               </div>
-              <div style={{background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
+              <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'11px',fontWeight:700,color: diagData.urgency === 'emergency' ? '#ef4444' : diagData.urgency === 'high' ? '#E85D26' : diagData.urgency === 'medium' ? '#C9A84C' : '#2B6B3E',marginBottom:'1px'}}>
                   {diagData.urgency === 'emergency' ? '🔴 URGENCE' : diagData.urgency === 'high' ? '🟠 Urgent' : diagData.urgency === 'medium' ? '🟡 Normal' : '🟢 Faible'}
                 </div>
                 <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Space Mono'}}>URGENCE</div>
               </div>
-              <div style={{background:'rgba(255,255,255,0.05)',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
+              <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily:'Space Mono',marginBottom:'1px'}}>
                   {diagData.price_min && diagData.price_max ? `${diagData.price_min.toLocaleString()}–${diagData.price_max.toLocaleString()}` : '—'}
                 </div>
@@ -1481,7 +1483,7 @@ export default function WarRoomPage() {
                   const proxBg    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.15)' : 'rgba(255,255,255,0.06)'
                   const proxBd    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.3)' : 'rgba(255,255,255,0.1)'
                   return (
-                    <div key={item} style={{display:'flex',alignItems:'center',gap:'7px',padding:'6px 8px',background:'rgba(255,255,255,0.04)',borderRadius:'8px'}}>
+                    <div key={item} style={{display:'flex',alignItems:'center',gap:'7px',padding:'6px 8px',background:'#F5F7FA',borderRadius:'8px'}}>
                       {/* Visuel : photo Jumia cliquable ou emoji */}
                       {isJumia && std?.photo_url ? (
                         <a href={std.source_url} target="_blank" rel="noreferrer" style={{flexShrink:0,display:'block',lineHeight:0}}>
@@ -1559,7 +1561,7 @@ export default function WarRoomPage() {
                     padding:'14px 16px',boxShadow:'0 2px 10px rgba(0,0,0,0.05)',
                   }}>
                     {/* Salutation + nom */}
-                    <div style={{fontWeight:700,fontSize:'14px',color:'#0F1410',marginBottom:'8px'}}>
+                    <div style={{fontWeight:700,fontSize:'14px',color:'#3D4852',marginBottom:'8px'}}>
                       {isArtisan
                         ? `Bonjour ${artisanName} ! Nouvelle demande de ${clientName}.`
                         : `Bonjour ${clientName} ! Votre demande a bien été reçue.`}
@@ -1570,7 +1572,7 @@ export default function WarRoomPage() {
                       isArtisan ? (
                         <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
                           {diagData.technical_notes && (
-                            <p style={{fontSize:'13px',color:'#0F1410',lineHeight:'1.55',margin:0}}>
+                            <p style={{fontSize:'13px',color:'#3D4852',lineHeight:'1.55',margin:0}}>
                               {diagData.technical_notes}
                             </p>
                           )}
@@ -1580,12 +1582,12 @@ export default function WarRoomPage() {
                               {diagData.urgency === 'emergency' ? '🔴 Urgence' : diagData.urgency === 'high' ? '🟠 Urgent' : diagData.urgency === 'medium' ? '🟡 Normal' : '🟢 Faible'}
                             </span>
                             {diagData.duration_estimate && (
-                              <span style={{fontSize:'11px',background:'rgba(0,0,0,0.04)',border:'1px solid rgba(0,0,0,0.08)',padding:'2px 9px',borderRadius:'20px',color:'#7A7A6E'}}>⏱ {diagData.duration_estimate}</span>
+                              <span style={{fontSize:'11px',background:'rgba(0,0,0,0.04)',border:'1px solid rgba(0,0,0,0.08)',padding:'2px 9px',borderRadius:'20px',color:'#6B7280'}}>⏱ {diagData.duration_estimate}</span>
                             )}
                           </div>
                           {diagData.items_needed?.length > 0 && (
                             <div>
-                              <div style={{fontSize:'10px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.08em',marginBottom:'4px'}}>MATÉRIAUX PROBABLES</div>
+                              <div style={{fontSize:'10px',fontWeight:700,color:'#6B7280',letterSpacing:'0.08em',marginBottom:'4px'}}>MATÉRIAUX PROBABLES</div>
                               <div style={{display:'flex',flexWrap:'wrap',gap:'4px'}}>
                                 {diagData.items_needed.map((it: string) => (
                                   <span key={it} style={{fontSize:'11px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.25)',padding:'2px 8px',borderRadius:'14px',color:'#C9A84C'}}>{it}</span>
@@ -1593,22 +1595,22 @@ export default function WarRoomPage() {
                               </div>
                             </div>
                           )}
-                          <p style={{fontSize:'12px',color:'#7A7A6E',margin:0,lineHeight:'1.5'}}>
+                          <p style={{fontSize:'12px',color:'#6B7280',margin:0,lineHeight:'1.5'}}>
                             Présentez-vous au client, puis utilisez les outils ci-dessous pour construire votre devis.
                           </p>
                         </div>
                       ) : (
                         <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                          <p style={{fontSize:'13px',color:'#0F1410',lineHeight:'1.55',margin:0}}>
+                          <p style={{fontSize:'13px',color:'#3D4852',lineHeight:'1.55',margin:0}}>
                             {diagData.ai_summary || `Votre demande de <strong>${diagData.category}</strong> a été transmise à ${artisanName}${artisanMetier ? ` (${artisanMetier})` : ''}.`}
                           </p>
-                          <div style={{padding:'10px 12px',background:'rgba(201,168,76,0.07)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px',fontSize:'12px',color:'#7A7A6E',lineHeight:'1.55'}}>
+                          <div style={{padding:'10px 12px',background:'rgba(201,168,76,0.07)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px',fontSize:'12px',color:'#6B7280',lineHeight:'1.55'}}>
                             <strong style={{color:'#C9A84C'}}>Prochaine étape :</strong> {artisanName} va analyser votre situation et vous envoyer un devis. Vous pouvez lui envoyer un message dès maintenant.
                           </div>
                         </div>
                       )
                     ) : (
-                      <p style={{fontSize:'13px',color:'#7A7A6E',margin:0,lineHeight:'1.55'}}>
+                      <p style={{fontSize:'13px',color:'#6B7280',margin:0,lineHeight:'1.55'}}>
                         {isArtisan
                           ? `Présentez-vous à ${clientName} et demandez-lui les détails de sa situation.`
                           : `Décrivez votre problème à ${artisanName} en détail pour obtenir un devis précis.`}
@@ -1629,7 +1631,7 @@ export default function WarRoomPage() {
             if (msg.type === 'system') {
               return (
                 <div key={msg.id} style={{textAlign:'center',padding:'8px 0'}}>
-                  <span style={{fontSize:'12px',color:'#7A7A6E',background:'rgba(122,122,110,0.1)',padding:'6px 14px',borderRadius:'20px',display:'inline-block'}}>
+                  <span style={{fontSize:'12px',color:'#6B7280',background:'rgba(122,122,110,0.1)',padding:'6px 14px',borderRadius:'20px',display:'inline-block'}}>
                     {msg.text}
                   </span>
                 </div>
@@ -1653,8 +1655,8 @@ export default function WarRoomPage() {
                         </a>
                       ))}
                     </div>
-                    {proofData.notes && <div style={{fontSize:'12px',color:'#7A7A6E',fontStyle:'italic'}}>{proofData.notes}</div>}
-                    <div style={{fontSize:'10px',color:'#7A7A6E',marginTop:'6px'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                    {proofData.notes && <div style={{fontSize:'12px',color:'#6B7280',fontStyle:'italic'}}>{proofData.notes}</div>}
+                    <div style={{fontSize:'10px',color:'#6B7280',marginTop:'6px'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                   </div>
                 </div>
               )
@@ -1679,11 +1681,11 @@ export default function WarRoomPage() {
                     </div>
                     <div style={{padding:'16px'}}>
                       {devisData.description && (
-                        <div style={{fontSize:'14px',color:'#0F1410',marginBottom:'10px',lineHeight:'1.4'}}>{devisData.description}</div>
+                        <div style={{fontSize:'14px',color:'#3D4852',marginBottom:'10px',lineHeight:'1.4'}}>{devisData.description}</div>
                       )}
                       <div style={{display:'flex',alignItems:'baseline',gap:'4px',marginBottom:'16px'}}>
-                        <span style={{fontFamily:'Space Mono',fontSize:'28px',fontWeight:700,color:'#0F1410'}}>{(devisData.amount||0).toLocaleString()}</span>
-                        <span style={{fontSize:'13px',color:'#7A7A6E'}}>FCFA</span>
+                        <span style={{fontFamily:'Space Mono',fontSize:'28px',fontWeight:700,color:'#3D4852'}}>{(devisData.amount||0).toLocaleString()}</span>
+                        <span style={{fontSize:'13px',color:'#6B7280'}}>FCFA</span>
                       </div>
                       {canAct && !acting && (
                         isClientProposal && isArtisan ? (
@@ -1692,7 +1694,7 @@ export default function WarRoomPage() {
                             <button onClick={() => acceptCounterProposal(devisData.amount)} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
                               <CheckCircle size={14}/> Accepter ce tarif
                             </button>
-                            <button onClick={refuseDevis} style={{flex:1,padding:'10px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                            <button onClick={refuseDevis} style={{flex:1,padding:'10px',background:'none',color:'#6B7280',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
                               <X size={14}/> Contrer
                             </button>
                           </div>
@@ -1702,20 +1704,20 @@ export default function WarRoomPage() {
                             <button onClick={() => acceptDevis(devisData.amount)} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
                               <CheckCircle size={14}/> Accepter & Payer
                             </button>
-                            <button onClick={refuseDevis} style={{flex:1,padding:'10px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
+                            <button onClick={refuseDevis} style={{flex:1,padding:'10px',background:'none',color:'#6B7280',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
                               <X size={14}/> Refuser
                             </button>
                           </div>
                         ) : null
                       )}
                       {isMe && (
-                        <div style={{fontSize:'12px',color:'#7A7A6E',display:'flex',alignItems:'center',gap:'4px'}}>
+                        <div style={{fontSize:'12px',color:'#6B7280',display:'flex',alignItems:'center',gap:'4px'}}>
                           <Clock size={11} />
                           {status === 'en_cours' ? 'Accepté ✓' : 'En attente de réponse…'}
                         </div>
                       )}
                     </div>
-                    <div style={{padding:'4px 16px 10px',fontSize:'11px',color:'#7A7A6E'}}>
+                    <div style={{padding:'4px 16px 10px',fontSize:'11px',color:'#6B7280'}}>
                       {new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
                     </div>
                   </div>
@@ -1738,7 +1740,7 @@ export default function WarRoomPage() {
                     maxWidth:'92%',
                   }}>
                     {/* En-tête fiche */}
-                    <div style={{background:'#0F1410',padding:'14px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
+                    <div style={{background:'#FFFFFF',padding:'14px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
                       <div style={{width:'32px',height:'32px',background:'rgba(232,93,38,0.2)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                         <span style={{fontSize:'16px'}}>📋</span>
                       </div>
@@ -1752,19 +1754,19 @@ export default function WarRoomPage() {
                       {/* Infos clés */}
                       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
                         <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
-                          <div style={{fontSize:'11px',fontWeight:700,color:'#0F1410',marginBottom:'2px'}}>{brief.category || '—'}</div>
-                          <div style={{fontSize:'9px',color:'#7A7A6E',fontFamily:'Space Mono'}}>CATÉGORIE</div>
+                          <div style={{fontSize:'11px',fontWeight:700,color:'#3D4852',marginBottom:'2px'}}>{brief.category || '—'}</div>
+                          <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Space Mono'}}>CATÉGORIE</div>
                         </div>
                         <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
                           <div style={{fontSize:'11px',fontWeight:700,color:urgencyColor[urg],marginBottom:'2px'}}>{urgencyIcon[urg]} {urg === 'low' ? 'Normal' : urg === 'medium' ? 'Modéré' : urg === 'high' ? 'Urgent' : 'URGENCE'}</div>
-                          <div style={{fontSize:'9px',color:'#7A7A6E',fontFamily:'Space Mono'}}>URGENCE</div>
+                          <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Space Mono'}}>URGENCE</div>
                         </div>
                         {(brief.price_min || brief.price_max) ? (
                           <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
-                            <div style={{fontSize:'10px',fontWeight:700,color:'#0F1410',marginBottom:'2px',fontFamily:'Space Mono'}}>
+                            <div style={{fontSize:'10px',fontWeight:700,color:'#3D4852',marginBottom:'2px',fontFamily:'Space Mono'}}>
                               {(brief.price_min||0).toLocaleString()}–{(brief.price_max||0).toLocaleString()}
                             </div>
-                            <div style={{fontSize:'9px',color:'#7A7A6E',fontFamily:'Space Mono'}}>FCFA EST.</div>
+                            <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Space Mono'}}>FCFA EST.</div>
                           </div>
                         ) : null}
                       </div>
@@ -1773,14 +1775,14 @@ export default function WarRoomPage() {
                       {brief.technical_notes && (
                         <div style={{background:'rgba(232,93,38,0.04)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',padding:'12px 14px'}}>
                           <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>NOTES POUR L'ARTISAN</div>
-                          <p style={{fontSize:'13px',color:'#0F1410',lineHeight:'1.5',margin:0}}>{brief.technical_notes}</p>
+                          <p style={{fontSize:'13px',color:'#3D4852',lineHeight:'1.5',margin:0}}>{brief.technical_notes}</p>
                         </div>
                       )}
 
                       {/* Matériel */}
                       {(brief.items_needed||[]).length > 0 && (
                         <div>
-                          <div style={{fontSize:'9px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>MATÉRIEL PROBABLE</div>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>MATÉRIEL PROBABLE</div>
                           <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
                             {brief.items_needed.map((item: string) => (
                               <span key={item} style={{fontSize:'11px',background:'rgba(232,93,38,0.07)',border:'1px solid rgba(232,93,38,0.2)',padding:'3px 10px',borderRadius:'20px',color:'#E85D26',fontWeight:500}}>{item}</span>
@@ -1792,7 +1794,7 @@ export default function WarRoomPage() {
                       {/* Photos client */}
                       {(brief.photos||[]).length > 0 && (
                         <div>
-                          <div style={{fontSize:'9px',fontWeight:700,color:'#7A7A6E',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>📸 PHOTOS DU CLIENT</div>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>📸 PHOTOS DU CLIENT</div>
                           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'5px'}}>
                             {brief.photos.map((url: string, i: number) => (
                               <a key={i} href={url} target="_blank" rel="noreferrer" style={{display:'block',aspectRatio:'1',borderRadius:'8px',overflow:'hidden',background:'#EDE8DE'}}>
@@ -1803,7 +1805,7 @@ export default function WarRoomPage() {
                         </div>
                       )}
 
-                      <div style={{fontSize:'10px',color:'#7A7A6E',textAlign:'right'}}>
+                      <div style={{fontSize:'10px',color:'#6B7280',textAlign:'right'}}>
                         {new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
                       </div>
                     </div>
@@ -1860,12 +1862,12 @@ export default function WarRoomPage() {
                       {/* Infos produit */}
                       <div style={{flex:1,minWidth:0}}>
                         {/* Nom artisan */}
-                        <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410',marginBottom:'2px'}}>
+                        <div style={{fontWeight:700,fontSize:'13px',color:'#3D4852',marginBottom:'2px'}}>
                           {d.qty > 1 ? `${d.qty}× ` : ''}{d.name}
                         </div>
                         {/* Nom produit Jumia si différent */}
                         {d.product_name && d.product_name !== d.name && (
-                          <div style={{fontSize:'11px',color:'#7A7A6E',marginBottom:'4px',fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          <div style={{fontSize:'11px',color:'#6B7280',marginBottom:'4px',fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                             {d.product_name}
                           </div>
                         )}
@@ -1880,11 +1882,11 @@ export default function WarRoomPage() {
                               <span style={{fontFamily:'Space Mono',fontSize:'20px',fontWeight:700,color:'#C9A84C'}}>
                                 ~{localTotal.toLocaleString('fr')}
                               </span>
-                              <span style={{fontSize:'11px',color:'#7A7A6E'}}>FCFA</span>
+                              <span style={{fontSize:'11px',color:'#6B7280'}}>FCFA</span>
                               <span style={{fontSize:'10px',color:'#2B6B3E',background:'rgba(43,107,62,0.08)',padding:'1px 6px',borderRadius:'4px',fontWeight:600}}>prix local</span>
                             </div>
                             {webTotal > 0 && (
-                              <div style={{fontSize:'11px',color:'#7A7A6E'}}>
+                              <div style={{fontSize:'11px',color:'#6B7280'}}>
                                 Jumia : <span style={{fontFamily:'Space Mono',fontWeight:600}}>{webTotal.toLocaleString('fr')}</span> FCFA
                                 {d.qty > 1 && <span style={{color:'#A09A8E'}}> ({d.web_price?.toLocaleString('fr')}/u)</span>}
                               </div>
@@ -1909,7 +1911,7 @@ export default function WarRoomPage() {
                       <div style={{borderTop:'1px solid rgba(201,168,76,0.12)'}}>
                         <div style={{padding:'8px 14px',background:'rgba(232,93,38,0.04)',display:'flex',gap:'8px',alignItems:'flex-start'}}>
                           <span style={{fontSize:'13px',flexShrink:0}}>⚠️</span>
-                          <p style={{fontSize:'11px',color:'#7A7A6E',margin:0,lineHeight:'1.55'}}>
+                          <p style={{fontSize:'11px',color:'#6B7280',margin:0,lineHeight:'1.55'}}>
                             Prix estimatif non validé par AfriOne. Acceptez si le tarif vous convient, ou refusez et demandez des précisions à votre artisan.
                           </p>
                         </div>
@@ -1933,7 +1935,7 @@ export default function WarRoomPage() {
                       </div>
                     )}
 
-                    <div style={{padding:'4px 14px 8px',fontSize:'10px',color:'#7A7A6E'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                    <div style={{padding:'4px 14px 8px',fontSize:'10px',color:'#6B7280'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                   </div>
                 </div>
               )
@@ -1951,16 +1953,16 @@ export default function WarRoomPage() {
                       <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>⏱ TEMPS SUPPLÉMENTAIRE — NON CONFIRMÉ</div>
                     </div>
                     <div style={{padding:'12px 14px'}}>
-                      <div style={{fontSize:'15px',color:'#0F1410',fontWeight:700,marginBottom:'4px'}}>
+                      <div style={{fontSize:'15px',color:'#3D4852',fontWeight:700,marginBottom:'4px'}}>
                         +{d.extra_hours}h de travail
-                        <span style={{fontSize:'13px',fontWeight:500,color:'#7A7A6E',marginLeft:'8px'}}>
+                        <span style={{fontSize:'13px',fontWeight:500,color:'#6B7280',marginLeft:'8px'}}>
                           → +<span style={{fontFamily:'Space Mono',fontWeight:700,color:'#E85D26'}}>{(d.labor_impact||0).toLocaleString('fr')} FCFA</span>
                         </span>
                       </div>
-                      {d.reason && <div style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'8px',fontStyle:'italic'}}>{d.reason}</div>}
+                      {d.reason && <div style={{fontSize:'12px',color:'#6B7280',marginBottom:'8px',fontStyle:'italic'}}>{d.reason}</div>}
                       {canDiscuss && (
                         <div style={{marginTop:'8px',padding:'8px 10px',background:'rgba(232,93,38,0.04)',borderRadius:'8px',border:'1px solid rgba(232,93,38,0.12)'}}>
-                          <p style={{fontSize:'11px',color:'#7A7A6E',margin:'0 0 8px',lineHeight:'1.55'}}>
+                          <p style={{fontSize:'11px',color:'#6B7280',margin:'0 0 8px',lineHeight:'1.55'}}>
                             ⚠️ Ce supplément n'est pas encore validé par AfriOne. Discutez avec votre artisan avant d'accepter le devis final.
                           </p>
                           <button onClick={() => setInput(`Concernant les ${d.extra_hours}h supplémentaires — pouvez-vous préciser ce qui a nécessité ce temps additionnel ?`)}
@@ -1983,9 +1985,9 @@ export default function WarRoomPage() {
               const canValidate = !isMe && !acting && status !== 'completed' && status !== 'cancelled' && status !== 'en_cours'
               return (
                 <div key={msg.id} style={{padding:'4px 0'}}>
-                  <div style={{background:'white',border:'2px solid #0F1410',borderRadius:'18px',overflow:'hidden',maxWidth:'94%',boxShadow:'0 4px 20px rgba(0,0,0,0.1)'}}>
+                  <div style={{background:'white',border:'2px solid #E2E8F0',borderRadius:'18px',overflow:'hidden',maxWidth:'94%',boxShadow:'0 4px 20px rgba(0,0,0,0.1)'}}>
                     {/* Header */}
-                    <div style={{background:'#0F1410',padding:'12px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
+                    <div style={{background:'#FFFFFF',padding:'12px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
                       <span style={{fontSize:'18px'}}>⚖️</span>
                       <div>
                         <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>PROPOSITION FINALE · VALIDATION REQUISE</div>
@@ -1995,8 +1997,8 @@ export default function WarRoomPage() {
                     <div style={{padding:'16px 18px',display:'flex',flexDirection:'column',gap:'7px'}}>
                       {/* Base */}
                       <div style={{display:'flex',justifyContent:'space-between',fontSize:'13px'}}>
-                        <span style={{color:'#7A7A6E'}}>📋 Devis diagnostic initial</span>
-                        <span style={{fontFamily:'Space Mono',color:'#0F1410',fontWeight:600}}>{(d.base_estimate||0).toLocaleString('fr')} F</span>
+                        <span style={{color:'#6B7280'}}>📋 Devis diagnostic initial</span>
+                        <span style={{fontFamily:'Space Mono',color:'#3D4852',fontWeight:600}}>{(d.base_estimate||0).toLocaleString('fr')} F</span>
                       </div>
                       {/* Extra materials */}
                       {(d.extra_materials||[]).map((m: any, i: number) => (
@@ -2014,10 +2016,10 @@ export default function WarRoomPage() {
                       ))}
                       {/* Divider + Total */}
                       <div style={{borderTop:'1.5px solid #D8D2C4',paddingTop:'12px',marginTop:'4px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-                        <span style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>Total</span>
+                        <span style={{fontWeight:700,fontSize:'15px',color:'#3D4852'}}>Total</span>
                         <div style={{textAlign:'right'}}>
-                          <span style={{fontFamily:'Space Mono',fontSize:'26px',fontWeight:700,color:'#0F1410'}}>{(d.total||0).toLocaleString('fr')}</span>
-                          <span style={{fontSize:'13px',color:'#7A7A6E',marginLeft:'4px'}}>FCFA</span>
+                          <span style={{fontFamily:'Space Mono',fontSize:'26px',fontWeight:700,color:'#3D4852'}}>{(d.total||0).toLocaleString('fr')}</span>
+                          <span style={{fontSize:'13px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
                         </div>
                       </div>
                       {/* Action */}
@@ -2026,17 +2028,17 @@ export default function WarRoomPage() {
                           <button onClick={() => acceptDevis(d.total)} style={{flex:1,padding:'12px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'7px'}}>
                             <CheckCircle size={15}/> Je valide & Paye
                           </button>
-                          <button onClick={refuseDevis} style={{padding:'12px 14px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'12px',fontWeight:600,fontSize:'13px',cursor:'pointer'}}>
+                          <button onClick={refuseDevis} style={{padding:'12px 14px',background:'none',color:'#6B7280',border:'1px solid #D8D2C4',borderRadius:'12px',fontWeight:600,fontSize:'13px',cursor:'pointer'}}>
                             <X size={14}/>
                           </button>
                         </div>
                       ) : isMe ? (
-                        <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',color:'#6B7280',marginTop:'2px'}}>
                           <Clock size={12}/> En attente de validation client…
                         </div>
                       ) : null}
                     </div>
-                    <div style={{padding:'0 18px 10px',fontSize:'10px',color:'#7A7A6E'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                    <div style={{padding:'0 18px 10px',fontSize:'10px',color:'#6B7280'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                   </div>
                 </div>
               )
@@ -2056,35 +2058,35 @@ export default function WarRoomPage() {
                       <span style={{fontSize:'14px'}}>🧾</span>
                       <div>
                         <div style={{fontSize:'10px',fontWeight:700,color:'#2B6B3E',letterSpacing:'0.1em',fontFamily:'Space Mono'}}>MATÉRIAUX ACHETÉS — ARTISAN</div>
-                        <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'1px'}}>Main d'œuvre fixée · seuls les matériaux sont justifiés ici</div>
+                        <div style={{fontSize:'11px',color:'#6B7280',marginTop:'1px'}}>Main d'œuvre fixée · seuls les matériaux sont justifiés ici</div>
                       </div>
                     </div>
                     <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:'8px'}}>
                       {upd.diag_change_note && (
-                        <div style={{background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'10px',padding:'8px 12px',fontSize:'12px',color:'#0F1410',lineHeight:'1.5'}}>
+                        <div style={{background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'10px',padding:'8px 12px',fontSize:'12px',color:'#3D4852',lineHeight:'1.5'}}>
                           <span style={{fontWeight:700,color:'#E85D26'}}>⚠️ Diagnostic modifié : </span>{upd.diag_change_note}
                         </div>
                       )}
                       {/* Main d'œuvre fixe */}
                       {laborFixed > 0 && (
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 10px',background:'rgba(201,168,76,0.07)',borderRadius:'8px'}}>
-                          <span style={{fontSize:'12px',color:'#7A7A6E'}}>🔧 Main d'œuvre (fixe)</span>
+                          <span style={{fontSize:'12px',color:'#6B7280'}}>🔧 Main d'œuvre (fixe)</span>
                           <span style={{fontFamily:'Space Mono',fontSize:'13px',fontWeight:700,color:'#C9A84C'}}>{laborFixed.toLocaleString('fr')} F</span>
                         </div>
                       )}
                       {/* Matériaux */}
                       {mats.map((m: any, i: number) => (
                         <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 10px',background:'rgba(0,0,0,0.02)',borderRadius:'8px'}}>
-                          <span style={{fontSize:'12px',color:'#0F1410',flex:1}}>{m.qty > 1 ? `${m.qty}× ` : ''}{m.name}</span>
-                          <span style={{fontFamily:'Space Mono',fontSize:'12px',color:'#0F1410',fontWeight:600,flexShrink:0}}>{(m.qty * m.prix_unitaire).toLocaleString('fr')} F</span>
+                          <span style={{fontSize:'12px',color:'#3D4852',flex:1}}>{m.qty > 1 ? `${m.qty}× ` : ''}{m.name}</span>
+                          <span style={{fontFamily:'Space Mono',fontSize:'12px',color:'#3D4852',fontWeight:600,flexShrink:0}}>{(m.qty * m.prix_unitaire).toLocaleString('fr')} F</span>
                         </div>
                       ))}
                       {/* Total */}
                       <div style={{borderTop:'1px solid #D8D2C4',paddingTop:'8px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-                        <span style={{fontWeight:700,fontSize:'13px',color:'#0F1410'}}>Total</span>
-                        <span style={{fontFamily:'Space Mono',fontSize:'20px',fontWeight:700,color:'#0F1410'}}>{(upd.total ?? matTotal + laborFixed).toLocaleString('fr')} <span style={{fontSize:'12px',color:'#7A7A6E',fontFamily:'inherit'}}>FCFA</span></span>
+                        <span style={{fontWeight:700,fontSize:'13px',color:'#3D4852'}}>Total</span>
+                        <span style={{fontFamily:'Space Mono',fontSize:'20px',fontWeight:700,color:'#3D4852'}}>{(upd.total ?? matTotal + laborFixed).toLocaleString('fr')} <span style={{fontSize:'12px',color:'#6B7280',fontFamily:'inherit'}}>FCFA</span></span>
                       </div>
-                      <div style={{fontSize:'10px',color:'#7A7A6E'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                      <div style={{fontSize:'10px',color:'#6B7280'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                     </div>
                   </div>
                 </div>
@@ -2095,11 +2097,11 @@ export default function WarRoomPage() {
             return (
               <div key={msg.id} style={{display:'flex',gap:'8px',flexDirection:isMe?'row-reverse':'row',alignItems:'flex-end'}}>
                 {!isMe && (
-                  <div style={{width:'28px',height:'28px',background:'#0F1410',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',flexShrink:0}}>🔧</div>
+                  <div style={{width:'28px',height:'28px',background:'#FFFFFF',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',flexShrink:0}}>🔧</div>
                 )}
                 <div style={{
                   maxWidth:'78%',padding:'10px 14px',borderRadius:'16px',fontSize:'14px',lineHeight:'1.5',
-                  background:isMe?'#E85D26':'white',color:isMe?'white':'#0F1410',
+                  background:isMe?'#E85D26':'white',color:isMe?'white':'#3D4852',
                   borderBottomRightRadius:isMe?'4px':'16px',borderBottomLeftRadius:isMe?'16px':'4px',
                   border:isMe?'none':'1px solid #D8D2C4',
                 }}>
@@ -2120,21 +2122,21 @@ export default function WarRoomPage() {
         <div style={{background:'white',borderTop:'2px solid #2B6B3E',padding:'16px',flexShrink:0,maxHeight:'70vh',overflowY:'auto'}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
-              <span style={{fontWeight:700,fontSize:'15px',color:'#0F1410'}}>🧾 Matériaux achetés</span>
-              <button onClick={() => setShowMatUpdate(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E'}}><X size={18}/></button>
+              <span style={{fontWeight:700,fontSize:'15px',color:'#3D4852'}}>🧾 Matériaux achetés</span>
+              <button onClick={() => setShowMatUpdate(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280'}}><X size={18}/></button>
             </div>
 
             {/* Info règle : MO fixe */}
-            <div style={{background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:'10px',padding:'10px 12px',marginBottom:'12px',fontSize:'12px',color:'#7A7A6E',lineHeight:'1.6'}}>
+            <div style={{background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:'10px',padding:'10px 12px',marginBottom:'12px',fontSize:'12px',color:'#6B7280',lineHeight:'1.6'}}>
               <strong style={{color:'#C9A84C'}}>Règle AfriOne :</strong> La main d'œuvre ({pricingSuggestion ? `${pricingSuggestion.decomp.labor.toLocaleString('fr')} FCFA` : 'calculée au diagnostic'}) est <strong>fixe et non négociable</strong>. Vous ne justifiez ici que les matériaux réellement achetés.
             </div>
 
             {/* Diagnostic changé ? */}
             <div style={{marginBottom:'12px'}}>
-              <label style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',display:'block',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.05em'}}>Diagnostic modifié ? (optionnel)</label>
+              <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px',textTransform:'uppercase',letterSpacing:'0.05em'}}>Diagnostic modifié ? (optionnel)</label>
               <input value={diagChangeNote} onChange={e => setDiagChangeNote(e.target.value)}
                 placeholder="ex: J'ai découvert une fuite supplémentaire sous l'évier"
-                style={{width:'100%',padding:'9px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'13px',outline:'none',boxSizing:'border-box' as const,color:'#0F1410'}} />
+                style={{width:'100%',padding:'9px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',fontSize:'13px',outline:'none',boxSizing:'border-box' as const,color:'#3D4852'}} />
             </div>
 
             {/* Liste matériaux ajoutés */}
@@ -2142,9 +2144,9 @@ export default function WarRoomPage() {
               <div style={{marginBottom:'12px',display:'flex',flexDirection:'column',gap:'6px'}}>
                 {purchasedMats.map((m, i) => (
                   <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',padding:'7px 10px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'8px'}}>
-                    <div style={{flex:1,fontSize:'13px',color:'#0F1410'}}>{m.qty > 1 ? `${m.qty}× ` : ''}{m.name}</div>
-                    <div style={{fontFamily:'Space Mono',fontSize:'13px',fontWeight:600,color:'#0F1410',flexShrink:0}}>{(m.qty*m.prix_unitaire).toLocaleString('fr')} F</div>
-                    <button onClick={() => setPurchasedMats(ms => ms.filter((_,j) => j !== i))} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E',padding:'0',lineHeight:0,flexShrink:0}}>
+                    <div style={{flex:1,fontSize:'13px',color:'#3D4852'}}>{m.qty > 1 ? `${m.qty}× ` : ''}{m.name}</div>
+                    <div style={{fontFamily:'Space Mono',fontSize:'13px',fontWeight:600,color:'#3D4852',flexShrink:0}}>{(m.qty*m.prix_unitaire).toLocaleString('fr')} F</div>
+                    <button onClick={() => setPurchasedMats(ms => ms.filter((_,j) => j !== i))} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280',padding:'0',lineHeight:0,flexShrink:0}}>
                       <X size={13}/>
                     </button>
                   </div>
@@ -2154,14 +2156,14 @@ export default function WarRoomPage() {
 
             {/* Formulaire ajout article */}
             <div style={{background:'rgba(0,0,0,0.02)',border:'1px dashed #D8D2C4',borderRadius:'10px',padding:'10px',marginBottom:'12px'}}>
-              <div style={{fontSize:'11px',fontWeight:600,color:'#7A7A6E',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.05em'}}>Ajouter un article</div>
+              <div style={{fontSize:'11px',fontWeight:600,color:'#6B7280',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.05em'}}>Ajouter un article</div>
               <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr',gap:'8px',marginBottom:'8px'}}>
                 <input value={newMatName} onChange={e => setNewMatName(e.target.value)} placeholder="Nom du matériau"
-                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#0F1410'}} />
+                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#3D4852'}} />
                 <input type="number" value={newMatQty} onChange={e => setNewMatQty(e.target.value)} placeholder="Qté"
-                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#0F1410'}} />
+                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#3D4852'}} />
                 <input type="number" value={newMatPrix} onChange={e => setNewMatPrix(e.target.value)} placeholder="Prix/u FCFA"
-                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#0F1410'}} />
+                  style={{padding:'8px 10px',border:'1px solid #D8D2C4',borderRadius:'8px',fontSize:'13px',outline:'none',color:'#3D4852'}} />
               </div>
               <button onClick={addPurchasedMat} disabled={!newMatName.trim() || !newMatPrix}
                 style={{width:'100%',padding:'8px',background:'transparent',border:'1px dashed rgba(43,107,62,0.5)',borderRadius:'8px',color:'#2B6B3E',fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',opacity:!newMatName.trim()||!newMatPrix?0.4:1}}>
@@ -2172,8 +2174,8 @@ export default function WarRoomPage() {
             {/* Total récapitulatif */}
             {purchasedMats.length > 0 && (
               <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px 14px',marginBottom:'12px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-                <span style={{fontSize:'12px',color:'#7A7A6E'}}>Total matériaux + MO</span>
-                <span style={{fontFamily:'Space Mono',fontSize:'18px',fontWeight:700,color:'#0F1410'}}>
+                <span style={{fontSize:'12px',color:'#6B7280'}}>Total matériaux + MO</span>
+                <span style={{fontFamily:'Space Mono',fontSize:'18px',fontWeight:700,color:'#3D4852'}}>
                   {((pricingSuggestion?.decomp.labor ?? 0) + purchasedMats.reduce((s,m) => s+m.qty*m.prix_unitaire,0)).toLocaleString('fr')} F
                 </span>
               </div>
@@ -2214,7 +2216,7 @@ export default function WarRoomPage() {
                 {/* Proposition finale (si des ajustements existent) ou devis simple */}
                 {messages.some(m => m.type === 'material_suggest' || m.type === 'time_adjust') ? (
                   <button onClick={openFinalProposal} disabled={acting} style={{
-                    width:'100%',marginTop:'4px',padding:'11px',background:'#0F1410',
+                    width:'100%',marginTop:'4px',padding:'11px',background:'#FFFFFF',
                     color:'white',border:'none',borderRadius:'10px',
                     fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                     opacity: acting ? 0.6 : 1,
@@ -2248,17 +2250,17 @@ export default function WarRoomPage() {
 
             {/* Confirmation proposition finale — artisan review + total modifiable */}
             {showProposalConfirm && proposalDraft && (
-              <div style={{marginBottom:'8px',background:'white',border:'2px solid #0F1410',borderRadius:'16px',overflow:'hidden'}}>
-                <div style={{background:'#0F1410',padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <div style={{marginBottom:'8px',background:'white',border:'2px solid #E2E8F0',borderRadius:'16px',overflow:'hidden'}}>
+                <div style={{background:'#FFFFFF',padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>⚖️ CONFIRMATION PROPOSITION</span>
                   <button onClick={() => setShowProposalConfirm(false)} style={{background:'none',border:'none',color:'rgba(255,255,255,0.5)',cursor:'pointer',padding:'2px'}}>
                     <X size={14}/>
                   </button>
                 </div>
                 <div style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:'6px'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#7A7A6E'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#6B7280'}}>
                     <span>📋 Devis diagnostic</span>
-                    <span style={{fontFamily:'Space Mono',fontWeight:600,color:'#0F1410'}}>{(proposalDraft.baseEstimate||0).toLocaleString('fr')} F</span>
+                    <span style={{fontFamily:'Space Mono',fontWeight:600,color:'#3D4852'}}>{(proposalDraft.baseEstimate||0).toLocaleString('fr')} F</span>
                   </div>
                   {(proposalDraft.matSuggests||[]).map((m: any, i: number) => (
                     <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#C9A84C'}}>
@@ -2273,14 +2275,14 @@ export default function WarRoomPage() {
                     </div>
                   ))}
                   <div style={{borderTop:'1px solid #D8D2C4',paddingTop:'10px',marginTop:'2px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-                    <span style={{fontWeight:700,fontSize:'14px',color:'#0F1410'}}>Total</span>
+                    <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>Total</span>
                     <div>
-                      <span style={{fontFamily:'Space Mono',fontSize:'24px',fontWeight:700,color:'#0F1410'}}>{parseInt(proposalTotal||'0').toLocaleString('fr')}</span>
-                      <span style={{fontSize:'12px',color:'#7A7A6E',marginLeft:'4px'}}>FCFA</span>
+                      <span style={{fontFamily:'Space Mono',fontSize:'24px',fontWeight:700,color:'#3D4852'}}>{parseInt(proposalTotal||'0').toLocaleString('fr')}</span>
+                      <span style={{fontSize:'12px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
                     </div>
                   </div>
                   <button onClick={sendFinalProposal} disabled={acting} style={{
-                    marginTop:'4px',padding:'12px',background:'#0F1410',color:'white',border:'none',
+                    marginTop:'4px',padding:'12px',background:'#FFFFFF',color:'white',border:'none',
                     borderRadius:'10px',fontWeight:700,fontSize:'14px',cursor:'pointer',
                     display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',opacity:acting?0.6:1,
                   }}>
@@ -2295,8 +2297,8 @@ export default function WarRoomPage() {
               <div style={{marginBottom:'8px',padding:'12px 14px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.35)',borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
                 <span style={{fontSize:'20px'}}>📅</span>
                 <div style={{flex:1}}>
-                  <div style={{fontWeight:700,fontSize:'13px',color:'#0F1410'}}>Intervention programmée</div>
-                  <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'2px'}}>
+                  <div style={{fontWeight:700,fontSize:'13px',color:'#3D4852'}}>Intervention programmée</div>
+                  <div style={{fontSize:'12px',color:'#6B7280',marginTop:'2px'}}>
                     {mission?.scheduled_at
                       ? `${new Date(mission.scheduled_at).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${new Date(mission.scheduled_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`
                       : 'Date en cours de chargement…'}
@@ -2321,8 +2323,8 @@ export default function WarRoomPage() {
                   if (rid) notifyOther("L'artisan arrive ! Suivez-le en temps réel.", rid)
                   setActing(false)
                   router.push(`/suivi/${missionId}`)
-                }} disabled={acting} style={{
-                  width:'100%',padding:'12px',background:'#E85D26',color:'white',
+                }} disabled={acting} className="btn-primary" style={{
+                  width:'100%',padding:'12px',color:'white',
                   border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',
                   display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
                   opacity: acting ? 0.6 : 1,
@@ -2335,9 +2337,9 @@ export default function WarRoomPage() {
             {/* Les deux : Voir le suivi (en_route) */}
             {status === 'en_route' && (
               <div style={{marginBottom:'8px'}}>
-                <Link href={`/suivi/${missionId}`} style={{
+                <Link href={`/suivi/${missionId}`} className="btn-primary" style={{
                   display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
-                  width:'100%',padding:'12px',background:'#E85D26',color:'white',
+                  width:'100%',padding:'12px',color:'white',
                   borderRadius:'12px',fontWeight:700,fontSize:'14px',textDecoration:'none',
                 }}>
                   🚗 Voir le suivi en direct →
@@ -2350,24 +2352,24 @@ export default function WarRoomPage() {
               <div style={{marginBottom:'10px',background:'white',border:'2px solid #E85D26',borderRadius:'14px',overflow:'hidden'}}>
                 <div style={{background:'rgba(232,93,38,0.06)',padding:'10px 14px',borderBottom:'1px solid rgba(232,93,38,0.15)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <span style={{fontWeight:700,fontSize:'13px',color:'#E85D26'}}>💬 Refuser le devis</span>
-                  <button onClick={() => { setShowCounterProposal(false); setCounterAmount('') }} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E',padding:'2px',lineHeight:0}}><X size={14}/></button>
+                  <button onClick={() => { setShowCounterProposal(false); setCounterAmount('') }} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280',padding:'2px',lineHeight:0}}><X size={14}/></button>
                 </div>
                 <div style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:'10px'}}>
                   <div>
-                    <label style={{fontSize:'10px',fontWeight:700,color:'#7A7A6E',display:'block',marginBottom:'5px',letterSpacing:'0.08em'}}>VOTRE CONTRE-PROPOSITION (optionnel)</label>
+                    <label style={{fontSize:'10px',fontWeight:700,color:'#6B7280',display:'block',marginBottom:'5px',letterSpacing:'0.08em'}}>VOTRE CONTRE-PROPOSITION (optionnel)</label>
                     <div style={{display:'flex',gap:'8px'}}>
                       <input
                         type="text" inputMode="numeric"
                         value={counterAmount}
                         onChange={e => setCounterAmount(e.target.value)}
                         placeholder="Ex: 38 000 FCFA"
-                        style={{flex:1,padding:'10px 12px',border:'1.5px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#0F1410',fontWeight:600}}
+                        style={{flex:1,padding:'10px 12px',border:'1.5px solid #D8D2C4',borderRadius:'10px',fontSize:'14px',outline:'none',color:'#3D4852',fontWeight:600}}
                       />
                     </div>
                   </div>
                   <div style={{display:'flex',gap:'8px'}}>
                     <button onClick={() => sendRefusal(false)} disabled={acting}
-                      style={{flex:1,padding:'10px',background:'none',color:'#7A7A6E',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'12px',cursor:'pointer',opacity:acting?0.6:1}}>
+                      style={{flex:1,padding:'10px',background:'none',color:'#6B7280',border:'1px solid #D8D2C4',borderRadius:'10px',fontWeight:600,fontSize:'12px',cursor:'pointer',opacity:acting?0.6:1}}>
                       Refuser sans contre-offre
                     </button>
                     <button onClick={() => sendRefusal(true)} disabled={acting || !counterAmount.trim()}
@@ -2385,7 +2387,7 @@ export default function WarRoomPage() {
                 <span style={{fontSize:'11px',color:'#C9A84C',fontWeight:600,display:'flex',alignItems:'center',gap:'5px'}}>
                   📋 Message pré-rédigé — envoyez-le ou modifiez-le
                 </span>
-                <button onClick={() => setInput('')} style={{background:'none',border:'none',cursor:'pointer',color:'#7A7A6E',padding:'0',lineHeight:0}}>
+                <button onClick={() => setInput('')} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280',padding:'0',lineHeight:0}}>
                   <X size={12} />
                 </button>
               </div>
@@ -2396,8 +2398,8 @@ export default function WarRoomPage() {
               <input type="text" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
                 placeholder="Votre message…" className="input" style={{flex:1}} />
-              <button onClick={send} disabled={!input.trim() || sending}
-                style={{width:'44px',height:'44px',background:'#E85D26',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:(!input.trim()||sending)?'not-allowed':'pointer',flexShrink:0,opacity:(input.trim()&&!sending)?1:0.4}}>
+              <button onClick={send} disabled={!input.trim() || sending} className="btn-primary"
+                style={{width:'44px',height:'44px',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:(!input.trim()||sending)?'not-allowed':'pointer',flexShrink:0,opacity:(input.trim()&&!sending)?1:0.4}}>
                 {sending
                   ? <div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
                   : <Send size={18} />}
@@ -2415,7 +2417,7 @@ export default function WarRoomPage() {
             </div>
 
             {isArtisan ? (
-              <p style={{textAlign:'center',fontSize:'13px',color:'#7A7A6E'}}>Bravo ! La mission est bouclée.</p>
+              <p style={{textAlign:'center',fontSize:'13px',color:'#6B7280'}}>Bravo ! La mission est bouclée.</p>
             ) : hasReviewed ? (
               <div style={{textAlign:'center',padding:'16px',background:'white',borderRadius:'14px',border:'1px solid #D8D2C4'}}>
                 <div style={{display:'flex',justifyContent:'center',gap:'4px',marginBottom:'8px'}}>
@@ -2423,13 +2425,13 @@ export default function WarRoomPage() {
                     <Star key={s} size={18} fill={s <= rating ? '#C9A84C' : 'none'} color={s <= rating ? '#C9A84C' : '#D8D2C4'} />
                   ))}
                 </div>
-                <p style={{fontSize:'14px',fontWeight:600,color:'#0F1410',marginBottom:'4px'}}>Merci pour votre avis !</p>
-                <p style={{fontSize:'12px',color:'#7A7A6E'}}>Votre retour est visible sur le profil de l'artisan.</p>
+                <p style={{fontSize:'14px',fontWeight:600,color:'#3D4852',marginBottom:'4px'}}>Merci pour votre avis !</p>
+                <p style={{fontSize:'12px',color:'#6B7280'}}>Votre retour est visible sur le profil de l'artisan.</p>
               </div>
             ) : (
               <div style={{background:'white',borderRadius:'16px',padding:'16px',border:'1px solid #D8D2C4'}}>
-                <div style={{fontWeight:700,fontSize:'15px',color:'#0F1410',marginBottom:'4px'}}>Comment s'est passée la mission ?</div>
-                <p style={{fontSize:'13px',color:'#7A7A6E',marginBottom:'16px'}}>Votre avis aide l'artisan et les futurs clients.</p>
+                <div style={{fontWeight:700,fontSize:'15px',color:'#3D4852',marginBottom:'4px'}}>Comment s'est passée la mission ?</div>
+                <p style={{fontSize:'13px',color:'#6B7280',marginBottom:'16px'}}>Votre avis aide l'artisan et les futurs clients.</p>
 
                 {/* Étoiles */}
                 <div style={{display:'flex',gap:'6px',justifyContent:'center',marginBottom:'8px'}}>
@@ -2460,7 +2462,7 @@ export default function WarRoomPage() {
                   rows={3}
                   style={{width:'100%',padding:'10px 12px',border:'1px solid #D8D2C4',borderRadius:'10px',
                     fontSize:'14px',resize:'none',fontFamily:'inherit',outline:'none',
-                    boxSizing:'border-box',marginBottom:'12px',color:'#0F1410'}}
+                    boxSizing:'border-box',marginBottom:'12px',color:'#3D4852'}}
                 />
                 <button
                   onClick={submitReview}

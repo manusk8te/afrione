@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { ArrowLeft, Plus, Trash2, Camera, Upload, CheckCircle, Zap } from 'lucide-react'
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 type Item = { id: string; label: string; qty: number; prix: number; type: 'main_oeuvre' | 'materiau' }
 
 export default function PrestationPage() {
@@ -42,29 +45,29 @@ export default function PrestationPage() {
 
   if (step === 'done') {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center px-4">
-        <div className="max-w-sm w-full text-center">
-          <div className="w-20 h-20 bg-accent2/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle size={40} className="text-accent2" />
+      <div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
+        <div style={{ maxWidth: '380px', width: '100%', textAlign: 'center' }}>
+          <div style={{ width: '80px', height: '80px', background: 'rgba(34,197,94,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <CheckCircle size={40} color="#22c55e" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-dark mb-3">Prestation validée !</h1>
-          <p className="text-muted mb-2">Le client a reçu votre rapport de fin de mission</p>
-          <div className="bg-white border border-border rounded-2xl p-4 mb-8 text-left space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">Total facturé</span>
-              <span className="font-bold text-dark">{total.toLocaleString()} FCFA</span>
+          <h1 style={{ fontWeight: 700, fontSize: '28px', color: '#3D4852', marginBottom: '12px' }}>Prestation validée !</h1>
+          <p style={{ color: '#6B7280', marginBottom: '8px' }}>Le client a reçu votre rapport de fin de mission</p>
+          <div style={{ background: '#FFFFFF', boxShadow: NEU_SHADOW, borderRadius: '20px', padding: '16px', marginBottom: '32px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+              <span style={{ color: '#6B7280' }}>Total facturé</span>
+              <span style={{ fontWeight: 700, color: '#3D4852' }}>{total.toLocaleString()} FCFA</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">Commission AfriOne (12%)</span>
-              <span className="text-muted">{commission.toLocaleString()} FCFA</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+              <span style={{ color: '#6B7280' }}>Commission AfriOne (12%)</span>
+              <span style={{ color: '#6B7280' }}>{commission.toLocaleString()} FCFA</span>
             </div>
-            <div className="flex justify-between text-sm border-t border-border pt-2">
-              <span className="font-bold text-dark">Vos gains</span>
-              <span className="font-bold text-accent2">{net.toLocaleString()} FCFA</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderTop: '1px solid #E2E8F0', paddingTop: '8px' }}>
+              <span style={{ fontWeight: 700, color: '#3D4852' }}>Vos gains</span>
+              <span style={{ fontWeight: 700, color: '#E85D26' }}>{net.toLocaleString()} FCFA</span>
             </div>
           </div>
-          <p className="text-sm text-muted mb-6">Les fonds seront disponibles après validation du client.</p>
-          <Link href="/artisan-space/dashboard" className="btn-primary w-full flex items-center justify-center gap-2">
+          <p style={{ fontSize: '13px', color: '#6B7280', marginBottom: '24px' }}>Les fonds seront disponibles après validation du client.</p>
+          <Link href="/artisan-space/dashboard" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
             Retour au tableau de bord
           </Link>
         </div>
@@ -73,87 +76,97 @@ export default function PrestationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="bg-dark text-cream">
-        <div className="page-container py-4 flex items-center gap-3 max-w-2xl">
-          <Link href="/artisan-space/dashboard" className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+    <div style={{ minHeight: '100vh', background: '#F5F7FA' }}>
+      {/* Header */}
+      <div style={{ background: '#FFFFFF', boxShadow: '0 1px 0 #E2E8F0' }}>
+        <div style={{ maxWidth: '672px', margin: '0 auto', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Link href="/artisan-space/dashboard" style={{ padding: '6px', borderRadius: '8px', display: 'flex', transition: 'background 0.15s', color: '#3D4852' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F5F7FA'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <div className="font-display font-bold">{step === 'saisie' ? 'Saisie de prestation' : 'Photo de fin de chantier'}</div>
-            <div className="text-xs text-muted">Mission #AF-2847</div>
+            <div style={{ fontWeight: 700, color: '#3D4852' }}>{step === 'saisie' ? 'Saisie de prestation' : 'Photo de fin de chantier'}</div>
+            <div style={{ fontSize: '12px', color: '#8B95A5' }}>Mission #AF-2847</div>
           </div>
         </div>
       </div>
 
       {/* Progress */}
-      <div className="flex gap-0 flex-shrink-0">
+      <div style={{ display: 'flex' }}>
         {['saisie', 'photo'].map((s, i) => (
-          <div key={s} className={`h-1 flex-1 transition-all ${i === 0 && (step === 'saisie' || step === 'photo') ? 'bg-accent' : step === 'photo' && i === 1 ? 'bg-accent' : 'bg-border'}`} />
+          <div key={s} className={`h-1 flex-1 transition-all ${i === 0 && (step === 'saisie' || step === 'photo') ? 'afrione-gradient' : step === 'photo' && i === 1 ? 'afrione-gradient' : ''}`}
+            style={!(i === 0 && (step === 'saisie' || step === 'photo')) && !(step === 'photo' && i === 1) ? { height: '4px', flex: 1, background: '#E2E8F0' } : { height: '4px', flex: 1 }} />
         ))}
       </div>
 
-      <div className="pt-6 pb-16 px-4">
-        <div className="max-w-2xl mx-auto">
+      <div style={{ padding: '24px 16px 64px' }}>
+        <div style={{ maxWidth: '672px', margin: '0 auto' }}>
 
           {/* STEP SAISIE */}
           {step === 'saisie' && (
             <div>
-              <h1 className="font-display text-2xl font-bold text-dark mb-6">Travaux réalisés</h1>
+              <h1 style={{ fontWeight: 700, fontSize: '24px', color: '#3D4852', marginBottom: '24px' }}>Travaux réalisés</h1>
 
               {/* Items list */}
-              <div className="card mb-4">
-                <div className="space-y-3">
+              <div style={{ background: '#FFFFFF', boxShadow: NEU_SHADOW, borderRadius: '20px', padding: '20px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {items.map(item => (
-                    <div key={item.id} className="flex items-center gap-3">
-                      <div className={`text-xs px-2 py-1 rounded-lg flex-shrink-0 ${
-                        item.type === 'main_oeuvre' ? 'bg-accent/10 text-accent' : 'bg-accent2/10 text-accent2'
-                      }`}>
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        fontSize: '11px', padding: '4px 8px', borderRadius: '8px', flexShrink: 0,
+                        background: item.type === 'main_oeuvre' ? 'rgba(232,93,38,0.08)' : 'rgba(34,197,94,0.08)',
+                        color: item.type === 'main_oeuvre' ? '#E85D26' : '#16a34a',
+                      }}>
                         {item.type === 'main_oeuvre' ? 'MO' : 'MAT'}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-dark">{item.label}</div>
-                        <div className="text-xs text-muted">{item.qty} × {item.prix.toLocaleString()} FCFA</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: '#3D4852' }}>{item.label}</div>
+                        <div style={{ fontSize: '12px', color: '#8B95A5' }}>{item.qty} × {item.prix.toLocaleString()} FCFA</div>
                       </div>
-                      <div className="font-bold text-dark text-sm">{(item.qty * item.prix).toLocaleString()}</div>
-                      <button onClick={() => removeItem(item.id)} className="p-1 hover:text-red-500 transition-colors">
-                        <Trash2 size={14} className="text-muted" />
+                      <div style={{ fontWeight: 700, color: '#3D4852', fontSize: '14px' }}>{(item.qty * item.prix).toLocaleString()}</div>
+                      <button onClick={() => removeItem(item.id)} style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }}>
+                        <Trash2 size={14} color="#8B95A5" />
                       </button>
                     </div>
                   ))}
                 </div>
 
-                <div className="border-t border-border mt-4 pt-4 flex justify-between">
-                  <span className="font-display font-bold text-dark">Total</span>
-                  <span className="font-display text-2xl font-bold text-dark">{total.toLocaleString()} FCFA</span>
+                <div style={{ borderTop: '1px solid #E2E8F0', marginTop: '16px', paddingTop: '16px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 700, color: '#3D4852' }}>Total</span>
+                  <span style={{ fontWeight: 700, fontSize: '22px', color: '#3D4852' }}>{total.toLocaleString()} FCFA</span>
                 </div>
               </div>
 
               {/* Add item */}
-              <div className="card mb-6">
-                <h3 className="font-semibold text-dark text-sm mb-3">Ajouter un élément</h3>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <select value={newType} onChange={e => setNewType(e.target.value as any)} className="input text-sm">
+              <div style={{ background: '#FFFFFF', boxShadow: NEU_SHADOW, borderRadius: '20px', padding: '20px', marginBottom: '24px' }}>
+                <h3 style={{ fontWeight: 600, color: '#3D4852', fontSize: '14px', marginBottom: '12px' }}>Ajouter un élément</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                  <select value={newType} onChange={e => setNewType(e.target.value as any)}
+                    style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', color: '#3D4852', outline: 'none' }}>
                     <option value="main_oeuvre">Main d'œuvre</option>
                     <option value="materiau">Matériau</option>
                   </select>
                   <input type="text" value={newLabel} onChange={e => setNewLabel(e.target.value)}
-                    placeholder="Description" className="input text-sm" />
+                    placeholder="Description"
+                    style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', color: '#3D4852', outline: 'none' }} />
                   <input type="number" value={newQty} onChange={e => setNewQty(e.target.value)}
-                    placeholder="Qté" className="input text-sm" />
+                    placeholder="Qté"
+                    style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', color: '#3D4852', outline: 'none' }} />
                   <input type="number" value={newPrix} onChange={e => setNewPrix(e.target.value)}
-                    placeholder="Prix unitaire FCFA" className="input text-sm" />
+                    placeholder="Prix unitaire FCFA"
+                    style={{ background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', color: '#3D4852', outline: 'none' }} />
                 </div>
                 <button onClick={addItem} disabled={!newLabel || !newPrix}
-                  className="w-full flex items-center justify-center gap-2 text-sm font-medium text-accent border border-accent/30 py-2.5 rounded-xl hover:bg-accent/5 transition-colors disabled:opacity-40">
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', fontWeight: 500, color: '#E85D26', border: '1.5px solid rgba(232,93,38,0.3)', padding: '10px', borderRadius: '12px', background: '#FFFFFF', boxShadow: NEU_SMALL, cursor: 'pointer', opacity: (!newLabel || !newPrix) ? 0.4 : 1 }}>
                   <Plus size={14} /> Ajouter
                 </button>
               </div>
 
               <button onClick={generateDevis} disabled={items.length === 0 || generating}
-                className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40">
+                className="btn-primary" style={{ width: '100%', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: (items.length === 0 || generating) ? 0.4 : 1 }}>
                 {generating ? (
-                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Génération IA...</>
+                  <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Génération IA...</>
                 ) : (
                   <><Zap size={16} /> Générer le devis final et continuer</>
                 )}
@@ -164,50 +177,55 @@ export default function PrestationPage() {
           {/* STEP PHOTO */}
           {step === 'photo' && (
             <div className="animate-fade-up">
-              <h1 className="font-display text-2xl font-bold text-dark mb-2">Photo de fin de chantier</h1>
-              <p className="text-muted text-sm mb-6">Envoyez la preuve de votre travail pour déclencher le paiement</p>
+              <h1 style={{ fontWeight: 700, fontSize: '24px', color: '#3D4852', marginBottom: '8px' }}>Photo de fin de chantier</h1>
+              <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>Envoyez la preuve de votre travail pour déclencher le paiement</p>
 
               <div
                 onClick={() => setPhotoUploaded(true)}
-                className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all mb-6 ${
-                  photoUploaded ? 'border-accent2 bg-accent2/5' : 'border-border hover:border-accent hover:bg-accent/5'
-                }`}
+                style={{
+                  border: `2px dashed ${photoUploaded ? '#22c55e' : '#E2E8F0'}`,
+                  background: photoUploaded ? 'rgba(34,197,94,0.04)' : '#FFFFFF',
+                  borderRadius: '20px', padding: '48px', textAlign: 'center', cursor: 'pointer',
+                  transition: 'all 0.2s', marginBottom: '24px',
+                  boxShadow: NEU_SHADOW,
+                }}
               >
                 {photoUploaded ? (
                   <div>
-                    <CheckCircle size={40} className="text-accent2 mx-auto mb-3" />
-                    <p className="font-semibold text-accent2">Photo ajoutée !</p>
-                    <p className="text-xs text-muted mt-1">chantier_terminé.jpg</p>
+                    <CheckCircle size={40} color="#22c55e" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ fontWeight: 600, color: '#22c55e' }}>Photo ajoutée !</p>
+                    <p style={{ fontSize: '12px', color: '#8B95A5', marginTop: '4px' }}>chantier_terminé.jpg</p>
                   </div>
                 ) : (
                   <div>
-                    <div className="flex justify-center gap-4 mb-4">
-                      <Camera size={32} className="text-muted" />
-                      <Upload size={32} className="text-muted" />
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginBottom: '16px' }}>
+                      <Camera size={32} color="#8B95A5" />
+                      <Upload size={32} color="#8B95A5" />
                     </div>
-                    <p className="font-semibold text-dark">Prendre ou importer une photo</p>
-                    <p className="text-xs text-muted mt-1">Montrez le travail terminé proprement</p>
+                    <p style={{ fontWeight: 600, color: '#3D4852' }}>Prendre ou importer une photo</p>
+                    <p style={{ fontSize: '12px', color: '#8B95A5', marginTop: '4px' }}>Montrez le travail terminé proprement</p>
                   </div>
                 )}
               </div>
 
-              <div className="bg-dark rounded-2xl p-4 mb-6">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-muted">Total prestation</span>
-                  <span className="text-cream font-bold">{total.toLocaleString()} FCFA</span>
+              {/* Récapitulatif */}
+              <div style={{ background: '#FFFFFF', boxShadow: NEU_SHADOW, borderRadius: '20px', padding: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+                  <span style={{ color: '#6B7280' }}>Total prestation</span>
+                  <span style={{ fontWeight: 700, color: '#3D4852' }}>{total.toLocaleString()} FCFA</span>
                 </div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-muted">Commission AfriOne (12%)</span>
-                  <span className="text-muted">{commission.toLocaleString()} FCFA</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+                  <span style={{ color: '#6B7280' }}>Commission AfriOne (12%)</span>
+                  <span style={{ color: '#6B7280' }}>{commission.toLocaleString()} FCFA</span>
                 </div>
-                <div className="flex justify-between text-sm border-t border-border/30 pt-2">
-                  <span className="text-cream font-bold">Vos gains</span>
-                  <span className="text-accent2 font-bold text-lg">{net.toLocaleString()} FCFA</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderTop: '1px solid #E2E8F0', paddingTop: '8px' }}>
+                  <span style={{ fontWeight: 700, color: '#3D4852' }}>Vos gains</span>
+                  <span style={{ fontWeight: 700, fontSize: '18px', color: '#E85D26' }}>{net.toLocaleString()} FCFA</span>
                 </div>
               </div>
 
               <button onClick={() => setStep('done')} disabled={!photoUploaded}
-                className="btn-primary w-full py-4 flex items-center justify-center gap-2 disabled:opacity-40">
+                className="btn-primary" style={{ width: '100%', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: !photoUploaded ? 0.4 : 1 }}>
                 <CheckCircle size={16} /> Soumettre et demander la validation
               </button>
             </div>

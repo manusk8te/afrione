@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Upload, CheckCircle, Clock, AlertCircle, Shield, FileText, Camera } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 export default function KYCPage() {
   const router = useRouter()
   const [artisan, setArtisan] = useState<any>(null)
@@ -140,15 +143,16 @@ export default function KYCPage() {
   const kycStatus = artisan?.kyc_status || 'pending'
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="bg-dark text-cream">
+    <div className="min-h-screen" style={{background:'#F5F7FA'}}>
+      {/* Header bar */}
+      <div style={{background:'#FFFFFF',borderBottom:'1px solid #E2E8F0',boxShadow:NEU_SMALL}}>
         <div className="page-container py-4 flex items-center gap-3 max-w-2xl">
-          <Link href="/artisan-space/dashboard" className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+          <Link href="/artisan-space/dashboard" style={{padding:'4px',borderRadius:'8px',display:'flex',alignItems:'center',color:'#6B7280',textDecoration:'none'}}>
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <div className="font-display font-bold">Vérification d'identité (KYC)</div>
-            <div className="text-xs text-muted">Obligatoire pour recevoir des missions</div>
+            <div className="font-display font-bold" style={{color:'#3D4852'}}>Vérification d'identité (KYC)</div>
+            <div style={{fontSize:'12px',color:'#8B95A5'}}>Obligatoire pour recevoir des missions</div>
           </div>
           {msg && <span style={{marginLeft:'auto',fontSize:'12px',color:'#2B6B3E',background:'rgba(43,107,62,0.15)',padding:'4px 12px',borderRadius:'20px'}}>{msg}</span>}
         </div>
@@ -165,10 +169,10 @@ export default function KYCPage() {
           }}>
             <Clock size={18} style={{color: kycStatus === 'approved' ? '#2B6B3E' : '#C9A84C',flexShrink:0,marginTop:'2px'}} />
             <div>
-              <div style={{fontWeight:600,color:'#0F1410',fontSize:'14px'}}>
+              <div style={{fontWeight:600,color:'#3D4852',fontSize:'14px'}}>
                 {kycStatus === 'approved' ? '✓ Profil vérifié' : kycStatus === 'rejected' ? '✗ Documents rejetés' : 'Vérification en attente'}
               </div>
-              <div style={{fontSize:'12px',color:'#7A7A6E',marginTop:'4px'}}>
+              <div style={{fontSize:'12px',color:'#6B7280',marginTop:'4px'}}>
                 {kycStatus === 'approved'
                   ? 'Votre identité a été vérifiée. Vous pouvez recevoir des missions.'
                   : kycStatus === 'rejected'
@@ -189,13 +193,14 @@ export default function KYCPage() {
                 <div style={{
                   width:'32px',height:'32px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
                   margin:'0 auto 8px',fontSize:'13px',
-                  background: s.done ? '#2B6B3E' : '#F5F3EE',
-                  border: s.done ? 'none' : '1px solid #D8D2C4',
-                  color: s.done ? 'white' : '#7A7A6E',
+                  background: s.done ? '#2B6B3E' : '#FFFFFF',
+                  border: s.done ? 'none' : '1px solid #E2E8F0',
+                  boxShadow: s.done ? 'none' : NEU_SMALL,
+                  color: s.done ? 'white' : '#6B7280',
                 }}>
                   {s.done ? <CheckCircle size={16}/> : i+1}
                 </div>
-                <div style={{fontSize:'11px',color:'#7A7A6E'}}>{s.label}</div>
+                <div style={{fontSize:'11px',color:'#6B7280'}}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -206,31 +211,32 @@ export default function KYCPage() {
               const uploaded = hasDoc(doc.id)
               const isUploading = uploading === doc.id
               return (
-                <div key={doc.id} className="card">
+                <div key={doc.id} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
                   <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
-                    <div style={{width:'48px',height:'48px',background:'#F5F3EE',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                      <doc.icon size={20} style={{color:'#7A7A6E'}} />
+                    <div style={{width:'48px',height:'48px',background:'#F5F7FA',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:NEU_SMALL}}>
+                      <doc.icon size={20} style={{color:'#8B95A5'}} />
                     </div>
                     <div style={{flex:1}}>
                       <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
-                        <span style={{fontWeight:700,color:'#0F1410',fontSize:'15px'}}>{doc.label}</span>
-                        {doc.required && <span style={{fontSize:'11px',color:'#E85D26',background:'rgba(232,93,38,0.1)',padding:'2px 8px',borderRadius:'20px'}}>Obligatoire</span>}
+                        <span style={{fontWeight:700,color:'#3D4852',fontSize:'15px'}}>{doc.label}</span>
+                        {doc.required && <span className="afrione-gradient-text" style={{fontSize:'11px',background:'rgba(232,93,38,0.1)',padding:'2px 8px',borderRadius:'20px'}}>Obligatoire</span>}
                         {uploaded && <span style={{fontSize:'11px',color:'#2B6B3E',background:'rgba(43,107,62,0.1)',padding:'2px 8px',borderRadius:'20px'}}>✓ Envoyé</span>}
                       </div>
-                      <p style={{fontSize:'13px',color:'#7A7A6E',marginTop:'2px'}}>{doc.desc}</p>
+                      <p style={{fontSize:'13px',color:'#6B7280',marginTop:'2px'}}>{doc.desc}</p>
                     </div>
                     <button
                       onClick={() => refs[doc.id].current?.click()}
                       disabled={isUploading}
                       style={{
                         flexShrink:0,display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',fontWeight:500,
-                        padding:'8px 16px',borderRadius:'10px',border:'1px solid #D8D2C4',cursor:'pointer',
-                        background: uploaded ? '#F5F3EE' : '#0F1410',
-                        color: uploaded ? '#7A7A6E' : '#FAFAF5',
+                        padding:'8px 16px',borderRadius:'10px',border:'1.5px solid #E2E8F0',cursor:'pointer',
+                        background: uploaded ? '#F5F7FA' : '#FFFFFF',
+                        boxShadow: NEU_SMALL,
+                        color: uploaded ? '#8B95A5' : '#3D4852',
                       }}
                     >
                       {isUploading
-                        ? <div style={{width:'14px',height:'14px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+                        ? <div style={{width:'14px',height:'14px',border:'2px solid rgba(139,149,165,0.3)',borderTop:'2px solid #8B95A5',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
                         : <Upload size={14}/>
                       }
                       {uploaded ? 'Remplacer' : 'Envoyer'}
@@ -244,7 +250,7 @@ export default function KYCPage() {
 
           <div style={{display:'flex',alignItems:'flex-start',gap:'12px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'12px',padding:'16px',marginBottom:'24px'}}>
             <Shield size={16} style={{color:'#2B6B3E',flexShrink:0,marginTop:'2px'}} />
-            <p style={{fontSize:'12px',color:'#7A7A6E'}}>
+            <p style={{fontSize:'12px',color:'#6B7280'}}>
               Vos documents sont chiffrés et stockés de façon sécurisée. Ils ne sont utilisés qu'à des fins de vérification d'identité conformément au RGPD.
             </p>
           </div>
@@ -252,10 +258,12 @@ export default function KYCPage() {
           <button
             onClick={submit}
             disabled={!allRequired || submitting || kycStatus === 'approved'}
+            className={allRequired && kycStatus !== 'approved' ? 'afrione-gradient' : ''}
             style={{
               width:'100%',padding:'16px',borderRadius:'12px',border:'none',cursor: allRequired ? 'pointer' : 'not-allowed',
-              background: allRequired && kycStatus !== 'approved' ? '#E85D26' : '#D8D2C4',
-              color:'white',fontSize:'15px',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+              background: allRequired && kycStatus !== 'approved' ? undefined : '#E2E8F0',
+              color: allRequired && kycStatus !== 'approved' ? 'white' : '#8B95A5',
+              fontSize:'15px',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
             }}
           >
             {submitting

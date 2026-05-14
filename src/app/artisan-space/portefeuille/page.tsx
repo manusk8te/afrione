@@ -3,6 +3,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Wallet, Phone, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 
+const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
+const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+
 const TRANSACTIONS = [
   { id: 't1', type: 'credit', label: 'Mission #AF-2847 · Kouadio B.', amount: 17160, date: 'Aujourd\'hui 18h30', status: 'completed' },
   { id: 't2', type: 'credit', label: 'Mission #AF-2831 · Diallo M.', amount: 22000, date: 'Hier 14h15', status: 'completed' },
@@ -26,15 +29,16 @@ export default function PortefeuillePage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="bg-dark text-cream">
+    <div className="min-h-screen" style={{background:'#F5F7FA'}}>
+      {/* Header bar */}
+      <div style={{background:'#FFFFFF',borderBottom:'1px solid #E2E8F0',boxShadow:NEU_SMALL}}>
         <div className="page-container py-4 flex items-center gap-3 max-w-2xl">
-          <Link href="/artisan-space/dashboard" className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+          <Link href="/artisan-space/dashboard" style={{padding:'4px',borderRadius:'8px',display:'flex',alignItems:'center',color:'#6B7280',textDecoration:'none'}}>
             <ArrowLeft size={18} />
           </Link>
-          <div className="flex items-center gap-2">
-            <Wallet size={18} className="text-accent" />
-            <div className="font-display font-bold">Mon Portefeuille</div>
+          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            <Wallet size={18} className="afrione-gradient-text" />
+            <div className="font-display font-bold" style={{color:'#3D4852'}}>Mon Portefeuille</div>
           </div>
         </div>
       </div>
@@ -43,36 +47,37 @@ export default function PortefeuillePage() {
         <div className="max-w-2xl mx-auto">
 
           {/* Balance card */}
-          <div className="bg-dark rounded-2xl p-6 mb-6 text-center">
-            <p className="font-mono text-xs text-muted uppercase tracking-wider mb-2">Solde disponible</p>
-            <p className="font-display text-5xl font-bold text-cream mb-1">
+          <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'24px',marginBottom:'24px',textAlign:'center'}}>
+            <p style={{fontFamily:'Space Mono',fontSize:'12px',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'8px'}}>Solde disponible</p>
+            <p className="font-display" style={{fontSize:'48px',fontWeight:700,color:'#3D4852',marginBottom:'4px'}}>
               {balance.toLocaleString()}
             </p>
-            <p className="font-mono text-sm text-muted">FCFA</p>
+            <p style={{fontFamily:'Space Mono',fontSize:'14px',color:'#8B95A5'}}>FCFA</p>
 
             {pending > 0 && (
-              <div className="flex items-center justify-center gap-2 mt-4 text-sm">
-                <Clock size={14} className="text-gold" />
-                <span className="text-muted">{pending.toLocaleString()} FCFA en attente de validation</span>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginTop:'16px',fontSize:'14px'}}>
+                <Clock size={14} color="#C9A84C" />
+                <span style={{color:'#6B7280'}}>{pending.toLocaleString()} FCFA en attente de validation</span>
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-3 mt-6 text-center">
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px',marginTop:'24px',textAlign:'center'}}>
               {[
                 { label: 'Ce mois', value: '58 960 FCFA' },
                 { label: 'En séquestre', value: '8 800 FCFA' },
                 { label: 'Total retraits', value: '30 000 FCFA' },
               ].map(s => (
-                <div key={s.label} className="bg-dark2 rounded-xl p-3">
-                  <div className="text-cream font-semibold text-sm">{s.value}</div>
-                  <div className="text-muted text-xs mt-0.5">{s.label}</div>
+                <div key={s.label} style={{background:'#F5F7FA',borderRadius:'12px',padding:'12px',boxShadow:NEU_SMALL}}>
+                  <div style={{color:'#3D4852',fontWeight:600,fontSize:'14px'}}>{s.value}</div>
+                  <div style={{color:'#8B95A5',fontSize:'12px',marginTop:'2px'}}>{s.label}</div>
                 </div>
               ))}
             </div>
 
             <button
               onClick={() => setShowWithdraw(true)}
-              className="mt-6 w-full bg-accent text-white font-semibold py-3 rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
+              className="mt-6 w-full afrione-gradient text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              style={{marginTop:'24px'}}
             >
               <ArrowUpRight size={16} /> Retirer vers Wave
             </button>
@@ -80,48 +85,57 @@ export default function PortefeuillePage() {
 
           {/* Withdraw modal */}
           {showWithdraw && (
-            <div className="card border-accent/30 border-2 mb-6 animate-fade-up">
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',border:'2px solid rgba(232,93,38,0.2)',marginBottom:'24px'}}>
               {withdrawStep === 'form' && (
                 <div>
-                  <h3 className="font-display font-bold text-dark mb-4">Retrait Wave</h3>
+                  <h3 className="font-display font-bold" style={{color:'#3D4852',marginBottom:'16px'}}>Retrait Wave</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-mono text-muted uppercase tracking-wider mb-2">Numéro Wave</label>
-                      <div className="flex gap-2">
-                        <div className="bg-bg2 border border-border rounded-xl px-3 py-3 text-sm font-mono flex-shrink-0">🇨🇮 +225</div>
+                      <label style={{display:'block',fontSize:'12px',fontFamily:'Space Mono',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Numéro Wave</label>
+                      <div style={{display:'flex',gap:'8px'}}>
+                        <div style={{background:'#F5F7FA',border:'1.5px solid #E2E8F0',borderRadius:'12px',padding:'12px',fontSize:'14px',fontFamily:'Space Mono',flexShrink:0,color:'#3D4852',boxShadow:NEU_SMALL}}>🇨🇮 +225</div>
                         <input type="tel" value={withdrawPhone} onChange={e => setWithdrawPhone(e.target.value)}
-                          placeholder="07 00 00 00 00" className="input flex-1 font-mono" />
+                          placeholder="07 00 00 00 00"
+                          style={{flex:1,padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'12px',fontFamily:'Space Mono',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF'}} />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-mono text-muted uppercase tracking-wider mb-2">Montant (FCFA)</label>
+                      <label style={{display:'block',fontSize:'12px',fontFamily:'Space Mono',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Montant (FCFA)</label>
                       <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)}
-                        placeholder={`Max : ${balance.toLocaleString()} FCFA`} className="input" />
+                        placeholder={`Max : ${balance.toLocaleString()} FCFA`}
+                        style={{width:'100%',padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'12px',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF',boxSizing:'border-box'}} />
                     </div>
-                    <div className="flex gap-3">
+                    <div style={{display:'flex',gap:'12px'}}>
                       <button onClick={handleWithdraw} disabled={!withdrawPhone || !withdrawAmount}
-                        className="btn-primary flex-1 disabled:opacity-40">
+                        className="btn-primary flex-1 disabled:opacity-40"
+                        style={{flex:1,opacity:(!withdrawPhone || !withdrawAmount) ? 0.4 : 1}}>
                         Confirmer
                       </button>
-                      <button onClick={() => setShowWithdraw(false)} className="btn-outline flex-1">Annuler</button>
+                      <button
+                        onClick={() => setShowWithdraw(false)}
+                        style={{flex:1,padding:'12px',background:'#FFFFFF',color:'#6B7280',border:'1.5px solid #E2E8F0',borderRadius:'12px',cursor:'pointer',fontWeight:600,fontSize:'14px',boxShadow:NEU_SMALL}}
+                      >
+                        Annuler
+                      </button>
                     </div>
                   </div>
                 </div>
               )}
               {withdrawStep === 'processing' && (
-                <div className="text-center py-4">
-                  <div className="w-10 h-10 border-4 border-accent/30 border-t-accent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="font-semibold text-dark">Traitement en cours...</p>
-                  <p className="text-sm text-muted">Connexion à Wave Business</p>
+                <div style={{textAlign:'center',padding:'16px 0'}}>
+                  <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'0 auto 12px'}} />
+                  <p style={{fontWeight:600,color:'#3D4852'}}>Traitement en cours...</p>
+                  <p style={{fontSize:'14px',color:'#6B7280'}}>Connexion à Wave Business</p>
                 </div>
               )}
               {withdrawStep === 'done' && (
-                <div className="text-center py-4">
-                  <CheckCircle size={40} className="text-accent2 mx-auto mb-3" />
-                  <p className="font-semibold text-dark">Retrait effectué !</p>
-                  <p className="text-sm text-muted">{parseInt(withdrawAmount).toLocaleString()} FCFA envoyés</p>
+                <div style={{textAlign:'center',padding:'16px 0'}}>
+                  <CheckCircle size={40} style={{color:'#2B6B3E',margin:'0 auto 12px'}} />
+                  <p style={{fontWeight:600,color:'#3D4852'}}>Retrait effectué !</p>
+                  <p style={{fontSize:'14px',color:'#6B7280'}}>{parseInt(withdrawAmount).toLocaleString()} FCFA envoyés</p>
                   <button onClick={() => { setShowWithdraw(false); setWithdrawStep('form') }}
-                    className="mt-4 text-sm text-accent hover:underline">Fermer</button>
+                    className="mt-4 text-sm afrione-gradient-text hover:underline"
+                    style={{marginTop:'16px',background:'none',border:'none',cursor:'pointer',fontSize:'14px'}}>Fermer</button>
                 </div>
               )}
             </div>
@@ -129,33 +143,35 @@ export default function PortefeuillePage() {
 
           {/* Transactions */}
           <div>
-            <h2 className="font-display text-lg font-bold text-dark mb-4">Historique</h2>
-            <div className="space-y-3">
+            <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#3D4852',marginBottom:'16px'}}>Historique</h2>
+            <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
               {TRANSACTIONS.map(t => (
-                <div key={t.id} className="card flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    t.type === 'credit' ? 'bg-accent2/10' : 'bg-accent/10'
-                  }`}>
+                <div key={t.id} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'16px',padding:'16px',display:'flex',alignItems:'center',gap:'16px'}}>
+                  <div style={{
+                    width:'40px',height:'40px',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
+                    background: t.type === 'credit' ? 'rgba(43,107,62,0.08)' : 'rgba(232,93,38,0.08)',
+                    boxShadow: NEU_SMALL,
+                  }}>
                     {t.type === 'credit'
-                      ? <ArrowDownLeft size={18} className="text-accent2" />
-                      : <ArrowUpRight size={18} className="text-accent" />}
+                      ? <ArrowDownLeft size={18} style={{color:'#2B6B3E'}} />
+                      : <ArrowUpRight size={18} className="afrione-gradient-text" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-dark text-sm truncate">{t.label}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-muted">{t.date}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:500,color:'#3D4852',fontSize:'14px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.label}</div>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'2px'}}>
+                      <span style={{fontSize:'12px',color:'#8B95A5'}}>{t.date}</span>
                       {t.status === 'pending' && (
-                        <span className="flex items-center gap-1 text-xs text-gold">
+                        <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'12px',color:'#C9A84C'}}>
                           <Clock size={10} /> En attente
                         </span>
                       )}
                     </div>
                   </div>
                   <div className={`font-display font-bold flex-shrink-0 ${
-                    t.type === 'credit' ? 'text-accent2' : 'text-accent'
-                  }`}>
+                    t.type === 'credit' ? '' : 'afrione-gradient-text'
+                  }`} style={{color: t.type === 'credit' ? '#2B6B3E' : undefined}}>
                     {t.type === 'credit' ? '+' : '-'}{t.amount.toLocaleString()}
-                    <span className="text-xs font-normal text-muted ml-1">FCFA</span>
+                    <span style={{fontSize:'12px',fontWeight:400,color:'#8B95A5',marginLeft:'4px'}}>FCFA</span>
                   </div>
                 </div>
               ))}

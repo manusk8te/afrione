@@ -3,10 +3,12 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Navigation, MapPin, CheckCircle, Clock, Navigation2, Camera, Upload, AlertCircle, MessageCircle, X, Zap } from 'lucide-react'
+import { ArrowLeft, Navigation, MapPin, CheckCircle, Clock, Camera, Upload, AlertCircle, MessageCircle, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { useJsApiLoader, GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api'
+
+const NEU_SM = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
 
 const QUARTIER_COORDS: Record<string, [number, number]> = {
   'Cocody':      [5.3600, -3.9910], 'Plateau':     [5.3190, -4.0200],
@@ -63,14 +65,12 @@ export default function MissionLivePage() {
   const [acting, setActing]           = useState(false)
   const [tab, setTab]                 = useState<'gps'|'photos'|'infos'>('gps')
 
-  // Photos de chantier
   const [proofAfterUrls, setProofAfterUrls] = useState<string[]>([])
   const [proofNotes, setProofNotes]         = useState('')
   const [uploadingProof, setUploadingProof] = useState(false)
   const [proofSaved, setProofSaved]         = useState(false)
   const proofRef = useRef<HTMLInputElement>(null)
 
-  // Litige
   const [showLitige, setShowLitige]         = useState(false)
   const [litigeText, setLitigeText]         = useState('')
   const [submittingLitige, setSubmittingLitige] = useState(false)
@@ -81,20 +81,18 @@ export default function MissionLivePage() {
 
   const isArtisan = missionRole === 'artisan' || missionRole === 'admin'
 
-  // Escape key closes litige modal
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') { setShowLitige(false); setConfirmDone(false) } }
     document.addEventListener('keydown', onEsc)
     return () => document.removeEventListener('keydown', onEsc)
   }, [])
 
-  // Google Maps
   const { isLoaded: mapsLoaded } = useJsApiLoader({
     id: 'afrione-map',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? '',
     libraries: MAPS_LIBRARIES,
   })
-  const mapRef   = useRef<google.maps.Map | null>(null)
+  const mapRef    = useRef<google.maps.Map | null>(null)
   const didFitRef = useRef(false)
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
 
@@ -136,7 +134,6 @@ export default function MissionLivePage() {
       if (!m) { setLoading(false); return }
       setMission(m)
 
-      // Rôle dans CETTE mission (indépendant du rôle global du profil)
       const mr: 'client'|'artisan'|'admin' =
         m.artisan_pros?.user_id === session.user.id && m.client_id !== session.user.id
         ? 'artisan'
@@ -153,7 +150,6 @@ export default function MissionLivePage() {
       setClientPos(coords)
       clientPosRef.current = coords
 
-      // Dernière position GPS
       const { data: lastGps } = await supabase
         .from('gps_tracking').select('lat, lng, eta_minutes')
         .eq('mission_id', missionId).order('created_at', { ascending: false }).limit(1).single()
@@ -163,7 +159,6 @@ export default function MissionLivePage() {
         setDistKm(haversineKm(lastGps.lat, lastGps.lng, coords[0], coords[1]))
       }
 
-      // Photos existantes
       const { data: proof } = await supabase.from('proof_of_work').select('*').eq('mission_id', missionId).maybeSingle()
       if (proof) {
         setProofAfterUrls(proof.photo_after_urls || [])
@@ -171,7 +166,6 @@ export default function MissionLivePage() {
         setProofSaved(true)
       }
 
-      // Tab par défaut selon statut et rôle
       if (m.status === 'en_cours') setTab(artisan ? 'photos' : 'infos')
 
       setLoading(false)
@@ -196,7 +190,6 @@ export default function MissionLivePage() {
     }
   }, [missionId])
 
-  // ── GPS ──────────────────────────────────────────────────────────────────
   const startTracking = async () => {
     if (!('geolocation' in navigator)) { toast.error('GPS non disponible'); return }
     setIsTracking(true)
@@ -244,7 +237,6 @@ export default function MissionLivePage() {
     setActing(false)
   }
 
-  // ── PHOTOS ───────────────────────────────────────────────────────────────
   const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
@@ -275,7 +267,6 @@ export default function MissionLivePage() {
     toast.success('Photos enregistrées !')
   }
 
-  // ── MARQUER TERMINÉ ───────────────────────────────────────────────────────
   const markDone = async () => {
     setActing(true)
     await supabase.from('missions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', missionId)
@@ -285,10 +276,7 @@ export default function MissionLivePage() {
       const { data: { session } } = await supabase.auth.getSession()
       const releaseRes = await fetch('/api/payment', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
         body: JSON.stringify({ mission_id: missionId }),
       })
       if (!releaseRes.ok) console.error('[release_escrow]', await releaseRes.json().catch(() => {}))
@@ -307,7 +295,6 @@ export default function MissionLivePage() {
     router.push(`/warroom/${missionId}`)
   }
 
-  // ── LITIGE ─────────────────────────────────────────────────────────────────
   const submitLitige = async () => {
     if (!litigeText.trim()) { toast.error('Décrivez le problème'); return }
     setSubmittingLitige(true)
@@ -328,29 +315,24 @@ export default function MissionLivePage() {
   }
 
   if (loading) return (
-    <div style={{ height: '100dvh', background: '#0F1410', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ height: '100dvh', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: '40px', height: '40px', border: '4px solid rgba(232,93,38,0.2)', borderTop: '4px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
     </div>
   )
 
-  const status   = mission?.status || 'en_route'
+  const status      = mission?.status || 'en_route'
   const artisanName = mission?.artisan_pros?.users?.name || 'Artisan'
   const artisanMetier = mission?.artisan_pros?.metier || ''
   const clientName  = mission?.users?.name || 'Client'
   const quartier    = mission?.users?.quartier || mission?.quartier || 'Abidjan'
   const amount      = mission?.total_price || 0
 
-  // Map
   const bbox = artisanPos ? {
     minLng: Math.min(artisanPos.lng, clientPos[1]) - 0.025, minLat: Math.min(artisanPos.lat, clientPos[0]) - 0.018,
     maxLng: Math.max(artisanPos.lng, clientPos[1]) + 0.025, maxLat: Math.max(artisanPos.lat, clientPos[0]) + 0.018,
   } : { minLng: clientPos[1]-0.03, minLat: clientPos[0]-0.02, maxLng: clientPos[1]+0.03, maxLat: clientPos[0]+0.02 }
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&layer=mapnik&marker=${clientPos[0]},${clientPos[1]}`
-  const googleMapsUrl = artisanPos
-    ? `https://www.google.com/maps/dir/${artisanPos.lat},${artisanPos.lng}/${clientPos[0]},${clientPos[1]}`
-    : `https://www.google.com/maps/search/?api=1&query=${clientPos[0]},${clientPos[1]}`
 
-  // Timeline steps
   const STEPS = [
     { key: 'en_route',  label: 'En route',  icon: '🚗' },
     { key: 'en_cours',  label: 'Sur place',  icon: '📍' },
@@ -359,27 +341,27 @@ export default function MissionLivePage() {
   const stepIndex = status === 'completed' ? 2 : status === 'en_cours' || status === 'disputed' ? 1 : 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#0F1410', color: '#FAFAF5' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#FFFFFF', color: '#3D4852' }}>
 
-      {/* ── MODAL LITIGE ─────────────────────────────────────────────── */}
+      {/* MODAL LITIGE */}
       {showLitige && (
-        <div onClick={() => setShowLitige(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,14,11,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '420px', background: 'white', borderRadius: '20px', padding: '24px' }}>
+        <div onClick={() => setShowLitige(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '420px', background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <div style={{ width: '36px', height: '36px', background: 'rgba(239,68,68,0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <AlertCircle size={18} color="#ef4444" />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '16px', color: '#0F1410' }}>Signaler un problème</div>
-                <div style={{ fontSize: '12px', color: '#7A7A6E' }}>Notre équipe examinera la situation sous 24h</div>
+                <div style={{ fontWeight: 700, fontSize: '16px', color: '#3D4852' }}>Signaler un problème</div>
+                <div style={{ fontSize: '12px', color: '#6B7280' }}>Notre équipe examinera la situation sous 24h</div>
               </div>
             </div>
             <textarea value={litigeText} onChange={e => setLitigeText(e.target.value)}
               placeholder="Décrivez le problème en détail : travaux non conformes, artisan absent, dégâts..."
-              rows={4} style={{ width: '100%', padding: '12px', border: '1.5px solid #D8D2C4', borderRadius: '12px', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: '16px', color: '#0F1410' }}
+              rows={4} style={{ width: '100%', padding: '12px', border: '1.5px solid #E2E8F0', borderRadius: '12px', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: '16px', color: '#3D4852' }}
             />
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setShowLitige(false)} style={{ flex: 1, padding: '12px', background: 'none', border: '1.5px solid #D8D2C4', borderRadius: '12px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#7A7A6E' }}>Annuler</button>
+              <button onClick={() => setShowLitige(false)} style={{ flex: 1, padding: '12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#6B7280', boxShadow: NEU_SM }}>Annuler</button>
               <button onClick={submitLitige} disabled={submittingLitige || !litigeText.trim()} style={{ flex: 2, padding: '12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', opacity: submittingLitige ? 0.6 : 1 }}>
                 {submittingLitige ? 'Envoi…' : '⚠️ Ouvrir le litige →'}
               </button>
@@ -388,22 +370,22 @@ export default function MissionLivePage() {
         </div>
       )}
 
-      {/* ── HEADER ───────────────────────────────────────────────────── */}
-      <div style={{ flexShrink: 0, background: '#0F1410', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      {/* HEADER */}
+      <div style={{ flexShrink: 0, background: '#FFFFFF', borderBottom: '1px solid #E2E8F0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px' }}>
-          <Link href={`/warroom/${missionId}`} style={{ color: '#7A7A6E', display: 'flex' }}>
+          <Link href={`/warroom/${missionId}`} style={{ color: '#6B7280', display: 'flex' }}>
             <ArrowLeft size={20} />
           </Link>
-          <div style={{ width: '36px', height: '36px', background: '#1A2018', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: '36px', height: '36px', background: '#F5F7FA', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', border: '1px solid #E2E8F0', overflow: 'hidden', flexShrink: 0 }}>
             {mission?.artisan_pros?.users?.avatar_url
               ? <img src={mission.artisan_pros.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
               : '🔧'}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{artisanName}</div>
-            <div style={{ fontSize: '11px', color: '#7A7A6E' }}>{artisanMetier}</div>
+            <div style={{ fontWeight: 700, fontSize: '14px', color: '#3D4852', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{artisanName}</div>
+            <div style={{ fontSize: '11px', color: '#6B7280' }}>{artisanMetier}</div>
           </div>
-          <Link href={`/warroom/${missionId}`} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '6px 12px', textDecoration: 'none', color: '#FAFAF5', fontSize: '12px', fontWeight: 600, flexShrink: 0 }}>
+          <Link href={`/warroom/${missionId}`} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '6px 12px', textDecoration: 'none', color: '#3D4852', fontSize: '12px', fontWeight: 600, flexShrink: 0, boxShadow: NEU_SM }}>
             <MessageCircle size={13} /> Chat
           </Link>
         </div>
@@ -411,18 +393,18 @@ export default function MissionLivePage() {
         {/* Timeline */}
         <div style={{ display: 'flex', alignItems: 'center', padding: '12px 20px 14px', gap: 0 }}>
           {STEPS.map((s, i) => {
-            const done = i < stepIndex
+            const done   = i < stepIndex
             const active = i === stepIndex
             return (
               <div key={s.key} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', border: `2px solid ${done ? '#2B6B3E' : active ? '#E85D26' : 'rgba(255,255,255,0.15)'}`, background: done ? 'rgba(43,107,62,0.2)' : active ? 'rgba(232,93,38,0.15)' : 'transparent', flexShrink: 0 }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', border: `2px solid ${done ? '#2B6B3E' : active ? '#E85D26' : '#E2E8F0'}`, background: done ? 'rgba(43,107,62,0.08)' : active ? 'rgba(232,93,38,0.08)' : '#F5F7FA', flexShrink: 0 }}>
                     {done ? <CheckCircle size={16} color="#2B6B3E" /> : <span>{s.icon}</span>}
                   </div>
-                  <span style={{ fontSize: '10px', fontWeight: 600, color: done ? '#2B6B3E' : active ? '#E85D26' : '#7A7A6E', whiteSpace: 'nowrap' }}>{s.label}</span>
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: done ? '#2B6B3E' : active ? '#E85D26' : '#8B95A5', whiteSpace: 'nowrap' }}>{s.label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div style={{ flex: 1, height: '2px', background: done ? '#2B6B3E' : 'rgba(255,255,255,0.1)', marginBottom: '16px', marginLeft: '4px', marginRight: '4px' }} />
+                  <div style={{ flex: 1, height: '2px', background: done ? '#2B6B3E' : '#E2E8F0', marginBottom: '16px', marginLeft: '4px', marginRight: '4px' }} />
                 )}
               </div>
             )
@@ -430,20 +412,20 @@ export default function MissionLivePage() {
         </div>
       </div>
 
-      {/* ── TABS ─────────────────────────────────────────────────────── */}
-      <div style={{ flexShrink: 0, display: 'flex', background: '#1A1F1B', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '4px 12px', gap: '4px' }}>
+      {/* TABS */}
+      <div style={{ flexShrink: 0, display: 'flex', background: '#F5F7FA', borderBottom: '1px solid #E2E8F0', padding: '4px 12px', gap: '4px' }}>
         {[
-          { id: 'gps' as const, label: '🗺️ GPS' },
+          { id: 'gps'    as const, label: '🗺️ GPS' },
           { id: 'photos' as const, label: `📸 Photos${proofAfterUrls.length > 0 ? ` (${proofAfterUrls.length})` : ''}` },
-          { id: 'infos' as const, label: 'ℹ️ Infos' },
+          { id: 'infos'  as const, label: 'ℹ️ Infos' },
         ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '10px 8px', background: tab === t.id ? 'rgba(232,93,38,0.15)' : 'transparent', border: tab === t.id ? '1px solid rgba(232,93,38,0.35)' : '1px solid transparent', borderRadius: '10px', color: tab === t.id ? '#E85D26' : '#7A7A6E', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '10px 8px', background: tab === t.id ? '#FFFFFF' : 'transparent', border: tab === t.id ? '1px solid #E2E8F0' : '1px solid transparent', borderRadius: '10px', color: tab === t.id ? '#E85D26' : '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: tab === t.id ? NEU_SM : 'none' }}>
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── CONTENU ──────────────────────────────────────────────────── */}
+      {/* CONTENU */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
 
         {/* GPS */}
@@ -464,36 +446,16 @@ export default function MissionLivePage() {
                 }}
               >
                 {artisanPos && (
-                  <Marker
-                    position={{ lat: artisanPos.lat, lng: artisanPos.lng }}
-                    icon={{
-                      path: google.maps.SymbolPath.CIRCLE,
-                      scale: 9,
-                      fillColor: '#E85D26',
-                      fillOpacity: 1,
-                      strokeColor: '#ffffff',
-                      strokeWeight: 2,
-                    }}
+                  <Marker position={{ lat: artisanPos.lat, lng: artisanPos.lng }}
+                    icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#E85D26', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }}
                   />
                 )}
-                <Marker
-                  position={{ lat: clientPos[0], lng: clientPos[1] }}
-                  icon={{
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 9,
-                    fillColor: '#2B6B3E',
-                    fillOpacity: 1,
-                    strokeColor: '#ffffff',
-                    strokeWeight: 2,
-                  }}
+                <Marker position={{ lat: clientPos[0], lng: clientPos[1] }}
+                  icon={{ path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#2B6B3E', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }}
                 />
                 {directions && (
-                  <DirectionsRenderer
-                    directions={directions}
-                    options={{
-                      suppressMarkers: true,
-                      polylineOptions: { strokeColor: '#E85D26', strokeWeight: 4, strokeOpacity: 0.85 },
-                    }}
+                  <DirectionsRenderer directions={directions}
+                    options={{ suppressMarkers: true, polylineOptions: { strokeColor: '#E85D26', strokeWeight: 4, strokeOpacity: 0.85 } }}
                   />
                 )}
               </GoogleMap>
@@ -504,7 +466,7 @@ export default function MissionLivePage() {
               <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(15,20,16,0.93)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '10px 14px', border: '1px solid rgba(232,93,38,0.35)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '3px' }}>
                   <span style={{ width: '8px', height: '8px', background: '#E85D26', borderRadius: '50%', boxShadow: '0 0 0 3px rgba(232,93,38,0.25)' }} />
-                  <span style={{ fontSize: '12px', fontWeight: 600 }}>{isArtisan ? 'Vous' : artisanName}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#FAFAF5' }}>{isArtisan ? 'Vous' : artisanName}</span>
                 </div>
                 <div style={{ fontSize: '10px', color: '#7A7A6E', fontFamily: 'Space Mono' }}>{artisanPos.lat.toFixed(4)}, {artisanPos.lng.toFixed(4)}</div>
               </div>
@@ -512,13 +474,13 @@ export default function MissionLivePage() {
             <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(15,20,16,0.93)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '10px 14px', border: '1px solid rgba(43,107,62,0.35)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
                 <MapPin size={13} color="#2B6B3E" />
-                <span style={{ fontSize: '12px', fontWeight: 600 }}>{isArtisan ? clientName : 'Chez vous'}</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#FAFAF5' }}>{isArtisan ? clientName : 'Chez vous'}</span>
               </div>
               <div style={{ fontSize: '10px', color: '#7A7A6E' }}>{quartier}</div>
             </div>
             {distanceKm !== null && (
               <div style={{ position: 'absolute', bottom: '16px', left: '12px', background: 'rgba(15,20,16,0.93)', borderRadius: '12px', padding: '7px 12px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <span style={{ fontFamily: 'Space Mono', fontSize: '13px', fontWeight: 700 }}>
+                <span style={{ fontFamily: 'Space Mono', fontSize: '13px', fontWeight: 700, color: '#FAFAF5' }}>
                   {distanceKm < 1 ? `${Math.round(distanceKm*1000)} m` : `${distanceKm.toFixed(1)} km`}
                 </span>
               </div>
@@ -538,64 +500,61 @@ export default function MissionLivePage() {
             {isArtisan ? (
               <div>
                 <div style={{ marginBottom: '14px' }}>
-                  <h3 style={{ fontWeight: 700, fontSize: '15px', color: '#FAFAF5', marginBottom: '4px' }}>Photos de chantier</h3>
-                  <p style={{ fontSize: '12px', color: '#7A7A6E' }}>Ces photos seront visibles par le client et ajoutées à votre portfolio.</p>
+                  <h3 style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852', marginBottom: '4px' }}>Photos de chantier</h3>
+                  <p style={{ fontSize: '12px', color: '#6B7280' }}>Ces photos seront visibles par le client et ajoutées à votre portfolio.</p>
                 </div>
                 <input ref={proofRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleProofUpload} />
 
                 {proofAfterUrls.length > 0 ? (
-                  <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '12px' }}>
-                      {proofAfterUrls.map((url, i) => (
-                        <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: '#1A2018' }}>
-                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <button onClick={() => { setProofAfterUrls(prev => prev.filter((_,j) => j !== i)); setProofSaved(false) }} style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <X size={11} />
-                          </button>
-                        </div>
-                      ))}
-                      <button onClick={() => proofRef.current?.click()} disabled={uploadingProof} style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '11px', color: '#7A7A6E' }}>
-                        {uploadingProof ? <div style={{ width: '18px', height: '18px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <><Upload size={18} /><span>Ajouter</span></>}
-                      </button>
-                    </div>
-                  </>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '12px' }}>
+                    {proofAfterUrls.map((url, i) => (
+                      <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: '#F5F7FA' }}>
+                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button onClick={() => { setProofAfterUrls(prev => prev.filter((_,j) => j !== i)); setProofSaved(false) }} style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <X size={11} />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => proofRef.current?.click()} disabled={uploadingProof} style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed #E2E8F0', background: '#F5F7FA', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '11px', color: '#6B7280' }}>
+                      {uploadingProof ? <div style={{ width: '18px', height: '18px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <><Upload size={18} /><span>Ajouter</span></>}
+                    </button>
+                  </div>
                 ) : (
-                  <button onClick={() => proofRef.current?.click()} disabled={uploadingProof} style={{ width: '100%', aspectRatio: '16/9', border: '2px dashed rgba(255,255,255,0.15)', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '12px' }}>
-                    {uploadingProof ? <div style={{ width: '28px', height: '28px', border: '3px solid rgba(232,93,38,0.3)', borderTop: '3px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <Camera size={36} color="rgba(255,255,255,0.2)" />}
-                    <span style={{ fontSize: '14px', color: '#7A7A6E' }}>Appuyer pour ajouter des photos</span>
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.25)' }}>Avant / Après · Résultats · Pièces remplacées</span>
+                  <button onClick={() => proofRef.current?.click()} disabled={uploadingProof} style={{ width: '100%', aspectRatio: '16/9', border: '2px dashed #E2E8F0', borderRadius: '16px', background: '#F5F7FA', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '12px' }}>
+                    {uploadingProof ? <div style={{ width: '28px', height: '28px', border: '3px solid rgba(232,93,38,0.3)', borderTop: '3px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <Camera size={36} color="#8B95A5" />}
+                    <span style={{ fontSize: '14px', color: '#6B7280' }}>Appuyer pour ajouter des photos</span>
+                    <span style={{ fontSize: '12px', color: '#8B95A5' }}>Avant / Après · Résultats · Pièces remplacées</span>
                   </button>
                 )}
 
                 <div style={{ marginBottom: '12px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#7A7A6E', display: 'block', marginBottom: '6px', letterSpacing: '0.08em' }}>NOTES SUR LE CHANTIER (optionnel)</label>
-                  <textarea value={proofNotes} onChange={e => { setProofNotes(e.target.value); setProofSaved(false) }} placeholder="Ex: Remplacement robinet cuisine + joint sous évier. Client informé de l'état de la tuyauterie…" rows={3} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '13px', color: '#FAFAF5', resize: 'none', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                  <label style={{ fontSize: '11px', fontWeight: 600, color: '#8B95A5', display: 'block', marginBottom: '6px', letterSpacing: '0.08em' }}>NOTES SUR LE CHANTIER (optionnel)</label>
+                  <textarea value={proofNotes} onChange={e => { setProofNotes(e.target.value); setProofSaved(false) }} placeholder="Ex: Remplacement robinet cuisine + joint sous évier. Client informé de l'état de la tuyauterie…" rows={3} style={{ width: '100%', padding: '12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px', fontSize: '13px', color: '#3D4852', resize: 'none', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
 
-                <button onClick={saveProof} disabled={!proofAfterUrls.length || uploadingProof} style={{ width: '100%', padding: '14px', background: proofAfterUrls.length ? (proofSaved ? 'rgba(43,107,62,0.3)' : '#2B6B3E') : 'rgba(255,255,255,0.07)', color: 'white', border: proofSaved ? '1px solid rgba(43,107,62,0.5)' : 'none', borderRadius: '14px', fontWeight: 700, fontSize: '14px', cursor: proofAfterUrls.length ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <button onClick={saveProof} disabled={!proofAfterUrls.length || uploadingProof} style={{ width: '100%', padding: '14px', background: proofAfterUrls.length ? (proofSaved ? 'rgba(43,107,62,0.1)' : '#2B6B3E') : '#F5F7FA', color: proofAfterUrls.length ? 'white' : '#8B95A5', border: proofSaved ? '1px solid rgba(43,107,62,0.3)' : 'none', borderRadius: '14px', fontWeight: 700, fontSize: '14px', cursor: proofAfterUrls.length ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   {proofSaved ? <><CheckCircle size={16} /> Photos enregistrées ✓</> : <><Camera size={16} /> Enregistrer les photos →</>}
                 </button>
               </div>
             ) : (
-              /* Client : voir les photos */
               <div>
-                <h3 style={{ fontWeight: 700, fontSize: '15px', color: '#FAFAF5', marginBottom: '4px' }}>Photos de chantier</h3>
-                <p style={{ fontSize: '12px', color: '#7A7A6E', marginBottom: '16px' }}>Photos ajoutées par l'artisan en cours de mission.</p>
+                <h3 style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852', marginBottom: '4px' }}>Photos de chantier</h3>
+                <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px' }}>Photos ajoutées par l'artisan en cours de mission.</p>
                 {proofAfterUrls.length > 0 ? (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '8px', marginBottom: '12px' }}>
                       {proofAfterUrls.map((url, i) => (
-                        <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'block', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#1A2018' }}>
+                        <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'block', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#F5F7FA' }}>
                           <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </a>
                       ))}
                     </div>
-                    {proofNotes && <div style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', fontSize: '13px', color: '#7A7A6E', fontStyle: 'italic' }}>"{proofNotes}"</div>}
+                    {proofNotes && <div style={{ padding: '12px 14px', background: '#F5F7FA', borderRadius: '12px', fontSize: '13px', color: '#6B7280', fontStyle: 'italic', border: '1px solid #E2E8F0' }}>"{proofNotes}"</div>}
                   </>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                    <Camera size={40} color="rgba(255,255,255,0.1)" style={{ margin: '0 auto 12px' }} />
-                    <p style={{ fontSize: '14px', color: '#7A7A6E' }}>L'artisan n'a pas encore ajouté de photos.</p>
+                    <Camera size={40} color="#E2E8F0" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ fontSize: '14px', color: '#6B7280' }}>L'artisan n'a pas encore ajouté de photos.</p>
                   </div>
                 )}
               </div>
@@ -606,31 +565,31 @@ export default function MissionLivePage() {
         {/* INFOS */}
         {tab === 'infos' && (
           <div style={{ height: '100%', overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', overflow: 'hidden' }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SM }}>
               {[
-                { label: 'Mission', value: mission?.category || 'Intervention' },
+                { label: 'Mission',  value: mission?.category || 'Intervention' },
                 { label: isArtisan ? 'Client' : 'Artisan', value: isArtisan ? clientName : `${artisanName} · ${artisanMetier}` },
                 { label: 'Quartier', value: quartier },
-                { label: 'Montant', value: amount > 0 ? `${amount.toLocaleString()} FCFA` : '—' },
+                { label: 'Montant',  value: amount > 0 ? `${amount.toLocaleString()} FCFA` : '—' },
                 { label: 'Statut escrow', value: status === 'completed' ? 'Transféré ✓' : status === 'disputed' ? '⚠️ En litige' : '🔒 Sécurisé' },
               ].map((item, i, arr) => (
-                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                  <span style={{ fontSize: '12px', color: '#7A7A6E' }}>{item.label}</span>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#FAFAF5' }}>{item.value}</span>
+                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid #E2E8F0' : 'none' }}>
+                  <span style={{ fontSize: '12px', color: '#6B7280' }}>{item.label}</span>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852' }}>{item.value}</span>
                 </div>
               ))}
             </div>
 
-            <Link href={`/warroom/${missionId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: '#FAFAF5', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
+            <Link href={`/warroom/${missionId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', color: '#3D4852', fontWeight: 600, fontSize: '14px', textDecoration: 'none', boxShadow: NEU_SM }}>
               <MessageCircle size={16} /> Ouvrir la conversation
             </Link>
 
             {status === 'disputed' && (
-              <div style={{ padding: '14px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '14px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <div style={{ padding: '14px 16px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '14px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                 <AlertCircle size={16} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '13px', color: '#ef4444' }}>Litige en cours</div>
-                  <div style={{ fontSize: '12px', color: '#7A7A6E', marginTop: '4px' }}>Notre équipe examine la situation. Les fonds restent sécurisés en attendant la résolution.</div>
+                  <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>Notre équipe examine la situation. Les fonds restent sécurisés en attendant la résolution.</div>
                 </div>
               </div>
             )}
@@ -638,23 +597,22 @@ export default function MissionLivePage() {
         )}
       </div>
 
-      {/* ── BARRE D'ACTIONS ─────────────────────────────────────────── */}
-      <div style={{ flexShrink: 0, background: '#1A1F1B', borderTop: '1px solid rgba(255,255,255,0.07)', padding: '14px 16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* BARRE D'ACTIONS */}
+      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E2E8F0', padding: '14px 16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-        {/* ARTISAN — En route */}
         {isArtisan && status === 'en_route' && (
           <>
             {!isTracking ? (
-              <button onClick={startTracking} style={{ width: '100%', padding: '15px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              <button onClick={startTracking} className="btn-primary" style={{ width: '100%', padding: '15px', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                 <Navigation size={18} /> Démarrer le suivi GPS
               </button>
             ) : (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(232,93,38,0.1)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(232,93,38,0.25)' }}>
-                  <span style={{ width: '10px', height: '10px', background: '#E85D26', borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 0 4px rgba(232,93,38,0.18)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(232,93,38,0.08)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(232,93,38,0.2)' }}>
+                  <span style={{ width: '10px', height: '10px', background: '#E85D26', borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 0 4px rgba(232,93,38,0.15)' }} />
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#E85D26' }}>GPS actif — position transmise</div>
-                    <div style={{ fontSize: '11px', color: '#7A7A6E' }}>Le client voit votre déplacement en direct</div>
+                    <div style={{ fontSize: '11px', color: '#6B7280' }}>Le client voit votre déplacement en direct</div>
                   </div>
                 </div>
                 <button onClick={markArrived} disabled={acting} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: acting ? 0.6 : 1 }}>
@@ -665,15 +623,14 @@ export default function MissionLivePage() {
           </>
         )}
 
-        {/* ARTISAN — En cours */}
         {isArtisan && status === 'en_cours' && (
           confirmDone ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '12px', fontSize: '13px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>
+              <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', fontSize: '13px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>
                 ⚠️ Cela libère le paiement escrow. Confirmer ?
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => setConfirmDone(false)} style={{ flex: 1, padding: '13px', background: 'none', border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: '#7A7A6E', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                <button onClick={() => setConfirmDone(false)} style={{ flex: 1, padding: '13px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px', color: '#6B7280', fontWeight: 600, fontSize: '13px', cursor: 'pointer', boxShadow: NEU_SM }}>
                   Annuler
                 </button>
                 <button onClick={markDone} disabled={acting} style={{ flex: 2, padding: '13px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', opacity: acting ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -682,47 +639,43 @@ export default function MissionLivePage() {
               </div>
             </div>
           ) : (
-            <button onClick={() => setConfirmDone(true)} disabled={acting} style={{ width: '100%', padding: '15px', background: 'rgba(43,107,62,0.2)', color: '#2B6B3E', border: '1px solid rgba(43,107,62,0.4)', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            <button onClick={() => setConfirmDone(true)} disabled={acting} style={{ width: '100%', padding: '15px', background: 'rgba(43,107,62,0.08)', color: '#2B6B3E', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
               <CheckCircle size={18} /> Marquer la mission comme terminée
             </button>
           )
         )}
 
-        {/* CLIENT — En route */}
         {!isArtisan && status === 'en_route' && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
               <span style={{ width: '8px', height: '8px', background: '#E85D26', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(232,93,38,0.15)' }} />
-              <span style={{ fontWeight: 700, fontSize: '14px' }}>{artisanName} est en route</span>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: '#3D4852' }}>{artisanName} est en route</span>
             </div>
             {eta !== null
-              ? <p style={{ fontSize: '13px', color: '#7A7A6E' }}>Arrivée estimée dans <strong style={{ color: '#E85D26' }}>{eta} min</strong></p>
-              : <p style={{ fontSize: '13px', color: '#7A7A6E' }}>En attente de la position GPS…</p>
+              ? <p style={{ fontSize: '13px', color: '#6B7280' }}>Arrivée estimée dans <strong style={{ color: '#E85D26' }}>{eta} min</strong></p>
+              : <p style={{ fontSize: '13px', color: '#6B7280' }}>En attente de la position GPS…</p>
             }
           </div>
         )}
 
-        {/* CLIENT — En cours */}
         {!isArtisan && status === 'en_cours' && (
-          <button onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: 'none', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <button onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <AlertCircle size={15} /> Signaler un problème
           </button>
         )}
 
-        {/* Terminée */}
         {status === 'completed' && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
               <CheckCircle size={20} color="#2B6B3E" />
               <span style={{ fontWeight: 700, fontSize: '15px', color: '#2B6B3E' }}>Mission terminée !</span>
             </div>
-            <Link href={`/warroom/${missionId}`} style={{ fontSize: '13px', color: '#E85D26', fontWeight: 600, textDecoration: 'none' }}>
+            <Link href={`/warroom/${missionId}`} className="afrione-gradient-text" style={{ fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
               {isArtisan ? 'Voir le récapitulatif →' : 'Laisser un avis →'}
             </Link>
           </div>
         )}
 
-        {/* Litige */}
         {status === 'disputed' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '8px 0' }}>
             <AlertCircle size={16} color="#ef4444" />
