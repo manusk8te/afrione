@@ -110,22 +110,40 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen" style={{background:'#F5F7FA'}}>
       <Navbar />
-      <div style={{padding:isMobile?'80px 12px 48px':'96px 16px 64px'}}>
-        <div className="page-container" style={{maxWidth:'896px'}}>
 
-          {/* Header */}
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'24px',flexWrap:'wrap',gap:'12px'}}>
+      {/* ── Hero orange ── */}
+      <section className="afrione-gradient" style={{ position: 'relative', overflow: 'hidden', minHeight: '200px', display: 'flex', alignItems: 'center' }}>
+        {/* Floating white squares */}
+        <div style={{ position: 'absolute', top: '22%', left: '4%',  width: 50, height: 50, border: '2px solid rgba(255,255,255,0.2)',   borderRadius: 12, animation: 'floatSquare 5s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '50%', right: '6%',  width: 30, height: 30, background: 'rgba(255,255,255,0.12)', borderRadius: 8,  animation: 'floatSquare 4s ease-in-out infinite 1s' }} />
+        <div style={{ position: 'absolute', top: '28%', right: '20%', width: 18, height: 18, background: 'rgba(255,255,255,0.18)', borderRadius: 5,  animation: 'floatSquareSlow 6s ease-in-out infinite 2s' }} />
+        <div style={{ position: 'absolute', bottom: '22%', left: '20%', width: 58, height: 58, border: '1.5px solid rgba(255,255,255,0.12)', borderRadius: 14, animation: 'floatSquareSlow 7s ease-in-out infinite 0.5s' }} />
+        <div style={{ position: 'absolute', top: '42%', left: '42%',  width: 14, height: 14, background: 'rgba(255,255,255,0.2)',  borderRadius: 4,  animation: 'floatSquareDrift 5s ease-in-out infinite 3s' }} />
+        <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: '32px', maxWidth: '896px', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <span className="section-label">MON ESPACE CLIENT</span>
-              <h1 className="font-display" style={{fontSize:'28px',fontWeight:700,color:'#3D4852',marginTop:'4px'}}>
-                Bonjour {userName} 👋
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Space Mono' }}>MON ESPACE</span>
+              </div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 38px)', fontWeight: 800, color: 'white', margin: '0 0 8px' }}>
+                Bonjour {user?.user_metadata?.name?.split(' ')[0] || ''} 👋
               </h1>
-              <p style={{fontSize:'14px',color:'#6B7280',marginTop:'4px'}}>{user?.email}</p>
+              <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '14px', margin: 0 }}>Suivez vos missions et gérez votre profil</p>
             </div>
-            <Link href="/diagnostic" className="btn-primary" style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            <Link href="/diagnostic" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.32)', borderRadius: '12px', padding: '10px 20px', color: 'white', fontWeight: 700, fontSize: '14px', textDecoration: 'none', flexShrink: 0 }}>
               <Plus size={16} /> Nouvelle mission
             </Link>
           </div>
+        </div>
+      </section>
+
+      <div style={{padding:isMobile?'24px 12px 48px':'32px 16px 64px'}}>
+        <div className="page-container" style={{maxWidth:'896px',position:'relative'}}>
+
+          {/* Floating orange squares — decorative */}
+          <div style={{ position: 'absolute', top: '6%',  right: '-18px', width: 54, height: 54, background: 'rgba(232,93,38,0.07)', borderRadius: 12, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: '45%', left: '-18px',  width: 38, height: 38, border: '2px solid rgba(232,93,38,0.11)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-8deg)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '12%', right: '1%', width: 22, height: 22, background: 'rgba(232,93,38,0.09)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
 
           {/* Stats */}
           <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:'12px',marginBottom:'24px'}}>

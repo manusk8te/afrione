@@ -48,17 +48,29 @@ export default function ArtisansPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#F5F7FA' }}>
       <Navbar />
-      <div style={{ padding: isMobile ? '80px 12px 48px' : '96px 16px 64px' }}>
-        <div className="page-container">
-          <div style={{ marginBottom: '24px' }}>
-            <span className="section-label">ANNUAIRE</span>
-            <h1 className="font-display" style={{ fontSize: isMobile ? '26px' : '36px', fontWeight: 700, color: '#3D4852', marginTop: '8px' }}>
-              Trouver un artisan
-            </h1>
-            <p style={{ color: '#6B7280', marginTop: '8px' }}>
-              {loading ? 'Chargement...' : `${filtered.length} professionnel${filtered.length > 1 ? 's' : ''} vérifié${filtered.length > 1 ? 's' : ''} à Abidjan`}
-            </p>
+
+      {/* Orange Hero */}
+      <section className="afrione-gradient" style={{ position: 'relative', overflow: 'hidden', paddingTop: '64px', minHeight: '220px', display: 'flex', alignItems: 'center' }}>
+        {/* Floating white squares */}
+        <div style={{ position: 'absolute', top: '20%', left: '5%', width: 48, height: 48, border: '2px solid rgba(255,255,255,0.2)', borderRadius: 10, animation: 'floatSquare 5s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '55%', right: '7%', width: 32, height: 32, background: 'rgba(255,255,255,0.12)', borderRadius: 8, animation: 'floatSquare 4s ease-in-out infinite 1s' }} />
+        <div style={{ position: 'absolute', top: '30%', right: '22%', width: 20, height: 20, background: 'rgba(255,255,255,0.16)', borderRadius: 5, animation: 'floatSquareSlow 6s ease-in-out infinite 2s' }} />
+        <div style={{ position: 'absolute', bottom: '20%', left: '18%', width: 60, height: 60, border: '1.5px solid rgba(255,255,255,0.13)', borderRadius: 14, animation: 'floatSquareSlow 7s ease-in-out infinite 0.5s' }} />
+        <div style={{ position: 'absolute', top: '45%', left: '38%', width: 14, height: 14, background: 'rgba(255,255,255,0.22)', borderRadius: 4, animation: 'floatSquareDrift 5s ease-in-out infinite 3s' }} />
+        {/* Content */}
+        <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: '32px 32px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Space Mono' }}>ANNUAIRE</span>
           </div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Trouvez votre artisan</h1>
+          <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>
+            {loading ? 'Chargement...' : `${filtered.length} professionnel${filtered.length > 1 ? 's' : ''} vérifié${filtered.length > 1 ? 's' : ''} à Abidjan`}
+          </p>
+        </div>
+      </section>
+
+      <div style={{ padding: isMobile ? '24px 12px 48px' : '32px 16px 64px' }}>
+        <div className="page-container">
 
           {/* Recherche */}
           <div style={{
@@ -105,7 +117,12 @@ export default function ArtisansPage() {
               <p style={{ color: '#6B7280', marginTop: '8px' }}>Essayez avec d'autres critères</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(300px,1fr))', gap: '16px' }}>
+            <div style={{ position: 'relative' }}>
+              {/* Orange decorative squares */}
+              <div style={{ position: 'absolute', top: '8%', right: '-16px', width: 56, height: 56, background: 'rgba(232,93,38,0.07)', borderRadius: 12, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: '40%', left: '-20px', width: 40, height: 40, border: '2px solid rgba(232,93,38,0.12)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-8deg)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', bottom: '15%', right: '2%', width: 24, height: 24, background: 'rgba(232,93,38,0.1)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(300px,1fr))', gap: '16px' }}>
               {filtered.map(a => {
                 const coverPhoto = a.portfolio?.[0] || null
                 const avatarUrl = a.users?.avatar_url || null
@@ -230,6 +247,7 @@ export default function ArtisansPage() {
                   </Link>
                 )
               })}
+              </div>
             </div>
           )}
         </div>

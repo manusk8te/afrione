@@ -332,36 +332,62 @@ export default function DiagnosticPage() {
 
   const urgConf = result ? URGENCY[result.urgency] : URGENCY.medium
 
+  const DIAG_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4'
+
   // ─────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#F5F7FA', position: 'relative', color: '#3D4852' }}>
       <Navbar />
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '96px 16px 64px', position: 'relative' }}>
 
-        {/* Header */}
-        <div style={{ marginBottom: '28px' }}>
-          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#8B95A5', fontSize: '13px', textDecoration: 'none', marginBottom: '16px' }}>
+      {/* ── VIDEO BANNER ───────────────────────────────────────────── */}
+      <div style={{ position: 'relative', overflow: 'hidden', height: '210px', marginTop: '64px' }}>
+        <video autoPlay muted loop playsInline
+          src={DIAG_VIDEO}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+        {/* Orange gradient overlay */}
+        <div className="afrione-gradient" style={{ position: 'absolute', inset: 0, opacity: 0.78 }} />
+
+        {/* Floating white squares */}
+        <div style={{ position: 'absolute', top: '18%', left: '4%',  width: 52, height: 52, border: '2px solid rgba(255,255,255,0.22)', borderRadius: 12, animation: 'floatSquare 5s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '55%', right: '6%',  width: 34, height: 34, background: 'rgba(255,255,255,0.12)', borderRadius: 8, animation: 'floatSquare 4s ease-in-out infinite 1.2s' }} />
+        <div style={{ position: 'absolute', top: '25%', right: '18%', width: 20, height: 20, background: 'rgba(255,255,255,0.18)', borderRadius: 5, animation: 'floatSquareSlow 6.5s ease-in-out infinite 2s' }} />
+        <div style={{ position: 'absolute', bottom: '18%', left: '16%', width: 64, height: 64, border: '1.5px solid rgba(255,255,255,0.14)', borderRadius: 16, animation: 'floatSquareSlow 7s ease-in-out infinite 0.5s' }} />
+        <div style={{ position: 'absolute', top: '40%', left: '40%',  width: 16, height: 16, background: 'rgba(255,255,255,0.2)', borderRadius: 4, animation: 'floatSquareDrift 5s ease-in-out infinite 3s' }} />
+
+        {/* Text */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 20px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '12px' }}>
+            <Zap size={12} color="white" />
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Space Mono' }}>DIAGNOSTIC IA</span>
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, color: 'white', margin: '0 0 8px', textShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
+            {step === 'input'       ? 'Décrivez votre problème'  :
+             step === 'questioning' ? 'Quelques questions...'     :
+             step === 'summarizing' ? 'Analyse en cours...'      :
+                                     'Voici mon diagnostic'}
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '13px', margin: 0 }}>
+            {step === 'input'       ? "L'IA analyse et pose des questions — envoyez aussi des photos" :
+             step === 'questioning' ? `Répondez pour un diagnostic précis · ${qa.length}/4 questions` :
+             step === 'summarizing' ? "L'IA synthétise toutes vos réponses" :
+                                     "Résumé · Estimation de prix · Fiche technique"}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '32px 16px 64px', position: 'relative' }}>
+
+        {/* Orange decorative squares in white area */}
+        <div style={{ position: 'absolute', top: '4%',  right: '-24px', width: 58, height: 58, background: 'rgba(232,93,38,0.07)', borderRadius: 14, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '35%', left: '-22px',  width: 42, height: 42, border: '2px solid rgba(232,93,38,0.11)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-10deg)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '68%', right: '-16px', width: 26, height: 26, background: 'rgba(232,93,38,0.09)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
+
+        {/* Back link */}
+        <div style={{ marginBottom: '20px' }}>
+          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#8B95A5', fontSize: '13px', textDecoration: 'none' }}>
             <ArrowLeft size={14} /> Retour
           </Link>
-          <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', marginBottom: '8px', fontFamily: 'Space Mono' }}>
-            DIAGNOSTIC IA
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: '#3D4852', margin: '0 0 6px' }}>
-            {step === 'input'      ? 'Décrivez votre problème' :
-             step === 'questioning'? 'Quelques questions...' :
-             step === 'summarizing'? 'Analyse en cours...' :
-                                    'Voici mon diagnostic'}
-          </h1>
-          {step === 'input' && (
-            <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>
-              L'IA analyse et pose quelques questions pour affiner le diagnostic — vous pouvez aussi envoyer des photos
-            </p>
-          )}
-          {step === 'questioning' && (
-            <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>
-              Répondez aux questions pour un diagnostic précis · {qa.length}/4 questions
-            </p>
-          )}
         </div>
 
         {/* ══ ÉTAPE 1 : Input ══ */}
