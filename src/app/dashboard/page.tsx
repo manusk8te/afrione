@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, ArrowRight, Zap, Calendar, User, Phone, MapPin, Save } from 'lucide-react'
+import { Plus, ArrowRight, Zap, Calendar, User, Phone, MapPin, Save, Droplets, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Cpu, Wrench, Navigation, MessageCircle } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
@@ -11,10 +11,10 @@ import toast from 'react-hot-toast'
 
 const QUARTIERS = ['Cocody','Plateau','Marcory','Treichville','Adjamé','Abobo','Yopougon','Koumassi','Port-Bouët','Attécoubé','Bingerville','Anyama']
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'Plomberie': '🔧', 'Électricité': '⚡', 'Peinture': '🎨',
-  'Maçonnerie': '🏗️', 'Menuiserie': '🪵', 'Climatisation': '❄️',
-  'Serrurerie': '🔑', 'Carrelage': '🪟', 'Diagnostic': '🧠',
+const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
+  'Plomberie': Droplets, 'Électricité': Zap, 'Peinture': Paintbrush,
+  'Maçonnerie': Hammer, 'Menuiserie': Ruler, 'Climatisation': Wind,
+  'Serrurerie': Lock, 'Carrelage': LayoutGrid, 'Diagnostic': Cpu,
 }
 
 const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
@@ -245,7 +245,7 @@ export default function DashboardPage() {
                       return (
                         <div key={m.id} style={{display:'flex',alignItems:isMobile?'flex-start':'center',gap:'12px',padding:'12px 14px',background:'#F5F7FA',borderRadius:'12px',border:isActive?'2px solid rgba(232,93,38,0.25)':m.status==='disputed'?'2px solid rgba(239,68,68,0.3)':'2px solid #E2E8F0',flexWrap:isMobile?'wrap':'nowrap'}}>
                           <div style={{width:'44px',height:'44px',background:'#FFFFFF',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0,boxShadow:NEU_SMALL}}>
-                            {CATEGORY_ICONS[m.category] || '🔧'}
+                            {(() => { const I = CATEGORY_ICON_MAP[m.category] || Wrench; return <I size={20} color='#E85D26' /> })()}
                           </div>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontWeight:600,color:'#3D4852',fontSize:'14px'}}>{m.category || 'Mission'}</div>
@@ -256,13 +256,13 @@ export default function DashboardPage() {
                               {sc?.label || m.status}
                             </span>
                             {m.status === 'en_route' && (
-                              <Link href={`/suivi/${m.id}`} className="btn-primary" style={{padding:'6px 12px',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
-                                🗺️ Suivi GPS
+                              <Link href={`/suivi/${m.id}`} className="btn-primary" style={{padding:'6px 12px',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap',display:'inline-flex',alignItems:'center',gap:'4px'}}>
+                                <Navigation size={12} /> Suivi GPS
                               </Link>
                             )}
                             {isActive && m.status !== 'en_route' && (
-                              <Link href={`/warroom/${m.id}`} className="btn-primary" style={{padding:'6px 12px',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
-                                💬 Chat
+                              <Link href={`/warroom/${m.id}`} className="btn-primary" style={{padding:'6px 12px',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap',display:'inline-flex',alignItems:'center',gap:'4px'}}>
+                                <MessageCircle size={12} /> Chat
                               </Link>
                             )}
                             {m.status === 'completed' && (

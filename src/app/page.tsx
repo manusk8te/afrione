@@ -337,7 +337,7 @@ export default function HomePage() {
         <div className="page-container">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1.7fr] gap-16 items-start">
 
-            <div className="md:sticky md:top-24">
+            <div>
               <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>COMMENT ÇA MARCHE</span>
               <h2 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(28px, 3.5vw, 42px)', lineHeight: 1.05, color: T1, marginTop: '12px', marginBottom: '16px' }}>
                 Simple.<br />Rapide.<br />Sécurisé.

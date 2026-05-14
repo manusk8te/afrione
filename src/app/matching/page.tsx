@@ -3,7 +3,7 @@ import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
-import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight, Building2 } from 'lucide-react'
+import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight, Building2, Droplets, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Wrench } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 function MatchingContent() {
@@ -113,10 +113,10 @@ function MatchingContent() {
     }
   }
 
-  const METIER_ICONS: Record<string, string> = {
-    'Plomberie': '🔧', 'Électricité': '⚡', 'Maçonnerie': '🏗️',
-    'Peinture': '🎨', 'Menuiserie': '🪵', 'Climatisation': '❄️',
-    'Serrurerie': '🔑', 'Carrelage': '🪟',
+  const METIER_ICON_MAP: Record<string, React.ElementType> = {
+    'Plomberie': Droplets, 'Électricité': Zap, 'Maçonnerie': Hammer,
+    'Peinture': Paintbrush, 'Menuiserie': Ruler, 'Climatisation': Wind,
+    'Serrurerie': Lock, 'Carrelage': LayoutGrid,
   }
 
   return (
@@ -236,10 +236,10 @@ function MatchingContent() {
                       }}>{idx + 1}</div>
 
                       {/* Avatar */}
-                      <div style={{width:'56px',height:'56px',borderRadius:'14px',overflow:'hidden',flexShrink:0,background:'#EDE8DE',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px'}}>
+                      <div style={{width:'56px',height:'56px',borderRadius:'14px',overflow:'hidden',flexShrink:0,background:'#FFF3EE',display:'flex',alignItems:'center',justifyContent:'center'}}>
                         {a.users?.avatar_url
                           ? <img src={a.users.avatar_url} style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                          : METIER_ICONS[a.metier] || '👷'
+                          : (() => { const I = METIER_ICON_MAP[a.metier] || Wrench; return <I size={24} color='#E85D26' /> })()
                         }
                       </div>
 

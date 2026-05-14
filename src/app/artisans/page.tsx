@@ -2,15 +2,15 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
-import { Search, Star, MapPin, Clock, Building2 } from 'lucide-react'
+import { Search, Star, MapPin, Clock, Building2, Droplets, Zap, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Wrench } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 const METIERS = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Serrurerie', 'Carrelage']
-const METIER_ICONS: Record<string, string> = {
-  'Plomberie': '🔧', 'Électricité': '⚡', 'Peinture': '🎨',
-  'Maçonnerie': '🏗️', 'Menuiserie': '🪵', 'Climatisation': '❄️',
-  'Serrurerie': '🔑', 'Carrelage': '🪟',
+const METIER_ICON_MAP: Record<string, React.ElementType> = {
+  'Plomberie': Droplets, 'Électricité': Zap, 'Peinture': Paintbrush,
+  'Maçonnerie': Hammer, 'Menuiserie': Ruler, 'Climatisation': Wind,
+  'Serrurerie': Lock, 'Carrelage': LayoutGrid,
 }
 
 const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
@@ -101,7 +101,7 @@ export default function ArtisansPage() {
                 color: metier === m ? '#FFFFFF' : '#6B7280',
                 boxShadow: metier === m ? '0 4px 12px rgba(232,93,38,0.3)' : NEU_SMALL,
               }}>
-                {m !== 'Tous' && METIER_ICONS[m]} {m}
+                {(() => { const I = METIER_ICON_MAP[m]; return m !== 'Tous' && I ? <I size={13} style={{marginRight:2}} /> : null })()}{m}
               </button>
             ))}
           </div>
@@ -155,7 +155,7 @@ export default function ArtisansPage() {
                           <img src={coverPhoto} alt={a.metier} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
                         ) : (
                           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '64px', opacity: 0.3 }}>{METIER_ICONS[a.metier] || '🔧'}</span>
+                            {(() => { const I = METIER_ICON_MAP[a.metier] || Wrench; return <I size={56} color='rgba(232,93,38,0.25)' /> })()}
                           </div>
                         )}
                         {/* Badges */}
@@ -181,7 +181,7 @@ export default function ArtisansPage() {
                       <div style={{ padding: '16px 20px 20px', paddingTop: '36px' }}>
                         <h3 className="font-display" style={{ fontSize: '17px', fontWeight: 800, color: '#3D4852', marginBottom: '2px' }}>{name}</h3>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#6B7280', marginBottom: '8px' }}>
-                          <span className="afrione-gradient-text" style={{ fontWeight: 600 }}>{METIER_ICONS[a.metier]} {a.metier}</span>
+                          <span className="afrione-gradient-text" style={{ fontWeight: 600 }}>{(() => { const I = METIER_ICON_MAP[a.metier]; return I ? <I size={13} style={{display:'inline',verticalAlign:'middle',marginRight:3}} /> : null })()}{a.metier}</span>
                           <span>·</span>
                           <MapPin size={11} />
                           <span>{a.users?.quartier || 'Abidjan'}</span>
