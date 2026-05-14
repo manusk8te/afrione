@@ -10,9 +10,6 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-/* ─── Video ───────────────────────────────────────────────────────────────── */
-const AUTH_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4'
-
 /* ─── Data ────────────────────────────────────────────────────────────────── */
 type Step =
   | 'choice' | 'login' | 'register' | 'verify' | 'forgot' | 'forgot_sent'
@@ -312,17 +309,22 @@ function AuthPageInner() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: W2, color: T1 }}>
 
-      {/* ━━━━ LEFT — video + hero ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* ━━━━ LEFT — gradient orange + hero ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <div className="hidden lg:flex"
         style={{ width: '52%', position: 'sticky', top: 0, height: '100vh', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: '120px', paddingLeft: '48px', paddingRight: '48px', borderRadius: '24px', overflow: 'hidden', boxShadow: NEU_SHADOW }}>
 
-        {/* Video — no overlay */}
-        <video
-          src={AUTH_VIDEO}
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ zIndex: 0 }}
-          autoPlay muted loop playsInline
-        />
+        {/* Gradient orange animé */}
+        <div className="afrione-gradient" style={{ position: 'absolute', inset: 0, zIndex: 0 }} />
+
+        {/* Carrés flottants décoratifs */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: '7%',  right: '10%', width: '64px', height: '64px', background: 'rgba(255,255,255,0.13)', borderRadius: '16px', animation: 'floatSquare 4.5s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', top: '20%', left: '7%',  width: '42px', height: '42px', background: 'rgba(255,255,255,0.09)', borderRadius: '11px', animation: 'floatSquareSlow 6.5s ease-in-out infinite 1s' }} />
+          <div style={{ position: 'absolute', top: '45%', right: '6%', width: '52px', height: '52px', background: 'rgba(255,255,255,0.10)', borderRadius: '13px', animation: 'floatSquareDrift 5.5s ease-in-out infinite 0.7s' }} />
+          <div style={{ position: 'absolute', bottom: '28%', left: '12%', width: '32px', height: '32px', background: 'rgba(255,255,255,0.08)', borderRadius: '9px', animation: 'floatSquare 7s ease-in-out infinite 2s' }} />
+          <div style={{ position: 'absolute', bottom: '12%', right: '22%', width: '22px', height: '22px', background: 'rgba(255,255,255,0.07)', borderRadius: '6px', animation: 'floatSquareSlow 8s ease-in-out infinite 3.5s' }} />
+          <div style={{ position: 'absolute', top: '35%', left: '30%', width: '18px', height: '18px', background: 'rgba(255,255,255,0.06)', borderRadius: '5px', animation: 'floatSquareDrift 9s ease-in-out infinite 1.5s' }} />
+        </div>
 
         {/* Content */}
         <motion.div
