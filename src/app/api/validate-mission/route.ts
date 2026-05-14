@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@supabase/supabase-js'
+import { releaseEscrow } from '@/lib/escrow'
 
 export async function POST(req: NextRequest) {
   const { mission_id } = await req.json()
@@ -32,7 +33,6 @@ export async function POST(req: NextRequest) {
   if (!mission) return NextResponse.json({ error: 'Mission introuvable' }, { status: 404 })
   if (mission.client_id !== user.id) return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
 
-  // Idempotent
   if (mission.status === 'completed') return NextResponse.json({ ok: true })
 
   if (mission.status !== 'pending_validation') {
@@ -41,7 +41,6 @@ export async function POST(req: NextRequest) {
 
   await releaseEscrow(mission_id, mission.artisan_id)
 
-  // Notifier l'artisan
   if (mission.artisan_id) {
     const { data: artisanPro } = await supabaseAdmin
       .from('artisan_pros').select('user_id').eq('id', mission.artisan_id).single()
@@ -60,44 +59,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true })
-}
-
-export async function releaseEscrow(mission_id: string, artisan_id: string | null) {
-  // Récupérer la transaction escrow
-  const { data: tx } = await supabaseAdmin
-    .from('transactions')
-    .select('id, artisan_amount')
-    .eq('mission_id', mission_id)
-    .eq('status', 'escrow')
-    .maybeSingle()
-
-  const artisanAmount = tx?.artisan_amount || 0
-
-  if (artisanAmount > 0 && artisan_id) {
-    const { data: wallet } = await supabaseAdmin
-      .from('wallets')
-      .select('id, balance_escrow, balance_available, total_earned')
-      .eq('artisan_id', artisan_id)
-      .maybeSingle()
-
-    if (wallet) {
-      await supabaseAdmin.from('wallets').update({
-        balance_escrow:    Math.max(0, (wallet.balance_escrow || 0) - artisanAmount),
-        balance_available: (wallet.balance_available || 0) + artisanAmount,
-        total_earned:      (wallet.total_earned || 0) + artisanAmount,
-        updated_at:        new Date().toISOString(),
-      }).eq('artisan_id', artisan_id)
-    }
-
-    if (tx) {
-      await supabaseAdmin.from('transactions').update({
-        status: 'released', released_at: new Date().toISOString(),
-      }).eq('id', tx.id)
-    }
-  }
-
-  await supabaseAdmin.from('missions').update({
-    status:       'completed',
-    updated_at:   new Date().toISOString(),
-  }).eq('id', mission_id)
 }

@@ -6,7 +6,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { releaseEscrow } from '@/app/api/validate-mission/route'
+import { releaseEscrow } from '@/lib/escrow'
 
 export async function GET(req: NextRequest) {
   // Vérification du secret Vercel Cron
