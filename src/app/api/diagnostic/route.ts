@@ -4,109 +4,145 @@ import { enrichItemsWithJumia } from '@/lib/jumia-lookup'
 
 const CATEGORIES = `Plomberie|Électricité|Maçonnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage`
 
-// ─── Playbook expert par domaine ─────────────────────────────────────────────
-// Chaque arbre a 2 niveaux :
-//   NIVEAU 1 — identifier le problème exact (diagnostic)
-//   NIVEAU 2 — extraire les signaux de pricing (quantité, surface, matériaux)
-const EXPERT_PLAYBOOK = `
-PLOMBERIE
-• Fuite tuyau visible (évier/lavabo/WC) :
-  N1 → robinet qui goutte OU jonction/raccord qui fuit ?
-  N2 → l'artisan doit remplacer la pièce ou juste resserrer/recoller ? [impact matériaux]
-• Fuite dans mur/plafond :
-  N1 → tache sèche (infiltration lente) OU eau qui coule activement ?
-  N2 → superficie de la zone humide : petite tache (< 30cm) OU grande zone ? [impact durée]
-• WC qui fuit :
-  N1 → réservoir qui coule en continu OU chasse incomplète ?
-  N2 → WC récent (< 5 ans) OU ancien ? [impact pièce à remplacer]
-• Tuyau bouché / pression faible :
-  N1 → un seul point d'eau OU toute la maison ?
-  N2 → débouchage simple OU remplacement du tuyau ? [impact matériaux]
-• PRIX SIGNAL PLOMBERIE : toujours demander "Vous avez déjà les pièces (joint, robinet) ou l'artisan doit les apporter ?"
+// ─── Connaissance terrain Abidjan ─────────────────────────────────────────────
+// Structure : pour chaque domaine, les vraies causes fréquentes + ce qui permet
+// de les distinguer + les signaux de prix critiques.
+const TERRAIN_KNOWLEDGE = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PLOMBERIE — causes fréquentes à Abidjan
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Causes terrain (par ordre de fréquence) :
+① Joint torique usé sous robinet ou raccord — clapet/siège plat sur robinetterie Africaine bon marché
+② Siphon PVC fissuré ou bague de serrage desserrée (vibrations de pompe SODECI)
+③ Tuyau PVC fêlé par choc thermique (eau froide/chaude alternant — très fréquent avec eau solaire)
+④ Infiltration descendant du toit-terrasse non étanche (carrelage fissuré, chape fissurée)
+⑤ Canalisation encastrée percée — souvent après des travaux récents (perçage accidentel)
+⑥ WC : flotteur défaillant OU joint de cuvette au sol OU mécanisme de chasse usé
 
-ÉLECTRICITÉ
-• Disjoncteur qui saute :
-  N1 → quel appareil précis déclenche la coupure ? odeur de brûlé oui/non ?
-  N2 → un seul disjoncteur à remplacer OU problème de câblage ? [impact matériaux + durée]
-• Pas de courant dans une prise/pièce :
-  N1 → une seule prise OU toute la pièce ?
-  N2 → si toute la pièce : combien de prises/interrupteurs à vérifier ? [impact quantité]
-• Étincelles / court-circuit → URGENCE done:true
-• Installation neuve / ajout de prise :
-  N1 → combien de prises à installer ? dans combien de pièces ?
-  N2 → tableau électrique accessible et avec place disponible ? [impact durée + matériaux]
-• PRIX SIGNAL ÉLECTRICITÉ : demander "Combien de points (prises/interrupteurs) sont concernés ?"
+Signaux clés pour le prix :
+- La fuite est sur tuyau apparent/accessible vs encastrée dans le mur (×3 sur la durée si encastrée)
+- Besoin de couper l'eau générale ou seulement le robinet local ?
+- Client fournit les pièces ou artisan les apporte ? (impact direct sur le prix total)
+- Pression eau SODECI : stable ou coupures fréquentes ? (si coupures → retour de pression = coup de bélier possible)
 
-PEINTURE
-• Peindre une pièce :
-  N1 → dimensions approximatives (ex: "4m × 5m") OU superficie en m² ? [CRITIQUE pour pricing]
-  N2 → murs seulement OU plafond aussi ? couleur foncée actuelle (nécessite plus de couches) ?
-• Peinture qui cloque/s'écaille :
-  N1 → zone humide OU mur sec ? superficie touchée : quelques taches OU toute la surface ?
-  N2 → refaire uniquement la zone OU toute la pièce ? [impact surface réelle]
-• PRIX SIGNAL PEINTURE : la surface m² est OBLIGATOIRE — si pas donnée, demander "Environ combien de m² de murs à peindre ?"
+Questions qui font la différence :
+- "Vous pouvez toucher l'endroit exact où ça fuit ?" → localise précisément
+- "Il y a de l'eau liquide qui coule ou une tache humide/sèche ?" → fuite active vs infiltration
+- "Quand vous fermez le robinet principal, la fuite s'arrête ?" → isole le circuit
 
-MAÇONNERIE
-• Fissure :
-  N1 → verticale/horizontale (enduit) OU diagonale 45° (structure) ?
-  N2 → longueur de la fissure : < 50cm, 50cm–2m OU > 2m ? [impact matériaux]
-• Humidité/moisissures :
-  N1 → rez-de-chaussée OU étage ? saison des pluies OU permanent ?
-  N2 → superficie touchée en m² approximatif ? [impact matériaux]
-• PRIX SIGNAL MAÇONNERIE : demander "C'est une petite zone (< 1m²) ou une grande surface ?"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÉLECTRICITÉ — causes fréquentes à Abidjan
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Causes terrain :
+① Surcharge sur un circuit — trop d'appareils sur un même disjoncteur (AC + frigo + micro-onde)
+② Court-circuit sur fil vieilli — isolant PVC qui craquelle sous chaleur prolongée (40°C+)
+③ Prise desserrée/brûlée — oxydation rapide en zone humide (Abidjan côtière)
+④ Disjoncteur vieilli qui saute pour rien — seuil de déclenchement qui baisse avec le temps
+⑤ Problème CIE (pas un problème interne) — voisins également touchés = appeler CIE
+⑥ Mise à la terre absente — très fréquent dans les vieilles constructions, cause des chocs
 
-CARRELAGE
-• Poser du carrelage :
-  N1 → sol OU murs OU les deux ? carrelage déjà acheté ou à commander ?
-  N2 → superficie exacte en m² ? [CRITIQUE — prix = f(m²)] quelle pièce (cuisine/bain/salon) ?
-• Carrelage cassé/décollé :
-  N1 → combien de carreaux ? un seul OU plusieurs ?
-  N2 → même modèle disponible ou différent (joints à refaire) ?
-• PRIX SIGNAL CARRELAGE : la surface m² est OBLIGATOIRE
+Signaux urgence absolue : odeur de brûlé persistante, fil noirci visible, étincelles → STOP, disjoncteur général coupé
 
-MENUISERIE
-• Porte qui ferme mal :
-  N1 → frotte en haut/bas/côté ? bois OU métallique ?
-  N2 → simple rabotage/réglage OU remplacement de paumelles/serrure ? [impact matériaux]
-• Installation/remplacement :
-  N1 → combien de portes/fenêtres concernées ?
-  N2 → menuiserie fournie par le client OU artisan doit apporter ? [impact majeur prix]
+Signaux clés pour le prix :
+- Prise/interrupteur isolé vs circuit entier vs tout le logement
+- Tableau électrique accessible et avec place disponible ?
+- Installation encastrée (dans mur) vs apparente (dans gaine) — durée ×2 si encastrée
 
-SERRURERIE
-• Serrure bloquée :
-  N1 → clé cassée dedans OU mécanisme bloqué ? bloqué dehors OU dedans ?
-  N2 → remplacer le barillet seulement OU toute la serrure ? [impact matériaux]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MAÇONNERIE — causes fréquentes à Abidjan
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Causes terrain :
+① Fissure enduit (capillaire) — retrait normal du béton, pas structurel. < 0.3mm, stable
+② Fissure de tassement différentiel — bâtiment posé sur sol argileux ou remblai. Diagonale.
+③ Infiltration toit-terrasse — joint de dilatation absent ou carrelage terrasse fissuré
+④ Remontées capillaires — mur rez-de-chaussée humide depuis le bas (sol non drainé)
+⑤ Carbonatation béton vieilli — porosité augmente, humidité s'infiltre, armatures rouillent
 
-CLIMATISATION
-• Clim ne refroidit plus :
-  N1 → elle tourne OU elle ne démarre pas ? split (unité intérieure + extérieure) OU fenêtre ?
-  N2 → dernier entretien/nettoyage : < 6 mois OU jamais ? [impact durée]
-• PRIX SIGNAL CLIM : demander "Quelle puissance (BTU ou CV) et quelle marque ?"
+Diagnostic fissure (critique) :
+- Verticale/horizontale en milieu de mur → enduit, pas structurel
+- Diagonale à 45° depuis angle de fenêtre/porte → tassement différentiel → expert avant travaux
+- En étoile depuis un point → impact mécanique → rebouchage simple
+- Fissure traversante (voit la lumière) → structurel potentiel → prudence
+
+Signaux clés pour le prix :
+- Surface en m² (surface murale totale à traiter)
+- Intérieur ou extérieur (ravalement façade = prix ×2-3)
+- Humidité associée ? (si oui, traitement hydrofuge avant rebouchage = étape supplémentaire)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PEINTURE — signaux critiques
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+La surface m² est LA variable de prix numéro 1.
+Autres variables :
+- Couleur actuelle foncée → couche de fond obligatoire (coût +20%)
+- Peinture qui s'écaille → ponçage/préparation = 40% du temps total
+- Salle de bain ou cuisine → peinture anti-humidité obligatoire (prix matériaux ×1.5)
+- Plafond inclus → ajouter 30-40% sur le temps
+
+Formule rapide : pièce standard 12m² = environ 4 murs × (3m × 3m) = ~36m² de surface murale
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CLIMATISATION — causes fréquentes à Abidjan
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Causes terrain :
+① Filtre encrassé (90% des "clim qui ne refroidit plus") — entretien négligé > 6 mois
+② Fuite de gaz frigorigène R410A ou R22 — eau qui coule de l'unité intérieure, givre
+③ Sonde de température défaillante — clim tourne mais pas au bon régime
+④ Compresseur défaillant — bruit anormal, chaud en sortie même après 30 min
+⑤ Condenseur encrassé côté extérieur — unité extérieure obstruée par poussière
+
+Signal priorité : "Elle tourne mais souffle de l'air tiède" = gaz ou compresseur (coûteux)
+vs "Elle ne démarre pas" = électronique ou relais (souvent moins grave)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CARRELAGE / MENUISERIE / SERRURERIE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Carrelage : surface m² est critique. Dépose ancien carrelage = +50% durée et prix.
+Menuiserie : fourniture par client ou artisan = impact majeur. Bois local Samba/Iroko vs bois importé.
+Serrurerie : barillet seul vs serrure complète. Porte blindée vs bois = techniques différentes.
 `
 
-const SYSTEM_EXPERT = `Tu es AfriOne IA, expert diagnostiqueur en artisanat à Abidjan, Côte d'Ivoire.
-Tu fonctionnes comme un maître artisan expérimenté — direct, précis, jamais générique.
+// ─── Identité et processus de raisonnement ────────────────────────────────────
+const EXPERT_IDENTITY = `Tu es le système de diagnostic d'AfriOne, une plateforme artisanale professionnelle à Abidjan, Côte d'Ivoire.
+Tu incarnes un expert-diagnostiqueur senior avec 20 ans d'expérience terrain : plombier, électricien, maçon — tu connais tous les problèmes réels des bâtiments ivoiriens.
 
-CONTEXTE ABIDJAN : béton, humidité tropicale, coupures CIE, matériaux Wavin/Cimaf/Holcim, marchés Adjamé/Koumassi.
+Tu penses et tu agis comme un détective, pas comme un formulaire.
 
-${EXPERT_PLAYBOOK}
+PROCESSUS INTERNE (avant chaque question) :
+1. Analyse : qu'est-ce que le client a dit exactement ? Quels mots-clés ? Quelle gravité ?
+2. Hypothèses : quelles sont les 2-4 causes les plus probables compte tenu du contexte ?
+3. Question optimale : quelle question unique permettrait d'éliminer la moitié des hypothèses d'un coup ?
+4. Formulation : la question doit montrer que tu sais de quoi tu parles — référence la description du client
 
-RÈGLES STRICTES :
-1. UNE seule question à la fois — courte, claire, vocabulaire du quotidien (pas technique)
-2. Priorité diagnostic (N1) → puis prix (N2)
-3. Jamais redemander ce qui est déjà dans la description
-4. Urgence réelle (étincelles, inondation active) → done:true immédiatement
-5. Maximum 4 questions — la dernière doit extraire surface/quantité si pas encore connue
-6. Si superficie ou quantité déjà connue → ne pas redemander
-7. JAMAIS poser de question sur le budget, les matériaux ou les fournitures
+STYLE DE TES QUESTIONS :
+✓ "Pour une fuite de ce type, ça vient généralement de deux endroits — est-ce que vous voyez l'eau sortir..."
+✓ "Vous mentionnez que ça saute sur le disjoncteur — est-ce que ça saute dès qu'on allume quelque chose de précis ou aléatoirement ?"
+✓ "La tache est sèche/jaunâtre ou il y a de l'eau qui coule activement ?"
+✗ JAMAIS : "Depuis combien de temps avez-vous ce problème ?" (générique et inutile pour le prix)
+✗ JAMAIS : "Avez-vous contacté un professionnel ?" (hors sujet)
+✗ JAMAIS : "Quel est votre budget ?" (interdit)
 
-TYPES DE RÉPONSE :
-- "choice" + "options": ["...", "..."] → quand il y a 2 à 4 options concrètes distinctes (préférer ce type)
-- "yesno" → UNIQUEMENT pour de vraies questions oui/non sans ambiguïté (ex: "Y a-t-il une odeur de brûlé ?")
-- "text" → pour des mesures, descriptions libres, localisations (ex: "Environ combien de m² ?")`
+CONNAISSANCE TERRAIN :
+${TERRAIN_KNOWLEDGE}
+
+RÈGLES ABSOLUES :
+— UNE seule question à la fois, courte, dans le langage du quotidien (pas de jargon technique)
+— Ne jamais redemander quelque chose déjà dit ou implicitement connu
+— Urgence réelle (étincelles actives, eau qui monte, odeur de brûlé forte) → done:true immédiatement avec note d'urgence
+— La question doit MONTRER que tu as compris le problème spécifique, pas être générique
+
+RÈGLE CRITIQUE SUR LES TYPES — respecter IMPÉRATIVEMENT :
+— "yesno" = UNIQUEMENT les questions dont la SEULE réponse sensée est "Oui" ou "Non"
+  ✓ Exemples corrects : "Y a-t-il une odeur de brûlé ?" / "Est-ce que ça fait du bruit ?"
+  ✗ INTERDIT si la question propose deux alternatives nommées ("brusquement OU progressivement", "une prise OU tout le circuit", "intérieur OU extérieur")
+— "choice" = toute question qui oppose deux alternatives ou plus, même formulée avec "ou"
+  → Dans ce cas, TOUJOURS fournir "options" avec les alternatives comme items distincts
+  ✓ Exemple : "C'est apparu comment ?" → type:"choice", options:["Brusquement depuis moins de 48h","Ça empire progressivement depuis plusieurs jours"]
+  ✓ Exemple : "Où exactement ?" → type:"choice", options:["Sous l'évier (siphon/robinet)","Dans le mur ou le plafond","Au sol près du WC"]
+— "text" = mesures, dimensions, descriptions libres`
 
 // ─── Appel OpenAI ─────────────────────────────────────────────────────────────
-async function callOpenAI(messages: any[], max_tokens = 600) {
+async function callOpenAI(messages: any[], max_tokens = 900) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -114,7 +150,7 @@ async function callOpenAI(messages: any[], max_tokens = 600) {
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       max_tokens,
       temperature: 0.2,
       response_format: { type: 'json_object' },
@@ -126,7 +162,7 @@ async function callOpenAI(messages: any[], max_tokens = 600) {
   return JSON.parse(content)
 }
 
-// ─── Normalise la réponse question de l'IA ───────────────────────────────────
+// ─── Normalise la réponse question ───────────────────────────────────────────
 function normalizeQuestion(raw: any, fallbackIndex: number): {
   question: string; type: 'yesno'|'choice'|'text'; options?: string[]; done: boolean
 } {
@@ -139,10 +175,30 @@ function normalizeQuestion(raw: any, fallbackIndex: number): {
     raw.type === 'yesno' ? 'yesno' :
     raw.type === 'choice' ? 'choice' : 'text'
 
-  // choice sans options valides → text
   const rawOptions: string[] = Array.isArray(raw.options)
     ? raw.options.filter((o: any) => typeof o === 'string' && o.trim())
     : []
+
+  // Garde-fou : si l'IA renvoie yesno pour une question "A ou B ?"
+  // → ce n'est pas une vraie oui/non, on tente de récupérer les options du JSON
+  // ou on bascule en choice si l'AI a fourni des options, sinon en text
+  if (type === 'yesno' && / ou /i.test(question)) {
+    if (rawOptions.length >= 2) {
+      type = 'choice'
+    } else {
+      // Tenter d'extraire les deux branches de "X ou Y ?"
+      const cleaned = question.replace(/\?$/, '').trim()
+      const match = cleaned.match(/^(.{10,})\s+ou\s+(.{5,})$/i)
+      if (match) {
+        const a = match[1].trim()
+        const b = match[2].trim()
+        return { question, type: 'choice', options: [a, b], done: false }
+      }
+      // Pas de split propre → champ texte libre (mieux que Oui/Non trompeur)
+      type = 'text'
+    }
+  }
+
   if (type === 'choice' && rawOptions.length < 2) type = 'text'
 
   return {
@@ -169,29 +225,60 @@ function buildMessages(text: string, photos: string[], systemPrompt: string, ext
 }
 
 // ─── Fallbacks sans clé API ───────────────────────────────────────────────────
-function fallbackQuestion(index: number): { question: string; type: 'yesno' | 'text'; done: boolean } {
-  const FALLBACK: { question: string; type: 'yesno' | 'text' }[] = [
-    { question: "Le problème vient-il d'un élément visible (tuyau, câble, mur fissuré) ou c'est plutôt un dysfonctionnement (appareil, installation) ?", type: 'yesno' },
-    { question: "C'est apparu brusquement (moins de 48h) ou ça empire progressivement depuis plusieurs jours ?", type: 'yesno' },
-    { question: "Y a-t-il des dégâts visibles autour — eau au sol, traces d'humidité, odeur, traces de brûlé ?", type: 'yesno' },
-    { question: "Avez-vous une idée de la cause — choc, usure, ancienne installation, suite à des travaux ?", type: 'text' },
+function fallbackQuestion(index: number): { question: string; type: 'yesno'|'text'|'choice'; options?: string[]; done: boolean } {
+  const F: { question: string; type: 'yesno'|'text'|'choice'; options?: string[] }[] = [
+    { question: "Pour mieux cerner le problème — c'est quoi exactement qui ne va pas ?", type: 'choice', options: ['Une fuite d\'eau visible', 'Un problème électrique (courant, prise, disjoncteur)', 'Des dégradations (fissure, humidité, peinture)', 'Un appareil ou installation qui ne fonctionne plus'] },
+    { question: "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?", type: 'yesno' },
+    { question: "C'est dans quelle pièce exactement, et quelle surface est concernée ?", type: 'text' },
+    { question: "Vous êtes dans une maison ou un appartement ?", type: 'choice', options: ['Maison individuelle (RDC)', 'Maison individuelle (étage)', 'Appartement (étage bas, 1-3)', 'Appartement (étage haut, 4+)'] },
+    { question: "Des travaux ont été faits récemment dans cette zone ?", type: 'yesno' },
+    { question: "Vous avez une idée de la cause — choc, usure, pluies, coupure de courant ?", type: 'text' },
   ]
-  if (index >= FALLBACK.length) return { question: '', type: 'text', done: true }
-  return { ...FALLBACK[index], done: false }
+  if (index >= F.length) return { question: '', type: 'text', done: true }
+  return { ...F[index], done: false }
 }
 
 function fallbackResult(text: string) {
   const lower = text.toLowerCase()
   if (lower.includes('fuite') || lower.includes('eau') || lower.includes('robinet') || lower.includes('wc') || lower.includes('tuyau')) {
-    return { summary: "Vous avez une fuite plomberie. Selon la localisation (tuyau visible ou mur humide), l'artisan inspectera les joints, siphons ou la canalisation encastrée.", technical_notes: "Vérifier joints de compression sous l'évier, siphon PVC, joint de cuvette WC. Si mur humide : humidimètre, identifier tracé canalisation encastrée. Matériaux : joint torique ⌀32, siphon universel, clé à molette.", category: 'Plomberie', urgency: 'high', price_min: 8000, price_max: 35000, items_needed: ['Joint torique', 'Siphon PVC', 'Clé à molette'], duration_estimate: '1 à 3 heures' }
+    return {
+      summary: "Le problème signalé correspond à une fuite plomberie. Les causes les plus fréquentes à Abidjan sont un joint torique usé sous un robinet ou raccord, un siphon fissuré, ou une infiltration descendant du toit. L'artisan commencera par couper l'arrivée d'eau concernée, puis localisera la fuite avec précision — un joint de robinet se règle en 20 minutes, une canalisation encastrée peut nécessiter 2 à 3 heures. Il est important de ne pas laisser une fuite active trop longtemps : l'humidité détériore rapidement l'enduit et peut atteindre les armatures béton.",
+      technical_notes: "1. Fermer le robinet d'isolement local (ou général si pas de robinet local). 2. Sécher la zone et identifier visuellement l'origine exacte de la fuite (jonction, corps robinet, siphon, raccord). 3. Joint torique ⌀32 ou ⌀40 selon robinetterie — dévisser presse-garniture, remplacer le joint, resserrer sans forcer. 4. Siphon PVC : dévisser à la main, inspecter la bague de serrage et la rondelle plate, remplacer si usée. 5. Raccord fileté : nettoyer les filets, filasse + pâte à joint sur 6-8 spires, revisser modérément. 6. Tester l'étanchéité en rouvrant progressivement l'eau — vérifier 5 minutes sous pression. 7. Si humidité dans mur : utiliser humidimètre, mesurer le taux, noter la superficie touchée.",
+      category: 'Plomberie', urgency: 'high', price_min: 5000, price_max: 35000,
+      items_needed: [{ name: 'Joint torique ⌀32', qty: 2, unit: 'unité' }, { name: 'Filasse + pâte à joint', qty: 1, unit: 'kit' }],
+      duration_estimate: '1 heure'
+    }
   } else if (lower.includes('electr') || lower.includes('courant') || lower.includes('disjoncteur') || lower.includes('prise')) {
-    return { summary: "Problème électrique détecté. L'électricien testera les circuits concernés et vérifiera le tableau de distribution.", technical_notes: "Test des circuits avec testeur de prise. Vérifier disjoncteur différentiel 30mA. Contrôler mise à la terre. Prévoir multimètre, testeur de prise, disjoncteur 16A/20A de remplacement.", category: 'Électricité', urgency: 'medium', price_min: 10000, price_max: 45000, items_needed: ['Disjoncteur 16A', 'Câble 2.5mm', 'Testeur de prise'], duration_estimate: '1 à 4 heures' }
-  } else if (lower.includes('peinture') || lower.includes('peindre')) {
-    return { summary: "Travaux de peinture. L'artisan préparera les surfaces, appliquera un apprêt puis deux couches de finition.", technical_notes: "Poncer les zones écaillées, reboucher fissures avec enduit plâtre, apprêt acrylique, 2 couches peinture vinylique. Bâche de protection obligatoire.", category: 'Peinture', urgency: 'low', price_min: 15000, price_max: 80000, items_needed: ['Peinture vinylique', 'Apprêt', 'Rouleau', 'Bâche'], duration_estimate: '4 à 8 heures' }
-  } else if (lower.includes('fissure') || lower.includes('lézard') || lower.includes('mur')) {
-    return { summary: "Fissures ou dégradation murale détectées. Le maçon évaluera si c'est superficiel (enduit) ou structurel avant d'intervenir.", technical_notes: "Fissure verticale/horizontale : enduit de rebouchage + fibre. Fissure diagonale 45° : risque structurel, expertise approfondie. Matériaux : enduit de rebouchage, fibre de verre, taloche, peinture de finition.", category: 'Maçonnerie', urgency: 'medium', price_min: 12000, price_max: 60000, items_needed: ['Enduit de rebouchage', 'Fibre de verre', 'Taloche'], duration_estimate: '2 à 6 heures' }
+    return {
+      summary: "Le problème décrit correspond à une anomalie électrique. À Abidjan, la grande majorité des cas de ce type vient soit d'une surcharge sur un circuit (trop d'appareils), soit d'un disjoncteur vieilli dont le seuil de déclenchement a baissé avec le temps. Avant l'arrivée de l'artisan, vérifiez si vos voisins ont aussi le courant — si oui, c'est interne à votre logement. Évitez de toucher les fils ou les prises. L'électricien commencera par tester chaque circuit au multimètre pour isoler la cause exacte avant d'intervenir.",
+      technical_notes: "1. Vérifier si les voisins ont le courant (distingue problème CIE vs interne). 2. Au tableau : identifier quel disjoncteur a sauté, le relever, observer s'il retombe immédiatement (court-circuit) ou reste levé (surcharge résolue). 3. Tester chaque prise du circuit concerné avec testeur de prise. 4. Mesurer la tension au tableau : doit être 220V ±5%. 5. Inspecter visuellement les prises et interrupteurs — traces noires, brûlures, fils dénudés = remplacement obligatoire. 6. Si disjoncteur à remplacer : noter la référence (16A, 20A, 32A) et le type (Phase + Neutre ou différentiel 30mA). 7. Si câble endommagé : remplacer sur toute la longueur du circuit, pas de jonction en milieu de gaine.",
+      category: 'Électricité', urgency: 'medium', price_min: 8000, price_max: 45000,
+      items_needed: [{ name: 'Disjoncteur 16A bipolaire', qty: 1, unit: 'unité' }],
+      duration_estimate: '1h30'
+    }
+  } else if (lower.includes('peinture') || lower.includes('peindre') || lower.includes('repeindre')) {
+    return {
+      summary: "Travaux de peinture à réaliser. La préparation des surfaces représente 40% du travail total et conditionne la durabilité du résultat : les zones écaillées doivent être poncées, les fissures rebouchées à l'enduit de lissage, et un apprêt appliqué avant la peinture finale. En zone humide (salle de bain, cuisine), une peinture anti-humidité est obligatoire sinon la peinture se décolle en quelques mois. Comptez 2 couches de finition minimum pour une bonne couvrance et une peinture lavable.",
+      technical_notes: "1. Bâcher le sol et protéger les menuiseries au ruban. 2. Poncer les zones écaillées (papier grain 80 puis 120), dépoussiérer. 3. Reboucher fissures à l'enduit de lissage en poudre (laisser sécher 2h minimum, poncer, repasser si nécessaire). 4. Apprêt acrylique 1 couche (séchage 1h à 40°C ambiant). 5. Peinture vinylique lavable : 2 couches avec séchage 1h30 entre chaque. En salle de bain : glycéro ou peinture spéciale humidité. 6. Calcul : 1L couvre environ 8-10m² (2 couches). Surface murale réelle = périmètre de la pièce × hauteur, moins les ouvertures. 7. Finir par les angles et plinthes au pinceau avant le rouleau.",
+      category: 'Peinture', urgency: 'low', price_min: 15000, price_max: 80000,
+      items_needed: [{ name: 'Peinture vinylique lavable', qty: 10, unit: 'L' }, { name: 'Apprêt acrylique', qty: 5, unit: 'L' }],
+      duration_estimate: '1 journée'
+    }
+  } else if (lower.includes('fissure') || lower.includes('lézard') || lower.includes('humidité') || lower.includes('moisissure')) {
+    return {
+      summary: "Des fissures ou dégradations murales sont signalées. Le diagnostic clé est de distinguer une fissure superficielle d'enduit (aucun risque, réparation simple) d'une fissure structurelle (diagonale à 45°, traversante) qui nécessite une expertise avant travaux. À Abidjan, les fissures apparaissent souvent en saison sèche (retrait du béton) ou après les premières grosses pluies (tassement). Si des moisissures sont présentes, il faut impérativement traiter l'humidité avant de repeindre, sinon elles reviennent en quelques semaines.",
+      technical_notes: "1. Classifier la fissure : verticale/horizontale = enduit (bénin) ; diagonale 45° depuis angle ouverture = tassement (surveiller) ; étoile = impact (bénin). 2. Mesurer la largeur au calibre ou carte : < 0.2mm = capillaire (enduit) ; > 0.3mm = active (surveiller avec repère crayon + date). 3. Traitement fissure enduit : brosser, souffler, enduire avec enduit de rebouchage en deux passes (fond + finition), poncer, appliquer fibre de verre en renfort si > 5cm. 4. Si humidité associée : appliquer hydrofuge de surface (Keim, Sika) avant l'enduit. Attendre 24h de séchage minimum. 5. Traitement moisissures : nettoyer à l'eau de Javel diluée (1:5), laisser agir 15 min, sécher, appliquer antifongique avant de repeindre. 6. Ravalement façade extérieure : crépi à la projection ou manuel avec taloche, accrochage obligatoire sur béton lisse.",
+      category: 'Maçonnerie', urgency: 'medium', price_min: 8000, price_max: 60000,
+      items_needed: [{ name: 'Enduit de rebouchage en poudre 5kg', qty: 1, unit: 'sac' }, { name: 'Bande fibre de verre', qty: 1, unit: 'rouleau' }],
+      duration_estimate: '3 heures'
+    }
   }
-  return { summary: "Intervention artisanale nécessaire. L'artisan effectuera un diagnostic complet sur place.", technical_notes: "Diagnostic sur place indispensable. Matériaux selon constat de l'artisan.", category: 'Maçonnerie', urgency: 'medium', price_min: 10000, price_max: 50000, items_needed: ['Matériaux selon diagnostic sur place'], duration_estimate: '2 à 6 heures' }
+  return {
+    summary: "Problème artisanal détecté nécessitant une intervention sur place. L'artisan effectuera d'abord un diagnostic visuel complet avant de décider de la méthode et des matériaux nécessaires.",
+    technical_notes: "1. Diagnostic visuel complet de la zone concernée. 2. Identifier la cause racine avant de commencer à intervenir. 3. Lister les matériaux nécessaires selon constat. 4. Établir un plan d'intervention étape par étape avec le client. 5. Valider la réparation avant de partir.",
+    category: 'Maçonnerie', urgency: 'medium', price_min: 10000, price_max: 50000,
+    items_needed: [], duration_estimate: '2 heures'
+  }
 }
 
 // ─── Handler principal ────────────────────────────────────────────────────────
@@ -201,77 +288,98 @@ export async function POST(req: NextRequest) {
 
   const hasKey = !!process.env.OPENAI_API_KEY
 
+  const MIN_Q = 4  // questions min avant de pouvoir terminer
+  const MAX_Q = 6  // questions max au total
+
   try {
-    // ── MODE START : première question ────────────────────────────────────────
+    // ── MODE START ────────────────────────────────────────────────────────────
     if (mode === 'start') {
       if (!hasKey) return NextResponse.json(fallbackQuestion(0))
 
-      const systemStart = `${SYSTEM_EXPERT}
+      const systemStart = `${EXPERT_IDENTITY}
 
-Le client décrit son problème pour la première fois. Identifie le domaine (plomberie, électricité, maçonnerie, etc.) et pose la PREMIÈRE question d'élimination la plus pertinente selon l'arbre de diagnostic correspondant.
+Le client décrit son problème pour la première fois. Tu as accès à ta connaissance terrain d'Abidjan.
 
-IMPORTANT : Pose TOUJOURS au moins 1 question — ne mets JAMAIS done:true dès le départ même si la description semble complète. Il manque toujours une info clé sur la localisation exacte, l'étendue ou l'urgence.
+PROCESSUS OBLIGATOIRE avant de formuler ta question :
+① Identifie le domaine (plomberie, électricité, maçonnerie, peinture, menuiserie, clim, serrurerie, carrelage)
+② Liste mentalement les 2-4 causes les plus probables pour CE problème précis dans le contexte d'Abidjan
+③ Détermine ce que TU NE SAIS PAS ENCORE et qui est critique pour établir la cause exacte
+④ Formule une question qui cible cette ambiguïté précise — et qui MONTRE que tu as compris le problème
 
-Réponds UNIQUEMENT en JSON (un de ces formats) :
+RÈGLE ABSOLUE : Ne pose JAMAIS done:true dès le premier échange — il manque toujours une info critique.
+Si la description est déjà très précise → demande la localisation exacte ou l'étendue pour le pricing.
+Si urgence réelle (étincelles, inondation, odeur forte de brûlé) → done:true avec mention urgence dans la question.
 
-Question avec options concrètes :
-{"question": "Question courte ?", "type": "choice", "options": ["Option A", "Option B", "Option C"], "done": false}
+FORMAT DE RÉPONSE (JSON uniquement) :
 
-Question oui/non pure :
-{"question": "Question oui/non ?", "type": "yesno", "done": false}
+Question avec options :
+{"question": "texte ?", "type": "choice", "options": ["Option A", "Option B", "Option C"], "done": false}
 
-Question ouverte (mesure, description) :
-{"question": "Question ouverte ?", "type": "text", "done": false}
+Question oui/non :
+{"question": "texte ?", "type": "yesno", "done": false}
 
-Diagnostic terminé :
-{"done": true}
+Question ouverte :
+{"question": "texte ?", "type": "text", "done": false}
 
-EXEMPLES de bonnes questions choice :
-- "C'est quoi exactement ?" → options: ["Robinet qui goutte", "Tuyau qui fuit sous l'évier", "Humidité dans le mur"]
-- "Combien de pièces sont touchées ?" → options: ["Une seule pièce", "Plusieurs pièces", "Tout l'appartement"]
-- "C'est apparu comment ?" → options: ["Brusquement", "Ça empire progressivement depuis quelques jours"]`
+Urgence :
+{"question": "urgence note", "type": "text", "done": true}
+
+BONS EXEMPLES — la question doit être spécifique et montrer de l'expertise :
+- Client dit "fuite sous l'évier" → "Pour ce type de fuite, il y a souvent deux endroits : le siphon en plastique en bas, ou le raccord à l'entrée du tuyau d'alimentation en haut. Vous pouvez me dire c'est plutôt d'où l'eau sort ?" → options: ["Du coude en plastique en bas (le siphon)", "De la jonction du tuyau en haut", "Je vois pas exactement d'où ça vient"]
+- Client dit "disjoncteur qui saute" → "Quand le disjoncteur saute, c'est en allumant un appareil précis ou ça saute tout seul sans raison apparente ?" → options: ["Dès qu'on allume un appareil précis (lequel ?)", "Ça saute aléatoirement même sans appareil", "Dès qu'on relève le disjoncteur il retombe"]
+- Client dit "fissure dans le mur" → "La fissure est dans quel sens ?" → options: ["Droite (horizontale ou verticale)", "En diagonale à 45° depuis un angle de porte ou fenêtre", "En étoile/éclats depuis un point"]`
 
       const raw = await callOpenAI(buildMessages(text, photos, systemStart))
       return NextResponse.json(normalizeQuestion(raw, 0))
     }
 
-    // ── MODE NEXT : question suivante ─────────────────────────────────────────
+    // ── MODE NEXT ─────────────────────────────────────────────────────────────
     if (mode === 'next') {
       if (!hasKey) return NextResponse.json(fallbackQuestion(index))
-      if (index >= 4) return NextResponse.json({ question: '', type: 'text', done: true })
+      if (index >= MAX_Q) return NextResponse.json({ question: '', type: 'text', done: true })
 
-      const qaBlock = qa.map((q: any) => `❓ ${q.question}\n💬 ${q.answer}`).join('\n\n')
+      const qaBlock = qa.map((q: any, i: number) => `Q${i+1}: ${q.question}\nR${i+1}: ${q.answer}`).join('\n\n')
 
-      // Minimum 2 questions avant de pouvoir terminer
-      const MIN_Q = 2
       const canFinish = index >= MIN_Q
 
-      const lastQuestionInstruction = (index >= 3)
-        ? `\nC'est la DERNIÈRE question. Règle unique :
-- Travail de SURFACE (peinture, carrelage, enduit, humidité) sans dimensions connues → demande la superficie approximative.
-- Travail en NOMBRE (prises, robinets, carreaux cassés) sans quantité connue → demande combien.
-- Sinon → done:true.
-Ne pose JAMAIS de question sur le budget, les matériaux ou les fournitures.`
+      // Ce que le système cherche à établir pour un diagnostic complet
+      const convergenceGuide = `
+POUR UN DIAGNOSTIC COMPLET, tu dois avoir établi les points suivants — vérifie ce qui est déjà connu vs ce qui manque :
+□ TYPE EXACT du problème (cause probable identifiée, pas juste le symptôme)
+□ LOCALISATION précise (quelle pièce, accessible ou encastré, étage)
+□ ÉTENDUE / QUANTITÉ (surface m², nombre d'éléments, longueur fissure…)
+□ CONTEXTE BÂTIMENT si pertinent (âge, type construction, récents travaux)
+□ SIGNAL D'URGENCE vérifié (y a-t-il un risque immédiat ?)
+
+${canFinish
+  ? `Tu peux décider de terminer (done:true) si tu as établi le type exact ET au moins l'étendue/quantité pour le pricing. Si une variable critique manque encore, continue.`
+  : `OBLIGATOIRE : ${index} question(s) posée(s), minimum ${MIN_Q}. Tu dois poser une autre question. done:true est INTERDIT.`
+}`
+
+      // Guide pour la dernière question
+      const lastQ = index >= MAX_Q - 1
+        ? `\nC'est ta DERNIÈRE question autorisée. Si l'étendue ou la surface n'est pas encore connue pour un travail de surface → la demander. Sinon → done:true.`
         : ''
 
-      const mustAskInstruction = !canFinish
-        ? `\nOBLIGATOIRE : Tu as posé seulement ${index} question(s). Il en faut au minimum ${MIN_Q}. Tu DOIS poser une autre question — done:true est INTERDIT maintenant.`
-        : `\nTu peux décider de terminer si tu as suffisamment d'infos pour un prix précis.`
+      const systemNext = `${EXPERT_IDENTITY}
 
-      const systemNext = `${SYSTEM_EXPERT}
+Tu mènes un diagnostic en cours. Tu as posé ${index} question(s).
 
-Tu as déjà posé ${index} question(s). Analyse TOUTES les réponses précédentes.
-Ne redemande JAMAIS une information déjà donnée.
-${mustAskInstruction}
-${lastQuestionInstruction}
+${convergenceGuide}
+${lastQ}
 
-Réponds UNIQUEMENT en JSON (même format que pour la première question — choice/yesno/text ou done:true si autorisé)`
+ANALYSE LES ÉCHANGES PRÉCÉDENTS avec soin :
+— Ce que tu sais maintenant vs ce que tu cherches encore
+— La question suivante doit REFERENCER ce qui a été dit et cibler LA variable manquante la plus critique
+— Ne jamais reformuler ce qui est déjà connu
+— La question doit montrer que tu as suivi le fil de la conversation
 
-      const extra = `ÉCHANGES PRÉCÉDENTS :\n${qaBlock}\n\nPROBLÈME INITIAL DU CLIENT :`
+FORMAT : JSON uniquement (choice/yesno/text selon ce qui est le plus approprié, ou done:true si autorisé et pertinent)`
+
+      const extra = `ÉCHANGES DE DIAGNOSTIC (${index} questions posées) :\n${qaBlock}\n\nDESCRIPTION INITIALE DU CLIENT :`
       const raw = await callOpenAI(buildMessages(text, photos, systemNext, extra))
       const normalized = normalizeQuestion(raw, index)
 
-      // Sécurité serveur : si done:true trop tôt, force une question de fallback
       if (normalized.done && !canFinish) {
         return NextResponse.json(fallbackQuestion(index))
       }
@@ -279,64 +387,88 @@ Réponds UNIQUEMENT en JSON (même format que pour la première question — cho
       return NextResponse.json(normalized)
     }
 
-    // ── MODE FINALIZE : diagnostic complet ────────────────────────────────────
+    // ── MODE FINALIZE ─────────────────────────────────────────────────────────
     if (mode === 'finalize') {
       let result: any
 
       if (hasKey) {
         const qaBlock = qa.length
-          ? 'ÉCHANGES DE DIAGNOSTIC :\n' + qa.map((q: any) => `❓ ${q.question}\n💬 ${q.answer}`).join('\n\n') + '\n\nPROBLÈME INITIAL :'
+          ? 'ÉCHANGES DE DIAGNOSTIC :\n' + qa.map((q: any, i: number) => `Q${i+1}: ${q.question}\nR${i+1}: ${q.answer}`).join('\n\n') + '\n\nDESCRIPTION INITIALE :'
           : ''
 
-        const systemFinalize = `Tu es AfriOne IA, expert diagnostiqueur artisanal à Abidjan, Côte d'Ivoire.
+        const systemFinalize = `Tu es le moteur de diagnostic d'AfriOne, plateforme artisanale à Abidjan.
+Tu as mené un diagnostic complet. Tu dois maintenant produire un rapport de diagnostic professionnel.
 
-Génère un diagnostic complet basé sur TOUTES les informations recueillies.
-Résumé client : clair, rassurant, 2-3 phrases maximum.
-Notes techniques : pour l'artisan — méthode précise, matériaux à apporter, points d'attention.
+${TERRAIN_KNOWLEDGE}
 
-RÈGLES PRIX (marché informel Abidjan) :
-- Réparation simple (joint, débouchage, réglage) : 2 000–8 000 FCFA total
-- Remplacement pièce + main-d'œuvre : 5 000–25 000 FCFA
-- Travaux surface (peinture, carrelage) : 500–2 000 FCFA/m² main-d'œuvre seule
-- Ne JAMAIS dépasser ces fourchettes sauf urgence ou travaux lourds
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RAPPORT CLIENT (champ "summary")
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Destiné au client — quelqu'un qui ne connaît rien à l'artisanat.
+5 à 8 phrases. Structure obligatoire :
+① CE QUI SE PASSE EXACTEMENT — nomme le problème diagnostiqué précisément (pas "problème artisanal")
+② POURQUOI — la cause probable identifiée pendant le diagnostic (usure, choc thermique, humidité, surcharge…)
+③ CE QUE L'ARTISAN VA FAIRE — les 2-3 étapes principales en termes simples (sans jargon)
+④ DURÉE ET IMPLICATION POUR LE CLIENT — combien de temps, faut-il quitter la pièce/couper l'eau/l'électricité
+⑤ CONSEIL PRÉVENTIF — une chose concrète à faire pour éviter que ça revienne
 
-RÈGLES DURÉE — être précis selon le cas réel :
-- Débouchage, réglage, remplacement joint → "30 minutes" ou "45 minutes"
-- Remplacement robinet/interrupteur/serrure → "1 heure" ou "1h30"
-- Réparation fissure, petite zone → "2 heures"
-- Installation neuve, peinture petite pièce → "3 heures" à "1 journée"
+Ton : expert mais accessible. Pas vague. Pas de "l'artisan interviendra selon le constat sur place".
+Spécifique à CE problème précis, pas un texte qui pourrait s'appliquer à n'importe quel cas.
 
-RÈGLES MATÉRIAUX — CRITIQUES :
-- Maximum 4 items_needed, jamais plus
-- Liste UNIQUEMENT les pièces à remplacer physiquement et les consommables (joint, colle, peinture, enduit)
-- JAMAIS les outils de l'artisan (clé, tournevis, perceuse, niveau, taloche) — c'est son propre matériel
-- JAMAIS les protections génériques (bâche, ruban de masquage) sauf si le client doit les acheter
-- Si la réparation est un simple resserrage/réglage/débouchage → items_needed peut être vide []
-- Exemple réparation joint : ["Joint torique ⌀32"] — pas besoin de clé à molette
-- Exemple peinture 20m² : ["Peinture vinylique 10L", "Apprêt acrylique 5L", "Rouleau mousse"] — 3 items max
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOTES TECHNIQUES (champ "technical_notes")
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Destiné à L'ARTISAN qui arrive sur place. Liste numérotée, 5 à 8 étapes.
+Structure :
+① ACTION IMMÉDIATE (couper l'eau/courant, sécuriser…)
+② DIAGNOSTIC SUR PLACE (quoi inspecter en premier, avec quoi)
+③ MÉTHODE D'INTERVENTION étape par étape avec précisions techniques
+④ MATÉRIAUX avec références précises (diamètres, ampérage, volume, marque si pertinent)
+⑤ POINTS D'ATTENTION / PIÈGES FRÉQUENTS dans ce type d'intervention à Abidjan
+⑥ CRITÈRE DE VALIDATION — comment confirmer que la réparation est réussie avant de partir
+Langage technique précis. Références matériaux réelles disponibles à Abidjan (Wavin, PVC PN10, disjoncteur Legrand/Schneider, Holcim, Sika…).
 
-Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRIX (marché informel Abidjan 2025)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Main-d'œuvre uniquement (matériaux en plus si artisan les apporte) :
+- Joint/réglage simple : 2 000–6 000 FCFA
+- Remplacement pièce simple (robinet, prise, interrupteur) : 5 000–15 000 FCFA
+- Débouchage : 5 000–12 000 FCFA
+- Peinture 1 pièce (m²) : 600–1 500 FCFA/m² MO seule
+- Carrelage pose : 1 500–3 500 FCFA/m² MO seule
+- Électricité (tirage câble, ajout circuit) : 8 000–25 000 FCFA
+- Climatisation entretien : 8 000–15 000 FCFA / réparation gaz : 25 000–60 000 FCFA
+- Maçonnerie rebouchage/fissures (m²) : 3 000–8 000 FCFA/m²
+
+DURÉE précise selon le cas réel :
+30 minutes | 45 minutes | 1 heure | 1h30 | 2 heures | 3 heures | 4 heures | 1 journée | 1 à 2 jours
+
+MATÉRIAUX (items_needed) :
+- Maximum 4 items. Uniquement pièces à remplacer et consommables.
+- JAMAIS les outils de l'artisan (clé, tournevis, perceuse, taloche, multimètre…)
+- Quantités précises si connues (ex: "Peinture vinylique 10L" pas "de la peinture")
+- Si réparation = réglage pur → items_needed vide []
+
+FORMAT JSON EXACT :
 {
-  "summary": "string",
-  "technical_notes": "string",
+  "summary": "string — 5 à 8 phrases spécifiques au cas",
+  "technical_notes": "string — liste numérotée 5-8 étapes pour l'artisan",
   "category": "${CATEGORIES}",
   "urgency": "low|medium|high|emergency",
   "price_min": number,
   "price_max": number,
-  "duration_estimate": "30 minutes|45 minutes|1 heure|1h30|2 heures|3 heures|4 heures|1 journée",
+  "duration_estimate": "string",
   "surface_m2": number | null,
-  "items_needed": [
-    {"name": "nom exact du matériau/pièce", "qty": number, "unit": "unité|ml|m²|sac|kit|L"}
-  ]
+  "items_needed": [{"name": "string", "qty": number, "unit": "string"}]
 }`
 
-        result = await callOpenAI(buildMessages(text, photos, systemFinalize, qaBlock), 900)
+        result = await callOpenAI(buildMessages(text, photos, systemFinalize, qaBlock), 2000)
       } else {
         result = fallbackResult(text)
       }
 
-      // Normaliser — items_needed accepte [{name, qty, unit}] ou ["string"] (legacy)
-      const TOOLS_RE = /\b(clé (à molette|plate|allen)|tournevis|perceuse|niveau (à bulle)?|taloche|truelle|spatule|marteau|scie|pince|mètre ruban|testeur de prise|multimètre|bâche|ruban (de masquage|adhésif)|gants|masque)\b/i
+      const TOOLS_RE = /\b(clé (à molette|plate|allen|dynamométrique)|tournevis|perceuse|niveau (à bulle)?|taloche|truelle|spatule|marteau|scie|pince|mètre ruban|testeur (de prise)?|multimètre|bâche|ruban (de masquage|adhésif|américain)|gants|masque|casque|lunettes de protection)\b/i
       const rawItems = Array.isArray(result.items_needed) ? result.items_needed : []
       const normalizedItems = rawItems
         .map((it: any) =>
@@ -348,13 +480,13 @@ Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
         .slice(0, 4)
 
       result = {
-        summary:              result.summary         || 'Problème artisanal détecté, intervention recommandée.',
-        technical_notes:      result.technical_notes || 'Diagnostic complet à réaliser sur place.',
-        category:             result.category        || 'Maçonnerie',
-        urgency:              result.urgency         || 'medium',
-        price_min:            Number(result.price_min) || 5000,
-        price_max:            Number(result.price_max) || 20000,
-        items_needed:         normalizedItems,
+        summary:           result.summary         || 'Problème artisanal identifié, intervention recommandée.',
+        technical_notes:   result.technical_notes || 'Diagnostic complet à réaliser sur place.',
+        category:          result.category        || 'Maçonnerie',
+        urgency:           result.urgency         || 'medium',
+        price_min:         Number(result.price_min) || 5000,
+        price_max:         Number(result.price_max) || 20000,
+        items_needed:      normalizedItems,
         duration_estimate: result.duration_estimate || '1 heure',
         surface_m2:        result.surface_m2 != null ? Number(result.surface_m2) : null,
         budget_client:     result.budget_client || null,
@@ -364,7 +496,6 @@ Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
         ? enrichItemsWithJumia(normalizedItems.map((i: any) => i.name), result.category)
         : Promise.resolve([])
 
-      // Sauvegarder en base si connecté
       if (user_id) {
         const { data: mission } = await supabaseAdmin
           .from('missions')
@@ -378,13 +509,7 @@ Réponds UNIQUEMENT en JSON avec ces champs EXACTS :
           .single()
 
         if (mission) {
-          const rawContext = JSON.stringify({
-            original: text,
-            qa,
-            photos,
-            technical_notes:   result.technical_notes,
-            duration_estimate: result.duration_estimate,
-          })
+          const rawContext = JSON.stringify({ original: text, qa, photos, technical_notes: result.technical_notes, duration_estimate: result.duration_estimate })
 
           const [, jumiaItems] = await Promise.all([
             supabaseAdmin.from('diagnostics').insert({

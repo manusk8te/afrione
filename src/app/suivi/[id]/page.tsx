@@ -75,6 +75,8 @@ export default function MissionLivePage() {
   const [litigeText, setLitigeText]         = useState('')
   const [submittingLitige, setSubmittingLitige] = useState(false)
   const [confirmDone, setConfirmDone]       = useState(false)
+  const [countdown, setCountdown]           = useState<string>('')
+  const [validating, setValidating]         = useState(false)
 
   const watchRef     = useRef<number | null>(null)
   const clientPosRef = useRef<[number, number]>(ABIDJAN_CENTER)
@@ -86,6 +88,21 @@ export default function MissionLivePage() {
     document.addEventListener('keydown', onEsc)
     return () => document.removeEventListener('keydown', onEsc)
   }, [])
+
+  useEffect(() => {
+    const deadline = mission?.validation_deadline
+    if (!deadline) { setCountdown(''); return }
+    const update = () => {
+      const ms = new Date(deadline).getTime() - Date.now()
+      if (ms <= 0) { setCountdown('Auto-validation en cours…'); return }
+      const h = Math.floor(ms / 3600000)
+      const m = Math.floor((ms % 3600000) / 60000)
+      setCountdown(`${h}h ${m < 10 ? '0' : ''}${m}min`)
+    }
+    update()
+    const t = setInterval(update, 30000)
+    return () => clearInterval(t)
+  }, [mission?.validation_deadline])
 
   const { isLoaded: mapsLoaded } = useJsApiLoader({
     id: 'afrione-map',
@@ -269,30 +286,52 @@ export default function MissionLivePage() {
 
   const markDone = async () => {
     setActing(true)
-    await supabase.from('missions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', missionId)
-    setMission((prev: any) => ({ ...prev, status: 'completed' }))
-    const amount = mission?.total_price || 0
-    if (amount > 0) {
-      const { data: { session } } = await supabase.auth.getSession()
-      const releaseRes = await fetch('/api/payment', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
-        body: JSON.stringify({ mission_id: missionId }),
-      })
-      if (!releaseRes.ok) console.error('[release_escrow]', await releaseRes.json().catch(() => {}))
-    }
+    const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    await supabase.from('missions').update({
+      status: 'pending_validation',
+      completed_at: new Date().toISOString(),
+      validation_deadline: deadline,
+    }).eq('id', missionId)
+    setMission((prev: any) => ({ ...prev, status: 'pending_validation', validation_deadline: deadline }))
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id, sender_role: missionRole,
-      text: `Mission terminée ✅ — ${amount > 0 ? `${amount.toLocaleString()} FCFA transférés sur votre wallet.` : 'Merci pour votre confiance !'}`,
+      text: `Travaux terminés ✅ — En attente de validation client. L'escrow reste sécurisé jusqu'à validation (max 24h).`,
       type: 'system',
     })
     if (mission?.client_id) {
       fetch('/api/push-send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: mission.client_id, title: 'AfriOne — Mission terminée !', body: 'Pensez à laisser un avis à votre artisan.', url: `https://afrione-sepia.vercel.app/warroom/${missionId}` }) }).catch(() => {})
+        body: JSON.stringify({ user_id: mission.client_id, title: 'AfriOne — Travaux terminés !', body: 'Validez la mission pour libérer le paiement. Vous avez 24h — sinon validation automatique.', url: `https://afrione-sepia.vercel.app/suivi/${missionId}` }) }).catch(() => {})
     }
-    toast.success('Mission terminée !')
+    toast.success('Mission marquée terminée — en attente de validation client.')
     setActing(false)
-    router.push(`/warroom/${missionId}`)
+  }
+
+  const validateMission = async () => {
+    setValidating(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/validate-mission', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
+      body: JSON.stringify({ mission_id: missionId }),
+    })
+    if (res.ok) {
+      const amount = mission?.total_price || 0
+      setMission((prev: any) => ({ ...prev, status: 'completed' }))
+      await supabase.from('chat_history').insert({
+        mission_id: missionId, sender_id: user.id, sender_role: missionRole,
+        text: `Mission validée par le client ✅ — ${amount > 0 ? `${amount.toLocaleString()} FCFA libérés à l'artisan.` : 'Paiement libéré.'}`,
+        type: 'system',
+      })
+      if (mission?.artisan_pros?.user_id) {
+        fetch('/api/push-send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: mission.artisan_pros.user_id, title: 'AfriOne — Paiement libéré !', body: 'Le client a validé la mission. Le paiement est maintenant disponible sur votre wallet.', url: `https://afrione-sepia.vercel.app/artisan-space/portefeuille` }) }).catch(() => {})
+      }
+      toast.success('Mission validée ! Paiement libéré.')
+      router.push(`/warroom/${missionId}`)
+    } else {
+      toast.error('Erreur de validation. Réessayez.')
+    }
+    setValidating(false)
   }
 
   const submitLitige = async () => {
@@ -334,11 +373,15 @@ export default function MissionLivePage() {
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&layer=mapnik&marker=${clientPos[0]},${clientPos[1]}`
 
   const STEPS = [
-    { key: 'en_route',  label: 'En route',  icon: '🚗' },
-    { key: 'en_cours',  label: 'Sur place',  icon: '📍' },
-    { key: 'completed', label: 'Terminé',    icon: '✅' },
+    { key: 'en_route',           label: 'En route',  icon: '🚗' },
+    { key: 'en_cours',           label: 'Sur place',  icon: '📍' },
+    { key: 'pending_validation', label: 'À valider',  icon: '⏳' },
+    { key: 'completed',          label: 'Terminé',    icon: '✅' },
   ]
-  const stepIndex = status === 'completed' ? 2 : status === 'en_cours' || status === 'disputed' ? 1 : 0
+  const stepIndex =
+    status === 'completed' ? 3 :
+    status === 'pending_validation' ? 2 :
+    (status === 'en_cours' || status === 'disputed') ? 1 : 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#FFFFFF', color: '#3D4852' }}>
@@ -571,7 +614,7 @@ export default function MissionLivePage() {
                 { label: isArtisan ? 'Client' : 'Artisan', value: isArtisan ? clientName : `${artisanName} · ${artisanMetier}` },
                 { label: 'Quartier', value: quartier },
                 { label: 'Montant',  value: amount > 0 ? `${amount.toLocaleString()} FCFA` : '—' },
-                { label: 'Statut escrow', value: status === 'completed' ? 'Transféré ✓' : status === 'disputed' ? '⚠️ En litige' : '🔒 Sécurisé' },
+                { label: 'Statut escrow', value: status === 'completed' ? 'Transféré ✓' : status === 'disputed' ? '⚠️ En litige' : status === 'pending_validation' ? '⏳ En attente de validation' : '🔒 Sécurisé' },
               ].map((item, i, arr) => (
                 <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid #E2E8F0' : 'none' }}>
                   <span style={{ fontSize: '12px', color: '#6B7280' }}>{item.label}</span>
@@ -627,7 +670,7 @@ export default function MissionLivePage() {
           confirmDone ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', fontSize: '13px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>
-                ⚠️ Cela libère le paiement escrow. Confirmer ?
+                ⚠️ Le client recevra une notification pour valider. L'escrow reste bloqué jusqu'à sa validation (max 24h). Confirmer ?
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => setConfirmDone(false)} style={{ flex: 1, padding: '13px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px', color: '#6B7280', fontWeight: 600, fontSize: '13px', cursor: 'pointer', boxShadow: NEU_SM }}>
@@ -664,11 +707,46 @@ export default function MissionLivePage() {
           </button>
         )}
 
+        {isArtisan && status === 'pending_validation' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(232,93,38,0.06)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(232,93,38,0.2)' }}>
+            <Clock size={18} color="#E85D26" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>En attente de validation client</div>
+              <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                {countdown ? `Auto-validation dans ${countdown}` : 'Le client a 24h pour valider ou contester'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isArtisan && status === 'pending_validation' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ padding: '14px 16px', background: 'rgba(43,107,62,0.06)', border: '1px solid rgba(43,107,62,0.2)', borderRadius: '14px' }}>
+              <div style={{ fontWeight: 700, fontSize: '14px', color: '#2B6B3E', marginBottom: '3px' }}>
+                {artisanName} a terminé la mission ✅
+              </div>
+              <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                Validez maintenant pour libérer le paiement
+                {countdown ? ` · Auto-validation dans ${countdown}` : ' · Auto-validation dans 24h'}
+              </div>
+            </div>
+            <button onClick={validateMission} disabled={validating} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: validating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: validating ? 0.6 : 1 }}>
+              {validating
+                ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Validation…</>
+                : <><CheckCircle size={18} /> Valider et libérer le paiement →</>
+              }
+            </button>
+            <button onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <AlertCircle size={15} /> J'ai un problème avec les travaux
+            </button>
+          </div>
+        )}
+
         {status === 'completed' && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
               <CheckCircle size={20} color="#2B6B3E" />
-              <span style={{ fontWeight: 700, fontSize: '15px', color: '#2B6B3E' }}>Mission terminée !</span>
+              <span style={{ fontWeight: 700, fontSize: '15px', color: '#2B6B3E' }}>Mission validée — paiement libéré !</span>
             </div>
             <Link href={`/warroom/${missionId}`} className="afrione-gradient-text" style={{ fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
               {isArtisan ? 'Voir le récapitulatif →' : 'Laisser un avis →'}
