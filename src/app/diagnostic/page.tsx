@@ -127,10 +127,7 @@ export default function DiagnosticPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        router.push('/auth?redirect=/diagnostic')
-        return
-      }
+      if (!session) return // diagnostic accessible sans connexion
       setUserId(session.user.id)
       supabase.from('users').select('quartier').eq('id', session.user.id).single()
         .then(({ data }) => { if (data?.quartier) setQuartier(data.quartier) })

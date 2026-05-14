@@ -367,16 +367,27 @@ function AuthPageInner() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 16px', overflowY: 'auto', background: W2 }}
         className="sm:px-12 lg:px-16 xl:px-24">
 
+        {/* Mobile header orange — visible uniquement sur mobile */}
+        <div className="lg:hidden" style={{ width: '100%', maxWidth: '480px', marginBottom: '24px', borderRadius: '20px', overflow: 'hidden', position: 'relative', height: '120px', flexShrink: 0 }}>
+          <div className="afrione-gradient" style={{ position: 'absolute', inset: 0 }} />
+          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', top: '12%', right: '8%', width: '36px', height: '36px', background: 'rgba(255,255,255,0.12)', borderRadius: '10px', animation: 'floatSquare 4.5s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', bottom: '15%', left: '6%', width: '24px', height: '24px', background: 'rgba(255,255,255,0.09)', borderRadius: '7px', animation: 'floatSquareSlow 6s ease-in-out infinite 1s' }} />
+            <div style={{ position: 'absolute', top: '30%', left: '38%', width: '16px', height: '16px', background: 'rgba(255,255,255,0.07)', borderRadius: '5px', animation: 'floatSquareDrift 7s ease-in-out infinite 0.5s' }} />
+          </div>
+          <div style={{ position: 'relative', zIndex: 2, padding: '24px 24px', display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+            <div className="afrione-gradient" style={{ width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.3)', flexShrink: 0 }}>
+              <Zap size={18} color="white" />
+            </div>
+            <div>
+              <div style={{ ...syne, fontWeight: 700, fontSize: '20px', color: 'white', letterSpacing: '-0.02em' }}>AFRI<span style={{ opacity: 0.85 }}>ONE</span></div>
+              <div style={{ ...body, fontSize: '12px', color: 'rgba(255,255,255,0.75)' }}>Artisans vérifiés · Paiement sécurisé</div>
+            </div>
+          </div>
+        </div>
+
         <motion.div variants={rightFade} initial="hidden" animate="show"
           style={{ width: '100%', maxWidth: '480px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-          {/* Mobile logo */}
-          <Link href="/" className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', marginBottom: '8px' }}>
-            <div className="afrione-gradient" style={{ width: '28px', height: '28px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Zap size={14} color="white" />
-            </div>
-            <span style={{ ...syne, fontWeight: 700, fontSize: '16px', color: T1 }}>AFRI<span className="afrione-gradient-text">ONE</span></span>
-          </Link>
 
           {/* ── CHOICE ── */}
           {step === 'choice' && (<>
