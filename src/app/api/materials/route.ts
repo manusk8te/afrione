@@ -9,6 +9,7 @@ import { lookupItemOnJumia } from '@/lib/jumia-lookup'
 
 export const dynamic = 'force-dynamic'
 
+
 const FALLBACK_TIERS: Record<string, { economique: number; standard: number; premium: number }> = {
   'Plomberie':    { economique: 0.65, standard: 1.0, premium: 1.6 },
   'Électricité':  { economique: 0.65, standard: 1.0, premium: 1.7 },

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
+
 // GET — récupère les données du diagnostic pour affichage dans la warroom
 export async function GET(req: NextRequest) {
   const mission_id = req.nextUrl.searchParams.get('mission_id')

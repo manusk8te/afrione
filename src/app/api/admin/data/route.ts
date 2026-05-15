@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
+
 // GET /api/admin/data?type=kyc|artisans|missions|transactions
 export async function GET(req: NextRequest) {
   const type = req.nextUrl.searchParams.get('type')

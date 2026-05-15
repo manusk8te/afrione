@@ -4,6 +4,7 @@ import { enrichItemsWithJumia } from '@/lib/jumia-lookup'
 
 export const dynamic = 'force-dynamic'
 
+
 const CATEGORIES = `Plomberie|Électricité|Maçonnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage`
 
 // ─── Connaissance terrain Abidjan ─────────────────────────────────────────────

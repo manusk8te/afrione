@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import {
-
-export const dynamic = 'force-dynamic'
   runMonteCarlo, computeDistance, CATEGORY_TO_METIER,
   diagnosticAlpha,
   type PricingInput, type MaterialInput,
 } from '@/lib/pricing'
+
+export const dynamic = 'force-dynamic'
+
 
 // Fallbacks quand Supabase ne renvoie rien
 const FALLBACK_LABOR: Record<string, { tarif_horaire: number; majoration_urgence: number }> = {

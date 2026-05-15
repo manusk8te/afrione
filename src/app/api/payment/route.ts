@@ -12,6 +12,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
+
 const PLATFORM_FEE_PCT = 0.10  // 10% commission AfriOne
 
 export async function POST(req: NextRequest) {

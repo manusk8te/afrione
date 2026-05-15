@@ -11,6 +11,7 @@ import { releaseEscrow } from '@/lib/escrow'
 
 export const dynamic = 'force-dynamic'
 
+
 export async function POST(req: NextRequest) {
   const { mission_id } = await req.json()
   if (!mission_id) return NextResponse.json({ error: 'mission_id requis' }, { status: 400 })
