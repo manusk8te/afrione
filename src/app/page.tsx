@@ -260,6 +260,10 @@ export default function HomePage() {
         <div className="page-container">
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
 
+            <motion.div variants={fadeUp} style={{ marginBottom: '48px', borderRadius: '20px', overflow: 'hidden', maxHeight: '420px' }}>
+              <img src="/services-hero.jpg" alt="Artisans AfriOne" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            </motion.div>
+
             <motion.p variants={fadeUp} style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '20px' }}>
               // Services
             </motion.p>
