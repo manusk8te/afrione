@@ -1438,7 +1438,7 @@ export default function WarRoomPage() {
                             </div>
                           )}
                           {!hasPhoto && !hasVendor && (
-                            <div style={{fontSize:'10px',color:'rgba(255,255,255,0.3)',marginTop:'1px'}}>Photo à venir</div>
+                            <div style={{fontSize:'10px',color:'#9CA3AF',marginTop:'1px'}}>Photo à venir</div>
                           )}
                         </div>
                         {hasVendor && (
@@ -1511,7 +1511,7 @@ export default function WarRoomPage() {
                 <span style={{fontSize:'13px'}}>📋</span>
                 <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily:'Tahoma'}}>FICHE TECHNIQUE — DIAGNOSTIC CLIENT</span>
               </div>
-              <button onClick={() => setShowDiagPanel(false)} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.35)',padding:'2px',lineHeight:0}}>
+              <button onClick={() => setShowDiagPanel(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280',padding:'2px',lineHeight:0}}>
                 <X size={14} />
               </button>
             </div>
@@ -1520,26 +1520,26 @@ export default function WarRoomPage() {
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'5px',marginBottom:'8px'}}>
               <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'11px',fontWeight:700,color:'#3D4852',marginBottom:'1px'}}>{diagData.category || '—'}</div>
-                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Tahoma'}}>CATÉGORIE</div>
+                <div style={{fontSize:'9px',color:'#9CA3AF',fontFamily:'Tahoma'}}>CATÉGORIE</div>
               </div>
               <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'11px',fontWeight:700,color: diagData.urgency === 'emergency' ? '#ef4444' : diagData.urgency === 'high' ? '#E85D26' : diagData.urgency === 'medium' ? '#C9A84C' : '#2B6B3E',marginBottom:'1px'}}>
                   {diagData.urgency === 'emergency' ? '🔴 URGENCE' : diagData.urgency === 'high' ? '🟠 Urgent' : diagData.urgency === 'medium' ? '🟡 Normal' : '🟢 Faible'}
                 </div>
-                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Tahoma'}}>URGENCE</div>
+                <div style={{fontSize:'9px',color:'#9CA3AF',fontFamily:'Tahoma'}}>URGENCE</div>
               </div>
               <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily:'Tahoma',marginBottom:'1px'}}>
                   {diagData.price_min && diagData.price_max ? `${diagData.price_min.toLocaleString()}–${diagData.price_max.toLocaleString()}` : '—'}
                 </div>
-                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Tahoma'}}>FCFA EST.</div>
+                <div style={{fontSize:'9px',color:'#9CA3AF',fontFamily:'Tahoma'}}>FCFA EST.</div>
               </div>
             </div>
 
             {/* Notes techniques */}
             {diagData.technical_notes && (
               <div style={{background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'9px',padding:'9px 11px',marginBottom:'7px'}}>
-                <p style={{fontSize:'12px',color:'rgba(255,255,255,0.8)',lineHeight:'1.55',margin:0}}>{diagData.technical_notes}</p>
+                <p style={{fontSize:'12px',color:'#3D4852',lineHeight:'1.55',margin:0}}>{diagData.technical_notes}</p>
               </div>
             )}
 
@@ -1551,9 +1551,9 @@ export default function WarRoomPage() {
                   const std = matData?.tiers?.standard
                   const isJumia = std?.source === 'Jumia CI' && std?.source_url
                   const isPhysical = !isJumia && std?.vendor_quartier
-                  const proxColor = std?.km_to_client <= 3 ? '#2B6B3E' : 'rgba(255,255,255,0.4)'
-                  const proxBg    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.15)' : 'rgba(255,255,255,0.06)'
-                  const proxBd    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.3)' : 'rgba(255,255,255,0.1)'
+                  const proxColor = std?.km_to_client <= 3 ? '#2B6B3E' : '#6B7280'
+                  const proxBg    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.15)' : 'rgba(107,114,128,0.08)'
+                  const proxBd    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.3)' : 'rgba(107,114,128,0.2)'
                   return (
                     <div key={item} style={{display:'flex',alignItems:'center',gap:'7px',padding:'6px 8px',background:'#F5F7FA',borderRadius:'8px'}}>
                       {/* Visuel : photo Jumia cliquable ou emoji */}
@@ -1581,7 +1581,7 @@ export default function WarRoomPage() {
                         </span>
                       )}
                       {!isJumia && !isPhysical && (
-                        <span style={{fontSize:'9px',color:'rgba(255,255,255,0.2)',flexShrink:0}}>Photo à venir</span>
+                        <span style={{fontSize:'9px',color:'#9CA3AF',flexShrink:0}}>Photo à venir</span>
                       )}
                     </div>
                   )
@@ -1601,7 +1601,7 @@ export default function WarRoomPage() {
             )}
 
             {diagData.duration_estimate && (
-              <div style={{marginTop:'6px',fontSize:'10px',color:'rgba(255,255,255,0.3)',fontFamily:'Tahoma'}}>
+              <div style={{marginTop:'6px',fontSize:'10px',color:'#6B7280',fontFamily:'Tahoma'}}>
                 ⏱ Durée estimée : {diagData.duration_estimate}
               </div>
             )}
@@ -2074,7 +2074,7 @@ export default function WarRoomPage() {
                       <span style={{fontSize:'18px'}}>⚖️</span>
                       <div>
                         <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Tahoma',letterSpacing:'0.1em'}}>PROPOSITION FINALE · VALIDATION REQUISE</div>
-                        <div style={{fontSize:'11px',color:'rgba(255,255,255,0.4)',marginTop:'1px'}}>Construit depuis diagnostic + ajustements discutés</div>
+                        <div style={{fontSize:'11px',color:'#6B7280',marginTop:'1px'}}>Construit depuis diagnostic + ajustements discutés</div>
                       </div>
                     </div>
                     <div style={{padding:'16px 18px',display:'flex',flexDirection:'column',gap:'7px'}}>
@@ -2298,9 +2298,8 @@ export default function WarRoomPage() {
                 </button>
                 {/* Proposition finale (si des ajustements existent) ou devis simple */}
                 {messages.some(m => m.type === 'material_suggest' || m.type === 'time_adjust') ? (
-                  <button onClick={openFinalProposal} disabled={acting} style={{
-                    width:'100%',marginTop:'4px',padding:'11px',background:'#FFFFFF',
-                    color:'white',border:'none',borderRadius:'10px',
+                  <button onClick={openFinalProposal} disabled={acting} className="btn-primary" style={{
+                    width:'100%',marginTop:'4px',padding:'11px',color:'white',border:'none',borderRadius:'10px',
                     fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                     opacity: acting ? 0.6 : 1,
                   }}>
@@ -2336,7 +2335,7 @@ export default function WarRoomPage() {
               <div style={{marginBottom:'8px',background:'white',border:'2px solid #E2E8F0',borderRadius:'16px',overflow:'hidden'}}>
                 <div style={{background:'#FFFFFF',padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Tahoma',letterSpacing:'0.1em'}}>⚖️ CONFIRMATION PROPOSITION</span>
-                  <button onClick={() => setShowProposalConfirm(false)} style={{background:'none',border:'none',color:'rgba(255,255,255,0.5)',cursor:'pointer',padding:'2px'}}>
+                  <button onClick={() => setShowProposalConfirm(false)} style={{background:'none',border:'none',color:'#6B7280',cursor:'pointer',padding:'2px'}}>
                     <X size={14}/>
                   </button>
                 </div>
@@ -2364,8 +2363,8 @@ export default function WarRoomPage() {
                       <span style={{fontSize:'12px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
                     </div>
                   </div>
-                  <button onClick={sendFinalProposal} disabled={acting} style={{
-                    marginTop:'4px',padding:'12px',background:'#FFFFFF',color:'white',border:'none',
+                  <button onClick={sendFinalProposal} disabled={acting} className="btn-primary" style={{
+                    marginTop:'4px',padding:'12px',color:'white',border:'none',
                     borderRadius:'10px',fontWeight:700,fontSize:'14px',cursor:'pointer',
                     display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',opacity:acting?0.6:1,
                   }}>
