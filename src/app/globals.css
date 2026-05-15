@@ -41,9 +41,9 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
-/* Force Inter sur tous les éléments qui n'héritent pas du body par défaut */
-input, textarea, select, button, a {
-  font-family: 'Inter', sans-serif;
+/* Force font inheritance sur les éléments qui ignorent le body par défaut */
+input, textarea, select, button {
+  font-family: inherit;
 }
 
 body {
