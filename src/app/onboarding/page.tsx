@@ -31,7 +31,7 @@ export default function OnboardingPage() {
           <div className="w-8 h-8 afrione-gradient rounded-lg flex items-center justify-center">
             <Zap size={16} className="text-white" />
           </div>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '20px', color: '#3D4852' }}>
+          <span style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 700, fontSize: '20px', color: '#3D4852' }}>
             AFRI<span className="afrione-gradient-text">ONE</span>
           </span>
         </Link>
@@ -49,13 +49,13 @@ export default function OnboardingPage() {
         {/* Step 1 — Identité */}
         {step === 1 && (
           <div className="animate-fade-up">
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '28px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
+            <h1 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '28px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
               Bienvenue !
             </h1>
             <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '32px' }}>Dites-nous comment vous appeler</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontFamily: "'Space Mono', monospace", color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontFamily: "'Tahoma', sans-serif", color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
                   Votre prénom et nom
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -69,7 +69,7 @@ export default function OnboardingPage() {
                       width: '100%', paddingLeft: '44px', padding: '12px 14px 12px 44px',
                       background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px',
                       fontSize: '15px', color: '#3D4852', outline: 'none',
-                      fontFamily: "'Bricolage Grotesque', sans-serif",
+                      fontFamily: "'Inter', sans-serif",
                       boxShadow: '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)',
                     }}
                   />
@@ -93,13 +93,13 @@ export default function OnboardingPage() {
             <button onClick={() => setStep(1)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '24px', padding: 0 }}>
               <ArrowLeft size={16} /> Retour
             </button>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '28px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
+            <h1 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '28px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
               Où êtes-vous ?
             </h1>
             <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '32px' }}>Pour trouver les artisans les plus proches</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontFamily: "'Space Mono', monospace", color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontFamily: "'Tahoma', sans-serif", color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
                   Quartier
                 </label>
                 <div style={{ position: 'relative' }}>
@@ -111,7 +111,7 @@ export default function OnboardingPage() {
                       width: '100%', paddingLeft: '44px', padding: '12px 14px 12px 44px',
                       background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px',
                       fontSize: '15px', color: '#3D4852', outline: 'none', appearance: 'none',
-                      fontFamily: "'Bricolage Grotesque', sans-serif",
+                      fontFamily: "'Inter', sans-serif",
                       boxShadow: '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)',
                     }}
                   >
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontFamily: "'Space Mono', monospace", color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontFamily: "'Tahoma', sans-serif", color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
                   Adresse précise (optionnel)
                 </label>
                 <input
@@ -133,7 +133,7 @@ export default function OnboardingPage() {
                     width: '100%', padding: '12px 14px',
                     background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px',
                     fontSize: '15px', color: '#3D4852', outline: 'none',
-                    fontFamily: "'Bricolage Grotesque', sans-serif",
+                    fontFamily: "'Inter', sans-serif",
                     boxShadow: '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)',
                   }}
                 />
@@ -156,7 +156,7 @@ export default function OnboardingPage() {
             <button onClick={() => setStep(2)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '24px', padding: 0 }}>
               <ArrowLeft size={16} /> Retour
             </button>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '28px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
+            <h1 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '28px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
               Vous êtes...
             </h1>
             <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '32px' }}>Votre expérience sera adaptée à votre profil</p>
@@ -180,7 +180,7 @@ export default function OnboardingPage() {
                 >
                   <span style={{ fontSize: '28px' }}>{r.icon}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '15px' }}>{r.title}</div>
+                    <div style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '15px' }}>{r.title}</div>
                     <div style={{ fontSize: '13px', color: '#6B7280' }}>{r.desc}</div>
                   </div>
                   {form.role === r.id && <CheckCircle size={20} className="afrione-gradient-text" style={{ flexShrink: 0 }} />}

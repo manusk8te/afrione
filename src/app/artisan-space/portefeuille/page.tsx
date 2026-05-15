@@ -48,11 +48,11 @@ export default function PortefeuillePage() {
 
           {/* Balance card */}
           <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'24px',marginBottom:'24px',textAlign:'center'}}>
-            <p style={{fontFamily:'Space Mono',fontSize:'12px',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'8px'}}>Solde disponible</p>
+            <p style={{fontFamily:'Tahoma',fontSize:'12px',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'8px'}}>Solde disponible</p>
             <p className="font-display" style={{fontSize:'48px',fontWeight:700,color:'#3D4852',marginBottom:'4px'}}>
               {balance.toLocaleString()}
             </p>
-            <p style={{fontFamily:'Space Mono',fontSize:'14px',color:'#8B95A5'}}>FCFA</p>
+            <p style={{fontFamily:'Tahoma',fontSize:'14px',color:'#8B95A5'}}>FCFA</p>
 
             {pending > 0 && (
               <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginTop:'16px',fontSize:'14px'}}>
@@ -91,16 +91,16 @@ export default function PortefeuillePage() {
                   <h3 className="font-display font-bold" style={{color:'#3D4852',marginBottom:'16px'}}>Retrait Wave</h3>
                   <div className="space-y-4">
                     <div>
-                      <label style={{display:'block',fontSize:'12px',fontFamily:'Space Mono',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Numéro Wave</label>
+                      <label style={{display:'block',fontSize:'12px',fontFamily:'Tahoma',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Numéro Wave</label>
                       <div style={{display:'flex',gap:'8px'}}>
-                        <div style={{background:'#F5F7FA',border:'1.5px solid #E2E8F0',borderRadius:'12px',padding:'12px',fontSize:'14px',fontFamily:'Space Mono',flexShrink:0,color:'#3D4852',boxShadow:NEU_SMALL}}>🇨🇮 +225</div>
+                        <div style={{background:'#F5F7FA',border:'1.5px solid #E2E8F0',borderRadius:'12px',padding:'12px',fontSize:'14px',fontFamily:'Tahoma',flexShrink:0,color:'#3D4852',boxShadow:NEU_SMALL}}>🇨🇮 +225</div>
                         <input type="tel" value={withdrawPhone} onChange={e => setWithdrawPhone(e.target.value)}
                           placeholder="07 00 00 00 00"
-                          style={{flex:1,padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'12px',fontFamily:'Space Mono',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF'}} />
+                          style={{flex:1,padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'12px',fontFamily:'Tahoma',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF'}} />
                       </div>
                     </div>
                     <div>
-                      <label style={{display:'block',fontSize:'12px',fontFamily:'Space Mono',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Montant (FCFA)</label>
+                      <label style={{display:'block',fontSize:'12px',fontFamily:'Tahoma',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Montant (FCFA)</label>
                       <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)}
                         placeholder={`Max : ${balance.toLocaleString()} FCFA`}
                         style={{width:'100%',padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'12px',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF',boxSizing:'border-box'}} />

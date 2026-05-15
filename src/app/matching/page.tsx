@@ -137,7 +137,7 @@ function MatchingContent() {
             <ArrowLeft size={14} /> Retour
           </Link>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px', marginLeft: '12px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Space Mono' }}>MATCHING IA</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Tahoma' }}>MATCHING IA</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Artisans disponibles</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>Sélectionnés selon votre quartier et votre besoin</p>

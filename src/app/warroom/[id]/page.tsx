@@ -821,7 +821,7 @@ export default function WarRoomPage() {
 
           {/* Status bar simulé */}
           <div style={{height:'44px',flexShrink:0,display:'flex',alignItems:'center',padding:'0 20px',justifyContent:'space-between'}}>
-            <span style={{fontSize:'12px',color:'rgba(255,255,255,0.4)',fontFamily:'Space Mono'}}>9:41</span>
+            <span style={{fontSize:'12px',color:'rgba(255,255,255,0.4)',fontFamily:'Tahoma'}}>9:41</span>
             <div style={{display:'flex',gap:'6px',alignItems:'center'}}>
               <div style={{display:'flex',gap:'2px'}}>
                 {[3,5,7,9].map(h => <div key={h} style={{width:'3px',height:`${h}px`,background:'rgba(255,255,255,0.4)',borderRadius:'1px'}} />)}
@@ -877,7 +877,7 @@ export default function WarRoomPage() {
                 <div style={{textAlign:'center',padding:'28px 0 20px'}}>
                   <div style={{color:'rgba(255,255,255,0.35)',fontSize:'11px',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'12px'}}>Montant total</div>
                   <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'8px'}}>
-                    <span style={{color:'white',fontSize:'56px',fontWeight:900,letterSpacing:'-2px',lineHeight:1,fontFamily:'Space Mono'}}>
+                    <span style={{color:'white',fontSize:'56px',fontWeight:900,letterSpacing:'-2px',lineHeight:1,fontFamily:'Tahoma'}}>
                       {pendingAmount.toLocaleString()}
                     </span>
                     <span style={{color:'#1DC6FF',fontSize:'18px',fontWeight:700}}>FCFA</span>
@@ -909,7 +909,7 @@ export default function WarRoomPage() {
                       style={{
                         flex:1,padding:'15px 16px',background:'transparent',
                         border:'none',outline:'none',fontSize:'17px',
-                        color:'white',fontFamily:'Space Mono',letterSpacing:'0.06em',
+                        color:'white',fontFamily:'Tahoma',letterSpacing:'0.06em',
                       }}
                     />
                   </div>
@@ -991,7 +991,7 @@ export default function WarRoomPage() {
                 <div style={{width:'100%',background:'#F5F7FA',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',overflow:'hidden',marginBottom:'20px'}}>
                   <div style={{padding:'18px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Montant</span>
-                    <span style={{color:'white',fontWeight:900,fontSize:'20px',fontFamily:'Space Mono'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#1DC6FF',fontWeight:700}}>FCFA</span></span>
+                    <span style={{color:'white',fontWeight:900,fontSize:'20px',fontFamily:'Tahoma'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#1DC6FF',fontWeight:700}}>FCFA</span></span>
                   </div>
                   <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between'}}>
                     <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Bénéficiaire</span>
@@ -999,7 +999,7 @@ export default function WarRoomPage() {
                   </div>
                   <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between'}}>
                     <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Numéro Wave</span>
-                    <span style={{color:'rgba(255,255,255,0.8)',fontSize:'13px',fontFamily:'Space Mono'}}>+225 {wavePhone}</span>
+                    <span style={{color:'rgba(255,255,255,0.8)',fontSize:'13px',fontFamily:'Tahoma'}}>+225 {wavePhone}</span>
                   </div>
                   <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between'}}>
                     <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Statut</span>
@@ -1209,7 +1209,7 @@ export default function WarRoomPage() {
                       )}
                       {suggestPreview.price > 0 ? (
                         <div style={{display:'flex',alignItems:'baseline',gap:'4px',marginTop:'4px'}}>
-                          <span style={{fontFamily:'Space Mono',fontSize:'18px',fontWeight:700,color:'#C9A84C'}}>~{suggestPreview.total.toLocaleString('fr')}</span>
+                          <span style={{fontFamily:'Tahoma',fontSize:'18px',fontWeight:700,color:'#C9A84C'}}>~{suggestPreview.total.toLocaleString('fr')}</span>
                           <span style={{fontSize:'11px',color:'#6B7280'}}>FCFA</span>
                         </div>
                       ) : (
@@ -1221,7 +1221,7 @@ export default function WarRoomPage() {
                   {pricingSuggestion && suggestPreview.price > 0 && (
                     <div style={{padding:'8px 12px',borderTop:'1px solid rgba(201,168,76,0.15)',background:'rgba(232,93,38,0.04)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                       <span style={{fontSize:'11px',color:'#6B7280'}}>Nouveau total estimé</span>
-                      <span style={{fontFamily:'Space Mono',fontSize:'14px',fontWeight:700,color:'#E85D26'}}>{suggestPreview.newEstimate.toLocaleString('fr')} <span style={{fontSize:'10px',fontWeight:400}}>FCFA</span></span>
+                      <span style={{fontFamily:'Tahoma',fontSize:'14px',fontWeight:700,color:'#E85D26'}}>{suggestPreview.newEstimate.toLocaleString('fr')} <span style={{fontSize:'10px',fontWeight:400}}>FCFA</span></span>
                     </div>
                   )}
                 </div>
@@ -1252,7 +1252,7 @@ export default function WarRoomPage() {
             </div>
             {pricingSuggestion && (
               <div style={{background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'8px',padding:'8px 12px',marginBottom:'10px',fontSize:'12px',color:'#6B7280'}}>
-                Taux horaire actuel ≈ <strong style={{color:'#3D4852',fontFamily:'Space Mono'}}>
+                Taux horaire actuel ≈ <strong style={{color:'#3D4852',fontFamily:'Tahoma'}}>
                   {Math.round(pricingSuggestion.decomp.labor / Math.max(0.25, parseDurLow(diagData?.duration_estimate || '2 heures'))).toLocaleString('fr')} FCFA/h
                 </strong>
               </div>
@@ -1265,7 +1265,7 @@ export default function WarRoomPage() {
             </div>
             {adjHours && pricingSuggestion && (
               <div style={{background:'rgba(232,93,38,0.06)',borderRadius:'8px',padding:'8px 12px',marginBottom:'10px',fontSize:'13px',color:'#3D4852'}}>
-                Impact MO ≈ <strong style={{fontFamily:'Space Mono',color:'#E85D26'}}>
+                Impact MO ≈ <strong style={{fontFamily:'Tahoma',color:'#E85D26'}}>
                   +{Math.round(parseFloat(adjHours) * pricingSuggestion.decomp.labor / Math.max(0.25, parseDurLow(diagData?.duration_estimate || '2 heures'))).toLocaleString('fr')} FCFA
                 </strong>
               </div>
@@ -1297,12 +1297,12 @@ export default function WarRoomPage() {
             )}
             {!pricingSugLoading && pricingSuggestion && (
               <div style={{background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'12px',padding:'12px 14px',marginBottom:'10px'}}>
-                <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.12em',fontFamily:'Space Mono',marginBottom:'8px'}}>SUGGESTION MOTEUR AFRIONE · MC 10K</div>
+                <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.12em',fontFamily:'Tahoma',marginBottom:'8px'}}>SUGGESTION MOTEUR AFRIONE · MC 10K</div>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
                   <div>
-                    <span style={{fontFamily:'Space Mono',fontSize:'22px',fontWeight:700,color:'#3D4852'}}>{pricingSuggestion.estimate.toLocaleString()}</span>
+                    <span style={{fontFamily:'Tahoma',fontSize:'22px',fontWeight:700,color:'#3D4852'}}>{pricingSuggestion.estimate.toLocaleString()}</span>
                     <span style={{fontSize:'11px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
-                    <div style={{fontSize:'10px',color:'#A09A8E',fontFamily:'Space Mono',marginTop:'1px'}}>
+                    <div style={{fontSize:'10px',color:'#A09A8E',fontFamily:'Tahoma',marginTop:'1px'}}>
                       [{pricingSuggestion.interval.low.toLocaleString()} – {pricingSuggestion.interval.high.toLocaleString()}] IC 95%
                     </div>
                   </div>
@@ -1332,7 +1332,7 @@ export default function WarRoomPage() {
             {/* Matériaux demandés par le client + infos vendeur (photo, Jumia, proximité) */}
             {diagData?.items_needed?.length > 0 && (
               <div style={{marginBottom:'10px'}}>
-                <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.12em',fontFamily:'Space Mono',marginBottom:'7px'}}>MATÉRIAUX (CHOIX DU CLIENT)</div>
+                <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.12em',fontFamily:'Tahoma',marginBottom:'7px'}}>MATÉRIAUX (CHOIX DU CLIENT)</div>
                 <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
                   {diagData.items_needed.map((item: string) => {
                     const matData = materialsProximity.find((m: any) => m.name === item)
@@ -1395,7 +1395,7 @@ export default function WarRoomPage() {
               <div style={{background:'rgba(43,107,62,0.06)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'10px',padding:'8px 12px',marginBottom:'10px',display:'flex',alignItems:'center',gap:'8px'}}>
                 <span style={{fontSize:'16px'}}>💰</span>
                 <div style={{fontSize:'11px',color:'#2B6B3E',fontWeight:600}}>
-                  Client économise <span style={{fontFamily:'Space Mono'}}>{pricingSuggestion.savings_vs_market.toLocaleString('fr')} FCFA</span> vs marché traditionnel
+                  Client économise <span style={{fontFamily:'Tahoma'}}>{pricingSuggestion.savings_vs_market.toLocaleString('fr')} FCFA</span> vs marché traditionnel
                 </div>
               </div>
             )}
@@ -1437,7 +1437,7 @@ export default function WarRoomPage() {
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
               <div style={{display:'flex',alignItems:'center',gap:'7px'}}>
                 <span style={{fontSize:'13px'}}>📋</span>
-                <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily:'Space Mono'}}>FICHE TECHNIQUE — DIAGNOSTIC CLIENT</span>
+                <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily:'Tahoma'}}>FICHE TECHNIQUE — DIAGNOSTIC CLIENT</span>
               </div>
               <button onClick={() => setShowDiagPanel(false)} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.35)',padding:'2px',lineHeight:0}}>
                 <X size={14} />
@@ -1448,19 +1448,19 @@ export default function WarRoomPage() {
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'5px',marginBottom:'8px'}}>
               <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'11px',fontWeight:700,color:'#3D4852',marginBottom:'1px'}}>{diagData.category || '—'}</div>
-                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Space Mono'}}>CATÉGORIE</div>
+                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Tahoma'}}>CATÉGORIE</div>
               </div>
               <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'11px',fontWeight:700,color: diagData.urgency === 'emergency' ? '#ef4444' : diagData.urgency === 'high' ? '#E85D26' : diagData.urgency === 'medium' ? '#C9A84C' : '#2B6B3E',marginBottom:'1px'}}>
                   {diagData.urgency === 'emergency' ? '🔴 URGENCE' : diagData.urgency === 'high' ? '🟠 Urgent' : diagData.urgency === 'medium' ? '🟡 Normal' : '🟢 Faible'}
                 </div>
-                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Space Mono'}}>URGENCE</div>
+                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Tahoma'}}>URGENCE</div>
               </div>
               <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
-                <div style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily:'Space Mono',marginBottom:'1px'}}>
+                <div style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily:'Tahoma',marginBottom:'1px'}}>
                   {diagData.price_min && diagData.price_max ? `${diagData.price_min.toLocaleString()}–${diagData.price_max.toLocaleString()}` : '—'}
                 </div>
-                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Space Mono'}}>FCFA EST.</div>
+                <div style={{fontSize:'9px',color:'rgba(255,255,255,0.35)',fontFamily:'Tahoma'}}>FCFA EST.</div>
               </div>
             </div>
 
@@ -1529,7 +1529,7 @@ export default function WarRoomPage() {
             )}
 
             {diagData.duration_estimate && (
-              <div style={{marginTop:'6px',fontSize:'10px',color:'rgba(255,255,255,0.3)',fontFamily:'Space Mono'}}>
+              <div style={{marginTop:'6px',fontSize:'10px',color:'rgba(255,255,255,0.3)',fontFamily:'Tahoma'}}>
                 ⏱ Durée estimée : {diagData.duration_estimate}
               </div>
             )}
@@ -1684,7 +1684,7 @@ export default function WarRoomPage() {
                         <div style={{fontSize:'14px',color:'#3D4852',marginBottom:'10px',lineHeight:'1.4'}}>{devisData.description}</div>
                       )}
                       <div style={{display:'flex',alignItems:'baseline',gap:'4px',marginBottom:'16px'}}>
-                        <span style={{fontFamily:'Space Mono',fontSize:'28px',fontWeight:700,color:'#3D4852'}}>{(devisData.amount||0).toLocaleString()}</span>
+                        <span style={{fontFamily:'Tahoma',fontSize:'28px',fontWeight:700,color:'#3D4852'}}>{(devisData.amount||0).toLocaleString()}</span>
                         <span style={{fontSize:'13px',color:'#6B7280'}}>FCFA</span>
                       </div>
                       {canAct && !acting && (
@@ -1745,7 +1745,7 @@ export default function WarRoomPage() {
                         <span style={{fontSize:'16px'}}>📋</span>
                       </div>
                       <div>
-                        <div style={{fontSize:'11px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily:'Space Mono'}}>FICHE TECHNIQUE</div>
+                        <div style={{fontSize:'11px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily:'Tahoma'}}>FICHE TECHNIQUE</div>
                         <div style={{fontSize:'12px',color:'rgba(255,255,255,0.5)',marginTop:'1px'}}>Diagnostic IA · Transmis automatiquement</div>
                       </div>
                     </div>
@@ -1755,18 +1755,18 @@ export default function WarRoomPage() {
                       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
                         <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
                           <div style={{fontSize:'11px',fontWeight:700,color:'#3D4852',marginBottom:'2px'}}>{brief.category || '—'}</div>
-                          <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Space Mono'}}>CATÉGORIE</div>
+                          <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Tahoma'}}>CATÉGORIE</div>
                         </div>
                         <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
                           <div style={{fontSize:'11px',fontWeight:700,color:urgencyColor[urg],marginBottom:'2px'}}>{urgencyIcon[urg]} {urg === 'low' ? 'Normal' : urg === 'medium' ? 'Modéré' : urg === 'high' ? 'Urgent' : 'URGENCE'}</div>
-                          <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Space Mono'}}>URGENCE</div>
+                          <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Tahoma'}}>URGENCE</div>
                         </div>
                         {(brief.price_min || brief.price_max) ? (
                           <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px',textAlign:'center'}}>
-                            <div style={{fontSize:'10px',fontWeight:700,color:'#3D4852',marginBottom:'2px',fontFamily:'Space Mono'}}>
+                            <div style={{fontSize:'10px',fontWeight:700,color:'#3D4852',marginBottom:'2px',fontFamily:'Tahoma'}}>
                               {(brief.price_min||0).toLocaleString()}–{(brief.price_max||0).toLocaleString()}
                             </div>
-                            <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Space Mono'}}>FCFA EST.</div>
+                            <div style={{fontSize:'9px',color:'#6B7280',fontFamily:'Tahoma'}}>FCFA EST.</div>
                           </div>
                         ) : null}
                       </div>
@@ -1774,7 +1774,7 @@ export default function WarRoomPage() {
                       {/* Notes techniques */}
                       {brief.technical_notes && (
                         <div style={{background:'rgba(232,93,38,0.04)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',padding:'12px 14px'}}>
-                          <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>NOTES POUR L'ARTISAN</div>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Tahoma'}}>NOTES POUR L'ARTISAN</div>
                           <p style={{fontSize:'13px',color:'#3D4852',lineHeight:'1.5',margin:0}}>{brief.technical_notes}</p>
                         </div>
                       )}
@@ -1782,7 +1782,7 @@ export default function WarRoomPage() {
                       {/* Matériel */}
                       {(brief.items_needed||[]).length > 0 && (
                         <div>
-                          <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>MATÉRIEL PROBABLE</div>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Tahoma'}}>MATÉRIEL PROBABLE</div>
                           <div style={{display:'flex',flexWrap:'wrap',gap:'5px'}}>
                             {brief.items_needed.map((item: string) => (
                               <span key={item} style={{fontSize:'11px',background:'rgba(232,93,38,0.07)',border:'1px solid rgba(232,93,38,0.2)',padding:'3px 10px',borderRadius:'20px',color:'#E85D26',fontWeight:500}}>{item}</span>
@@ -1794,7 +1794,7 @@ export default function WarRoomPage() {
                       {/* Photos client */}
                       {(brief.photos||[]).length > 0 && (
                         <div>
-                          <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Space Mono'}}>📸 PHOTOS DU CLIENT</div>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'#6B7280',letterSpacing:'0.1em',marginBottom:'6px',fontFamily:'Tahoma'}}>📸 PHOTOS DU CLIENT</div>
                           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'5px'}}>
                             {brief.photos.map((url: string, i: number) => (
                               <a key={i} href={url} target="_blank" rel="noreferrer" style={{display:'block',aspectRatio:'1',borderRadius:'8px',overflow:'hidden',background:'#EDE8DE'}}>
@@ -1837,7 +1837,7 @@ export default function WarRoomPage() {
                     {/* Header */}
                     <div style={{background:'rgba(201,168,76,0.08)',padding:'8px 14px',display:'flex',gap:'8px',alignItems:'center',borderBottom:'1px solid rgba(201,168,76,0.12)'}}>
                       <span style={{fontSize:'14px'}}>📦</span>
-                      <span style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>MATÉRIAU NON PRÉVU</span>
+                      <span style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily:'Tahoma',letterSpacing:'0.1em'}}>MATÉRIAU NON PRÉVU</span>
                       {d.source && (
                         <span style={{marginLeft:'auto',fontSize:'9px',padding:'2px 7px',borderRadius:'10px',background:'rgba(232,93,38,0.08)',color:'#E85D26',fontWeight:600,border:'1px solid rgba(232,93,38,0.2)'}}>
                           {d.source}
@@ -1879,7 +1879,7 @@ export default function WarRoomPage() {
                         {hasPrice ? (
                           <div style={{display:'flex',flexDirection:'column',gap:'2px'}}>
                             <div style={{display:'flex',alignItems:'baseline',gap:'4px'}}>
-                              <span style={{fontFamily:'Space Mono',fontSize:'20px',fontWeight:700,color:'#C9A84C'}}>
+                              <span style={{fontFamily:'Tahoma',fontSize:'20px',fontWeight:700,color:'#C9A84C'}}>
                                 ~{localTotal.toLocaleString('fr')}
                               </span>
                               <span style={{fontSize:'11px',color:'#6B7280'}}>FCFA</span>
@@ -1887,7 +1887,7 @@ export default function WarRoomPage() {
                             </div>
                             {webTotal > 0 && (
                               <div style={{fontSize:'11px',color:'#6B7280'}}>
-                                Jumia : <span style={{fontFamily:'Space Mono',fontWeight:600}}>{webTotal.toLocaleString('fr')}</span> FCFA
+                                Jumia : <span style={{fontFamily:'Tahoma',fontWeight:600}}>{webTotal.toLocaleString('fr')}</span> FCFA
                                 {d.qty > 1 && <span style={{color:'#A09A8E'}}> ({d.web_price?.toLocaleString('fr')}/u)</span>}
                               </div>
                             )}
@@ -1950,13 +1950,13 @@ export default function WarRoomPage() {
                 <div key={msg.id} style={{padding:'6px 0'}}>
                   <div style={{background:'white',border:'1.5px solid rgba(232,93,38,0.35)',borderRadius:'14px',overflow:'hidden',maxWidth:'90%'}}>
                     <div style={{background:'rgba(232,93,38,0.06)',padding:'8px 14px',borderBottom:'1px solid rgba(232,93,38,0.12)'}}>
-                      <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>⏱ TEMPS SUPPLÉMENTAIRE — NON CONFIRMÉ</div>
+                      <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Tahoma',letterSpacing:'0.1em'}}>⏱ TEMPS SUPPLÉMENTAIRE — NON CONFIRMÉ</div>
                     </div>
                     <div style={{padding:'12px 14px'}}>
                       <div style={{fontSize:'15px',color:'#3D4852',fontWeight:700,marginBottom:'4px'}}>
                         +{d.extra_hours}h de travail
                         <span style={{fontSize:'13px',fontWeight:500,color:'#6B7280',marginLeft:'8px'}}>
-                          → +<span style={{fontFamily:'Space Mono',fontWeight:700,color:'#E85D26'}}>{(d.labor_impact||0).toLocaleString('fr')} FCFA</span>
+                          → +<span style={{fontFamily:'Tahoma',fontWeight:700,color:'#E85D26'}}>{(d.labor_impact||0).toLocaleString('fr')} FCFA</span>
                         </span>
                       </div>
                       {d.reason && <div style={{fontSize:'12px',color:'#6B7280',marginBottom:'8px',fontStyle:'italic'}}>{d.reason}</div>}
@@ -1990,7 +1990,7 @@ export default function WarRoomPage() {
                     <div style={{background:'#FFFFFF',padding:'12px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
                       <span style={{fontSize:'18px'}}>⚖️</span>
                       <div>
-                        <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>PROPOSITION FINALE · VALIDATION REQUISE</div>
+                        <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Tahoma',letterSpacing:'0.1em'}}>PROPOSITION FINALE · VALIDATION REQUISE</div>
                         <div style={{fontSize:'11px',color:'rgba(255,255,255,0.4)',marginTop:'1px'}}>Construit depuis diagnostic + ajustements discutés</div>
                       </div>
                     </div>
@@ -1998,27 +1998,27 @@ export default function WarRoomPage() {
                       {/* Base */}
                       <div style={{display:'flex',justifyContent:'space-between',fontSize:'13px'}}>
                         <span style={{color:'#6B7280'}}>📋 Devis diagnostic initial</span>
-                        <span style={{fontFamily:'Space Mono',color:'#3D4852',fontWeight:600}}>{(d.base_estimate||0).toLocaleString('fr')} F</span>
+                        <span style={{fontFamily:'Tahoma',color:'#3D4852',fontWeight:600}}>{(d.base_estimate||0).toLocaleString('fr')} F</span>
                       </div>
                       {/* Extra materials */}
                       {(d.extra_materials||[]).map((m: any, i: number) => (
                         <div key={`em${i}`} style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}>
                           <span style={{color:'#C9A84C'}}>📦 {m.qty>1?`${m.qty}× `:''}{m.name}</span>
-                          <span style={{fontFamily:'Space Mono',color:'#C9A84C',fontWeight:600}}>+{(m.total||0).toLocaleString('fr')} F</span>
+                          <span style={{fontFamily:'Tahoma',color:'#C9A84C',fontWeight:600}}>+{(m.total||0).toLocaleString('fr')} F</span>
                         </div>
                       ))}
                       {/* Time adjustments */}
                       {(d.time_adjustments||[]).map((t: any, i: number) => (
                         <div key={`ta${i}`} style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}>
                           <span style={{color:'#E85D26'}}>⏱ Temps +{t.extra_hours}h</span>
-                          <span style={{fontFamily:'Space Mono',color:'#E85D26',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
+                          <span style={{fontFamily:'Tahoma',color:'#E85D26',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
                         </div>
                       ))}
                       {/* Divider + Total */}
                       <div style={{borderTop:'1.5px solid #D8D2C4',paddingTop:'12px',marginTop:'4px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
                         <span style={{fontWeight:700,fontSize:'15px',color:'#3D4852'}}>Total</span>
                         <div style={{textAlign:'right'}}>
-                          <span style={{fontFamily:'Space Mono',fontSize:'26px',fontWeight:700,color:'#3D4852'}}>{(d.total||0).toLocaleString('fr')}</span>
+                          <span style={{fontFamily:'Tahoma',fontSize:'26px',fontWeight:700,color:'#3D4852'}}>{(d.total||0).toLocaleString('fr')}</span>
                           <span style={{fontSize:'13px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
                         </div>
                       </div>
@@ -2057,7 +2057,7 @@ export default function WarRoomPage() {
                     <div style={{background:'rgba(43,107,62,0.07)',padding:'10px 16px',borderBottom:'1px solid rgba(43,107,62,0.12)',display:'flex',alignItems:'center',gap:'8px'}}>
                       <span style={{fontSize:'14px'}}>🧾</span>
                       <div>
-                        <div style={{fontSize:'10px',fontWeight:700,color:'#2B6B3E',letterSpacing:'0.1em',fontFamily:'Space Mono'}}>MATÉRIAUX ACHETÉS — ARTISAN</div>
+                        <div style={{fontSize:'10px',fontWeight:700,color:'#2B6B3E',letterSpacing:'0.1em',fontFamily:'Tahoma'}}>MATÉRIAUX ACHETÉS — ARTISAN</div>
                         <div style={{fontSize:'11px',color:'#6B7280',marginTop:'1px'}}>Main d'œuvre fixée · seuls les matériaux sont justifiés ici</div>
                       </div>
                     </div>
@@ -2071,20 +2071,20 @@ export default function WarRoomPage() {
                       {laborFixed > 0 && (
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 10px',background:'rgba(201,168,76,0.07)',borderRadius:'8px'}}>
                           <span style={{fontSize:'12px',color:'#6B7280'}}>🔧 Main d'œuvre (fixe)</span>
-                          <span style={{fontFamily:'Space Mono',fontSize:'13px',fontWeight:700,color:'#C9A84C'}}>{laborFixed.toLocaleString('fr')} F</span>
+                          <span style={{fontFamily:'Tahoma',fontSize:'13px',fontWeight:700,color:'#C9A84C'}}>{laborFixed.toLocaleString('fr')} F</span>
                         </div>
                       )}
                       {/* Matériaux */}
                       {mats.map((m: any, i: number) => (
                         <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'5px 10px',background:'rgba(0,0,0,0.02)',borderRadius:'8px'}}>
                           <span style={{fontSize:'12px',color:'#3D4852',flex:1}}>{m.qty > 1 ? `${m.qty}× ` : ''}{m.name}</span>
-                          <span style={{fontFamily:'Space Mono',fontSize:'12px',color:'#3D4852',fontWeight:600,flexShrink:0}}>{(m.qty * m.prix_unitaire).toLocaleString('fr')} F</span>
+                          <span style={{fontFamily:'Tahoma',fontSize:'12px',color:'#3D4852',fontWeight:600,flexShrink:0}}>{(m.qty * m.prix_unitaire).toLocaleString('fr')} F</span>
                         </div>
                       ))}
                       {/* Total */}
                       <div style={{borderTop:'1px solid #D8D2C4',paddingTop:'8px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
                         <span style={{fontWeight:700,fontSize:'13px',color:'#3D4852'}}>Total</span>
-                        <span style={{fontFamily:'Space Mono',fontSize:'20px',fontWeight:700,color:'#3D4852'}}>{(upd.total ?? matTotal + laborFixed).toLocaleString('fr')} <span style={{fontSize:'12px',color:'#6B7280',fontFamily:'inherit'}}>FCFA</span></span>
+                        <span style={{fontFamily:'Tahoma',fontSize:'20px',fontWeight:700,color:'#3D4852'}}>{(upd.total ?? matTotal + laborFixed).toLocaleString('fr')} <span style={{fontSize:'12px',color:'#6B7280',fontFamily:'inherit'}}>FCFA</span></span>
                       </div>
                       <div style={{fontSize:'10px',color:'#6B7280'}}>{new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                     </div>
@@ -2145,7 +2145,7 @@ export default function WarRoomPage() {
                 {purchasedMats.map((m, i) => (
                   <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',padding:'7px 10px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'8px'}}>
                     <div style={{flex:1,fontSize:'13px',color:'#3D4852'}}>{m.qty > 1 ? `${m.qty}× ` : ''}{m.name}</div>
-                    <div style={{fontFamily:'Space Mono',fontSize:'13px',fontWeight:600,color:'#3D4852',flexShrink:0}}>{(m.qty*m.prix_unitaire).toLocaleString('fr')} F</div>
+                    <div style={{fontFamily:'Tahoma',fontSize:'13px',fontWeight:600,color:'#3D4852',flexShrink:0}}>{(m.qty*m.prix_unitaire).toLocaleString('fr')} F</div>
                     <button onClick={() => setPurchasedMats(ms => ms.filter((_,j) => j !== i))} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280',padding:'0',lineHeight:0,flexShrink:0}}>
                       <X size={13}/>
                     </button>
@@ -2175,7 +2175,7 @@ export default function WarRoomPage() {
             {purchasedMats.length > 0 && (
               <div style={{background:'#F5F0E8',borderRadius:'10px',padding:'10px 14px',marginBottom:'12px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
                 <span style={{fontSize:'12px',color:'#6B7280'}}>Total matériaux + MO</span>
-                <span style={{fontFamily:'Space Mono',fontSize:'18px',fontWeight:700,color:'#3D4852'}}>
+                <span style={{fontFamily:'Tahoma',fontSize:'18px',fontWeight:700,color:'#3D4852'}}>
                   {((pricingSuggestion?.decomp.labor ?? 0) + purchasedMats.reduce((s,m) => s+m.qty*m.prix_unitaire,0)).toLocaleString('fr')} F
                 </span>
               </div>
@@ -2252,7 +2252,7 @@ export default function WarRoomPage() {
             {showProposalConfirm && proposalDraft && (
               <div style={{marginBottom:'8px',background:'white',border:'2px solid #E2E8F0',borderRadius:'16px',overflow:'hidden'}}>
                 <div style={{background:'#FFFFFF',padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                  <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Space Mono',letterSpacing:'0.1em'}}>⚖️ CONFIRMATION PROPOSITION</span>
+                  <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Tahoma',letterSpacing:'0.1em'}}>⚖️ CONFIRMATION PROPOSITION</span>
                   <button onClick={() => setShowProposalConfirm(false)} style={{background:'none',border:'none',color:'rgba(255,255,255,0.5)',cursor:'pointer',padding:'2px'}}>
                     <X size={14}/>
                   </button>
@@ -2260,24 +2260,24 @@ export default function WarRoomPage() {
                 <div style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:'6px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#6B7280'}}>
                     <span>📋 Devis diagnostic</span>
-                    <span style={{fontFamily:'Space Mono',fontWeight:600,color:'#3D4852'}}>{(proposalDraft.baseEstimate||0).toLocaleString('fr')} F</span>
+                    <span style={{fontFamily:'Tahoma',fontWeight:600,color:'#3D4852'}}>{(proposalDraft.baseEstimate||0).toLocaleString('fr')} F</span>
                   </div>
                   {(proposalDraft.matSuggests||[]).map((m: any, i: number) => (
                     <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#C9A84C'}}>
                       <span>📦 {m.qty>1?`${m.qty}× `:''}{m.name}</span>
-                      <span style={{fontFamily:'Space Mono',fontWeight:600}}>+{(m.total||0).toLocaleString('fr')} F</span>
+                      <span style={{fontFamily:'Tahoma',fontWeight:600}}>+{(m.total||0).toLocaleString('fr')} F</span>
                     </div>
                   ))}
                   {(proposalDraft.timeAdjs||[]).map((t: any, i: number) => (
                     <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#E85D26'}}>
                       <span>⏱ +{t.extra_hours}h</span>
-                      <span style={{fontFamily:'Space Mono',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
+                      <span style={{fontFamily:'Tahoma',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
                     </div>
                   ))}
                   <div style={{borderTop:'1px solid #D8D2C4',paddingTop:'10px',marginTop:'2px',display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
                     <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>Total</span>
                     <div>
-                      <span style={{fontFamily:'Space Mono',fontSize:'24px',fontWeight:700,color:'#3D4852'}}>{parseInt(proposalTotal||'0').toLocaleString('fr')}</span>
+                      <span style={{fontFamily:'Tahoma',fontSize:'24px',fontWeight:700,color:'#3D4852'}}>{parseInt(proposalTotal||'0').toLocaleString('fr')}</span>
                       <span style={{fontSize:'12px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
                     </div>
                   </div>

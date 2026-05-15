@@ -80,7 +80,7 @@ export default function AdminPrixPage() {
             <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '2px' }}>3 tiers par matériau · Jumia CI · Marchés physiques</p>
           </div>
           <div className="flex items-center gap-2">
-            {scrapeResult && <span style={{ fontSize: '12px', color: '#2B6B3E', fontFamily: 'Space Mono' }}>{scrapeResult}</span>}
+            {scrapeResult && <span style={{ fontSize: '12px', color: '#2B6B3E', fontFamily: 'Tahoma' }}>{scrapeResult}</span>}
             <button
               onClick={() => triggerScrape(activeCategory !== 'Tous' ? activeCategory : undefined)}
               disabled={scraping}
@@ -120,7 +120,7 @@ export default function AdminPrixPage() {
         {/* Materials table */}
         <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden', marginBottom: '32px', boxShadow: NEU_SHADOW }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F5F7FA' }}>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '12px', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontFamily: 'Tahoma', fontSize: '12px', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Prix Matériaux — {filtered.length} références
             </span>
           </div>
@@ -134,7 +134,7 @@ export default function AdminPrixPage() {
                 <thead>
                   <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F5F7FA' }}>
                     {['Matériau', 'Tier', 'Marque', 'Prix marché', 'Min', 'Max', 'Source', 'Web', ''].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', fontFamily: 'Space Mono', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{h}</th>
+                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', fontFamily: 'Tahoma', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -185,7 +185,7 @@ export default function AdminPrixPage() {
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{ fontSize: '12px', background: '#F5F7FA', border: '1px solid #E2E8F0', padding: '4px 8px', borderRadius: '8px', color: '#6B7280' }}>{m.source}</span>
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: '12px', fontFamily: 'Space Mono', color: '#6B7280' }}>
+                      <td style={{ padding: '12px 16px', fontSize: '12px', fontFamily: 'Tahoma', color: '#6B7280' }}>
                         {m.web_price ? m.web_price.toLocaleString() : '—'}
                         {m.last_scraped_at && (
                           <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>
@@ -220,13 +220,13 @@ export default function AdminPrixPage() {
         {/* Labor rates */}
         <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: NEU_SHADOW }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', background: '#F5F7FA' }}>
-            <span style={{ fontFamily: 'Space Mono', fontSize: '12px', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Taux Horaires par Métier</span>
+            <span style={{ fontFamily: 'Tahoma', fontSize: '12px', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Taux Horaires par Métier</span>
           </div>
           <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F5F7FA' }}>
                 {['Métier', 'Tarif/h', '+Urgence', '+Nuit', '+Weekend'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', fontFamily: 'Space Mono', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: '11px', fontFamily: 'Tahoma', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -245,9 +245,9 @@ export default function AdminPrixPage() {
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#FFFFFF'}>
                   <td style={{ padding: '12px 16px', fontWeight: 500, color: '#3D4852' }}>{r.metier}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 700 }}><span className="afrione-gradient-text">{r.tarif.toLocaleString()} FCFA/h</span></td>
-                  <td style={{ padding: '12px 16px', color: '#ef4444', fontFamily: 'Space Mono', fontSize: '12px' }}>+{r.urgence}%</td>
-                  <td style={{ padding: '12px 16px', color: '#6B7280', fontFamily: 'Space Mono', fontSize: '12px' }}>+{r.nuit}%</td>
-                  <td style={{ padding: '12px 16px', color: '#6B7280', fontFamily: 'Space Mono', fontSize: '12px' }}>+{r.weekend}%</td>
+                  <td style={{ padding: '12px 16px', color: '#ef4444', fontFamily: 'Tahoma', fontSize: '12px' }}>+{r.urgence}%</td>
+                  <td style={{ padding: '12px 16px', color: '#6B7280', fontFamily: 'Tahoma', fontSize: '12px' }}>+{r.nuit}%</td>
+                  <td style={{ padding: '12px 16px', color: '#6B7280', fontFamily: 'Tahoma', fontSize: '12px' }}>+{r.weekend}%</td>
                 </tr>
               ))}
             </tbody>

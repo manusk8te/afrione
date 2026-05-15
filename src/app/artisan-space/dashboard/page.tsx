@@ -403,7 +403,7 @@ export default function ArtisanDashboardPage() {
         <div style={{ position: 'absolute', top: '42%', left: '42%',  width: 14, height: 14, background: 'rgba(255,255,255,0.2)',  borderRadius: 4,  animation: 'floatSquareDrift 5s ease-in-out infinite 3s' }} />
         <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: '32px', maxWidth: '896px', width: '100%' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Space Mono' }}>ESPACE ARTISAN</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Tahoma' }}>ESPACE ARTISAN</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 38px)', fontWeight: 800, color: 'white', margin: '0 0 8px' }}>Mon tableau de bord</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '14px', margin: 0 }}>Missions, planning et statistiques</p>
@@ -637,7 +637,7 @@ export default function ArtisanDashboardPage() {
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}}>
                         <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>{c.users?.name || 'Client'}</span>
-                        <span style={{fontSize:'11px',color:'#6B7280',fontFamily:'Space Mono'}}>
+                        <span style={{fontSize:'11px',color:'#6B7280',fontFamily:'Tahoma'}}>
                           {c.lastMessage ? new Date(c.lastMessage.created_at).toLocaleDateString('fr-FR') : ''}
                         </span>
                       </div>
@@ -972,11 +972,11 @@ export default function ArtisanDashboardPage() {
         {tab === 'wallet' && (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'32px',textAlign:'center'}}>
-              <div style={{fontSize:'13px',color:'#6B7280',fontFamily:'Space Mono',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.1em'}}>Solde disponible</div>
+              <div style={{fontSize:'13px',color:'#6B7280',fontFamily:'Tahoma',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.1em'}}>Solde disponible</div>
               <div className="font-display" style={{fontSize:'52px',fontWeight:700,color:'#3D4852',marginBottom:'4px'}}>
                 {(wallet?.balance_available || 0).toLocaleString()}
               </div>
-              <div style={{color:'#6B7280',marginBottom:'24px',fontFamily:'Space Mono',fontSize:'14px'}}>FCFA</div>
+              <div style={{color:'#6B7280',marginBottom:'24px',fontFamily:'Tahoma',fontSize:'14px'}}>FCFA</div>
               <button className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
                 Retirer vers Wave
               </button>
@@ -1018,7 +1018,7 @@ export default function ArtisanDashboardPage() {
                       </div>
                       {m.total_price > 0 && (
                         <div style={{textAlign:'right',flexShrink:0}}>
-                          <div style={{fontWeight:700,fontSize:'14px',color:'#2B6B3E',fontFamily:'Space Mono'}}>+{m.total_price.toLocaleString()}</div>
+                          <div style={{fontWeight:700,fontSize:'14px',color:'#2B6B3E',fontFamily:'Tahoma'}}>+{m.total_price.toLocaleString()}</div>
                           <div style={{fontSize:'10px',color:'#6B7280'}}>FCFA</div>
                         </div>
                       )}

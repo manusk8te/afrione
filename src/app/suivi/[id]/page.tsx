@@ -511,7 +511,7 @@ export default function MissionLivePage() {
                   <span style={{ width: '8px', height: '8px', background: '#E85D26', borderRadius: '50%', boxShadow: '0 0 0 3px rgba(232,93,38,0.25)' }} />
                   <span style={{ fontSize: '12px', fontWeight: 600, color: '#FAFAF5' }}>{isArtisan ? 'Vous' : artisanName}</span>
                 </div>
-                <div style={{ fontSize: '10px', color: '#7A7A6E', fontFamily: 'Space Mono' }}>{artisanPos.lat.toFixed(4)}, {artisanPos.lng.toFixed(4)}</div>
+                <div style={{ fontSize: '10px', color: '#7A7A6E', fontFamily: 'Tahoma' }}>{artisanPos.lat.toFixed(4)}, {artisanPos.lng.toFixed(4)}</div>
               </div>
             )}
             <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(15,20,16,0.93)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '10px 14px', border: '1px solid rgba(43,107,62,0.35)' }}>
@@ -523,7 +523,7 @@ export default function MissionLivePage() {
             </div>
             {distanceKm !== null && (
               <div style={{ position: 'absolute', bottom: '16px', left: '12px', background: 'rgba(15,20,16,0.93)', borderRadius: '12px', padding: '7px 12px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <span style={{ fontFamily: 'Space Mono', fontSize: '13px', fontWeight: 700, color: '#FAFAF5' }}>
+                <span style={{ fontFamily: 'Tahoma', fontSize: '13px', fontWeight: 700, color: '#FAFAF5' }}>
                   {distanceKm < 1 ? `${Math.round(distanceKm*1000)} m` : `${distanceKm.toFixed(1)} km`}
                 </span>
               </div>
@@ -531,7 +531,7 @@ export default function MissionLivePage() {
             {eta !== null && (
               <div style={{ position: 'absolute', bottom: '16px', right: '12px', background: 'rgba(15,20,16,0.93)', borderRadius: '12px', padding: '7px 12px', border: '1px solid rgba(232,93,38,0.25)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Clock size={11} color="#E85D26" />
-                <span style={{ fontFamily: 'Space Mono', fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>{eta} min</span>
+                <span style={{ fontFamily: 'Tahoma', fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>{eta} min</span>
               </div>
             )}
           </div>

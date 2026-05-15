@@ -241,7 +241,7 @@ export default function AdminDashboard() {
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.2)', padding: '6px 14px', borderRadius: '20px' }}>
               <span style={{ width: '8px', height: '8px', background: '#2B6B3E', borderRadius: '50%', display: 'inline-block' }} />
-              <span style={{ fontSize: '11px', fontFamily: 'Space Mono', color: '#2B6B3E' }}>SYSTÈME OPÉRATIONNEL</span>
+              <span style={{ fontSize: '11px', fontFamily: 'Tahoma', color: '#2B6B3E' }}>SYSTÈME OPÉRATIONNEL</span>
             </div>
           </div>
         </div>
@@ -286,7 +286,7 @@ export default function AdminDashboard() {
                     <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SMALL }}>
                       <k.icon size={20} style={{ color: k.color, marginBottom: '12px' }} />
                       <div style={{ fontSize: '28px', fontWeight: 700, color: '#3D4852', fontFamily: 'var(--font-display)' }}>{k.value}</div>
-                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Space Mono', textTransform: 'uppercase' }}>{k.label}</div>
+                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>{k.label}</div>
                     </div>
                   ))}
                 </div>
@@ -408,7 +408,7 @@ export default function AdminDashboard() {
                                 {l.updated_at ? new Date(l.updated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—'}
                               </span>
                               {l.total_price > 0 && (
-                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#3D4852', fontFamily: 'Space Mono' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#3D4852', fontFamily: 'Tahoma' }}>
                                   {l.total_price.toLocaleString()} F
                                 </span>
                               )}
@@ -453,7 +453,7 @@ export default function AdminDashboard() {
                               background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)',
                               borderRadius: '14px',
                             }}>
-                              <div style={{ fontSize: '24px', fontWeight: 700, color: '#3D4852', fontFamily: 'Space Mono', lineHeight: 1 }}>
+                              <div style={{ fontSize: '24px', fontWeight: 700, color: '#3D4852', fontFamily: 'Tahoma', lineHeight: 1 }}>
                                 {selectedLitige.total_price.toLocaleString()}
                               </div>
                               <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px', fontWeight: 600 }}>FCFA EN LITIGE</div>
@@ -822,7 +822,7 @@ export default function AdminDashboard() {
                         { label: 'Payé artisans',  value: totalArtisan.toLocaleString() + ' FCFA', color: '#2B6B3E' },
                       ].map(s => (
                         <div key={s.label} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '16px', boxShadow: NEU_SMALL }}>
-                          <div style={{ fontSize: '20px', fontWeight: 700, color: s.color, fontFamily: 'Space Mono' }}>{s.value}</div>
+                          <div style={{ fontSize: '20px', fontWeight: 700, color: s.color, fontFamily: 'Tahoma' }}>{s.value}</div>
                           <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
                         </div>
                       ))}
@@ -841,11 +841,11 @@ export default function AdminDashboard() {
                             <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
                               {new Date(t.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                               {' · '}{t.payment_method || 'Wave'}
-                              {t.wave_transaction_id && <span style={{ marginLeft: '6px', fontFamily: 'Space Mono', fontSize: '10px', color: '#8B95A5' }}>{t.wave_transaction_id}</span>}
+                              {t.wave_transaction_id && <span style={{ marginLeft: '6px', fontFamily: 'Tahoma', fontSize: '10px', color: '#8B95A5' }}>{t.wave_transaction_id}</span>}
                             </div>
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            <div style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852', fontFamily: 'Space Mono' }}>{(t.amount || 0).toLocaleString()} F</div>
+                            <div style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852', fontFamily: 'Tahoma' }}>{(t.amount || 0).toLocaleString()} F</div>
                             <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>
                               <span style={{ color: '#2B6B3E' }}>{(t.artisan_amount || 0).toLocaleString()} F artisan</span>
                               {t.platform_fee > 0 && <span style={{ color: '#C9A84C', marginLeft: '6px' }}>+{(t.platform_fee || 0).toLocaleString()} F commission</span>}
@@ -896,7 +896,7 @@ export default function AdminDashboard() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
                     {kpis.map(k => (
                       <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '16px 20px', boxShadow: NEU_SMALL }}>
-                        <div style={{ fontSize: '24px', fontWeight: 700, color: k.color, fontFamily: 'Space Mono' }}>{k.value}</div>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: k.color, fontFamily: 'Tahoma' }}>{k.value}</div>
                         <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>{k.label}</div>
                       </div>
                     ))}
@@ -990,21 +990,21 @@ export default function AdminDashboard() {
                                     { label: 'Inscrite le', val: new Date(e.created_at).toLocaleDateString('fr-FR') },
                                   ].map(item => (
                                     <div key={item.label} style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid #E2E8F0' }}>
-                                      <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '3px', fontFamily: 'Space Mono' }}>{item.label.toUpperCase()}</div>
+                                      <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '3px', fontFamily: 'Tahoma' }}>{item.label.toUpperCase()}</div>
                                       <div style={{ fontSize: '12px', color: '#3D4852', fontWeight: 500 }}>{item.val}</div>
                                     </div>
                                   ))}
                                 </div>
                                 {e.description && (
                                   <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid #E2E8F0' }}>
-                                    <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '4px', fontFamily: 'Space Mono' }}>DESCRIPTION</div>
+                                    <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '4px', fontFamily: 'Tahoma' }}>DESCRIPTION</div>
                                     <p style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.6', margin: 0 }}>{e.description}</p>
                                   </div>
                                 )}
                                 {/* Équipe artisans */}
                                 {artisans.length > 0 && (
                                   <div>
-                                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', fontFamily: 'Space Mono', marginBottom: '8px' }}>ÉQUIPE ({artisans.length} ARTISANS)</div>
+                                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', fontFamily: 'Tahoma', marginBottom: '8px' }}>ÉQUIPE ({artisans.length} ARTISANS)</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                       {artisans.map((a: any) => (
                                         <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 10px', background: '#FFFFFF', borderRadius: '10px', border: '1px solid #E2E8F0' }}>

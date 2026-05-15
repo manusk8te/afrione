@@ -61,7 +61,7 @@ export default function PlanningPage() {
                       color: isAvail ? '#E85D26' : '#8B95A5',
                     }}
                   >
-                    <span style={{fontSize:'12px',fontFamily:'Space Mono',fontWeight:700}}>{d}</span>
+                    <span style={{fontSize:'12px',fontFamily:'Tahoma',fontWeight:700}}>{d}</span>
                     {isAvail ? <Check size={14} /> : <X size={14} />}
                   </button>
                 )
@@ -80,7 +80,7 @@ export default function PlanningPage() {
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <span style={{fontFamily:'Space Mono',fontSize:'12px',color:'#8B95A5'}}>10 – 16 Mar 2025</span>
+                <span style={{fontFamily:'Tahoma',fontSize:'12px',color:'#8B95A5'}}>10 – 16 Mar 2025</span>
                 <button
                   onClick={() => setWeek(w => w + 1)}
                   style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px',border:'1px solid #E2E8F0',background:'#FFFFFF',boxShadow:NEU_SMALL,cursor:'pointer',color:'#6B7280'}}
@@ -96,7 +96,7 @@ export default function PlanningPage() {
                 <div className="text-xs text-muted font-mono" />
                 {DAYS.map((d, i) => (
                   <div key={d} className="text-center">
-                    <div style={{fontSize:'12px',fontFamily:'Space Mono',color:'#8B95A5'}}>{d}</div>
+                    <div style={{fontSize:'12px',fontFamily:'Tahoma',color:'#8B95A5'}}>{d}</div>
                     <div className={`text-sm font-bold mt-0.5 w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
                       i === 0 ? 'afrione-gradient text-white' : ''
                     }`} style={{color: i === 0 ? undefined : '#3D4852'}}>{10 + i}</div>
@@ -107,7 +107,7 @@ export default function PlanningPage() {
               {/* Hour rows */}
               {HOURS.map(h => (
                 <div key={h} className="grid grid-cols-8 gap-1 mb-1">
-                  <div style={{fontSize:'12px',fontFamily:'Space Mono',color:'#8B95A5',display:'flex',alignItems:'center',paddingRight:'8px'}}>{h}</div>
+                  <div style={{fontSize:'12px',fontFamily:'Tahoma',color:'#8B95A5',display:'flex',alignItems:'center',paddingRight:'8px'}}>{h}</div>
                   {DAYS.map((d, i) => {
                     const mission = getMission(i, h)
                     const dayKey = d.toLowerCase().slice(0, 3)

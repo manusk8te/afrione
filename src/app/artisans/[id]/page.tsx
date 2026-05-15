@@ -167,7 +167,7 @@ export default function ArtisanProfilePage() {
           </button>
 
           {/* Compteur */}
-          <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontFamily: 'Space Mono' }}>
+          <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontFamily: 'Tahoma' }}>
             {lightbox.index + 1} / {lightbox.photos.length}
           </div>
 
@@ -293,7 +293,7 @@ export default function ArtisanProfilePage() {
                   border: '1px solid #E2E8F0',
                 }}>
                   <div className="font-display" style={{ fontSize: '22px', fontWeight: 700, color: '#3D4852' }}>{s.value}</div>
-                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Space Mono' }}>{s.label}</div>
+                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Tahoma' }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -312,7 +312,7 @@ export default function ArtisanProfilePage() {
                     {allPhotos.length > 0 && <span style={{ marginLeft: '8px', fontSize: '14px', fontWeight: 400, color: '#6B7280' }}>({allPhotos.length} photos)</span>}
                   </h2>
                   {allPhotos.length > 0 && (
-                    <span style={{ fontSize: '12px', color: '#8B95A5', fontFamily: 'Space Mono' }}>Cliquez pour agrandir</span>
+                    <span style={{ fontSize: '12px', color: '#8B95A5', fontFamily: 'Tahoma' }}>Cliquez pour agrandir</span>
                   )}
                 </div>
 

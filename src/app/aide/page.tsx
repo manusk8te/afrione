@@ -39,7 +39,7 @@ function Accordion({ q, a }: { q: string; a: string }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px' }}>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '14px', paddingRight: '16px' }}>{q}</span>
+        <span style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '14px', paddingRight: '16px' }}>{q}</span>
         <ChevronDown size={16} style={{ color: '#8B95A5', flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </div>
       {open && (
@@ -63,7 +63,7 @@ export default function AidePage() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <span className="section-label" style={{ display: 'block', marginBottom: '8px' }}>CENTRE D'AIDE</span>
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '36px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>
+            <h1 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '36px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>
               Comment pouvons-nous<br />vous aider ?
             </h1>
             <p style={{ color: '#6B7280' }}>Trouvez des réponses à vos questions ci-dessous</p>
@@ -95,7 +95,7 @@ export default function AidePage() {
                 }}
               >
                 <item.icon size={24} style={{ color: item.color }} />
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '14px' }}>{item.title}</span>
+                <span style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '14px' }}>{item.title}</span>
               </Link>
             ))}
           </div>
@@ -129,7 +129,7 @@ export default function AidePage() {
             marginTop: '48px', background: '#FFFFFF', borderRadius: '20px', padding: '32px', textAlign: 'center',
             boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0',
           }}>
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: '22px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
+            <h2 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '22px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
               Vous n'avez pas trouvé votre réponse ?
             </h2>
             <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>Notre équipe répond en moins de 2h en heures ouvrées</p>

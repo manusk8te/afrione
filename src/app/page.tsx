@@ -149,9 +149,9 @@ export default function HomePage() {
     { value: `${stats.satisfaction}%`,              label: 'Clients satisfaits' },
   ]
 
-  const mono = { fontFamily: "'Space Mono', monospace" } as const
-  const syne = { fontFamily: "'Syne', sans-serif" }      as const
-  const body = { fontFamily: "'Bricolage Grotesque', sans-serif" } as const
+  const mono = { fontFamily: "'Tahoma', sans-serif" } as const
+  const syne = { fontFamily: "'Satoshi', sans-serif" }      as const
+  const body = { fontFamily: "'Inter', sans-serif" } as const
 
   return (
     <div style={{ background: W, color: T1, minHeight: '100vh' }}>

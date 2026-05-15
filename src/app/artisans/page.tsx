@@ -60,7 +60,7 @@ export default function ArtisansPage() {
         {/* Content */}
         <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: '32px 32px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Space Mono' }}>ANNUAIRE</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Tahoma' }}>ANNUAIRE</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Trouvez votre artisan</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>
@@ -85,7 +85,7 @@ export default function ArtisansPage() {
                   width: '100%', paddingLeft: '48px', padding: '10px 14px 10px 48px',
                   background: '#F5F7FA', border: '1.5px solid #E2E8F0', borderRadius: '10px',
                   fontSize: '15px', color: '#3D4852', outline: 'none',
-                  fontFamily: "'Bricolage Grotesque', sans-serif",
+                  fontFamily: "'Inter', sans-serif",
                 }}
               />
             </div>

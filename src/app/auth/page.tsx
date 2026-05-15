@@ -38,9 +38,9 @@ const ORANGE = '#E85D26'
 const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
 const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
 
-const syne = { fontFamily: "'Syne', sans-serif" }        as const
-const body = { fontFamily: "'Bricolage Grotesque', sans-serif" } as const
-const mono = { fontFamily: "'Space Mono', monospace" }   as const
+const syne = { fontFamily: "'Satoshi', sans-serif" }        as const
+const body = { fontFamily: "'Inter', sans-serif" } as const
+const mono = { fontFamily: "'Tahoma', sans-serif" }   as const
 
 /* ─── Motion variants ─────────────────────────────────────────────────────── */
 const leftContainer = {

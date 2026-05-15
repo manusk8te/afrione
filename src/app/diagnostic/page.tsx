@@ -359,7 +359,7 @@ export default function DiagnosticPage() {
         <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 20px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '12px' }}>
             <Zap size={12} color="white" />
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Space Mono' }}>DIAGNOSTIC IA</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Tahoma' }}>DIAGNOSTIC IA</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, color: 'white', margin: '0 0 8px', textShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
             {step === 'input'       ? 'Décrivez votre problème'  :
@@ -404,7 +404,7 @@ export default function DiagnosticPage() {
                 maxLength={1000}
               />
               <div style={{ padding: '0 20px 12px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0' }}>
-                <span style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Space Mono' }}>{text.length}/1000</span>
+                <span style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Tahoma' }}>{text.length}/1000</span>
               </div>
             </div>
 
@@ -427,7 +427,7 @@ export default function DiagnosticPage() {
               </button>
             ) : (
               <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '14px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Tahoma' }}>
                   📸 {photos.length} PHOTO{photos.length > 1 ? 'S' : ''} AJOUTÉE{photos.length > 1 ? 'S' : ''}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
@@ -448,7 +448,7 @@ export default function DiagnosticPage() {
 
             {/* Exemples */}
             <div>
-              <p style={{ fontSize: '10px', fontFamily: 'Space Mono', color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '8px' }}>EXEMPLES</p>
+              <p style={{ fontSize: '10px', fontFamily: 'Tahoma', color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '8px' }}>EXEMPLES</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {EXAMPLES.map(ex => (
                   <button key={ex} onClick={() => setText(ex)} style={{ textAlign: 'left', padding: '11px 14px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', color: '#6B7280', boxShadow: NEU_SMALL }}>
@@ -477,7 +477,7 @@ export default function DiagnosticPage() {
 
             {/* Résumé du problème initial */}
             <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '6px', fontFamily: 'Space Mono' }}>VOTRE PROBLÈME</div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '6px', fontFamily: 'Tahoma' }}>VOTRE PROBLÈME</div>
               <p style={{ fontSize: '13px', color: '#3D4852', lineHeight: '1.5', margin: 0 }}>{text}</p>
               {photos.length > 0 && (
                 <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
@@ -493,7 +493,7 @@ export default function DiagnosticPage() {
               <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {/* Question */}
                 <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '12px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px', fontFamily: 'Space Mono' }}>IA · Question {i + 1}</div>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px', fontFamily: 'Tahoma' }}>IA · Question {i + 1}</div>
                   <p style={{ fontSize: '14px', color: '#3D4852', margin: 0, lineHeight: '1.4' }}>{item.question}</p>
                 </div>
                 {/* Réponse */}
@@ -509,7 +509,7 @@ export default function DiagnosticPage() {
             {currentQ && !loading && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '14px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '5px', fontFamily: 'Space Mono' }}>IA · Question {qa.length + 1}</div>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '5px', fontFamily: 'Tahoma' }}>IA · Question {qa.length + 1}</div>
                   <p style={{ fontSize: '15px', color: '#3D4852', margin: 0, lineHeight: '1.5' }}>{currentQ.question}</p>
                 </div>
 
@@ -606,7 +606,7 @@ export default function DiagnosticPage() {
               <div style={{ flex: 1, height: '3px', background: '#E2E8F0', borderRadius: '2px', overflow: 'hidden' }}>
                 <div className="afrione-gradient" style={{ height: '100%', borderRadius: '2px', width: `${(qa.length / 4) * 100}%`, transition: 'width 0.4s ease' }} />
               </div>
-              <span style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'Space Mono', whiteSpace: 'nowrap' }}>{qa.length} / 4</span>
+              <span style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'Tahoma', whiteSpace: 'nowrap' }}>{qa.length} / 4</span>
             </div>
 
             <div ref={bottomRef} />
@@ -640,7 +640,7 @@ export default function DiagnosticPage() {
                   <Zap size={16} color="white" />
                 </div>
                 <div>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'Space Mono' }}>ANALYSE IA</div>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'Tahoma' }}>ANALYSE IA</div>
                   <div style={{ fontSize: '11px', color: '#8B95A5' }}>Résumé de votre situation</div>
                 </div>
               </div>
@@ -657,17 +657,17 @@ export default function DiagnosticPage() {
                 <div key={k.label} style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
                   <div style={{ marginBottom: '8px' }}>{k.icon}</div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: k.color, lineHeight: '1.2' }}>{k.value}</div>
-                  <div style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'Space Mono', marginTop: '3px' }}>{k.label}</div>
+                  <div style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'Tahoma', marginTop: '3px' }}>{k.label}</div>
                 </div>
               ))}
             </div>
 
             {/* Prix — Moteur Monte Carlo */}
             <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid #E2E8F0', boxShadow: NEU_SHADOW }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Space Mono', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Tahoma', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>ESTIMATION AFRIONE</span>
                 {!pricingLoading && pricing && (
-                  <span style={{ fontSize: '9px', color: '#8B95A5', fontFamily: 'Space Mono' }}>10 000 SIMULATIONS MC</span>
+                  <span style={{ fontSize: '9px', color: '#8B95A5', fontFamily: 'Tahoma' }}>10 000 SIMULATIONS MC</span>
                 )}
               </div>
 
@@ -675,17 +675,17 @@ export default function DiagnosticPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
                   <span style={{ color: '#8B95A5', fontSize: '13px' }}>Calcul stochastique…</span>
-                  <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'Space Mono' }}>
+                  <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'Tahoma' }}>
                     {result.price_min.toLocaleString()} – {result.price_max.toLocaleString()} FCFA
                   </span>
                 </div>
               ) : pricing ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                    <span className="afrione-gradient-text" style={{ fontFamily: 'Space Mono', fontSize: '36px', fontWeight: 700, lineHeight: 1 }}>{pricing.estimate.toLocaleString()}</span>
-                    <span style={{ color: '#8B95A5', fontSize: '13px', fontFamily: 'Space Mono' }}>FCFA</span>
+                    <span className="afrione-gradient-text" style={{ fontFamily: 'Tahoma', fontSize: '36px', fontWeight: 700, lineHeight: 1 }}>{pricing.estimate.toLocaleString()}</span>
+                    <span style={{ color: '#8B95A5', fontSize: '13px', fontFamily: 'Tahoma' }}>FCFA</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Space Mono', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Tahoma', marginBottom: '16px' }}>
                     [{pricing.interval.low.toLocaleString()} – {pricing.interval.high.toLocaleString()}] IC 95%
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
@@ -700,7 +700,7 @@ export default function DiagnosticPage() {
                         <div key={key}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                             <span style={{ fontSize: '10px', color: '#6B7280' }}>{label}</span>
-                            <span style={{ fontSize: '10px', color: '#6B7280', fontFamily: 'Space Mono' }}>{item.pct}% · {item.median.toLocaleString()} FCFA</span>
+                            <span style={{ fontSize: '10px', color: '#6B7280', fontFamily: 'Tahoma' }}>{item.pct}% · {item.median.toLocaleString()} FCFA</span>
                           </div>
                           <div style={{ height: '3px', background: '#F5F7FA', borderRadius: '2px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${item.pct}%`, background: color, borderRadius: '2px' }} />
@@ -712,10 +712,10 @@ export default function DiagnosticPage() {
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                  <span className="afrione-gradient-text" style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, lineHeight: 1 }}>{result.price_min.toLocaleString()}</span>
+                  <span className="afrione-gradient-text" style={{ fontFamily: 'Tahoma', fontSize: '34px', fontWeight: 700, lineHeight: 1 }}>{result.price_min.toLocaleString()}</span>
                   <span style={{ color: '#8B95A5', fontSize: '20px' }}>—</span>
-                  <span style={{ fontFamily: 'Space Mono', fontSize: '34px', fontWeight: 700, color: '#3D4852', lineHeight: 1 }}>{result.price_max.toLocaleString()}</span>
-                  <span style={{ color: '#8B95A5', fontSize: '12px', fontFamily: 'Space Mono' }}>FCFA</span>
+                  <span style={{ fontFamily: 'Tahoma', fontSize: '34px', fontWeight: 700, color: '#3D4852', lineHeight: 1 }}>{result.price_max.toLocaleString()}</span>
+                  <span style={{ color: '#8B95A5', fontSize: '12px', fontFamily: 'Tahoma' }}>FCFA</span>
                 </div>
               )}
 
@@ -729,7 +729,7 @@ export default function DiagnosticPage() {
             {/* Sélecteur qualité matériaux */}
             {materialTiers.length > 0 && (
               <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '20px', boxShadow: NEU_SHADOW }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'Space Mono' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'Tahoma' }}>
                   QUALITÉ DES MATÉRIAUX
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -762,7 +762,7 @@ export default function DiagnosticPage() {
                                 boxShadow: active ? 'none' : NEU_SMALL,
                               }}>
                                 <div style={{ fontSize: '9px', fontWeight: 700, color: active ? color : '#8B95A5', letterSpacing: '0.06em' }}>{TIER_LABELS[tier]}</div>
-                                <div style={{ fontSize: '12px', fontWeight: 700, color: active ? color : '#3D4852', marginTop: '3px', fontFamily: 'Space Mono' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: active ? color : '#3D4852', marginTop: '3px', fontFamily: 'Tahoma' }}>
                                   {t?.price_market?.toLocaleString('fr') ?? '—'}
                                 </div>
                                 {t?.brand && (
@@ -830,7 +830,7 @@ export default function DiagnosticPage() {
                     <span style={{ fontSize: '18px' }}>💰</span>
                     <div style={{ fontSize: '12px', color: '#2B6B3E', fontWeight: 600 }}>
                       Vous économisez{' '}
-                      <span style={{ fontFamily: 'Space Mono' }}>{pricing.savings_vs_market.toLocaleString('fr')} FCFA</span>
+                      <span style={{ fontFamily: 'Tahoma' }}>{pricing.savings_vs_market.toLocaleString('fr')} FCFA</span>
                       {' '}vs le marché traditionnel
                     </div>
                   </div>
@@ -841,7 +841,7 @@ export default function DiagnosticPage() {
             {/* Matériel probable */}
             {result.items_needed.length > 0 && (
               <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>MATÉRIEL PROBABLE</div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Tahoma' }}>MATÉRIEL PROBABLE</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {result.items_needed.map(item => (
                     <span key={item.name} className="afrione-gradient-text" style={{ fontSize: '12px', background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.15)', padding: '4px 12px', borderRadius: '20px', fontWeight: 500 }}>
@@ -855,7 +855,7 @@ export default function DiagnosticPage() {
             {/* Photos jointes */}
             {photos.length > 0 && (
               <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Space Mono' }}>📸 VOS PHOTOS JOINTES</div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Tahoma' }}>📸 VOS PHOTOS JOINTES</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                   {photos.map((url, i) => (
                     <img key={i} src={url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px' }} />
