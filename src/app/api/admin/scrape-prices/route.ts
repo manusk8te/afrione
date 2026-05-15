@@ -17,6 +17,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+
 // ─── Matériaux disponibles sur Jumia CI ───────────────────────────────────────
 // Jumia CI est une marketplace généraliste — elle vend les fixtures, outils
 // et petite quincaillerie, PAS les matériaux de construction lourds

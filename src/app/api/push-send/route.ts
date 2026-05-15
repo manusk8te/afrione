@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import webpush from 'web-push'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY

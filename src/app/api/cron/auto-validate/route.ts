@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { releaseEscrow } from '@/lib/escrow'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   // Vérification du secret Vercel Cron
   const secret = process.env.CRON_SECRET

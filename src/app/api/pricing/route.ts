@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import {
+
+export const dynamic = 'force-dynamic'
   runMonteCarlo, computeDistance, CATEGORY_TO_METIER,
   diagnosticAlpha,
   type PricingInput, type MaterialInput,

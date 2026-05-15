@@ -14,6 +14,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+export const dynamic = 'force-dynamic'
+
 const WAVE_BASE = process.env.WAVE_ENV === 'sandbox'
   ? 'https://api.wave.com/v1'   // Wave uses same base; sandbox via test keys
   : 'https://api.wave.com/v1'
