@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Zap, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2 } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -76,9 +77,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-            <div className="afrione-gradient" style={{ width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Zap size={16} color="white" />
-            </div>
+            <Image src="/logo.png" alt="AfriOne logo" width={32} height={40} style={{ objectFit: 'contain' }} />
             <span className="font-display font-bold" style={{ fontSize: '20px', color: onOrange ? 'white' : '#3D4852', transition: 'color 0.3s' }}>
               AFRI<span className="afrione-gradient-text">ONE</span>
             </span>
