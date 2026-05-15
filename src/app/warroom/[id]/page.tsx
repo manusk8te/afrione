@@ -567,7 +567,65 @@ export default function WarRoomPage() {
     toast.success('Matériaux mis à jour !')
   }
 
-  // Lookup prix d'un matériau — DB d'abord puis Jumia CI on-demand (scraping réel)
+  // Fallback IA — estimation par mots-clés quand la DB et Jumia ne trouvent rien
+  const estimatePriceByName = (name: string, category: string): number => {
+    const n = name.toLowerCase()
+    const KEYWORDS: [string[], number][] = [
+      // Plomberie
+      [['robinet','mitigeur','mélangeur'],        8000],
+      [['tuyau','tube','canalisation','pvc'],      4000],
+      [['joint','coude','raccord','manchon'],      1200],
+      [['siphon','bonde','évacuation'],            2500],
+      [['chasse','flotteur','mécanisme wc'],       5000],
+      [['pompe'],                                 15000],
+      // Électricité
+      [['disjoncteur','différentiel'],            12000],
+      [['tableau','armoire électrique'],          20000],
+      [['prise','interrupteur','va-et-vient'],     3500],
+      [['câble','fil électrique','gaine'],         2500],
+      [['ampoule','spot','luminaire'],             3000],
+      [['minuterie','détecteur'],                  6000],
+      // Peinture
+      [['peinture','pot','gallon','bidon'],       15000],
+      [['sous-couche','primaire'],                 8000],
+      [['rouleau','pinceau','spalter'],            2000],
+      [['enduit','plâtre','crépi'],                5000],
+      // Maçonnerie
+      [['ciment','sac ciment'],                   7000],
+      [['sable','gravier'],                        4000],
+      [['brique','parpaing','agglo'],              1500],
+      [['chape','dalle'],                          8000],
+      // Carrelage
+      [['carreau','carrelage','faïence'],          8000],
+      [['colle carrelage','mortier'],              4000],
+      [['joint carrelage','baguette'],             2000],
+      // Climatisation
+      [['filtre','climatiseur'],                   6000],
+      [['gaz','réfrigérant','fluide'],            12000],
+      [['télécommande clim'],                      8000],
+      // Menuiserie
+      [['charnière','gond','pivot'],               2000],
+      [['vis','boulon','cheville'],                1000],
+      [['poignée','serrure porte','verrou'],       5000],
+      [['bois','planche','contreplaqué'],         10000],
+      // Serrurerie
+      [['serrure','cylindre','barillet'],         10000],
+      [['cadenas'],                                4000],
+      [['grille','barreau','porte métal'],        20000],
+    ]
+    for (const [kws, price] of KEYWORDS) {
+      if (kws.some(k => n.includes(k))) return price
+    }
+    // Fallback par catégorie si aucun mot-clé ne correspond
+    const CAT_BASE: Record<string, number> = {
+      'Plomberie': 2500, 'Électricité': 3000, 'Peinture': 4000,
+      'Maçonnerie': 3500, 'Carrelage': 4000, 'Climatisation': 6000,
+      'Menuiserie': 3000, 'Serrurerie': 4000,
+    }
+    return CAT_BASE[category] ?? 3000
+  }
+
+  // Lookup prix d'un matériau — DB d'abord, puis Jumia CI, puis estimation IA
   const lookupMatPrice = async (name: string): Promise<{
     price: number; web_price: number | null; source: string | null
     photo_url: string | null; source_url: string | null
@@ -580,20 +638,34 @@ export default function WarRoomPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, category: cat }),
       })
-      if (!res.ok) return { price: 0, web_price: null, source: null, photo_url: null, source_url: null, product_name: null, brand: null, from_db: false }
-      const d = await res.json()
-      if (!d.found) return { price: 0, web_price: null, source: null, photo_url: null, source_url: null, product_name: null, brand: null, from_db: false }
-      return {
-        price:        d.price_market || 0,
-        web_price:    d.web_price    || null,
-        source:       d.source       || null,
-        photo_url:    d.photo_url    || null,
-        source_url:   d.source_url   || null,
-        product_name: d.name         || null,
-        brand:        d.brand        || null,
-        from_db:      d.from_db      ?? true,
+      if (res.ok) {
+        const d = await res.json()
+        if (d.found) {
+          return {
+            price:        d.price_market || 0,
+            web_price:    d.web_price    || null,
+            source:       d.source       || null,
+            photo_url:    d.photo_url    || null,
+            source_url:   d.source_url   || null,
+            product_name: d.name         || null,
+            brand:        d.brand        || null,
+            from_db:      d.from_db      ?? true,
+          }
+        }
       }
-    } catch { return { price: 0, web_price: null, source: null, photo_url: null, source_url: null, product_name: null, brand: null, from_db: false } }
+    } catch {}
+    // Aucune source externe — estimation IA par mots-clés
+    const estimated = estimatePriceByName(name, cat)
+    return {
+      price:        estimated,
+      web_price:    null,
+      source:       'Estimation IA',
+      photo_url:    null,
+      source_url:   null,
+      product_name: name,
+      brand:        null,
+      from_db:      false,
+    }
   }
 
   // Artisan signale un matériau non prévu — étape 1 : lookup prix + aperçu impact
@@ -1624,8 +1696,19 @@ export default function WarRoomPage() {
           ) : messages.map((msg: any) => {
             const isMe = msg.sender_id === user?.id
 
-            // material_response — silencieux dans le chat (statut affiché sur la carte)
-            if (msg.type === 'material_response') return null
+            // material_response — affiché comme message système court
+            if (msg.type === 'material_response') {
+              let resp: any = {}
+              try { resp = JSON.parse(msg.text) } catch {}
+              const accepted = resp.action === 'approved'
+              return (
+                <div key={msg.id} style={{textAlign:'center',padding:'6px 0'}}>
+                  <span style={{fontSize:'12px',color: accepted ? '#2B6B3E' : '#E85D26',background: accepted ? 'rgba(43,107,62,0.08)' : 'rgba(232,93,38,0.08)',padding:'5px 14px',borderRadius:'20px',display:'inline-block',fontWeight:600}}>
+                    {accepted ? `✓ Matériau accepté : ${resp.name}` : `✗ Matériau refusé : ${resp.name}`}
+                  </span>
+                </div>
+              )
+            }
 
             // Message système — centré neutre
             if (msg.type === 'system') {
