@@ -30,11 +30,21 @@
   /* Motion */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in:  cubic-bezier(0.4, 0, 1, 1);
+
+  /* Font variables */
+  --font-display: 'Satoshi', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'Tahoma', sans-serif;
 }
 
 /* ─── Reset ───────────────────────────────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+
+/* Force Inter sur tous les éléments qui n'héritent pas du body par défaut */
+input, textarea, select, button, a {
+  font-family: 'Inter', sans-serif;
+}
 
 body {
   background: var(--bg);

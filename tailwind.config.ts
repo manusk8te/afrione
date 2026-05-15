@@ -10,9 +10,10 @@ const config: Config = {
         muted: '#7A7A6E', cream: '#FAFAF5', border: '#D8D2C4',
       },
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
-        body: ['Bricolage Grotesque', 'sans-serif'],
-        mono: ['Space Mono', 'monospace'],
+        display: ['Satoshi', 'sans-serif'],
+        body: ['Inter', 'sans-serif'],
+        mono: ['Tahoma', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
       },
     },
   },
