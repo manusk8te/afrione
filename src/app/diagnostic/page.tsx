@@ -45,6 +45,7 @@ interface PricingData {
 function parseDuration(str: string): number {
   if (!str) return 2
   const lower = str.toLowerCase()
+  const isJours = lower.includes('jour')
   const minMatch = lower.match(/(\d+)\s*min/)
   if (minMatch && !lower.includes('heure') && !lower.match(/\d+\s*h(?:eure)?s?\s+\d+/)) {
     return Math.max(0.25, parseInt(minMatch[1]) / 60)
@@ -52,9 +53,13 @@ function parseDuration(str: string): number {
   const hMinMatch = lower.match(/(\d+)\s*h(?:eure)?s?\s*(\d+)/)
   if (hMinMatch) return parseInt(hMinMatch[1]) + parseInt(hMinMatch[2]) / 60
   const rangeMatch = lower.match(/(\d+(?:\.\d+)?)\s*[àa-]\s*(\d+(?:\.\d+)?)/)
-  if (rangeMatch) return parseFloat(rangeMatch[1])
+  if (rangeMatch) {
+    const avg = (parseFloat(rangeMatch[1]) + parseFloat(rangeMatch[2])) / 2
+    return isJours ? avg * 8 : avg
+  }
   const nums = str.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
-  return nums.length ? nums[0] : 2
+  const val = nums.length ? nums[0] : 2
+  return isJours ? val * 8 : val
 }
 
 function materialEmoji(name: string): string {

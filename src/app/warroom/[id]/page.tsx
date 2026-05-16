@@ -291,15 +291,20 @@ export default function WarRoomPage() {
   const parseDurLow = (s: string): number => {
     if (!s) return 2
     const lower = s.toLowerCase()
+    const isJours = lower.includes('jour')
     const minMatch = lower.match(/(\d+)\s*min/)
     if (minMatch && !lower.includes('heure') && !lower.match(/\d+\s*h\S*\s+\d+/))
       return Math.max(0.25, parseInt(minMatch[1]) / 60)
     const hMinMatch = lower.match(/(\d+)\s*h\S*\s*(\d+)/)
     if (hMinMatch) return parseInt(hMinMatch[1]) + parseInt(hMinMatch[2]) / 60
     const rangeMatch = lower.match(/(\d+(?:\.\d+)?)\s*[àa-]\s*(\d+(?:\.\d+)?)/)
-    if (rangeMatch) return parseFloat(rangeMatch[1])   // borne basse
+    if (rangeMatch) {
+      const low = parseFloat(rangeMatch[1])
+      return isJours ? low * 8 : low
+    }
     const nums = s.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
-    return nums.length ? nums[0] : 2
+    const val = nums.length ? nums[0] : 2
+    return isJours ? val * 8 : val
   }
 
   // Charge la suggestion de prix sans ouvrir le drawer devis
