@@ -356,22 +356,25 @@ export default function WarRoomPage() {
     await loadPricingSuggestion()
   }
 
-  // Envoyer un devis
+  // Envoyer un devis — prix calculé par AfriOne, non modifiable par l'artisan
   const sendDevis = async () => {
-    const amount = parseInt(devisAmount.replace(/\D/g, ''))
-    if (!amount || amount <= 0) { toast.error('Montant invalide'); return }
-    if (!devisDesc.trim()) { toast.error('Ajoutez une description'); return }
+    const matMessages = messages
+      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
+      .map(m => { try { return JSON.parse(m.text) } catch { return null } })
+      .filter(Boolean)
+    const extraMat = matMessages.reduce((s: number, m: any) => s + (m.total || 0), 0)
+    const amount   = (pricingSuggestion?.estimate ?? 0) + extraMat
+    if (!amount || amount <= 0) { toast.error('Prix non calculé — attendez le chargement'); return }
     setActing(true)
-    const payload = JSON.stringify({ amount, description: devisDesc.trim() })
+    const payload = JSON.stringify({ amount, description: devisDesc.trim(), calculated_by: 'afrione_agent' })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
       sender_role: missionRole, text: payload, type: 'quotation',
     })
     if (error) { toast.error('Erreur envoi devis.'); setActing(false); return }
     const rid = getRecipientId(mission, user.id)
-    if (rid) notifyOther(`Devis proposé : ${amount.toLocaleString()} FCFA`, rid)
+    if (rid) notifyOther(`Devis AfriOne : ${amount.toLocaleString('fr')} FCFA`, rid)
     setShowDevis(false)
-    setDevisAmount('')
     setDevisDesc('')
     setActing(false)
   }
@@ -652,12 +655,31 @@ export default function WarRoomPage() {
         }
       }
     } catch {}
-    // Aucune source externe — estimation IA par mots-clés
-    const estimated = estimatePriceByName(name, cat)
+    // Fallback — appel agent pricing (Jumia CI live)
+    try {
+      const res = await fetch('/api/tools/search-material', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item: name, category: cat, qty: 1 }),
+      })
+      if (res.ok) {
+        const d = await res.json()
+        return {
+          price:        d.price_unit || 0,
+          web_price:    d.price_unit || null,
+          source:       d.source || 'Agent AfriOne',
+          photo_url:    null,
+          source_url:   null,
+          product_name: d.product_name || name,
+          brand:        null,
+          from_db:      false,
+        }
+      }
+    } catch {}
     return {
-      price:        estimated,
+      price:        1500,
       web_price:    null,
-      source:       'Estimation IA',
+      source:       'Estimation marché',
       photo_url:    null,
       source_url:   null,
       product_name: name,
@@ -1470,16 +1492,20 @@ export default function WarRoomPage() {
               </div>
             )}
 
-            <div style={{display:'flex',gap:'10px',marginBottom:'10px'}}>
-              <div style={{flex:1}}>
-                <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>MONTANT (FCFA)</label>
-                <input
-                  type="text" inputMode="numeric"
-                  value={devisAmount}
-                  onChange={e => setDevisAmount(e.target.value)}
-                  placeholder="Ex: 45 000"
-                  className="input" style={{fontWeight:700,fontSize:'16px'}}
-                />
+            <div style={{marginBottom:'10px'}}>
+              <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>MONTANT CALCULÉ PAR AFRIONE (FCFA)</label>
+              <div style={{background:'#F5F7FA',border:'1.5px solid #E85D26',borderRadius:'10px',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span style={{fontFamily:'Tahoma',fontSize:'22px',fontWeight:700,color:'#3D4852'}}>
+                  {(() => {
+                    const matExtra = messages
+                      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
+                      .map(m => { try { return JSON.parse(m.text) } catch { return null } })
+                      .filter(Boolean)
+                      .reduce((s: number, m: any) => s + (m.total || 0), 0)
+                    return ((pricingSuggestion?.estimate ?? 0) + matExtra).toLocaleString('fr')
+                  })()} FCFA
+                </span>
+                <span style={{fontSize:'10px',color:'#9CA3AF',fontFamily:'Tahoma'}}>🔒 Fixé par AfriOne</span>
               </div>
             </div>
             <div style={{marginBottom:'12px'}}>
