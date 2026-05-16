@@ -34,14 +34,9 @@ interface DiagResult {
 
 interface PricingData {
   estimate: number
-  interval: { low: number; high: number; coverage: number }
-  decomposition: {
-    labor:     { median: number; std: number; pct: number }
-    materials: { median: number; std: number; pct: number }
-    transport: { median: number; std: number; pct: number }
-    premium:   { median: number; std: number; pct: number }
-  }
-  artisan_share: number
+  interval: { low: number; high: number }
+  decomp: { labor: number; materials: number; transport: number; premium: number }
+  artisan_percoit: number
   savings_vs_market?: number
   below_market?: boolean
   market_reference_fcfa?: number
@@ -222,34 +217,43 @@ export default function DiagnosticPage() {
     }
   }
 
-  // ── Appel moteur de pricing ──
+  // ── Appel moteur de pricing (Agent IA AfriOne) ──
   const fetchPricing = async (diagResult: DiagResult) => {
     setPricing(null)
     setPricingLoading(true)
     try {
+      const itemNames = (diagResult.items_needed || []).map((i: any) => typeof i === 'string' ? i : i.name).filter(Boolean)
       const [pricingRes, tiersRes] = await Promise.all([
-        fetch('/api/pricing', {
+        fetch('/api/pricing-agent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            metier:               CATEGORY_TO_METIER[diagResult.category] || 'Maçon',
-            category:             diagResult.category,
-            urgency:              diagResult.urgency,
-            duration_hours:       parseDuration(diagResult.duration_estimate),
-            quartier:             quartier || 'Cocody',
-            items_needed:         diagResult.items_needed,
-            surface_m2:    diagResult.surface_m2 || null,
-            budget_client: diagResult.budget_client || null,
+            category:       diagResult.category,
+            description:    diagResult.summary || diagResult.technical_notes || '',
+            urgency:        diagResult.urgency,
+            hours_estimate: parseDuration(diagResult.duration_estimate),
+            quartier:       quartier || 'Cocody',
+            items_needed:   itemNames,
           }),
         }),
-        diagResult.items_needed.length > 0
-          ? fetch(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(diagResult.items_needed.join(','))}&client_quartier=${encodeURIComponent(quartier || 'Cocody')}`)
+        itemNames.length > 0
+          ? fetch(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(itemNames.join(','))}&client_quartier=${encodeURIComponent(quartier || 'Cocody')}`)
           : Promise.resolve(null),
       ])
       if (pricingRes.ok) {
-        const pd = await pricingRes.json()
-        setPricing(pd)
-        if (pd.market_reference_fcfa) setMarketRef(pd.market_reference_fcfa)
+        const d = await pricingRes.json()
+        const bd = d.breakdown || {}
+        setPricing({
+          estimate:        d.total || 0,
+          interval:        { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
+          decomp: {
+            labor:     bd.main_oeuvre     || 0,
+            materials: bd.materiaux       || 0,
+            transport: bd.transport       || 0,
+            premium:   (bd.commission_afrione || 0) + (bd.assurance_sav || 0),
+          },
+          artisan_percoit: d.artisan_percoit || 0,
+        })
       }
       if (tiersRes?.ok) {
         const td = await tiersRes.json()
@@ -263,24 +267,27 @@ export default function DiagnosticPage() {
     setPricingLoading(false)
   }
 
-  // Recalcule le prix quand le client change un tier
-  const updatePricingForTier = async (diagResult: DiagResult, tiers: Record<string, 'economique'|'standard'|'premium'>) => {
-    try {
-      const res = await fetch('/api/pricing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          metier:         CATEGORY_TO_METIER[diagResult.category] || 'Maçon',
-          category:       diagResult.category,
-          urgency:        diagResult.urgency,
-          duration_hours: parseDuration(diagResult.duration_estimate),
-          quartier:       quartier || 'Cocody',
-          items_needed:   diagResult.items_needed,
-          selected_tiers: tiers,
-        }),
-      })
-      if (res.ok) setPricing(await res.json())
-    } catch {}
+  // Recalcule localement quand le client change un tier matériau
+  const updatePricingForTier = (_diagResult: DiagResult, tiers: Record<string, 'economique'|'standard'|'premium'>) => {
+    if (!pricing) return
+    const newMat = materialTiers.reduce((sum: number, mat: any) => {
+      const tier = tiers[mat.name] || 'standard'
+      const tierData = mat.tiers?.[tier]
+      const price = tierData?.price_unit ?? tierData?.price_market ?? 0
+      const qty = mat.qty || 1
+      return sum + price * qty
+    }, 0)
+    const subtotal   = pricing.decomp.labor + newMat + pricing.decomp.transport
+    const commission = Math.round(subtotal * 0.10)
+    const assurance  = Math.round(subtotal * 0.02)
+    const total      = subtotal + commission + assurance
+    setPricing({
+      ...pricing,
+      estimate:        total,
+      interval:        { low: Math.round(total * 0.92), high: Math.round(total * 1.08) },
+      decomp:          { ...pricing.decomp, materials: newMat, premium: commission + assurance },
+      artisan_percoit: Math.round(total * 0.88),
+    })
   }
 
   // ── Génère le résumé final ──
@@ -662,48 +669,49 @@ export default function DiagnosticPage() {
               ))}
             </div>
 
-            {/* Prix — Moteur Monte Carlo */}
+            {/* Prix — Agent IA AfriOne */}
             <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid #E2E8F0', boxShadow: NEU_SHADOW }}>
               <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Tahoma', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>ESTIMATION AFRIONE</span>
                 {!pricingLoading && pricing && (
-                  <span style={{ fontSize: '9px', color: '#8B95A5', fontFamily: 'Tahoma' }}>10 000 SIMULATIONS MC</span>
+                  <span style={{ fontSize: '9px', color: '#E85D26', fontFamily: 'Tahoma' }}>AGENT IA</span>
                 )}
               </div>
 
               {pricingLoading ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-                  <span style={{ color: '#8B95A5', fontSize: '13px' }}>Calcul stochastique…</span>
+                  <span style={{ color: '#8B95A5', fontSize: '13px' }}>Agent IA en cours…</span>
                   <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'Tahoma' }}>
-                    {result.price_min.toLocaleString()} – {result.price_max.toLocaleString()} FCFA
+                    {result.price_min.toLocaleString('fr')} – {result.price_max.toLocaleString('fr')} FCFA
                   </span>
                 </div>
               ) : pricing ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                    <span className="afrione-gradient-text" style={{ fontFamily: 'Tahoma', fontSize: '36px', fontWeight: 700, lineHeight: 1 }}>{pricing.estimate.toLocaleString()}</span>
+                    <span className="afrione-gradient-text" style={{ fontFamily: 'Tahoma', fontSize: '36px', fontWeight: 700, lineHeight: 1 }}>{pricing.estimate.toLocaleString('fr')}</span>
                     <span style={{ color: '#8B95A5', fontSize: '13px', fontFamily: 'Tahoma' }}>FCFA</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Tahoma', marginBottom: '16px' }}>
-                    [{pricing.interval.low.toLocaleString()} – {pricing.interval.high.toLocaleString()}] IC 95%
+                    [{pricing.interval.low.toLocaleString('fr')} – {pricing.interval.high.toLocaleString('fr')}] ±8%
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                     {([
-                      { key: 'labor',     label: "Main-d'œuvre", color: '#E85D26' },
-                      { key: 'materials', label: 'Matériaux',    color: '#C9A84C' },
-                      { key: 'transport', label: 'Transport',    color: '#2B6B3E' },
-                      { key: 'premium',   label: 'Commission',   color: '#E2E8F0' },
-                    ] as const).map(({ key, label, color }) => {
-                      const item = pricing.decomposition[key]
+                      { key: 'labor' as const,     label: "Main-d'œuvre", color: '#E85D26' },
+                      { key: 'materials' as const, label: 'Matériaux',    color: '#C9A84C' },
+                      { key: 'transport' as const, label: 'Transport',    color: '#2B6B3E' },
+                      { key: 'premium' as const,   label: 'Com.+Ass.',    color: '#8B95A5' },
+                    ]).map(({ key, label, color }) => {
+                      const val = pricing.decomp[key]
+                      const pct = pricing.estimate > 0 ? Math.round(val / pricing.estimate * 100) : 0
                       return (
                         <div key={key}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                             <span style={{ fontSize: '10px', color: '#6B7280' }}>{label}</span>
-                            <span style={{ fontSize: '10px', color: '#6B7280', fontFamily: 'Tahoma' }}>{item.pct}% · {item.median.toLocaleString()} FCFA</span>
+                            <span style={{ fontSize: '10px', color: '#6B7280', fontFamily: 'Tahoma' }}>{pct}% · {val.toLocaleString('fr')} FCFA</span>
                           </div>
                           <div style={{ height: '3px', background: '#F5F7FA', borderRadius: '2px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${item.pct}%`, background: color, borderRadius: '2px' }} />
+                            <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '2px' }} />
                           </div>
                         </div>
                       )
@@ -712,17 +720,17 @@ export default function DiagnosticPage() {
                 </>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                  <span className="afrione-gradient-text" style={{ fontFamily: 'Tahoma', fontSize: '34px', fontWeight: 700, lineHeight: 1 }}>{result.price_min.toLocaleString()}</span>
+                  <span className="afrione-gradient-text" style={{ fontFamily: 'Tahoma', fontSize: '34px', fontWeight: 700, lineHeight: 1 }}>{result.price_min.toLocaleString('fr')}</span>
                   <span style={{ color: '#8B95A5', fontSize: '20px' }}>—</span>
-                  <span style={{ fontFamily: 'Tahoma', fontSize: '34px', fontWeight: 700, color: '#3D4852', lineHeight: 1 }}>{result.price_max.toLocaleString()}</span>
+                  <span style={{ fontFamily: 'Tahoma', fontSize: '34px', fontWeight: 700, color: '#3D4852', lineHeight: 1 }}>{result.price_max.toLocaleString('fr')}</span>
                   <span style={{ color: '#8B95A5', fontSize: '12px', fontFamily: 'Tahoma' }}>FCFA</span>
                 </div>
               )}
 
               <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', margin: '12px 0 0' }}>
                 {pricing
-                  ? `Artisan perçoit ~${pricing.artisan_share.toLocaleString()} FCFA · Prix exact confirmé par l'artisan`
-                  : "Indicatif · Prix exact confirmé par l'artisan"}
+                  ? `Artisan perçoit ~${pricing.artisan_percoit.toLocaleString('fr')} FCFA · Fixé par AfriOne`
+                  : "Indicatif · Prix fixé par AfriOne"}
               </p>
             </div>
 
