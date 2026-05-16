@@ -321,32 +321,30 @@ export default function WarRoomPage() {
       'Serrurerie':'Serrurier','Carrelage':'Carreleur',
     }
     try {
-      const res = await fetch('/api/pricing', {
+      const res = await fetch('/api/pricing-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          metier:         metierMap[diagData.category] || 'Maçon',
-          category:       diagData.category || 'Maçonnerie',
-          urgency:        diagData.urgency  || 'medium',
-          duration_hours: parseDurLow(diagData.duration_estimate || '2 heures'),
-          quartier:       mission?.quartier || 'Cocody',
+          category:       diagData.category    || 'Maçonnerie',
+          description:    diagData.description || diagData.problem_description || '',
+          urgency:        diagData.urgency     || 'medium',
+          hours_estimate: parseDurLow(diagData.duration_estimate || '2 heures'),
+          quartier:       mission?.quartier    || 'Cocody',
           items_needed:   diagData.items_needed || [],
+          artisan_id:     mission?.artisan_pros?.id,
         }),
       })
       if (res.ok) {
         const d = await res.json()
+        const bd = d.breakdown || {}
+        const labor     = bd.main_oeuvre     || 0
+        const materials = bd.materiaux       || 0
+        const transport = bd.transport       || 0
+        const premium   = (bd.commission_afrione || 0) + (bd.assurance_sav || 0)
         setPricingSuggestion({
-          estimate: d.estimate,
-          interval: d.interval,
-          decomp: {
-            labor:     d.decomposition.labor.median,
-            materials: d.decomposition.materials.median,
-            transport: d.decomposition.transport.median,
-            premium:   d.decomposition.premium.median,
-          },
-          market_reference_fcfa: d.market_reference_fcfa,
-          savings_vs_market:     d.savings_vs_market,
-          below_market:          d.below_market,
+          estimate: d.total || 0,
+          interval: { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
+          decomp:   { labor, materials, transport, premium },
         })
       }
     } catch {}
