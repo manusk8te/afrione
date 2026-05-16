@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { lookupItemOnJumia } from '@/lib/jumia-lookup'
 import { SMIG_X2_HORAIRE } from '@/lib/pricing'
+import { getTransport } from '@/lib/transport'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,12 +15,6 @@ const FALLBACK_MAT: Record<string, number> = {
   'Plomberie': 1500, 'Électricité': 1200, 'Peinture': 2000,
   'Maçonnerie': 2500, 'Menuiserie': 1800, 'Climatisation': 3500,
   'Serrurerie': 1500, 'Carrelage': 2800,
-}
-const TRANSPORT: Record<string, number> = {
-  'Cocody': 1000, 'Plateau': 800, 'Adjamé': 900, 'Yopougon': 1500,
-  'Abobo': 1800, 'Marcory': 1000, 'Treichville': 800, 'Koumassi': 1200,
-  'Port-Bouët': 1400, 'Bingerville': 2000, 'Riviera': 1200,
-  'Zone 4': 900, 'Deux-Plateaux': 1100, 'Angré': 1300,
 }
 
 const TOOLS = [
@@ -96,7 +91,7 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
     const { hours, hourly_rate, materials_total, urgency = 'medium', quartier = 'Cocody' } = args
     const degressif   = hours <= 2 ? 1.0 : hours <= 4 ? 0.85 : hours <= 8 ? 0.70 : 0.60
     const labor_final = Math.round(hourly_rate * hours * degressif * (1 + (urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0)))
-    const transport   = TRANSPORT[quartier] || 1000
+    const transport   = getTransport(quartier)
     const subtotal    = labor_final + (materials_total || 0) + transport
     const commission  = Math.round(subtotal * 0.10)
     const assurance   = Math.round(subtotal * 0.02)

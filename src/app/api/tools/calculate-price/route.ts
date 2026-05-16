@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getTransport } from '@/lib/transport'
 
 export const dynamic = 'force-dynamic'
 
-const TRANSPORT: Record<string, number> = {
-  'Cocody': 1000, 'Plateau': 800, 'Adjamé': 900, 'Yopougon': 1500,
-  'Abobo': 1800, 'Marcory': 1000, 'Treichville': 800, 'Koumassi': 1200,
-  'Port-Bouët': 1400, 'Bingerville': 2000, 'Riviera': 1200,
-  'Zone 4': 900, 'Deux-Plateaux': 1100, 'Angré': 1300,
-}
 
 export async function POST(req: NextRequest) {
   const { hours, hourly_rate, materials_total, urgency = 'medium', quartier = 'Cocody' } = await req.json()
@@ -16,7 +11,7 @@ export async function POST(req: NextRequest) {
   const labor_base  = Math.round(hourly_rate * hours * degressif)
   const urgency_pct = urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0
   const labor_final = Math.round(labor_base * (1 + urgency_pct))
-  const transport   = TRANSPORT[quartier] || 1000
+  const transport   = getTransport(quartier)
   const subtotal    = labor_final + (materials_total || 0) + transport
   const commission  = Math.round(subtotal * 0.10)
   const assurance   = Math.round(subtotal * 0.02)

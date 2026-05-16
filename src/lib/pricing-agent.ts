@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "./supabase";
 import { lookupItemOnJumia } from "./jumia-lookup";
 import { SMIG_X2_HORAIRE, CATEGORY_TO_METIER } from "./pricing";
+import { getTransport } from "./transport";
 
 // ── Fallbacks ────────────────────────────────────────────────────────────────
 
@@ -106,7 +107,7 @@ const calculateFinalPrice = tool({
     const labor_base  = Math.round(hourly_rate * hours * degressif);
     const urgency_pct = urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0;
     const labor_final = Math.round(labor_base * (1 + urgency_pct));
-    const transport   = TRANSPORT[quartier] || 1000;
+    const transport   = getTransport(quartier);
     const subtotal    = labor_final + (materials_total || 0) + transport;
     const commission  = Math.round(subtotal * 0.10);
     const assurance   = Math.round(subtotal * 0.02);
