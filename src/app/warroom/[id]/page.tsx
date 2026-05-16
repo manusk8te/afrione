@@ -1389,32 +1389,23 @@ export default function WarRoomPage() {
             )}
             {!pricingSugLoading && pricingSuggestion && (
               <div style={{background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'12px',padding:'12px 14px',marginBottom:'10px'}}>
-                <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.12em',fontFamily:'Tahoma',marginBottom:'8px'}}>SUGGESTION MOTEUR AFRIONE · MC 10K</div>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
-                  <div>
-                    <span style={{fontFamily:'Tahoma',fontSize:'22px',fontWeight:700,color:'#3D4852'}}>{pricingSuggestion.estimate.toLocaleString()}</span>
-                    <span style={{fontSize:'11px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
-                    <div style={{fontSize:'10px',color:'#A09A8E',fontFamily:'Tahoma',marginTop:'1px'}}>
-                      [{pricingSuggestion.interval.low.toLocaleString()} – {pricingSuggestion.interval.high.toLocaleString()}] IC 95%
-                    </div>
+                <div style={{fontSize:'9px',fontWeight:700,color:'#E85D26',letterSpacing:'0.12em',fontFamily:'Tahoma',marginBottom:'8px'}}>ESTIMATION AGENT AFRIONE · IA</div>
+                <div style={{marginBottom:'8px'}}>
+                  <span style={{fontFamily:'Tahoma',fontSize:'22px',fontWeight:700,color:'#3D4852'}}>{pricingSuggestion.estimate.toLocaleString('fr')}</span>
+                  <span style={{fontSize:'11px',color:'#6B7280',marginLeft:'4px'}}>FCFA</span>
+                  <div style={{fontSize:'10px',color:'#A09A8E',fontFamily:'Tahoma',marginTop:'1px'}}>
+                    [{pricingSuggestion.interval.low.toLocaleString('fr')} – {pricingSuggestion.interval.high.toLocaleString('fr')}] ±8%
                   </div>
-                  <button
-                    onClick={() => setDevisAmount(pricingSuggestion.estimate.toString())}
-                    className="btn-primary"
-                    style={{padding:'7px 14px',color:'white',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:700,cursor:'pointer',flexShrink:0}}
-                  >
-                    Utiliser
-                  </button>
                 </div>
                 <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
                   {[
-                    {label:"MO",    val: pricingSuggestion.decomp.labor},
-                    {label:"Mat.",  val: pricingSuggestion.decomp.materials},
-                    {label:"Tsp.",  val: pricingSuggestion.decomp.transport},
-                    {label:"Com.",  val: pricingSuggestion.decomp.premium},
+                    {label:"MO",       val: pricingSuggestion.decomp.labor},
+                    {label:"Mat.",     val: pricingSuggestion.decomp.materials},
+                    {label:"Tsp.",     val: pricingSuggestion.decomp.transport},
+                    {label:"Com.+Ass.",val: pricingSuggestion.decomp.premium},
                   ].map(({label, val}) => (
                     <div key={label} style={{fontSize:'10px',color:'#6B7280',background:'rgba(0,0,0,0.04)',padding:'3px 8px',borderRadius:'6px'}}>
-                      <span style={{color:'#3D4852',fontWeight:600}}>{label}</span> {val.toLocaleString()}
+                      <span style={{color:'#3D4852',fontWeight:600}}>{label}</span> {val.toLocaleString('fr')}
                     </div>
                   ))}
                 </div>
