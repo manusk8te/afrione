@@ -173,7 +173,7 @@ export const runWorkflow = async (workflow: WorkflowInput) => {
     });
 
     const result = await runner.run(afrione, [...conversationHistory]);
-    conversationHistory.push(...result.newItems.map((item) => item.rawItem));
+    conversationHistory.push(...result.newItems.map((item) => item.rawItem as AgentInputItem));
 
     if (!result.finalOutput) {
       throw new Error("Agent result is undefined");
