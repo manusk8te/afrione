@@ -49,6 +49,13 @@ export default function AdminDashboard() {
   const [entreprisesFilter, setEntreprisesFilter] = useState<'all'|'pending'|'approved'|'rejected'>('all')
   const [selectedEntreprise, setSelectedEntreprise] = useState<any>(null)
 
+  // Questionnaires
+  const [questionnaires, setQuestionnaires]         = useState<any[]>([])
+  const [questionnaireFilter, setQuestionnaireFilter] = useState<'pending'|'approved'|'rejected'>('pending')
+  const [expandedQuestionnaire, setExpandedQuestionnaire] = useState<string | null>(null)
+  const [rejectNoteMap, setRejectNoteMap]           = useState<Record<string, string>>({})
+  const [questActing, setQuestActing]               = useState<string | null>(null)
+
   // Litiges
   const [litiges, setLitiges]               = useState<any[]>([])
   const [selectedLitige, setSelectedLitige] = useState<any>(null)
@@ -78,7 +85,7 @@ export default function AdminDashboard() {
       if (u?.name) setAdminName(u.name)
     }
 
-    const [statsRes, missionsRes, kycRes, txRes, litigesRes, usersRes, entreprisesRes] = await Promise.all([
+    const [statsRes, missionsRes, kycRes, txRes, litigesRes, usersRes, entreprisesRes, questRes] = await Promise.all([
       fetch('/api/admin/data?type=stats').then(r => r.json()),
       fetch('/api/admin/data?type=missions').then(r => r.json()),
       fetch('/api/admin/data?type=kyc').then(r => r.json()),
@@ -86,6 +93,7 @@ export default function AdminDashboard() {
       fetch('/api/admin/data?type=litiges').then(r => r.json()),
       fetch('/api/admin/data?type=users').then(r => r.json()),
       fetch('/api/admin/data?type=entreprises').then(r => r.json()),
+      fetch('/api/admin/questionnaire').then(r => r.json()),
     ])
 
     setStats({ missions: statsRes.missions || 0, artisans: statsRes.artisans || 0, revenue: statsRes.revenue || 0 })
@@ -96,6 +104,7 @@ export default function AdminDashboard() {
     setLitiges(Array.isArray(litigesRes) ? litigesRes : [])
     setUsers(Array.isArray(usersRes) ? usersRes : [])
     setEntreprises(Array.isArray(entreprisesRes) ? entreprisesRes : [])
+    setQuestionnaires(Array.isArray(questRes) ? questRes : [])
 
     setLoading(false)
   }, [])
@@ -218,6 +227,7 @@ export default function AdminDashboard() {
         litigeCount={litiges.length}
         litigeNotif={litigeNotif}
         adminName={adminName}
+        questionnaireCount={questionnaires.filter(q => q.status === 'pending').length}
       />
 
       {/* Main */}
@@ -1156,6 +1166,271 @@ export default function AdminDashboard() {
                       <p style={{ textAlign: 'center', color: '#6B7280', padding: '48px' }}>Aucun utilisateur</p>
                     )}
                   </div>
+                </div>
+              )
+            })()}
+
+            {/* ===== QUESTIONNAIRES ===== */}
+            {tab === 'questionnaire' && (() => {
+              const pending  = questionnaires.filter(q => q.status === 'pending')
+              const approved = questionnaires.filter(q => q.status === 'approved')
+              const rejected = questionnaires.filter(q => q.status === 'rejected')
+              const shown    = questionnaireFilter === 'pending' ? pending : questionnaireFilter === 'approved' ? approved : rejected
+
+              const QFILTERS: { id: 'pending' | 'approved' | 'rejected'; label: string; count: number; color: string; bg: string }[] = [
+                { id: 'pending',  label: 'En attente',  count: pending.length,  color: '#C9A84C', bg: 'rgba(201,168,76,0.1)'  },
+                { id: 'approved', label: 'Approuvés',   count: approved.length, color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)'   },
+                { id: 'rejected', label: 'Rejetés',     count: rejected.length, color: '#ef4444', bg: 'rgba(239,68,68,0.1)'   },
+              ]
+
+              const handleApprove = async (q: any) => {
+                setQuestActing(q.id)
+                await fetch('/api/admin/questionnaire', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'approve', submissionId: q.id, adminEmail: adminName }),
+                })
+                setQuestionnaires(prev => prev.map(x => x.id === q.id ? { ...x, status: 'approved' } : x))
+                flash('✓ Questionnaire approuvé — tarifs mis à jour')
+                setQuestActing(null)
+              }
+
+              const handleReject = async (q: any) => {
+                setQuestActing(q.id)
+                const note = rejectNoteMap[q.id] || ''
+                await fetch('/api/admin/questionnaire', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'reject', submissionId: q.id, adminEmail: adminName, adminNotes: note }),
+                })
+                setQuestionnaires(prev => prev.map(x => x.id === q.id ? { ...x, status: 'rejected', admin_notes: note } : x))
+                flash('Questionnaire rejeté')
+                setQuestActing(null)
+              }
+
+              const transportLabel = (t: string) =>
+                t === 'pied' ? '🚶 À pied' : t === 'moto' ? '🏍️ Moto' : t === 'voiture' ? '🚗 Voiture' : t
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', margin: 0 }}>
+                      Questionnaires artisans
+                    </h2>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {QFILTERS.map(f => (
+                        <button key={f.id} onClick={() => setQuestionnaireFilter(f.id)} style={{
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                          padding: '6px 14px', borderRadius: '20px', cursor: 'pointer',
+                          border: questionnaireFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid #E2E8F0',
+                          background: questionnaireFilter === f.id ? f.bg : '#FFFFFF',
+                          color: questionnaireFilter === f.id ? f.color : '#6B7280',
+                          fontSize: '12px', fontWeight: 600,
+                          boxShadow: questionnaireFilter === f.id ? 'none' : NEU_SMALL,
+                        }}>
+                          {f.label}
+                          <span style={{
+                            minWidth: '18px', height: '18px', borderRadius: '9px', padding: '0 4px',
+                            background: questionnaireFilter === f.id ? f.color : '#E2E8F0',
+                            color: questionnaireFilter === f.id ? 'white' : '#6B7280',
+                            fontSize: '10px', fontWeight: 700,
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          }}>{f.count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Liste */}
+                  {shown.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '64px 20px', color: '#6B7280' }}>
+                      <p style={{ fontSize: '40px', marginBottom: '12px' }}>📝</p>
+                      <p style={{ fontSize: '15px', color: '#3D4852', fontWeight: 600 }}>
+                        {questionnaireFilter === 'pending' ? 'Aucun questionnaire en attente' : questionnaireFilter === 'approved' ? 'Aucun questionnaire approuvé' : 'Aucun questionnaire rejeté'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {shown.map(q => {
+                        const artisan = q.artisan_pros
+                        const user    = artisan?.users
+                        const isExpanded = expandedQuestionnaire === q.id
+                        const statusColor = q.status === 'approved' ? '#2B6B3E' : q.status === 'rejected' ? '#ef4444' : '#C9A84C'
+                        const statusBg    = q.status === 'approved' ? 'rgba(43,107,62,0.1)' : q.status === 'rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(201,168,76,0.1)'
+                        const materials: any[] = Array.isArray(q.materials_used) ? q.materials_used : []
+
+                        return (
+                          <div key={q.id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SMALL }}>
+                            {/* Row header */}
+                            <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', flexWrap: 'wrap' }}
+                              onClick={() => setExpandedQuestionnaire(isExpanded ? null : q.id)}>
+                              {/* Avatar */}
+                              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '20px', overflow: 'hidden' }}>
+                                {user?.avatar_url ? <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🔧'}
+                              </div>
+
+                              {/* Info */}
+                              <div style={{ flex: 1, minWidth: '160px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
+                                  <span style={{ fontWeight: 700, fontSize: '14px', color: '#3D4852' }}>{user?.name || '—'}</span>
+                                  <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', fontWeight: 700, background: statusBg, color: statusColor }}>
+                                    {q.status === 'approved' ? '✓ Approuvé' : q.status === 'rejected' ? '✗ Rejeté' : '⏳ En attente'}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                                  {artisan?.metier || '—'} · {q.experience_years || '—'} ans d'exp · Taux : <strong style={{ color: '#3D4852' }}>{q.hourly_rate_declared ? q.hourly_rate_declared.toLocaleString() + ' FCFA/h' : '—'}</strong>
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>
+                                  Soumis le {new Date(q.submitted_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </div>
+                              </div>
+
+                              {/* Quick actions for pending */}
+                              {q.status === 'pending' && (
+                                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => handleApprove(q)}
+                                    disabled={questActing === q.id}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#2B6B3E', opacity: questActing === q.id ? 0.5 : 1 }}>
+                                    <CheckCircle size={13} /> Approuver
+                                  </button>
+                                  <button
+                                    onClick={() => setExpandedQuestionnaire(isExpanded ? null : q.id)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#ef4444' }}>
+                                    Rejeter…
+                                  </button>
+                                </div>
+                              )}
+
+                              <span style={{ color: '#8B95A5', fontSize: '16px', flexShrink: 0 }}>{isExpanded ? '▲' : '▼'}</span>
+                            </div>
+
+                            {/* Expanded details */}
+                            {isExpanded && (
+                              <div style={{ borderTop: '1px solid #E2E8F0', padding: '20px', background: '#F5F7FA', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                {/* Grid of details */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                  {[
+                                    { label: 'CNI',               val: q.has_id_card ? '✓ Oui' : '✗ Non' },
+                                    { label: 'Attestation',       val: q.has_training_cert ? '✓ Oui' : '✗ Non' },
+                                    { label: 'Transport',         val: transportLabel(q.transport_moyen) || '—' },
+                                    { label: 'Heures/jour',       val: q.daily_hours ? q.daily_hours + 'h' : '—' },
+                                    { label: 'Revenus/jour',      val: q.daily_earnings ? q.daily_earnings.toLocaleString() + ' F' : '—' },
+                                    { label: 'Taux horaire',      val: q.hourly_rate_declared ? q.hourly_rate_declared.toLocaleString() + ' F/h' : '—' },
+                                    { label: 'Propre outillage',  val: q.has_own_tools ? '✓ Oui' : '✗ Non' },
+                                    { label: 'Expérience',        val: q.experience_years ? q.experience_years + ' ans' : '—' },
+                                  ].map(item => (
+                                    <div key={item.label} style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid #E2E8F0' }}>
+                                      <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>
+                                      <div style={{ fontSize: '13px', color: '#3D4852', fontWeight: 600 }}>{item.val}</div>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Zones */}
+                                {q.zones_travail?.length > 0 && (
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                                    <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Zones d'intervention</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                      {q.zones_travail.map((z: string) => (
+                                        <span key={z} style={{ padding: '3px 10px', borderRadius: '20px', background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', fontSize: '12px', color: '#E85D26' }}>{z}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Interventions */}
+                                {q.intervention_types?.length > 0 && (
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                                    <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Types d'interventions</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                      {q.intervention_types.map((i: string) => (
+                                        <span key={i} style={{ padding: '3px 10px', borderRadius: '20px', background: '#F5F7FA', border: '1px solid #E2E8F0', fontSize: '12px', color: '#6B7280' }}>{i}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Outils */}
+                                {q.tools_description && (
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                                    <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Outils déclarés</div>
+                                    <p style={{ fontSize: '13px', color: '#3D4852', margin: 0, lineHeight: '1.5' }}>{q.tools_description}</p>
+                                  </div>
+                                )}
+
+                                {/* Matériaux */}
+                                {materials.length > 0 && (
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                                    <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Matériaux déclarés ({materials.length})</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                      {materials.map((m: any, i: number) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 10px', background: '#F5F7FA', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                                          <div style={{ flex: 1, minWidth: 0 }}>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852' }}>{m.name}</span>
+                                            <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '8px' }}>{m.category} · {m.unit}</span>
+                                          </div>
+                                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#E85D26', whiteSpace: 'nowrap' }}>
+                                            {m.price_fcfa?.toLocaleString()} F
+                                          </span>
+                                          <span style={{ fontSize: '11px', color: '#8B95A5' }}>×{m.qty_per_intervention}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Admin notes if rejected */}
+                                {q.admin_notes && (
+                                  <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '10px', fontSize: '13px', color: '#ef4444', fontStyle: 'italic' }}>
+                                    Note admin : {q.admin_notes}
+                                  </div>
+                                )}
+
+                                {/* Actions */}
+                                {q.status === 'pending' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                      <button
+                                        onClick={() => handleApprove(q)}
+                                        disabled={questActing === q.id}
+                                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'rgba(43,107,62,0.12)', border: '1px solid rgba(43,107,62,0.35)', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '14px', color: '#2B6B3E', opacity: questActing === q.id ? 0.5 : 1 }}>
+                                        <CheckCircle size={16} /> Approuver ✓
+                                      </button>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                      <input
+                                        value={rejectNoteMap[q.id] || ''}
+                                        onChange={e => setRejectNoteMap(prev => ({ ...prev, [q.id]: e.target.value }))}
+                                        placeholder="Note pour le rejet (optionnel)…"
+                                        style={{ width: '100%', padding: '10px 12px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', fontSize: '13px', color: '#3D4852', outline: 'none', boxSizing: 'border-box' }}
+                                      />
+                                      <button
+                                        onClick={() => handleReject(q)}
+                                        disabled={questActing === q.id}
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '13px', color: '#ef4444', opacity: questActing === q.id ? 0.5 : 1 }}>
+                                        Rejeter ce questionnaire
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {q.status === 'approved' && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px', background: 'rgba(43,107,62,0.06)', border: '1px solid rgba(43,107,62,0.2)', borderRadius: '10px' }}>
+                                    <CheckCircle size={16} color="#2B6B3E" />
+                                    <span style={{ fontSize: '13px', color: '#2B6B3E', fontWeight: 600 }}>
+                                      Approuvé le {q.reviewed_at ? new Date(q.reviewed_at).toLocaleDateString('fr-FR') : '—'} par {q.reviewed_by || 'admin'}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })()}

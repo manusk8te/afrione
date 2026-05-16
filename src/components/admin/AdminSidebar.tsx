@@ -9,6 +9,7 @@ export const ADMIN_NAV = [
   { id: 'kyc',          label: 'Validations KYC', short: 'KYC',          icon: '🪪' },
   { id: 'missions',     label: 'Missions',         short: 'Missions',     icon: '📋' },
   { id: 'artisans',     label: 'Artisans',         short: 'Artisans',     icon: '🔧' },
+  { id: 'questionnaire', label: 'Questionnaires',  short: 'Q&A',          icon: '📝' },
   { id: 'entreprises',  label: 'Entreprises',      short: 'Entrep.',      icon: '🏢' },
   { id: 'transactions', label: 'Transactions',     short: 'Transactions', icon: '💳' },
   { id: 'utilisateurs', label: 'Utilisateurs',     short: 'Users',        icon: '👥' },
@@ -22,6 +23,7 @@ interface Props {
   litigeCount?: number
   litigeNotif?: boolean
   adminName?: string
+  questionnaireCount?: number
 }
 
 export default function AdminSidebar({
@@ -30,6 +32,7 @@ export default function AdminSidebar({
   litigeCount = 0,
   litigeNotif = false,
   adminName = 'Admin',
+  questionnaireCount = 0,
 }: Props) {
   const pathname = usePathname()
   const isPrixPage = pathname === '/admin/prix'
@@ -53,6 +56,16 @@ export default function AdminSidebar({
         flexShrink: 0,
       }}>
         {litigeCount}
+      </span>
+    ) : item.id === 'questionnaire' && questionnaireCount > 0 ? (
+      <span style={{
+        marginLeft: 'auto', minWidth: '18px', height: '18px', borderRadius: '9px',
+        background: '#E85D26',
+        color: 'white', fontSize: '10px', fontWeight: 700,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px',
+        flexShrink: 0,
+      }}>
+        {questionnaireCount}
       </span>
     ) : null
 
@@ -88,6 +101,13 @@ export default function AdminSidebar({
             position: 'absolute', top: '4px', right: '4px',
             width: '8px', height: '8px', borderRadius: '50%',
             background: litigeNotif ? '#ef4444' : 'rgba(239,68,68,0.6)',
+          }} />
+        )}
+        {compact && questionnaireCount > 0 && item.id === 'questionnaire' && (
+          <span style={{
+            position: 'absolute', top: '4px', right: '4px',
+            width: '8px', height: '8px', borderRadius: '50%',
+            background: '#E85D26',
           }} />
         )}
       </>

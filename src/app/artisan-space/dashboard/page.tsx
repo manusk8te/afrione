@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   Zap, Star, Clock, CheckCircle, Wallet, Camera, Calendar,
   Edit3, Save, X, Plus, Trash2, MapPin, Briefcase, Upload,
-  Image as ImageIcon, MessageCircle, Bell, Building2, Search, LogOut
+  Image as ImageIcon, MessageCircle, Bell, Building2, Search, LogOut, ClipboardList
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -17,12 +17,13 @@ const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255
 const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
 
 const TABS = [
-  { id: 'missions',   label: 'Missions',    icon: Clock },
-  { id: 'messages',   label: 'Messages',    icon: MessageCircle },
-  { id: 'profile',    label: 'Mon Profil',  icon: Edit3 },
-  { id: 'portfolio',  label: 'Portfolio',   icon: ImageIcon },
-  { id: 'wallet',     label: 'Portefeuille',icon: Wallet },
-  { id: 'materiaux',  label: 'Matériaux',   icon: Briefcase, href: '/artisan-space/materiaux' },
+  { id: 'missions',      label: 'Missions',    icon: Clock },
+  { id: 'messages',      label: 'Messages',    icon: MessageCircle },
+  { id: 'profile',       label: 'Mon Profil',  icon: Edit3 },
+  { id: 'portfolio',     label: 'Portfolio',   icon: ImageIcon },
+  { id: 'wallet',        label: 'Portefeuille',icon: Wallet },
+  { id: 'materiaux',     label: 'Matériaux',   icon: Briefcase, href: '/artisan-space/materiaux' },
+  { id: 'questionnaire', label: 'Questionnaire', icon: ClipboardList, href: '/artisan-space/questionnaire' },
 ]
 
 const QUARTIERS_ABJ = [
@@ -62,6 +63,9 @@ export default function ArtisanDashboardPage() {
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([])
   const [confirmDeletePhoto, setConfirmDeletePhoto] = useState<string | null>(null)
 
+  // Questionnaire
+  const [questionnaireStatus, setQuestionnaireStatus] = useState<'pending'|'approved'|'rejected'|null|'none'>('none')
+
   // Entreprise
   const [artisanEntreprise, setArtisanEntreprise] = useState<any>(null)
   const [pendingRequest, setPendingRequest] = useState<any>(null)
@@ -98,6 +102,19 @@ export default function ArtisanDashboardPage() {
 
       if (artisanData) {
         setArtisan(artisanData)
+
+        // Fetch questionnaire status
+        try {
+          const questRes = await fetch('/api/artisan-questionnaire', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          })
+          if (questRes.ok) {
+            const questData = await questRes.json()
+            setQuestionnaireStatus(questData ? questData.status : null)
+          }
+        } catch {
+          setQuestionnaireStatus(null)
+        }
 
         if (artisanData.entreprise_id) {
           const { data: ent } = await supabase
@@ -492,6 +509,56 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET MISSIONS ===== */}
         {tab === 'missions' && (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+
+            {/* Questionnaire banner — si pas encore soumis */}
+            {(questionnaireStatus === null || questionnaireStatus === 'none') && (
+              <Link href="/artisan-space/questionnaire" style={{ textDecoration: 'none' }}>
+                <div style={{
+                  background: 'rgba(232,93,38,0.05)', border: '1.5px dashed rgba(232,93,38,0.35)',
+                  borderRadius: '16px', padding: '16px 20px',
+                  display: 'flex', alignItems: 'center', gap: '14px',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(232,93,38,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ClipboardList size={20} color="#E85D26" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#E85D26', marginBottom: '3px' }}>
+                      Complétez votre questionnaire artisan
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.5 }}>
+                      Renseignez vos tarifs, zones et matériaux pour optimiser votre visibilité et vos devis AfriOne.
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '20px', color: '#E85D26', fontWeight: 700, flexShrink: 0 }}>→</div>
+                </div>
+              </Link>
+            )}
+
+            {questionnaireStatus === 'pending' && (
+              <div style={{
+                background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.25)',
+                borderRadius: '14px', padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: '12px',
+              }}>
+                <ClipboardList size={16} color="#C9A84C" />
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#C9A84C' }}>Questionnaire en cours de validation</span>
+                  <span style={{ fontSize: '12px', color: '#6B7280', marginLeft: '8px' }}>— sous 24-48h</span>
+                </div>
+              </div>
+            )}
+
+            {questionnaireStatus === 'approved' && (
+              <div style={{
+                background: 'rgba(43,107,62,0.06)', border: '1px solid rgba(43,107,62,0.2)',
+                borderRadius: '14px', padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: '12px',
+              }}>
+                <CheckCircle size={16} color="#2B6B3E" />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#2B6B3E' }}>Questionnaire validé — profil optimisé</span>
+              </div>
+            )}
 
             {/* Agenda — interventions programmées */}
             {missions.filter(m => m.status === 'scheduled' && m.scheduled_at).length > 0 && (
