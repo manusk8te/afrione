@@ -89,8 +89,9 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
 
   if (name === 'calculate_final_price') {
     const { hours, hourly_rate, materials_total, urgency = 'medium', quartier = 'Cocody' } = args
+    const LABOR_CAP   = 30_000
     const degressif   = hours <= 2 ? 1.0 : hours <= 4 ? 0.85 : hours <= 8 ? 0.70 : 0.60
-    const labor_final = Math.round(hourly_rate * hours * degressif * (1 + (urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0)))
+    const labor_final = Math.min(Math.round(hourly_rate * hours * degressif * (1 + (urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0))), LABOR_CAP)
     const transport   = getTransport(quartier)
     const subtotal    = labor_final + (materials_total || 0) + transport
     const commission  = Math.round(subtotal * 0.10)
