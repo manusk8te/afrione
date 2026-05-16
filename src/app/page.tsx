@@ -339,7 +339,7 @@ export default function HomePage() {
       {/* ━━━━ HOW IT WORKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{ background: W, padding: '80px 16px' }}>
         <div className="page-container">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_1.7fr] gap-16 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_0.85fr] gap-12 items-start">
 
             <div>
               <span style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>COMMENT ÇA MARCHE</span>
@@ -381,6 +381,14 @@ export default function HomePage() {
                 )
               })}
             </motion.div>
+
+            {/* Photo présentation */}
+            <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
+              className="hidden md:block"
+              style={{ borderRadius: '24px', overflow: 'hidden', position: 'sticky', top: '96px' }}>
+              <img src="/how-it-works.jpg" alt="AfriOne en action" style={{ width: '100%', display: 'block', objectFit: 'cover' }} />
+            </motion.div>
+
           </div>
         </div>
       </section>
