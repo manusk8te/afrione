@@ -86,6 +86,12 @@ export default function WarRoomPage() {
   const [diagData, setDiagData]           = useState<any>(null)
   const [showDiagPanel, setShowDiagPanel] = useState(true)
 
+  // Noms réels des participants (bypass RLS via mission-brief API)
+  const [participants, setParticipants] = useState<{
+    client:  { name: string | null; avatar_url: string | null }
+    artisan: { name: string | null; avatar_url: string | null; metier: string | null }
+  } | null>(null)
+
   // Mise à jour matériaux achetés (artisan, mission en cours)
   const [showMatUpdate, setShowMatUpdate]     = useState(false)
   const [purchasedMats, setPurchasedMats]     = useState<{name:string;qty:number;prix_unitaire:number}[]>([])
@@ -194,11 +200,13 @@ export default function WarRoomPage() {
 
       setMessages(msgs || [])
 
-      // Charger le diagnostic : fiche pour l'artisan + résumé pré-rempli pour le client
+      // Charger le diagnostic + noms des participants (bypass RLS via supabaseAdmin)
       try {
         const diagRes = await fetch(`/api/mission-brief?mission_id=${missionId}`)
         if (diagRes.ok) {
           const diagJson = await diagRes.json()
+          // Participants — toujours disponibles même sans diagnostic
+          if (diagJson.participants) setParticipants(diagJson.participants)
           if (diagJson.diag) {
             const diag = diagJson.diag
             // Normalize items_needed to string[] for rendering
@@ -209,7 +217,7 @@ export default function WarRoomPage() {
             }
             setDiagData(diag)
             if (mr === 'client') {
-              const artName = missionData?.artisan_pros?.users?.name || 'Artisan'
+              const artName = diagJson.participants?.artisan?.name || missionData?.artisan_pros?.users?.name || 'Artisan'
               const greeting = diag.ai_summary
                 ? `Bonjour ${artName}, ${diag.ai_summary.charAt(0).toLowerCase()}${diag.ai_summary.slice(1)}`
                 : `Bonjour ${artName}, je vous contacte pour une intervention.`
@@ -895,13 +903,15 @@ export default function WarRoomPage() {
 
   const status = mission?.status || 'negotiation'
   const statusInfo = STATUS_CONFIG[status] || STATUS_CONFIG.negotiation
-  const artisanName   = mission?.artisan_pros?.users?.name   || 'Artisan'
-  const artisanMetier = mission?.artisan_pros?.metier         || ''
-  const artisanPhone  = mission?.artisan_pros?.users?.phone   || null
-  const clientName    = mission?.users?.name || 'Client'
-  // Nom et avatar de l'interlocuteur (l'autre personne, pas soi-même)
+  // Noms réels via API (bypass RLS) avec fallback sur les joins Supabase
+  const artisanName   = participants?.artisan?.name   || mission?.artisan_pros?.users?.name   || 'Artisan'
+  const artisanMetier = participants?.artisan?.metier  || mission?.artisan_pros?.metier         || ''
+  const artisanPhone  = mission?.artisan_pros?.users?.phone || null
+  const clientName    = participants?.client?.name    || mission?.users?.name || 'Client'
   const otherName     = isArtisan ? clientName : artisanName
-  const otherAvatar   = isArtisan ? mission?.users?.avatar_url : mission?.artisan_pros?.users?.avatar_url
+  const otherAvatar   = isArtisan
+    ? (participants?.client?.avatar_url  || mission?.users?.avatar_url)
+    : (participants?.artisan?.avatar_url || mission?.artisan_pros?.users?.avatar_url)
   const otherSub      = isArtisan ? 'Client' : artisanMetier
   const isClosed = status === 'completed' || status === 'cancelled'
 
@@ -1762,7 +1772,7 @@ export default function WarRoomPage() {
               )
             }
 
-            if (msg.type === 'devis') {
+            if (msg.type === 'devis' || msg.type === 'quotation') {
               let devisData: any = {}
               try { devisData = JSON.parse(msg.text) } catch {}
               const canAct = !isMe && status !== 'en_cours' && status !== 'completed' && status !== 'cancelled'

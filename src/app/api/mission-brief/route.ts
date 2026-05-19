@@ -13,13 +13,32 @@ export async function GET(req: NextRequest) {
     console.warn('[mission-brief] SUPABASE_SERVICE_ROLE_KEY manquant — RLS bloquera les lectures')
   }
 
-  const { data: diag } = await supabaseAdmin
-    .from('diagnostics')
-    .select('*')
-    .eq('mission_id', mission_id)
-    .maybeSingle()
+  // Récupérer le diagnostic + les participants de la mission (supabaseAdmin bypass RLS)
+  const [{ data: diag }, { data: mission }] = await Promise.all([
+    supabaseAdmin.from('diagnostics').select('*').eq('mission_id', mission_id).maybeSingle(),
+    supabaseAdmin
+      .from('missions')
+      .select('client_id, artisan_id, artisan_pros(user_id, metier), users!missions_client_id_fkey(name, avatar_url)')
+      .eq('id', mission_id)
+      .maybeSingle(),
+  ])
 
-  if (!diag) return NextResponse.json({ diag: null })
+  // Nom + avatar artisan via user_id (bypass RLS)
+  let artisanUser: { name: string | null; avatar_url: string | null } = { name: null, avatar_url: null }
+  const artisanUserId = (mission?.artisan_pros as any)?.user_id
+  if (artisanUserId) {
+    const { data: au } = await supabaseAdmin.from('users').select('name, avatar_url').eq('id', artisanUserId).maybeSingle()
+    if (au) artisanUser = au
+  }
+
+  const clientUser = (mission as any)?.users as { name: string | null; avatar_url: string | null } | null
+
+  const participants = {
+    client:  { name: clientUser?.name  || null, avatar_url: clientUser?.avatar_url  || null },
+    artisan: { name: artisanUser.name  || null, avatar_url: artisanUser.avatar_url  || null, metier: (mission?.artisan_pros as any)?.metier || null },
+  }
+
+  if (!diag) return NextResponse.json({ diag: null, participants })
 
   let rawCtx: any = {}
   try { rawCtx = JSON.parse(diag.raw_text || '{}') } catch {}
@@ -36,5 +55,6 @@ export async function GET(req: NextRequest) {
       duration_estimate: rawCtx.duration_estimate || '',
       photos:          rawCtx.photos || [],
     },
+    participants,
   })
 }
