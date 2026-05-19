@@ -351,6 +351,7 @@ export default function WarRoomPage() {
           interval: { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
           decomp:   { labor, materials, transport, premium },
         })
+        setDevisAmount(String(d.total || 0))
       }
     } catch {}
     setPricingSugLoading(false)
@@ -361,20 +362,15 @@ export default function WarRoomPage() {
     await loadPricingSuggestion()
   }
 
-  // Envoyer un devis — prix calculé par AfriOne, non modifiable par l'artisan
+  // Envoyer un devis — prix proposé par l'artisan (référence IA en suggestion)
   const sendDevis = async () => {
-    const matMessages = messages
-      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
-      .map(m => { try { return JSON.parse(m.text) } catch { return null } })
-      .filter(Boolean)
-    const extraMat = matMessages.reduce((s: number, m: any) => s + (m.total || 0), 0)
-    const amount   = (pricingSuggestion?.estimate ?? 0) + extraMat
-    if (!amount || amount <= 0) { toast.error('Prix non calculé — attendez le chargement'); return }
+    const amount = parseInt(devisAmount.replace(/\D/g, '')) || 0
+    if (!amount || amount <= 0) { toast.error('Entrez un montant valide'); return }
     setActing(true)
-    const payload = JSON.stringify({ amount, description: devisDesc.trim(), calculated_by: 'afrione_agent' })
+    const payload = JSON.stringify({ amount, description: devisDesc.trim(), ai_estimate: pricingSuggestion?.estimate })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'quotation',
+      sender_role: missionRole, text: payload, type: 'devis',
     })
     if (error) { toast.error('Erreur envoi devis.'); setActing(false); return }
     const rid = getRecipientId(mission, user.id)
@@ -492,7 +488,7 @@ export default function WarRoomPage() {
     const payload = JSON.stringify({ amount, description: `Tarif convenu : ${amount.toLocaleString()} FCFA` })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'quotation',
+      sender_role: missionRole, text: payload, type: 'devis',
     })
     if (!error) {
       const rid = getRecipientId(mission, user.id)
@@ -516,7 +512,7 @@ export default function WarRoomPage() {
         const payload = JSON.stringify({ amount, description: `Contre-proposition client : ${amount.toLocaleString()} FCFA` })
         await supabase.from('chat_history').insert({
           mission_id: missionId, sender_id: user.id,
-          sender_role: missionRole, text: payload, type: 'quotation',
+          sender_role: missionRole, text: payload, type: 'devis',
         })
         if (rid) notifyOther(`Contre-proposition : ${amount.toLocaleString()} FCFA`, rid)
         toast('Contre-proposition envoyée.')
@@ -1206,36 +1202,38 @@ export default function WarRoomPage() {
       {/* ──────────────────────────────────────────────────────────── */}
 
       {/* Header */}
-      <div style={{background:'#FFFFFF',color:'#3D4852',flexShrink:0}}>
-        <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px 12px',maxWidth:'672px',margin:'0 auto'}}>
+      <div style={{background:'#FFFFFF',borderBottom:'1px solid #EDE8DE',color:'#3D4852',flexShrink:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 14px',maxWidth:'672px',margin:'0 auto'}}>
           <Link href={isArtisan ? '/artisan-space/dashboard' : '/dashboard'} style={{color:'#3D4852',display:'flex',alignItems:'center',flexShrink:0}}>
-            <ArrowLeft size={18} />
+            <ArrowLeft size={20} />
           </Link>
-          <div style={{width:'36px',height:'36px',background:'#F5F7FA',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',border:'1px solid rgba(255,255,255,0.1)',overflow:'hidden',flexShrink:0}}>
+          {/* Avatar cercle comme WhatsApp */}
+          <div style={{width:'42px',height:'42px',background:'#F5F0E8',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',overflow:'hidden',flexShrink:0,border:'2px solid #EDE8DE'}}>
             {otherAvatar
               ? <img src={otherAvatar} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
               : isArtisan ? '👤' : '🔧'}
           </div>
+          {/* Nom + sous-titre — zone principale */}
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,fontSize:'14px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{otherName}</div>
-            <div style={{fontSize:'11px',color:'#6B7280'}}>{otherSub}</div>
+            <div style={{fontWeight:700,fontSize:'16px',color:'#1A1A1A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',lineHeight:'1.2'}}>
+              {loading ? '…' : otherName}
+            </div>
+            <div style={{fontSize:'12px',color:statusInfo.color,fontWeight:500,marginTop:'1px',display:'flex',alignItems:'center',gap:'5px'}}>
+              <span style={{display:'inline-block',width:'7px',height:'7px',borderRadius:'50%',background:statusInfo.color,flexShrink:0}} />
+              {statusInfo.label.replace(/^[^\w\s]*\s*/,'')}
+            </div>
           </div>
-          {/* Appel rapide artisan (client uniquement) */}
+          {/* Actions à droite */}
           {!isArtisan && artisanPhone && (
-            <a href={`tel:${artisanPhone}`} style={{background:'rgba(43,107,62,0.15)',border:'1px solid rgba(43,107,62,0.4)',borderRadius:'8px',padding:'6px 10px',color:'#2B6B3E',fontSize:'18px',flexShrink:0,display:'flex',alignItems:'center',textDecoration:'none'}} title={`Appeler ${artisanName}`}>
+            <a href={`tel:${artisanPhone}`} style={{background:'rgba(43,107,62,0.1)',border:'1px solid rgba(43,107,62,0.3)',borderRadius:'50%',width:'36px',height:'36px',color:'#2B6B3E',fontSize:'17px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',textDecoration:'none'}} title={`Appeler ${artisanName}`}>
               📞
             </a>
           )}
-          {/* Bouton rouvrir fiche technique (artisan seulement) */}
           {isArtisan && diagData && !showDiagPanel && (
-            <button onClick={() => setShowDiagPanel(true)} style={{background:'rgba(232,93,38,0.15)',border:'1px solid rgba(232,93,38,0.4)',borderRadius:'8px',padding:'4px 8px',cursor:'pointer',color:'#E85D26',fontSize:'10px',fontWeight:700,flexShrink:0,display:'flex',alignItems:'center',gap:'4px'}}>
+            <button onClick={() => setShowDiagPanel(true)} style={{background:'rgba(232,93,38,0.1)',border:'1px solid rgba(232,93,38,0.3)',borderRadius:'8px',padding:'5px 9px',cursor:'pointer',color:'#E85D26',fontSize:'11px',fontWeight:700,flexShrink:0}}>
               📋 Fiche
             </button>
           )}
-          {/* Badge statut */}
-          <span style={{fontSize:'10px',fontWeight:600,color:statusInfo.color,background:statusInfo.bg,padding:'3px 8px',borderRadius:'20px',flexShrink:0,border:`1px solid ${statusInfo.color}33`,whiteSpace:'nowrap',maxWidth:'130px',overflow:'hidden',textOverflow:'ellipsis'}}>
-            {statusInfo.label}
-          </span>
         </div>
       </div>
 
@@ -1489,20 +1487,19 @@ export default function WarRoomPage() {
             )}
 
             <div style={{marginBottom:'10px'}}>
-              <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>MONTANT CALCULÉ PAR AFRIONE (FCFA)</label>
-              <div style={{background:'#F5F7FA',border:'1.5px solid #E85D26',borderRadius:'10px',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                <span style={{fontFamily:'Tahoma',fontSize:'22px',fontWeight:700,color:'#3D4852'}}>
-                  {(() => {
-                    const matExtra = messages
-                      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
-                      .map(m => { try { return JSON.parse(m.text) } catch { return null } })
-                      .filter(Boolean)
-                      .reduce((s: number, m: any) => s + (m.total || 0), 0)
-                    return ((pricingSuggestion?.estimate ?? 0) + matExtra).toLocaleString('fr')
-                  })()} FCFA
-                </span>
-                <span style={{fontSize:'10px',color:'#9CA3AF',fontFamily:'Tahoma'}}>🔒 Fixé par AfriOne</span>
-              </div>
+              <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>VOTRE PRIX (FCFA)</label>
+              <input
+                type="number"
+                value={devisAmount}
+                onChange={e => setDevisAmount(e.target.value)}
+                placeholder={pricingSuggestion ? String(pricingSuggestion.estimate) : 'Ex: 25000'}
+                style={{width:'100%',background:'#F5F7FA',border:'1.5px solid #E85D26',borderRadius:'10px',padding:'12px 16px',fontFamily:'Tahoma',fontSize:'22px',fontWeight:700,color:'#3D4852',boxSizing:'border-box'}}
+              />
+              {pricingSuggestion && (
+                <div style={{fontSize:'10px',color:'#9CA3AF',marginTop:'4px'}}>
+                  Référence AfriOne : {pricingSuggestion.estimate.toLocaleString('fr')} FCFA · Fourchette [{pricingSuggestion.interval.low.toLocaleString('fr')} – {pricingSuggestion.interval.high.toLocaleString('fr')}]
+                </div>
+              )}
             </div>
             <div style={{marginBottom:'12px'}}>
               <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>DESCRIPTION DU TRAVAIL</label>
@@ -1765,8 +1762,7 @@ export default function WarRoomPage() {
               )
             }
 
-            // Carte devis (quotation = valeur en base, devis = legacy)
-            if (msg.type === 'quotation' || msg.type === 'devis') {
+            if (msg.type === 'devis') {
               let devisData: any = {}
               try { devisData = JSON.parse(msg.text) } catch {}
               const canAct = !isMe && status !== 'en_cours' && status !== 'completed' && status !== 'cancelled'
