@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { releaseEscrow, refundEscrow } from '@/lib/escrow'
 
 export const dynamic = 'force-dynamic'
 
@@ -155,10 +156,20 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'close_litige') {
-    await supabaseAdmin.from('missions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', missionId)
+    const { data: litigeMission } = await supabaseAdmin
+      .from('missions').select('artisan_id').eq('id', missionId).single()
+    const artisanId = litigeMission?.artisan_id || null
+
+    if (favor === 'artisan') {
+      await releaseEscrow(missionId, artisanId)
+    } else {
+      await refundEscrow(missionId, artisanId)
+      await supabaseAdmin.from('missions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', missionId)
+    }
+
     const msg = favor === 'client'
-      ? "⚖️ Litige résolu par l'admin — décision en faveur du client. Remboursement en cours."
-      : "⚖️ Litige résolu par l'admin — décision en faveur de l'artisan. Paiement validé."
+      ? "⚖️ Litige résolu par l'admin — décision en faveur du client. Remboursement effectué."
+      : "⚖️ Litige résolu par l'admin — décision en faveur de l'artisan. Paiement validé et libéré."
     await supabaseAdmin.from('chat_history').insert({ mission_id: missionId, sender_id: adminId, sender_role: 'admin', text: msg, type: 'system' })
     return NextResponse.json({ ok: true })
   }

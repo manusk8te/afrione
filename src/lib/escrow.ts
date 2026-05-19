@@ -1,5 +1,38 @@
 import { supabaseAdmin } from '@/lib/supabase'
 
+/**
+ * Rembourse l'escrow vers le client (annulation ou litige en faveur du client).
+ * Décrémente balance_escrow du wallet artisan, marque la transaction 'refunded'.
+ * Ne touche PAS au statut mission — l'appelant le gère.
+ */
+export async function refundEscrow(mission_id: string, artisan_id: string | null) {
+  const { data: tx } = await supabaseAdmin
+    .from('transactions')
+    .select('id, artisan_amount')
+    .eq('mission_id', mission_id)
+    .eq('status', 'escrow')
+    .maybeSingle()
+
+  if (tx && artisan_id) {
+    const { data: wallet } = await supabaseAdmin
+      .from('wallets')
+      .select('id, balance_escrow')
+      .eq('artisan_id', artisan_id)
+      .maybeSingle()
+
+    if (wallet) {
+      await supabaseAdmin.from('wallets').update({
+        balance_escrow: Math.max(0, (wallet.balance_escrow || 0) - (tx.artisan_amount || 0)),
+        updated_at:     new Date().toISOString(),
+      }).eq('artisan_id', artisan_id)
+    }
+
+    await supabaseAdmin.from('transactions').update({
+      status: 'refunded', released_at: new Date().toISOString(),
+    }).eq('id', tx.id)
+  }
+}
+
 export async function releaseEscrow(mission_id: string, artisan_id: string | null) {
   const { data: tx } = await supabaseAdmin
     .from('transactions')

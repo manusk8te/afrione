@@ -60,21 +60,50 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Missing client_reference' }, { status: 400 })
     }
 
-    // 1. Update mission: total_price + status payment
+    // 1. Idempotence — rejeter si cet event a déjà été traité
+    if (sessionId) {
+      const { data: existing } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('wave_transaction_id', sessionId)
+        .maybeSingle()
+      if (existing) {
+        console.log('[Wave Webhook] Event déjà traité, ignoré:', sessionId)
+        return Response.json({ received: true })
+      }
+    }
+
+    const totalAmount   = Number(amount)
+    const platformFee   = Math.round(totalAmount * 0.12)
+    const artisanAmount = totalAmount - platformFee
+
+    // 2. Update mission: total_price + status payment
     await supabase
       .from('missions')
-      .update({ total_price: Number(amount), status: 'payment' })
+      .update({ total_price: totalAmount, status: 'payment' })
       .eq('id', missionId)
 
-    // 2. Get mission to find artisan wallet
+    // 3. Get mission to find artisan
     const { data: mission } = await supabase
       .from('missions')
       .select('artisan_id, client_id')
       .eq('id', missionId)
       .single()
 
+    // 4. Insérer la transaction en escrow (clé pour releaseEscrow)
+    await supabase.from('transactions').insert({
+      mission_id:           missionId,
+      wave_transaction_id:  sessionId || null,
+      amount:               totalAmount,
+      platform_fee:         platformFee,
+      artisan_amount:       artisanAmount,
+      status:               'escrow',
+      payment_method:       'wave',
+      created_at:           new Date().toISOString(),
+    })
+
     if (mission?.artisan_id) {
-      // 3. Credit escrow on artisan wallet
+      // 5. Créditer l'escrow du wallet artisan
       const { data: wallet } = await supabase
         .from('wallets')
         .select('*')
@@ -83,25 +112,25 @@ export async function POST(request: Request) {
 
       if (wallet) {
         await supabase.from('wallets').update({
-          balance_escrow: (wallet.balance_escrow || 0) + Number(amount),
+          balance_escrow: (wallet.balance_escrow || 0) + artisanAmount,
         }).eq('artisan_id', mission.artisan_id)
       } else {
         await supabase.from('wallets').insert({
-          artisan_id: mission.artisan_id,
-          balance_escrow: Number(amount),
+          artisan_id:        mission.artisan_id,
+          balance_escrow:    artisanAmount,
           balance_available: 0,
-          total_earned: 0,
+          total_earned:      0,
         })
       }
     }
 
-    // 4. System message in chat
+    // 6. Message système dans le chat
     await supabase.from('chat_history').insert({
-      mission_id: missionId,
-      sender_id: mission?.client_id,
+      mission_id:  missionId,
+      sender_id:   mission?.client_id,
       sender_role: 'client',
-      text: `💳 Paiement de ${Number(amount).toLocaleString('fr-FR')} FCFA confirmé via Wave (réf. ${sessionId?.slice(0, 8)}). Fonds sécurisés jusqu'à la fin de la mission.`,
-      type: 'system',
+      text:        `💳 Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé via Wave (réf. ${sessionId?.slice(0, 8)}). Fonds sécurisés jusqu'à la fin de la mission.`,
+      type:        'system',
     })
 
     return Response.json({ received: true })
