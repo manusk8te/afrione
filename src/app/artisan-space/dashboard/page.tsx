@@ -334,8 +334,6 @@ export default function ArtisanDashboardPage() {
         bio,
         specialties,
         quartiers,
-        tarif_min: tariMin,
-        years_experience: yearsExp,
         certifications,
         updated_at: new Date().toISOString(),
       })
@@ -743,24 +741,14 @@ export default function ArtisanDashboardPage() {
             {/* Infos de base */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
               <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'16px'}}>Informations</h3>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',background:'rgba(232,93,38,0.04)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'10px'}}>
                 <div>
-                  <label style={{fontSize:'13px',color:'#6B7280',display:'block',marginBottom:'6px'}}>Tarif minimum (FCFA)</label>
-                  <input
-                    type="number"
-                    value={tariMin}
-                    onChange={e => setTarifMin(Number(e.target.value))}
-                    style={{width:'100%',padding:'10px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
-                  />
+                  <div style={{fontSize:'12px',color:'#6B7280',marginBottom:'2px'}}>Années d'expérience</div>
+                  <div style={{fontSize:'16px',fontWeight:700,color:'#3D4852',fontFamily:'Tahoma'}}>{yearsExp > 0 ? `${yearsExp} ans` : '—'}</div>
                 </div>
-                <div>
-                  <label style={{fontSize:'13px',color:'#6B7280',display:'block',marginBottom:'6px'}}>Années d'expérience</label>
-                  <input
-                    type="number"
-                    value={yearsExp}
-                    onChange={e => setYearsExp(Number(e.target.value))}
-                    style={{width:'100%',padding:'10px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
-                  />
+                <div style={{fontSize:'11px',color:'#E85D26',fontWeight:600,textAlign:'right'}}>
+                  🔒 Fixé via questionnaire<br/>
+                  <span style={{color:'#9CA3AF',fontWeight:400}}>validé par AfriOne</span>
                 </div>
               </div>
             </div>
