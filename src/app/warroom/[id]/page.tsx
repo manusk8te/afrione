@@ -359,7 +359,6 @@ export default function WarRoomPage() {
           interval: { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
           decomp:   { labor, materials, transport, premium },
         })
-        setDevisAmount(String(d.total || 0))
       }
     } catch {}
     setPricingSugLoading(false)
@@ -370,12 +369,17 @@ export default function WarRoomPage() {
     await loadPricingSuggestion()
   }
 
-  // Envoyer un devis — prix proposé par l'artisan (référence IA en suggestion)
+  // Envoyer un devis — prix IA + extras matériaux, non modifiable par l'artisan
   const sendDevis = async () => {
-    const amount = parseInt(devisAmount.replace(/\D/g, '')) || 0
-    if (!amount || amount <= 0) { toast.error('Entrez un montant valide'); return }
+    const matMessages = messages
+      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
+      .map(m => { try { return JSON.parse(m.text) } catch { return null } })
+      .filter(Boolean)
+    const extraMat = matMessages.reduce((s: number, m: any) => s + (m.total || 0), 0)
+    const amount   = (pricingSuggestion?.estimate ?? 0) + extraMat
+    if (!amount || amount <= 0) { toast.error('Prix non calculé — attendez le chargement IA'); return }
     setActing(true)
-    const payload = JSON.stringify({ amount, description: devisDesc.trim(), ai_estimate: pricingSuggestion?.estimate })
+    const payload = JSON.stringify({ amount, description: devisDesc.trim(), calculated_by: 'afrione_agent' })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
       sender_role: missionRole, text: payload, type: 'devis',
@@ -1497,17 +1501,23 @@ export default function WarRoomPage() {
             )}
 
             <div style={{marginBottom:'10px'}}>
-              <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>VOTRE PRIX (FCFA)</label>
-              <input
-                type="number"
-                value={devisAmount}
-                onChange={e => setDevisAmount(e.target.value)}
-                placeholder={pricingSuggestion ? String(pricingSuggestion.estimate) : 'Ex: 25000'}
-                style={{width:'100%',background:'#F5F7FA',border:'1.5px solid #E85D26',borderRadius:'10px',padding:'12px 16px',fontFamily:'Tahoma',fontSize:'22px',fontWeight:700,color:'#3D4852',boxSizing:'border-box'}}
-              />
+              <label style={{fontSize:'11px',fontWeight:600,color:'#6B7280',display:'block',marginBottom:'4px'}}>MONTANT CALCULÉ PAR AFRIONE (FCFA)</label>
+              <div style={{background:'#F5F7FA',border:'1.5px solid #E85D26',borderRadius:'10px',padding:'12px 16px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span style={{fontFamily:'Tahoma',fontSize:'22px',fontWeight:700,color:'#3D4852'}}>
+                  {(() => {
+                    const matExtra = messages
+                      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
+                      .map(m => { try { return JSON.parse(m.text) } catch { return null } })
+                      .filter(Boolean)
+                      .reduce((s: number, m: any) => s + (m.total || 0), 0)
+                    return ((pricingSuggestion?.estimate ?? 0) + matExtra).toLocaleString('fr')
+                  })()} FCFA
+                </span>
+                <span style={{fontSize:'10px',color:'#9CA3AF',fontFamily:'Tahoma'}}>🔒 Fixé par AfriOne</span>
+              </div>
               {pricingSuggestion && (
                 <div style={{fontSize:'10px',color:'#9CA3AF',marginTop:'4px'}}>
-                  Référence AfriOne : {pricingSuggestion.estimate.toLocaleString('fr')} FCFA · Fourchette [{pricingSuggestion.interval.low.toLocaleString('fr')} – {pricingSuggestion.interval.high.toLocaleString('fr')}]
+                  Fourchette : [{pricingSuggestion.interval.low.toLocaleString('fr')} – {pricingSuggestion.interval.high.toLocaleString('fr')}] FCFA · Ajustable via matériaux ou temps
                 </div>
               )}
             </div>
