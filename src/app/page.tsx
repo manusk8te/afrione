@@ -199,21 +199,6 @@ export default function HomePage() {
                 </Link>
               </motion.div>
 
-              {/* Stats */}
-              <motion.div variants={stagger} className="flex flex-wrap gap-4 justify-center">
-                {STATS_DISPLAY.map(s => (
-                  <motion.div key={s.label} variants={fadeUp}>
-                    <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px', padding: '20px', minWidth: '148px', textAlign: 'left' }}>
-                      <div style={{ ...syne, fontWeight: 700, fontSize: '28px', color: 'white', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                        {s.value}
-                      </div>
-                      <div style={{ ...mono, fontSize: '10px', color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.07em', marginTop: '8px' }}>
-                        {s.label}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
             </motion.div>
           </div>
 
