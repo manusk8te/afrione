@@ -384,7 +384,7 @@ export default function WarRoomPage() {
       mission_id: missionId, sender_id: user.id,
       sender_role: missionRole, text: payload, type: 'devis',
     })
-    if (error) { console.error('[sendDevis]', error); toast.error(error.message || 'Erreur envoi devis.'); setActing(false); return }
+    if (error) { toast.error('Erreur envoi devis.'); setActing(false); return }
     const rid = getRecipientId(mission, user.id)
     if (rid) notifyOther(`Devis AfriOne : ${amount.toLocaleString('fr')} FCFA`, rid)
     setShowDevis(false)
