@@ -14,6 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
+import { startUrgentDispatch } from '@/lib/dispatch'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,14 +84,15 @@ export async function POST(request: Request) {
       .update({ total_price: totalAmount, status: 'payment' })
       .eq('id', missionId)
 
-    // 3. Get mission to find artisan
+    // 3. Get mission to find artisan + mode
     const { data: mission } = await supabase
       .from('missions')
-      .select('artisan_id, client_id')
+      .select('artisan_id, client_id, mode, category')
       .eq('id', missionId)
       .single()
 
-    // 4. Insérer la transaction en escrow (clé pour releaseEscrow)
+    // 4. Insérer la transaction en escrow
+    // Pour le mode urgent, artisan_amount est provisoire (artisan pas encore assigné)
     await supabase.from('transactions').insert({
       mission_id:           missionId,
       wave_transaction_id:  sessionId || null,
@@ -102,8 +104,21 @@ export async function POST(request: Request) {
       created_at:           new Date().toISOString(),
     })
 
-    if (mission?.artisan_id) {
-      // 5. Créditer l'escrow du wallet artisan
+    if (mission?.mode === 'urgent') {
+      // 5a. Mode Urgent — ne pas créditer le wallet (artisan pas encore assigné)
+      // Déclencher le dispatch immédiatement après confirmation du paiement
+      await supabase.from('chat_history').insert({
+        mission_id:  missionId,
+        sender_id:   mission.client_id,
+        sender_role: 'system',
+        sender_type: 'afrione_system',
+        text:        `💳 Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé. Recherche d'un artisan en cours...`,
+        type:        'system',
+      })
+
+      await startUrgentDispatch(missionId, mission.client_id, mission.category)
+    } else if (mission?.artisan_id) {
+      // 5b. Mode Standard/Libre — créditer l'escrow du wallet artisan directement
       const { data: wallet } = await supabase
         .from('wallets')
         .select('*')
@@ -122,16 +137,16 @@ export async function POST(request: Request) {
           total_earned:      0,
         })
       }
-    }
 
-    // 6. Message système dans le chat
-    await supabase.from('chat_history').insert({
-      mission_id:  missionId,
-      sender_id:   mission?.client_id,
-      sender_role: 'client',
-      text:        `💳 Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé via Wave (réf. ${sessionId?.slice(0, 8)}). Fonds sécurisés jusqu'à la fin de la mission.`,
-      type:        'system',
-    })
+      await supabase.from('chat_history').insert({
+        mission_id:  missionId,
+        sender_id:   mission?.client_id,
+        sender_role: 'system',
+        sender_type: 'afrione_system',
+        text:        `💳 Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé via Wave (réf. ${sessionId?.slice(0, 8)}). Fonds sécurisés jusqu'à la fin de la mission.`,
+        type:        'system',
+      })
+    }
 
     return Response.json({ received: true })
   }

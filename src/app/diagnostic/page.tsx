@@ -902,9 +902,10 @@ export default function DiagnosticPage() {
               onClick={() => {
                 if (navigating) return
                 setNavigating(true)
+                const priceParam = pricing?.estimate ? `&price=${pricing.estimate}` : ''
                 const href = result.mission_id
-                  ? `/matching?mission=${result.mission_id}&category=${encodeURIComponent(result.category)}`
-                  : `/matching?category=${encodeURIComponent(result.category)}`
+                  ? `/mode-select?mission=${result.mission_id}&category=${encodeURIComponent(result.category)}${priceParam}`
+                  : `/mode-select?category=${encodeURIComponent(result.category)}${priceParam}`
                 router.push(href)
               }}
               disabled={navigating}
@@ -917,8 +918,8 @@ export default function DiagnosticPage() {
               }}
             >
               {navigating
-                ? <><div style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Recherche des artisans…</>
-                : <><CheckCircle size={20} /> Valider et trouver un artisan <ChevronRight size={18} /></>
+                ? <><div style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Chargement…</>
+                : <><CheckCircle size={20} /> Choisir mon mode d'intervention <ChevronRight size={18} /></>
               }
             </button>
 

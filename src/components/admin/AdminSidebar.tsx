@@ -15,6 +15,7 @@ export const ADMIN_NAV = [
   { id: 'utilisateurs', label: 'Utilisateurs',     short: 'Users',        icon: '👥' },
   { id: 'prix',         label: 'Prix matériaux',   short: 'Prix',         icon: '💰', href: '/admin/prix' },
   { id: 'sources',      label: 'Sources de prix',  short: 'Sources',      icon: '🏪', href: '/admin/sources' },
+  { id: 'cas-c',        label: 'Cas Complexes',     short: 'CasC',         icon: '🎬', href: '/admin/cas-c-review' },
 ]
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
   litigeNotif?: boolean
   adminName?: string
   questionnaireCount?: number
+  casCCount?: number
 }
 
 export default function AdminSidebar({
@@ -33,6 +35,7 @@ export default function AdminSidebar({
   litigeNotif = false,
   adminName = 'Admin',
   questionnaireCount = 0,
+  casCCount = 0,
 }: Props) {
   const pathname = usePathname()
   const isPrixPage = pathname === '/admin/prix'
@@ -66,6 +69,16 @@ export default function AdminSidebar({
         flexShrink: 0,
       }}>
         {questionnaireCount}
+      </span>
+    ) : item.id === 'cas-c' && casCCount > 0 ? (
+      <span style={{
+        marginLeft: 'auto', minWidth: '18px', height: '18px', borderRadius: '9px',
+        background: '#C9A84C',
+        color: 'white', fontSize: '10px', fontWeight: 700,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px',
+        flexShrink: 0,
+      }}>
+        {casCCount}
       </span>
     ) : null
 
@@ -108,6 +121,13 @@ export default function AdminSidebar({
             position: 'absolute', top: '4px', right: '4px',
             width: '8px', height: '8px', borderRadius: '50%',
             background: '#E85D26',
+          }} />
+        )}
+        {compact && casCCount > 0 && item.id === 'cas-c' && (
+          <span style={{
+            position: 'absolute', top: '4px', right: '4px',
+            width: '8px', height: '8px', borderRadius: '50%',
+            background: '#C9A84C',
           }} />
         )}
       </>

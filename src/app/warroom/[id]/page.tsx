@@ -285,13 +285,31 @@ export default function WarRoomPage() {
     setInput('')
     setSending(true)
     const { error } = await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text, type: 'text',
+      mission_id:  missionId,
+      sender_id:   user.id,
+      sender_role: missionRole,
+      sender_type: missionRole === 'artisan' ? 'artisan' : 'client',
+      text,
+      type: 'text',
     })
     setSending(false)
     if (error) { toast.error('Message non envoyé.'); setInput(text); return }
     const rid = getRecipientId(mission, user.id)
     if (rid) notifyOther(text, rid)
+
+    // Modération IA — uniquement en mode libre (pas urgent / standard)
+    const isLibre = !['urgent', 'standard'].includes(mission?.mode ?? '')
+    if (isLibre) {
+      fetch('/api/warroom/moderate', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          mission_id:   missionId,
+          messages:     messages.slice(-20),
+          last_message: { text, sender_role: missionRole },
+        }),
+      }).catch(() => {})
+    }
   }
 
   // Ouvrir le formulaire devis + charger suggestion + tiers matériaux
@@ -1743,6 +1761,42 @@ export default function WarRoomPage() {
                   <span style={{fontSize:'12px',color: accepted ? '#2B6B3E' : '#E85D26',background: accepted ? 'rgba(43,107,62,0.08)' : 'rgba(232,93,38,0.08)',padding:'5px 14px',borderRadius:'20px',display:'inline-block',fontWeight:600}}>
                     {accepted ? `✓ Matériau accepté : ${resp.name}` : `✗ Matériau refusé : ${resp.name}`}
                   </span>
+                </div>
+              )
+            }
+
+            // Message AfriOne System — centré, fond orange, logo + italique
+            if (msg.sender_type === 'afrione_system' || (msg.type === 'system' && msg.sender_type === 'afrione_system')) {
+              const severity = msg.metadata?.severity ?? 'info'
+              const borderColor = severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#E85D26' : '#C9A84C'
+              return (
+                <div key={msg.id} style={{ display: 'flex', justifyContent: 'center', padding: '10px 16px' }}>
+                  <div style={{
+                    maxWidth: '88%',
+                    background: 'rgba(232,93,38,0.06)',
+                    border: `1px solid ${borderColor}33`,
+                    borderRadius: '16px',
+                    padding: '10px 16px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                  }}>
+                    {/* Logo AfriOne */}
+                    <div style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '8px', background: 'linear-gradient(135deg, #E85D26, #ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}>
+                      <Zap size={13} color="white" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '9px', fontWeight: 700, color: '#E85D26', letterSpacing: '0.1em', fontFamily: 'Tahoma', marginBottom: '4px' }}>
+                        AFRIONE
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#3D4852', fontStyle: 'italic', margin: 0, lineHeight: 1.5 }}>
+                        {msg.text}
+                      </p>
+                      <div style={{ fontSize: '10px', color: '#8B95A5', marginTop: '4px', fontFamily: 'Tahoma' }}>
+                        {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )
             }

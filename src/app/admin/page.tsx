@@ -63,6 +63,9 @@ export default function AdminDashboard() {
   const [litigeNotif, setLitigeNotif]       = useState(false)
   const [actingLitige, setActingLitige]     = useState(false)
 
+  // Cas C
+  const [casCReports, setCasCReports] = useState<any[]>([])
+
   const flash = (msg: string) => { setActionMsg(msg); setTimeout(() => setActionMsg(''), 4000) }
 
   const triggerScrape = async () => {
@@ -85,7 +88,7 @@ export default function AdminDashboard() {
       if (u?.name) setAdminName(u.name)
     }
 
-    const [statsRes, missionsRes, kycRes, txRes, litigesRes, usersRes, entreprisesRes, questRes] = await Promise.all([
+    const [statsRes, missionsRes, kycRes, txRes, litigesRes, usersRes, entreprisesRes, questRes, casCRes] = await Promise.all([
       fetch('/api/admin/data?type=stats').then(r => r.json()),
       fetch('/api/admin/data?type=missions').then(r => r.json()),
       fetch('/api/admin/data?type=kyc').then(r => r.json()),
@@ -94,6 +97,7 @@ export default function AdminDashboard() {
       fetch('/api/admin/data?type=users').then(r => r.json()),
       fetch('/api/admin/data?type=entreprises').then(r => r.json()),
       fetch('/api/admin/questionnaire').then(r => r.json()),
+      supabase.from('cas_c_reports').select('id, reviewed_by_admin, refund_decision, refund_amount, missions(mode, category, insurance_taken, total_price)').then(r => r.data || []),
     ])
 
     setStats({ missions: statsRes.missions || 0, artisans: statsRes.artisans || 0, revenue: statsRes.revenue || 0 })
@@ -105,6 +109,7 @@ export default function AdminDashboard() {
     setUsers(Array.isArray(usersRes) ? usersRes : [])
     setEntreprises(Array.isArray(entreprisesRes) ? entreprisesRes : [])
     setQuestionnaires(Array.isArray(questRes) ? questRes : [])
+    setCasCReports(Array.isArray(casCRes) ? casCRes : [])
 
     setLoading(false)
   }, [])
@@ -228,6 +233,7 @@ export default function AdminDashboard() {
         litigeNotif={litigeNotif}
         adminName={adminName}
         questionnaireCount={questionnaires.filter(q => q.status === 'pending').length}
+        casCCount={casCReports.filter(r => !r.reviewed_by_admin).length}
       />
 
       {/* Main */}
@@ -299,6 +305,56 @@ export default function AdminDashboard() {
                       <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>{k.label}</div>
                     </div>
                   ))}
+                </div>
+
+                {/* ── Mode breakdown + Cas C ── */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
+                  {/* Missions by mode */}
+                  {[
+                    { mode: 'urgent',   label: 'Mode Urgent',   color: '#E85D26', icon: '⚡' },
+                    { mode: 'standard', label: 'Mode Standard', color: '#2B6B3E', icon: '📋' },
+                    { mode: 'libre',    label: 'Mode Libre',    color: '#6B7280', icon: '🔍' },
+                  ].map(m => (
+                    <div key={m.mode} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
+                      <div style={{ fontSize: '20px', marginBottom: '8px' }}>{m.icon}</div>
+                      <div style={{ fontSize: '24px', fontWeight: 700, color: m.color, fontFamily: 'var(--font-display)' }}>
+                        {missions.filter(ms => ms.mode === m.mode).length}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Cas C + insurance metrics */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
+                  <div style={{ background: '#FFFFFF', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
+                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>🎬</div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#C9A84C', fontFamily: 'var(--font-display)' }}>
+                      {casCReports.filter(r => !r.reviewed_by_admin).length}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>Cas C en attente</div>
+                  </div>
+                  <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
+                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>🛡️</div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#3D4852', fontFamily: 'var(--font-display)' }}>
+                      {missions.filter(m => m.insurance_taken).length}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>Missions assurées</div>
+                  </div>
+                  <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
+                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>💰</div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#3D4852', fontFamily: 'var(--font-display)' }}>
+                      {(missions.filter(m => m.insurance_taken).length * 500).toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>FCFA assurance</div>
+                  </div>
+                  <div style={{ background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
+                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>⚠️</div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#ef4444', fontFamily: 'var(--font-display)' }}>
+                      {artisans.filter((a: any) => (a.cas_c_count || 0) / Math.max(a.total_missions || 1, 1) > 0.1).length}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>Artisans à risque (&gt;10%)</div>
+                  </div>
                 </div>
 
                 {/* Bouton Sync Jumia */}
