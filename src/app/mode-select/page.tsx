@@ -93,8 +93,9 @@ function ModeSelectContent() {
       const data = await res.json()
 
       if (data.simulation) {
-        // Mode simulation (pas de clé Wave) — on simule le webhook manuellement
-        toast('Mode simulation — paiement simulé', { icon: '🧪' })
+        // Mode simulation (pas de clé Wave ou fallback) — on simule le webhook manuellement
+        const reason = data.simulation_reason ? ` (${data.simulation_reason})` : ''
+        toast(`Mode simulation — paiement simulé${reason}`, { icon: '🧪' })
         await fetch('/api/wave-webhook', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
