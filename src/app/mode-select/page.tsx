@@ -93,20 +93,12 @@ function ModeSelectContent() {
       const data = await res.json()
 
       if (data.simulation) {
-        // Mode simulation (pas de clé Wave ou fallback) — on simule le webhook manuellement
-        const reason = data.simulation_reason ? ` (${data.simulation_reason})` : ''
-        toast(`Mode simulation — paiement simulé${reason}`, { icon: '🧪' })
-        await fetch('/api/wave-webhook', {
+        // Mode simulation — utilise l'endpoint dédié (pas de vérif HMAC)
+        toast('Paiement simulé — recherche d\'un artisan…', { icon: '🧪' })
+        await fetch('/api/dispatch/simulate-pay', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'checkout.session.completed',
-            data: {
-              client_reference: currentMissionId,
-              amount,
-              id: `sim_${Date.now()}`,
-            },
-          }),
+          body:    JSON.stringify({ mission_id: currentMissionId, amount }),
         })
         router.push(`/dispatch/${currentMissionId}`)
         return

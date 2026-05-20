@@ -103,14 +103,11 @@ export default function UrgencePage() {
       const data = await res.json()
 
       if (data.simulation) {
-        // Simuler le paiement en dev
-        await fetch('/api/wave-webhook', {
+        toast('Paiement simulé — recherche d\'un artisan…', { icon: '🧪' })
+        await fetch('/api/dispatch/simulate-pay', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'checkout.session.completed',
-            data: { client_reference: mission.id, amount: price, id: `sim_${Date.now()}` },
-          }),
+          body:    JSON.stringify({ mission_id: mission.id, amount: price }),
         })
         router.push(`/dispatch/${mission.id}`)
         return

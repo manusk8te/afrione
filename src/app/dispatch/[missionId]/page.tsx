@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect, useRef, use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import { CheckCircle, XCircle, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -12,9 +12,10 @@ const mono = { fontFamily: "'Tahoma', sans-serif" }   as const
 
 type State = 'searching' | 'found' | 'failed'
 
-export default function DispatchLoadingPage({ params }: { params: Promise<{ missionId: string }> }) {
-  const { missionId } = use(params)
-  const router = useRouter()
+export default function DispatchLoadingPage() {
+  const router   = useRouter()
+  const rawParams = useParams()
+  const missionId = rawParams.missionId as string
 
   const [state,       setState]       = useState<State>('searching')
   const [attemptNum,  setAttemptNum]  = useState(1)
