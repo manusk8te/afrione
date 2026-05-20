@@ -22,6 +22,7 @@ function ModeSelectContent() {
   const category     = params.get('category') || 'Intervention'
   const priceParam   = params.get('price')
   const price        = priceParam ? parseInt(priceParam) : null
+  const summary      = params.get('summary')
 
   const [loading,       setLoading]       = useState<'urgent' | 'standard' | null>(null)
   const [userId,        setUserId]        = useState<string | null>(null)
@@ -247,6 +248,22 @@ function ModeSelectContent() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* ── Résumé IA diagnostic ──────────────────────────────────────── */}
+          {summary && (
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid rgba(232,93,38,0.25)', padding: '18px 20px', boxShadow: NEU_SMALL }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Zap size={13} color="white" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '9px', fontWeight: 700, color: '#E85D26', letterSpacing: '0.1em', fontFamily: 'Tahoma' }}>ANALYSE IA</div>
+                  <div style={{ fontSize: '10px', color: '#8B95A5' }}>Résumé de votre situation</div>
+                </div>
+              </div>
+              <p style={{ fontSize: '14px', color: '#3D4852', lineHeight: 1.65, margin: 0 }}>{summary}</p>
+            </div>
+          )}
 
           {/* ── Mode URGENT ────────────────────────────────────────────────── */}
           <button

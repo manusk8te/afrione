@@ -902,10 +902,11 @@ export default function DiagnosticPage() {
               onClick={() => {
                 if (navigating) return
                 setNavigating(true)
-                const priceParam = pricing?.estimate ? `&price=${pricing.estimate}` : ''
+                const priceParam   = pricing?.estimate ? `&price=${pricing.estimate}` : ''
+                const summaryParam = result.summary   ? `&summary=${encodeURIComponent(result.summary)}` : ''
                 const href = result.mission_id
-                  ? `/mode-select?mission=${result.mission_id}&category=${encodeURIComponent(result.category)}${priceParam}`
-                  : `/mode-select?category=${encodeURIComponent(result.category)}${priceParam}`
+                  ? `/mode-select?mission=${result.mission_id}&category=${encodeURIComponent(result.category)}${priceParam}${summaryParam}`
+                  : `/mode-select?category=${encodeURIComponent(result.category)}${priceParam}${summaryParam}`
                 router.push(href)
               }}
               disabled={navigating}
