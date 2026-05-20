@@ -1,6 +1,6 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -46,6 +46,12 @@ export default function ArtisanDashboardPage() {
   const [conversations, setConversations] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [saving, setSaving] = useState(false)
+
+  // ── Mission urgente en attente ────────────────────────────────────────────
+  const [urgentDispatch, setUrgentDispatch] = useState<any>(null)
+  const [urgentTimeLeft, setUrgentTimeLeft] = useState(0)
+  const urgentIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [respondingUrgent, setRespondingUrgent] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -216,6 +222,90 @@ export default function ArtisanDashboardPage() {
     init()
     return () => { if (realtimeChannel) supabase.removeChannel(realtimeChannel) }
   }, [])
+
+  // ── Charger la mission urgente en attente pour cet artisan ───────────────
+  const loadUrgentDispatch = useCallback(async (artisanId: string) => {
+    const { data } = await supabase
+      .from('dispatch_attempts')
+      .select('id, mission_id, expires_at, missions(category, total_price, quartier, mode)')
+      .eq('artisan_id', artisanId)
+      .is('response', null)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (data) {
+      setUrgentDispatch(data)
+      const remaining = new Date(data.expires_at).getTime() - Date.now()
+      setUrgentTimeLeft(Math.max(0, remaining))
+      clearInterval(urgentIntervalRef.current!)
+      urgentIntervalRef.current = setInterval(() => {
+        setUrgentTimeLeft(prev => {
+          if (prev <= 200) {
+            clearInterval(urgentIntervalRef.current!)
+            setUrgentDispatch(null)
+            return 0
+          }
+          return prev - 200
+        })
+      }, 200)
+    } else {
+      setUrgentDispatch(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!artisan?.id) return
+    loadUrgentDispatch(artisan.id)
+
+    // Realtime : nouvelle tentative de dispatch pour cet artisan
+    const channel = supabase
+      .channel(`urgent-dispatch:${artisan.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'dispatch_attempts',
+        filter: `artisan_id=eq.${artisan.id}`,
+      }, () => {
+        loadUrgentDispatch(artisan.id)
+        toast('🚨 Mission urgente disponible !', {
+          duration: 8000,
+          style: { background: '#E85D26', color: 'white', fontWeight: 700 },
+        })
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(urgentIntervalRef.current!)
+    }
+  }, [artisan?.id, loadUrgentDispatch])
+
+  const respondUrgent = async (response: 'accepted' | 'refused') => {
+    if (!urgentDispatch || !artisan) return
+    setRespondingUrgent(true)
+    const res = await fetch('/api/dispatch/respond', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        mission_id: urgentDispatch.mission_id,
+        artisan_id: artisan.id,
+        response,
+      }),
+    })
+    const data = await res.json()
+    clearInterval(urgentIntervalRef.current!)
+    setUrgentDispatch(null)
+    setRespondingUrgent(false)
+
+    if (data.already_taken) {
+      toast('Mission déjà prise par un autre artisan', { icon: '⚡' })
+    } else if (response === 'accepted') {
+      toast.success('Mission acceptée ! Rends-toi chez le client.')
+      router.push(`/warroom/${urgentDispatch.mission_id}`)
+    } else {
+      toast('Mission refusée')
+    }
+  }
 
   // Upload avatar
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -507,6 +597,82 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET MISSIONS ===== */}
         {tab === 'missions' && (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
+
+            {/* ── Mission urgente en attente ── */}
+            {urgentDispatch && (
+              <div style={{
+                background: 'linear-gradient(135deg, #1A0A00, #2D1200)',
+                border: '2px solid rgba(232,93,38,0.6)',
+                borderRadius: '20px',
+                padding: '20px',
+                boxShadow: '0 0 40px rgba(232,93,38,0.25)',
+                animation: 'urgentPulse 2s ease-in-out infinite',
+              }}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(232,93,38,0.5)' }}>
+                    <Zap size={18} color="white" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#E85D26', letterSpacing: '0.08em' }}>MISSION URGENTE</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Premier arrivé, premier servi</div>
+                  </div>
+                  {/* Countdown */}
+                  <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                    <div style={{
+                      fontSize: '28px', fontWeight: 900, fontFamily: 'Tahoma',
+                      color: urgentTimeLeft > 15000 ? '#E85D26' : urgentTimeLeft > 7000 ? '#C9A84C' : '#ef4444',
+                      lineHeight: 1,
+                    }}>
+                      {Math.ceil(urgentTimeLeft / 1000)}s
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>restantes</div>
+                  </div>
+                </div>
+
+                {/* Barre de progression */}
+                <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${(urgentTimeLeft / 45000) * 100}%`,
+                    background: urgentTimeLeft > 15000 ? '#E85D26' : urgentTimeLeft > 7000 ? '#C9A84C' : '#ef4444',
+                    borderRadius: '4px',
+                    transition: 'width 0.2s linear, background 0.5s',
+                  }} />
+                </div>
+
+                {/* Infos mission */}
+                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+                    {(urgentDispatch.missions as any)?.category || 'Intervention'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', display: 'flex', gap: '12px' }}>
+                    {(urgentDispatch.missions as any)?.quartier && <span>📍 {(urgentDispatch.missions as any).quartier}</span>}
+                    {(urgentDispatch.missions as any)?.total_price > 0 && (
+                      <span>💰 {(urgentDispatch.missions as any).total_price.toLocaleString()} FCFA</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Boutons */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <button
+                    onClick={() => !respondingUrgent && respondUrgent('refused')}
+                    disabled={respondingUrgent}
+                    style={{ padding: '14px', background: 'rgba(239,68,68,0.12)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: '12px', color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: respondingUrgent ? 'not-allowed' : 'pointer', opacity: respondingUrgent ? 0.5 : 1 }}
+                  >
+                    ✕ Refuser
+                  </button>
+                  <button
+                    onClick={() => !respondingUrgent && respondUrgent('accepted')}
+                    disabled={respondingUrgent}
+                    style={{ padding: '14px', background: respondingUrgent ? 'rgba(232,93,38,0.3)' : 'linear-gradient(135deg,#E85D26,#ff7043)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: 800, cursor: respondingUrgent ? 'not-allowed' : 'pointer', boxShadow: respondingUrgent ? 'none' : '0 4px 16px rgba(232,93,38,0.45)' }}
+                  >
+                    {respondingUrgent ? '…' : '⚡ Accepter'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Questionnaire banner — si pas encore soumis */}
             {(questionnaireStatus === null || questionnaireStatus === 'none') && (

@@ -227,7 +227,8 @@ p { line-height: 1.65; }
 @keyframes fadeUp    { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
 @keyframes fadeIn    { from { opacity:0 } to { opacity:1 } }
 @keyframes pulseSoft { 0%,100%{opacity:1} 50%{opacity:0.55} }
-@keyframes spin      { to { transform:rotate(360deg) } }
+@keyframes spin        { to { transform:rotate(360deg) } }
+@keyframes urgentPulse { 0%,100%{box-shadow:0 0 40px rgba(232,93,38,0.25)} 50%{box-shadow:0 0 60px rgba(232,93,38,0.5)} }
 
 /* ─── Animated gradient CTA — @property pour interpolation GPU ───────────── */
 @property --ag-x1 { syntax: '<percentage>'; inherits: false; initial-value: 10%; }

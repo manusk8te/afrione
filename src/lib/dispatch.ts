@@ -2,19 +2,20 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 const DISPATCH_TIMEOUT_SECONDS = 45
 
-// ── Trouver le prochain artisan disponible (non encore tenté) ─────────────────
+// ── Trouver TOUS les artisans qualifiés pour la mission ───────────────────────
 
-export async function findNextCandidate(missionId: string) {
+export async function findAllCandidates(missionId: string): Promise<any[]> {
   const { data: mission } = await supabaseAdmin
     .from('missions')
     .select('category')
     .eq('id', missionId)
     .single()
 
-  if (!mission) return null
+  if (!mission) return []
 
   const catWord = mission.category?.split(' ')[0] || ''
 
+  // Artisans déjà tentés (pour éviter les doublons si relance)
   const { data: attempts } = await supabaseAdmin
     .from('dispatch_attempts')
     .select('artisan_id')
@@ -22,7 +23,7 @@ export async function findNextCandidate(missionId: string) {
 
   const triedIds: string[] = attempts?.map((a: any) => a.artisan_id) ?? []
 
-  // Matching par métier, trié par note
+  // Matching par métier, triés par note
   let { data: candidates } = await supabaseAdmin
     .from('artisan_pros')
     .select('id, user_id, metier, rating_avg')
@@ -30,7 +31,7 @@ export async function findNextCandidate(missionId: string) {
     .eq('is_available', true)
     .ilike('metier', `%${catWord}%`)
     .order('rating_avg', { ascending: false })
-    .limit(20)
+    .limit(50)
 
   // Fallback global si aucun match catégorie
   if (!candidates?.length) {
@@ -40,11 +41,11 @@ export async function findNextCandidate(missionId: string) {
       .eq('kyc_status', 'approved')
       .eq('is_available', true)
       .order('rating_avg', { ascending: false })
-      .limit(20)
+      .limit(50)
     candidates = fallback
   }
 
-  return candidates?.find((a: any) => !triedIds.includes(a.id)) ?? null
+  return (candidates ?? []).filter((a: any) => !triedIds.includes(a.id))
 }
 
 // ── Créer un enregistrement de tentative de dispatch ─────────────────────────
@@ -53,8 +54,9 @@ export async function createDispatchAttempt(
   missionId: string,
   artisanId: string,
   attemptNumber: number,
+  expiresAt?: string,
 ) {
-  const expiresAt = new Date(Date.now() + DISPATCH_TIMEOUT_SECONDS * 1000).toISOString()
+  const exp = expiresAt ?? new Date(Date.now() + DISPATCH_TIMEOUT_SECONDS * 1000).toISOString()
 
   const { data } = await supabaseAdmin
     .from('dispatch_attempts')
@@ -62,7 +64,7 @@ export async function createDispatchAttempt(
       mission_id:     missionId,
       artisan_id:     artisanId,
       attempt_number: attemptNumber,
-      expires_at:     expiresAt,
+      expires_at:     exp,
     })
     .select()
     .single()
@@ -70,11 +72,11 @@ export async function createDispatchAttempt(
   return data
 }
 
-// ── Envoyer la notification urgente à l'artisan ───────────────────────────────
+// ── Envoyer la notification urgente à un artisan ──────────────────────────────
 
 export async function sendUrgentNotification(userId: string, category: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://afrione-sepia.vercel.app'
-  const url  = `${base}/artisan-space/dashboard`
+  const base  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://afrione-sepia.vercel.app'
+  const url   = `${base}/artisan-space/dashboard`
   const title = '🚨 Mission Urgente !'
   const body  = `${category} — Tu as ${DISPATCH_TIMEOUT_SECONDS}s pour accepter !`
 
@@ -111,31 +113,38 @@ export async function cancelAndRefund(missionId: string, clientId: string) {
     sender_id:   clientId,
     sender_role: 'system',
     sender_type: 'afrione_system',
-    text:        '😔 Aucun artisan disponible n\'a pu accepter ta mission urgente. Tu seras remboursé intégralement sous 24h. Désolé pour ce désagrément.',
+    text:        '😔 Aucun artisan disponible n\'a pu accepter ta mission urgente. Tu seras remboursé intégralement sous 24h.',
     type:        'system',
   })
-  // Wave refund API : POST /v1/checkout/sessions/{wave_session_id}/refund
-  // À déclencher ici une fois le endpoint Wave CI confirmé
 }
 
-// ── Lancer le premier dispatch (appelé par le webhook Wave) ───────────────────
+// ── Broadcaster à TOUS les artisans qualifiés simultanément ──────────────────
 
 export async function startUrgentDispatch(missionId: string, clientId: string, category: string) {
-  const candidate = await findNextCandidate(missionId)
+  const candidates = await findAllCandidates(missionId)
 
-  if (!candidate) {
+  if (!candidates.length) {
     await cancelAndRefund(missionId, clientId)
     return { dispatched: false, reason: 'no_candidates' }
   }
 
-  const attempt = await createDispatchAttempt(missionId, candidate.id, 1)
+  // Même expiry pour tous — premier arrivé premier servi
+  const expiresAt = new Date(Date.now() + DISPATCH_TIMEOUT_SECONDS * 1000).toISOString()
+
+  // Créer une tentative pour chaque candidat + notifier en parallèle
+  await Promise.all(
+    candidates.map((c: any, i: number) =>
+      createDispatchAttempt(missionId, c.id, i + 1, expiresAt)
+    )
+  )
 
   await supabaseAdmin
     .from('missions')
-    .update({ status: 'dispatching', artisan_id: candidate.id })
+    .update({ status: 'dispatching' })
     .eq('id', missionId)
 
-  await sendUrgentNotification(candidate.user_id, category)
+  // Notifier tous les artisans en parallèle (fire-and-forget)
+  Promise.allSettled(candidates.map((c: any) => sendUrgentNotification(c.user_id, category)))
 
-  return { dispatched: true, attempt_id: attempt?.id, artisan_id: candidate.id }
+  return { dispatched: true, count: candidates.length, expires_at: expiresAt }
 }
