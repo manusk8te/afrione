@@ -336,6 +336,27 @@ export default function WarRoomPage() {
   // Charge la suggestion de prix sans ouvrir le drawer devis
   const loadPricingSuggestion = async () => {
     if (pricingSuggestion || pricingSugLoading || !diagData) return
+
+    // 1. Prix sauvegardé en DB au moment du diagnostic (source canonique)
+    if ((diagData as any).afrione_pricing?.estimate && (diagData as any).afrione_pricing?.decomp) {
+      const p = (diagData as any).afrione_pricing
+      setPricingSuggestion({ estimate: p.estimate, interval: p.interval, decomp: p.decomp })
+      return
+    }
+
+    // 2. Cache sessionStorage (même session navigateur que le client)
+    const cacheKey = `afrione_pricing_${missionId}`
+    const cached = sessionStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        const c = JSON.parse(cached)
+        if (c.estimate && c.decomp) {
+          setPricingSuggestion({ estimate: c.estimate, interval: c.interval, decomp: c.decomp })
+          return
+        }
+      } catch {}
+    }
+
     setPricingSugLoading(true)
 
     if (diagData.items_needed?.length && !materialsProximity.length) {
@@ -346,11 +367,6 @@ export default function WarRoomPage() {
         .catch(() => {})
     }
 
-    const metierMap: Record<string, string> = {
-      'Plomberie':'Plombier','Électricité':'Électricien','Peinture':'Peintre',
-      'Maçonnerie':'Maçon','Menuiserie':'Menuisier','Climatisation':'Climaticien',
-      'Serrurerie':'Serrurier','Carrelage':'Carreleur',
-    }
     try {
       const res = await fetch('/api/pricing-agent', {
         method: 'POST',
@@ -372,11 +388,13 @@ export default function WarRoomPage() {
         const materials = bd.materiaux       || 0
         const transport = bd.transport       || 0
         const premium   = (bd.commission_afrione || 0) + (bd.assurance_sav || 0)
-        setPricingSuggestion({
+        const suggestion = {
           estimate: d.total || 0,
           interval: { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
           decomp:   { labor, materials, transport, premium },
-        })
+        }
+        setPricingSuggestion(suggestion)
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(suggestion)) } catch {}
       }
     } catch {}
     setPricingSugLoading(false)

@@ -115,6 +115,7 @@ export default function DiagnosticPage() {
   const [quartier, setQuartier]       = useState('')
   const [loading, setLoading]         = useState(false)
   const [pricing, setPricing]         = useState<PricingData | null>(null)
+  const [basePricing, setBasePricing] = useState<PricingData | null>(null)
   const [pricingLoading, setPricingLoading] = useState(false)
   const [materialTiers, setMaterialTiers]   = useState<any[]>([])
   const [selectedTiers, setSelectedTiers]   = useState<Record<string, 'economique'|'standard'|'premium'>>({})
@@ -224,6 +225,18 @@ export default function DiagnosticPage() {
 
   // ── Appel moteur de pricing (Agent IA AfriOne) ──
   const fetchPricing = async (diagResult: DiagResult) => {
+    // Ne pas recalculer si un prix est déjà en cache pour cette session
+    const cacheKey = `afrione_pricing_${diagResult.mission_id || 'draft'}`
+    const cached = sessionStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        const c = JSON.parse(cached)
+        setPricing(c)
+        setBasePricing(c)
+        setPricingLoading(false)
+        return
+      } catch {}
+    }
     setPricing(null)
     setPricingLoading(true)
     try {
@@ -248,7 +261,7 @@ export default function DiagnosticPage() {
       if (pricingRes.ok) {
         const d = await pricingRes.json()
         const bd = d.breakdown || {}
-        setPricing({
+        const newPricing: PricingData = {
           estimate:        d.total || 0,
           interval:        { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
           decomp: {
@@ -258,7 +271,17 @@ export default function DiagnosticPage() {
             premium:   (bd.commission_afrione || 0) + (bd.assurance_sav || 0),
           },
           artisan_percoit: d.artisan_percoit || 0,
-        })
+        }
+        setPricing(newPricing)
+        setBasePricing(newPricing)
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(newPricing)) } catch {}
+        if (diagResult.mission_id) {
+          fetch('/api/pricing-save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mission_id: diagResult.mission_id, pricing: newPricing }),
+          }).catch(() => {})
+        }
       }
       if (tiersRes?.ok) {
         const td = await tiersRes.json()
@@ -272,27 +295,43 @@ export default function DiagnosticPage() {
     setPricingLoading(false)
   }
 
-  // Recalcule localement quand le client change un tier matériau
-  const updatePricingForTier = (_diagResult: DiagResult, tiers: Record<string, 'economique'|'standard'|'premium'>) => {
-    if (!pricing) return
-    const newMat = materialTiers.reduce((sum: number, mat: any) => {
-      const tier = tiers[mat.name] || 'standard'
-      const tierData = mat.tiers?.[tier]
-      const price = tierData?.price_unit ?? tierData?.price_market ?? 0
-      const qty = mat.qty || 1
-      return sum + price * qty
+  // Recalcule localement quand le client change un tier matériau.
+  // On ajoute uniquement le DELTA (tier sélectionné − tier par défaut "standard")
+  // sur le prix de base de l'IA — on ne remplace jamais son estimation matériaux.
+  const updatePricingForTier = (diagResult: DiagResult, tiers: Record<string, 'economique'|'standard'|'premium'>) => {
+    if (!basePricing) return
+    const delta = materialTiers.reduce((sum: number, mat: any) => {
+      const selectedTier = tiers[mat.name] || 'standard'
+      const defaultTier  = 'standard'
+      if (selectedTier === defaultTier) return sum
+      const getPrice = (t: string) => {
+        const d = mat.tiers?.[t]
+        return (d?.price_unit ?? d?.price_market ?? 0) * (mat.qty || 1)
+      }
+      return sum + getPrice(selectedTier) - getPrice(defaultTier)
     }, 0)
-    const subtotal   = pricing.decomp.labor + newMat + pricing.decomp.transport
+    const newMat     = basePricing.decomp.materials + delta
+    const subtotal   = basePricing.decomp.labor + newMat + basePricing.decomp.transport
     const commission = Math.round(subtotal * 0.10)
     const assurance  = Math.round(subtotal * 0.02)
     const total      = subtotal + commission + assurance
-    setPricing({
-      ...pricing,
+    const updated: PricingData = {
+      ...basePricing,
       estimate:        total,
       interval:        { low: Math.round(total * 0.92), high: Math.round(total * 1.08) },
-      decomp:          { ...pricing.decomp, materials: newMat, premium: commission + assurance },
+      decomp:          { ...basePricing.decomp, materials: newMat, premium: commission + assurance },
       artisan_percoit: Math.round(total * 0.88),
-    })
+    }
+    setPricing(updated)
+    const cacheKey = `afrione_pricing_${diagResult.mission_id || 'draft'}`
+    try { sessionStorage.setItem(cacheKey, JSON.stringify(updated)) } catch {}
+    if (diagResult.mission_id) {
+      fetch('/api/pricing-save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mission_id: diagResult.mission_id, pricing: updated }),
+      }).catch(() => {})
+    }
   }
 
   // ── Génère le résumé final ──
@@ -764,6 +803,7 @@ export default function DiagnosticPage() {
                             const color = TIER_COLORS[tier]
                             return (
                               <button key={tier} onClick={() => {
+                                if (activeTierKey === tier) return
                                 const next = { ...selectedTiers, [mat.name]: tier }
                                 setSelectedTiers(next)
                                 updatePricingForTier(result!, next)

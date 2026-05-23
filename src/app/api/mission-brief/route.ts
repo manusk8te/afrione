@@ -45,15 +45,16 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     diag: {
-      ai_summary:      diag.ai_summary,
-      technical_notes: rawCtx.technical_notes || diag.ai_summary || '',
-      category:        diag.category_detected,
-      urgency:         diag.urgency_level,
-      price_min:       diag.estimated_price_min,
-      price_max:       diag.estimated_price_max,
-      items_needed:    diag.items_needed || [],
+      ai_summary:        diag.ai_summary,
+      technical_notes:   rawCtx.technical_notes || diag.ai_summary || '',
+      category:          diag.category_detected,
+      urgency:           diag.urgency_level,
+      price_min:         diag.estimated_price_min,
+      price_max:         diag.estimated_price_max,
+      items_needed:      diag.items_needed || [],
       duration_estimate: rawCtx.duration_estimate || '',
-      photos:          rawCtx.photos || [],
+      photos:            rawCtx.photos || [],
+      afrione_pricing:   rawCtx.afrione_pricing || null,
     },
     participants,
   })
