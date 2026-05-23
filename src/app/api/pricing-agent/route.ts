@@ -118,7 +118,7 @@ const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
   },
 ]
 
-const SYSTEM_PROMPT = `Tu es l'agent de tarification AfriOne pour le marché informel d'Abidjan, Côte d'Ivoire.
+const BASE_SYSTEM_PROMPT = `Tu es l'agent de tarification AfriOne pour le marché informel d'Abidjan, Côte d'Ivoire.
 
 Processus obligatoire en 3 étapes :
 1. Appelle get_artisan_rate avec le métier (et artisan_id si fourni)
@@ -127,21 +127,47 @@ Processus obligatoire en 3 étapes :
 
 Réponds UNIQUEMENT avec le JSON brut retourné par calculate_final_price. Aucun texte, aucun markdown.`
 
+async function buildSystemPrompt(category: string, quartier: string): Promise<string> {
+  // Charger les 5 missions les plus récentes acceptées dans la même catégorie
+  const { data: examples } = await supabaseAdmin
+    .from('accepted_prices')
+    .select('quartier, urgency, hours, materials_count, description_short, final_price')
+    .eq('category', category)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (!examples?.length) return BASE_SYSTEM_PROMPT
+
+  const lines = examples.map(e =>
+    `- ${e.quartier} · ${e.urgency} · ${e.hours}h · ${e.materials_count} matériau(x)${e.description_short ? ` · "${e.description_short}"` : ''} → ${e.final_price.toLocaleString('fr')} FCFA ✓ accepté`
+  ).join('\n')
+
+  return `${BASE_SYSTEM_PROMPT}
+
+Missions ${category} récemment acceptées sur AfriOne (utilise-les pour calibrer ton prix) :
+${lines}`
+}
+
 export async function POST(req: NextRequest) {
   const body     = await req.json()
   const category = body.category || 'Plomberie'
   const metier   = CATEGORY_TO_METIER[category] || category
+  const quartier = body.quartier || 'Cocody'
+
+  const [systemPrompt] = await Promise.all([
+    buildSystemPrompt(category, quartier),
+  ])
 
   const userMessage = `Calcule le prix AfriOne pour :
 - Métier : ${metier}
 - Description : ${body.description || ''}
 - Matériaux nécessaires : ${(body.items_needed || []).join(', ') || 'aucun'}
 - Durée estimée : ${body.hours_estimate || 2}h
-- Quartier client : ${body.quartier || 'Cocody'}
+- Quartier client : ${quartier}
 - Urgence : ${body.urgency || 'medium'}${body.artisan_id ? `\n- Artisan ID : ${body.artisan_id}` : ''}`
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: systemPrompt },
     { role: 'user',   content: userMessage },
   ]
 

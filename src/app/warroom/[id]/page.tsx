@@ -461,6 +461,25 @@ export default function WarRoomPage() {
     }
     setMission((prev: any) => ({ ...prev, total_price: pendingAmount, status: 'payment' }))
 
+    // Enregistrer le prix accepté pour améliorer les futures estimations IA
+    if (diagData && pendingAmount > 0) {
+      fetch('/api/accepted-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mission_id:       missionId,
+          category:         diagData.category     || 'Plomberie',
+          quartier:         mission?.quartier      || 'Cocody',
+          urgency:          diagData.urgency       || 'medium',
+          hours:            parseDurLow(diagData.duration_estimate || '2'),
+          materials_count:  (diagData.items_needed || []).length,
+          description_short: (diagData.ai_summary  || '').slice(0, 120),
+          final_price:      pendingAmount,
+          artisan_percoit:  Math.round(pendingAmount * 0.88),
+        }),
+      }).catch(() => {})
+    }
+
     // Message système dans le chat
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id, sender_role: missionRole,
