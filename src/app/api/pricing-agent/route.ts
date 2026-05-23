@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { CATEGORY_TO_METIER } from '@/lib/pricing'
+import { CATEGORY_TO_METIER, SMIG_X2_HORAIRE } from '@/lib/pricing'
 import { supabaseAdmin } from '@/lib/supabase'
 import { lookupItemOnJumia } from '@/lib/jumia-lookup'
-import { SMIG_X2_HORAIRE } from '@/lib/pricing'
 import { getTransport } from '@/lib/transport'
 
 export const dynamic = 'force-dynamic'
 
-const openai       = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID!
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 const FALLBACK_RATES: Record<string, number> = {
   'Plombier': 3200, 'Électricien': 3500, 'Peintre': 2500,
@@ -68,49 +66,120 @@ async function runTool(name: string, args: Record<string, any>): Promise<string>
   return JSON.stringify({ error: 'Outil inconnu' })
 }
 
+const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_artisan_rate',
+      description: 'Retourne le tarif horaire FCFA/h pour un métier. Appeler en premier.',
+      parameters: {
+        type: 'object',
+        properties: {
+          metier:     { type: 'string', description: 'Ex: Plombier, Électricien, Maçon' },
+          artisan_id: { type: 'string', description: 'ID artisan optionnel pour taux personnalisé' },
+        },
+        required: ['metier'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_material_price',
+      description: 'Cherche le prix unitaire FCFA d\'un matériau (base AfriOne → Jumia CI → marché Abidjan). Appeler pour chaque article.',
+      parameters: {
+        type: 'object',
+        properties: {
+          item:     { type: 'string', description: 'Nom exact du matériau' },
+          category: { type: 'string', description: 'Catégorie de la mission' },
+          qty:      { type: 'number', description: 'Quantité nécessaire (défaut 1)' },
+        },
+        required: ['item', 'category'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'calculate_final_price',
+      description: 'Calcule le prix final AfriOne avec dégressif heures, urgence, commission 10% et assurance SAV 2%. Appeler en dernier.',
+      parameters: {
+        type: 'object',
+        properties: {
+          hours:           { type: 'number', description: 'Durée en heures' },
+          hourly_rate:     { type: 'number', description: 'Taux horaire obtenu via get_artisan_rate' },
+          materials_total: { type: 'number', description: 'Somme totale des matériaux (0 si aucun)' },
+          urgency:         { type: 'string', enum: ['low', 'medium', 'high', 'emergency'] },
+          quartier:        { type: 'string', description: 'Quartier client pour le transport' },
+        },
+        required: ['hours', 'hourly_rate', 'materials_total'],
+      },
+    },
+  },
+]
+
+const SYSTEM_PROMPT = `Tu es l'agent de tarification AfriOne pour le marché informel d'Abidjan, Côte d'Ivoire.
+
+Processus obligatoire en 3 étapes :
+1. Appelle get_artisan_rate avec le métier (et artisan_id si fourni)
+2. Pour chaque matériau listé, appelle search_material_price — tu peux les appeler en parallèle
+3. Appelle calculate_final_price avec : hours=durée, hourly_rate=taux récupéré, materials_total=somme de tous les totaux matériaux, urgency et quartier
+
+Réponds UNIQUEMENT avec le JSON brut retourné par calculate_final_price. Aucun texte, aucun markdown.`
+
 export async function POST(req: NextRequest) {
-  const body = await req.json()
+  const body     = await req.json()
   const category = body.category || 'Plomberie'
   const metier   = CATEGORY_TO_METIER[category] || category
 
-  const prompt = `Calcule le prix pour :
+  const userMessage = `Calcule le prix AfriOne pour :
 - Métier : ${metier}
 - Description : ${body.description || ''}
-- Matériaux : ${(body.items_needed || []).join(', ') || 'aucun'}
-- Durée : ${body.hours_estimate || 2}h
-- Quartier : ${body.quartier || 'Cocody'}
-- Urgence : ${body.urgency || 'medium'}
-${body.artisan_id ? `- Artisan ID : ${body.artisan_id}` : ''}`
+- Matériaux nécessaires : ${(body.items_needed || []).join(', ') || 'aucun'}
+- Durée estimée : ${body.hours_estimate || 2}h
+- Quartier client : ${body.quartier || 'Cocody'}
+- Urgence : ${body.urgency || 'medium'}${body.artisan_id ? `\n- Artisan ID : ${body.artisan_id}` : ''}`
 
-  // Créer un thread et lancer l'assistant
-  const thread = await openai.beta.threads.create()
-  await openai.beta.threads.messages.create(thread.id, { role: 'user', content: prompt })
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user',   content: userMessage },
+  ]
 
-  let run = await openai.beta.threads.runs.create(thread.id, { assistant_id: ASSISTANT_ID })
+  for (let turn = 0; turn < 6; turn++) {
+    const response = await openai.chat.completions.create({
+      model:       'gpt-4o-mini',
+      temperature: 0,
+      tools:       TOOLS,
+      tool_choice: 'auto',
+      messages,
+    })
 
-  // Boucle jusqu'à completion
-  while (['queued', 'in_progress', 'requires_action'].includes(run.status)) {
-    await new Promise(r => setTimeout(r, 800))
-    run = await openai.beta.threads.runs.retrieve(thread.id, run.id)
+    const msg    = response.choices[0].message
+    const reason = response.choices[0].finish_reason
+    messages.push(msg)
 
-    if (run.status === 'requires_action') {
-      const calls = run.required_action!.submit_tool_outputs.tool_calls
-      const outputs = await Promise.all(calls.map(async tc => ({
-        tool_call_id: tc.id,
-        output: await runTool(tc.function.name, JSON.parse(tc.function.arguments)),
-      })))
-      run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs: outputs })
+    if (reason === 'stop') {
+      const text = msg.content || ''
+      try {
+        const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+        return NextResponse.json(JSON.parse(cleaned))
+      } catch {
+        return NextResponse.json({ explanation: text, total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} })
+      }
+    }
+
+    if (reason === 'tool_calls' && msg.tool_calls?.length) {
+      // Exécuter tous les tool calls en parallèle (search_material_price notamment)
+      const results = await Promise.all(
+        msg.tool_calls.map(async tc => ({
+          role:         'tool' as const,
+          tool_call_id: tc.id,
+          content:      await runTool(tc.function.name, JSON.parse(tc.function.arguments)),
+        }))
+      )
+      messages.push(...results)
     }
   }
 
-  const messages = await openai.beta.threads.messages.list(thread.id)
-  const last     = messages.data[0]?.content[0]
-  const text     = last?.type === 'text' ? last.text.value : ''
-
-  try {
-    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    return NextResponse.json(JSON.parse(cleaned))
-  } catch {
-    return NextResponse.json({ explanation: text, total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} })
-  }
+  return NextResponse.json({ total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} })
 }
