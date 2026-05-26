@@ -80,24 +80,21 @@ export default function DevPanel() {
   const router   = useRouter()
   const pathname = usePathname()
 
-  if (userRole !== 'admin') return null
-
+  // Tous les hooks AVANT le return conditionnel
+  const autoSwitchedRef = useRef<string | null>(null)
   const missionId = getMissionIdFromPath(pathname)
 
-  // Auto-switch vers artisan test dès qu'on arrive sur /dispatch/[id]
-  const autoSwitchedRef = useRef<string | null>(null)
   useEffect(() => {
+    if (userRole !== 'admin') return
     if (!missionId) return
-    if (autoSwitchedRef.current === missionId) return // déjà déclenché pour cette mission
+    if (autoSwitchedRef.current === missionId) return
 
     autoSwitchedRef.current = missionId
 
-    // Petite pause pour laisser le dispatch s'initialiser en DB
     const timer = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      // Rafraîchit la tentative pour le plombier test avec 2 min
       await fetch('/api/dev/refresh-dispatch', {
         method: 'POST',
         headers: {
@@ -107,7 +104,6 @@ export default function DevPanel() {
         body: JSON.stringify({ mission_id: missionId, artisan_email: 'test.plombier@afrione.ci' }),
       })
 
-      // Switch automatique vers le compte plombier test
       await supabase.auth.signOut()
       await supabase.auth.signInWithPassword({
         email: 'test.plombier@afrione.ci',
@@ -117,7 +113,9 @@ export default function DevPanel() {
     }, 1500)
 
     return () => clearTimeout(timer)
-  }, [missionId])
+  }, [missionId, userRole])
+
+  if (userRole !== 'admin') return null
 
   async function switchTo(acct: typeof TEST_ACCOUNTS[number]) {
     setBusy(acct.email)
