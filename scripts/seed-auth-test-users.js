@@ -11,6 +11,18 @@
  * NE PAS EXÉCUTER EN PRODUCTION
  */
 
+const fs = require('fs')
+const path = require('path')
+
+// Charge .env.local manuellement
+const envPath = path.join(__dirname, '..', '.env.local')
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
+    const match = line.match(/^([^#=]+)=(.*)$/)
+    if (match) process.env[match[1].trim()] = match[2].trim()
+  })
+}
+
 const { createClient } = require('@supabase/supabase-js')
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL

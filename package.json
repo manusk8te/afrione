@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed:auth": "node -r dotenv/config scripts/seed-auth-test-users.js dotenv_config_path=.env.local"
+    "seed:auth": "node scripts/seed-auth-test-users.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
