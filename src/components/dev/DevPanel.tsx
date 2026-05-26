@@ -80,12 +80,17 @@ export default function DevPanel() {
   const router   = useRouter()
   const pathname = usePathname()
 
+  const userEmail = user?.email ?? ''
+  const isDevUser = userRole === 'admin' || userEmail.endsWith('@afrione.ci')
+  const isTestArtisan = ['test.plombier@afrione.ci', 'test.elec@afrione.ci'].includes(userEmail)
+
   // Tous les hooks AVANT le return conditionnel
   const autoSwitchedRef = useRef<string | null>(null)
   const missionId = getMissionIdFromPath(pathname)
 
   useEffect(() => {
-    if (userRole !== 'admin') return
+    if (!isDevUser) return
+    if (isTestArtisan) return   // déjà sur un compte artisan, pas besoin de switcher
     if (!missionId) return
     if (autoSwitchedRef.current === missionId) return
 
@@ -113,9 +118,9 @@ export default function DevPanel() {
     }, 1500)
 
     return () => clearTimeout(timer)
-  }, [missionId, userRole])
+  }, [missionId, isDevUser, isTestArtisan])
 
-  if (userRole !== 'admin') return null
+  if (!isDevUser) return null
 
   async function switchTo(acct: typeof TEST_ACCOUNTS[number]) {
     setBusy(acct.email)

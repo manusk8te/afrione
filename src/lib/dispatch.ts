@@ -4,16 +4,20 @@ const DISPATCH_TIMEOUT_SECONDS = 45
 
 // ── Trouver TOUS les artisans qualifiés pour la mission ───────────────────────
 
+const TEST_ARTISAN_EMAILS = ['test.plombier@afrione.ci', 'test.elec@afrione.ci']
+
 export async function findAllCandidates(missionId: string): Promise<any[]> {
   const { data: mission } = await supabaseAdmin
     .from('missions')
-    .select('category')
+    .select('category, client_id, users!client_id(email, role)')
     .eq('id', missionId)
     .single()
 
   if (!mission) return []
 
-  const catWord = mission.category?.split(' ')[0] || ''
+  const clientEmail: string = (mission.users as any)?.email ?? ''
+  const clientRole: string  = (mission.users as any)?.role  ?? ''
+  const isTestSession = clientEmail.endsWith('@afrione.ci') || clientRole === 'admin'
 
   // Artisans déjà tentés (pour éviter les doublons si relance)
   const { data: attempts } = await supabaseAdmin
@@ -23,7 +27,28 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
 
   const triedIds: string[] = attempts?.map((a: any) => a.artisan_id) ?? []
 
-  // Matching par métier, triés par note
+  // ── Session de test : matcher uniquement les artisans test ───────────────
+  if (isTestSession) {
+    const { data: testUsers } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .in('email', TEST_ARTISAN_EMAILS)
+
+    const testUserIds = testUsers?.map((u: any) => u.id) ?? []
+
+    const { data: testArtisans } = await supabaseAdmin
+      .from('artisan_pros')
+      .select('id, user_id, metier, rating_avg')
+      .in('user_id', testUserIds)
+      .eq('kyc_status', 'approved')
+      .eq('is_available', true)
+
+    return (testArtisans ?? []).filter((a: any) => !triedIds.includes(a.id))
+  }
+
+  // ── Session réelle : matching normal ─────────────────────────────────────
+  const catWord = mission.category?.split(' ')[0] || ''
+
   let { data: candidates } = await supabaseAdmin
     .from('artisan_pros')
     .select('id, user_id, metier, rating_avg')
@@ -33,7 +58,6 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
     .order('rating_avg', { ascending: false })
     .limit(50)
 
-  // Fallback global si aucun match catégorie
   if (!candidates?.length) {
     const { data: fallback } = await supabaseAdmin
       .from('artisan_pros')
