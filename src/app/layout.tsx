@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/contexts/AuthContext'
+import DevPanel from '@/components/dev/DevPanel'
 
 export const metadata: Metadata = {
   title: 'AfriOne — Trouver le bon artisan, au bon prix',
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           {children}
           <Toaster position="top-right" />
+          <DevPanel />
         </AuthProvider>
       </body>
     </html>

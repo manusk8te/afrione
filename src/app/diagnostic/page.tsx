@@ -136,6 +136,12 @@ export default function DiagnosticPage() {
       supabase.from('users').select('quartier').eq('id', session.user.id).single()
         .then(({ data }) => { if (data?.quartier) setQuartier(data.quartier) })
     })
+    // Dev panel scenario injection
+    const devScenario = localStorage.getItem('_devScenario')
+    if (devScenario) {
+      setText(devScenario)
+      localStorage.removeItem('_devScenario')
+    }
   }, [])
 
   useEffect(() => {
