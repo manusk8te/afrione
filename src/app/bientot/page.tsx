@@ -24,7 +24,7 @@ export default function Bientot() {
       {/* ── Vidéo boule AfriOne — fond plein écran ──────────────────── */}
       <video
         autoPlay muted loop playsInline
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 35%', opacity: 0.9 }}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 25%', opacity: 0.9 }}
       >
         <source src={BALL_VIDEO} type="video/mp4" />
       </video>
