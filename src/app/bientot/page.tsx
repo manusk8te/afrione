@@ -11,11 +11,22 @@ export default function Bientot() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    // Remplace l'entrée précédente dans l'historique + ajoute une sentinelle
+    // → le bouton "retour" revient toujours sur /bientot
+    window.history.replaceState(null, '', '/bientot')
+    window.history.pushState(null, '', '/bientot')
+    const handlePop = () => window.history.pushState(null, '', '/bientot')
+    window.addEventListener('popstate', handlePop)
+
     const t = setTimeout(() => setVisible(true), 120)
     timerRef.current = setInterval(() => {
       setDots(d => d.length >= 3 ? '' : d + '.')
     }, 600)
-    return () => { clearTimeout(t); if (timerRef.current) clearInterval(timerRef.current) }
+    return () => {
+      window.removeEventListener('popstate', handlePop)
+      clearTimeout(t)
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
   }, [])
 
   return (
