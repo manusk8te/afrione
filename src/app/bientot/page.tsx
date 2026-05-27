@@ -57,8 +57,8 @@ export default function Bientot() {
       <div style={{
         position: 'relative', zIndex: 10,
         height: '100%', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'flex-end',
-        paddingBottom: 'clamp(48px, 9vh, 96px)',
+        alignItems: 'center', justifyContent: 'center',
+        paddingBottom: '0',
         paddingLeft: '24px', paddingRight: '24px',
         textAlign: 'center',
         opacity: visible ? 1 : 0,
@@ -129,17 +129,7 @@ export default function Bientot() {
 
       </div>
 
-      {/* ── Logo haut gauche ────────────────────────────────────────── */}
-      <div style={{
-        position: 'absolute', top: 'clamp(20px,4vh,40px)', left: 'clamp(20px,4vw,48px)',
-        zIndex: 10,
-        opacity: visible ? 1 : 0,
-        transition: 'opacity 1.4s 0.3s ease',
-      }}>
-        <Image src="/logo.png" alt="AfriOne" width={100} height={32} style={{ objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-      </div>
-
-      <style>{`
+<style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1;   transform: scale(1);    }
           50%       { opacity: 0.5; transform: scale(0.75); }
