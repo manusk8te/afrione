@@ -117,7 +117,7 @@ export default function Bientot() {
           margin: '0 0 8px',
           fontWeight: 400,
         }}>
-          La plateforme des artisans de confiance à Abidjan.
+          Plateforme de mise en relation entre clients et artisans vérifiés à Abidjan. Nos agents IA propriétaires assistent les prestataires sur le pricing, la rédaction des devis et la gestion des missions.
         </p>
         <p style={{
           ...syne,
