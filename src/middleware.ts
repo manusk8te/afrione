@@ -5,11 +5,13 @@ const ADMIN_KEY = process.env.BIENTOT_ADMIN_KEY || 'afrione-admin-2026'
 const COOKIE_NAME = 'bientot_admin'
 
 export function middleware(request: NextRequest) {
-  const { searchParams } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
 
+  // Si la clé admin est dans l'URL → poser le cookie et rediriger proprement
   const keyParam = searchParams.get('key')
   if (keyParam === ADMIN_KEY) {
-    const response = NextResponse.redirect(new URL('/bientot', request.url))
+    const target = new URL(pathname, request.url)
+    const response = NextResponse.redirect(target)
     response.cookies.set(COOKIE_NAME, ADMIN_KEY, {
       httpOnly: true,
       sameSite: 'lax',
@@ -19,14 +21,20 @@ export function middleware(request: NextRequest) {
     return response
   }
 
-  const cookie = request.cookies.get(COOKIE_NAME)
-  if (cookie?.value !== ADMIN_KEY) {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
+  const isAdmin = request.cookies.get(COOKIE_NAME)?.value === ADMIN_KEY
 
-  return NextResponse.next()
+  // Admin → accès libre partout
+  if (isAdmin) return NextResponse.next()
+
+  // Non-admin sur /bientot → laisser passer
+  if (pathname === '/bientot') return NextResponse.next()
+
+  // Non-admin sur n'importe quelle autre page → rediriger vers /bientot
+  return NextResponse.redirect(new URL('/bientot', request.url))
 }
 
 export const config = {
-  matcher: ['/bientot'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.ico|.*\\.mp4|.*\\.webm).*)',
+  ],
 }
