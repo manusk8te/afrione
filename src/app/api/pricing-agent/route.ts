@@ -21,6 +21,69 @@ const FALLBACK_MAT: Record<string, number> = {
 }
 
 async function runTool(name: string, args: Record<string, any>): Promise<string> {
+  if (name === 'get_pricing_data') {
+    const { metier, zone } = args
+
+    // 1. Cherche les données terrain pour ce métier + zone
+    const { data: zoneData } = await supabaseAdmin
+      .from('pricing_reference')
+      .select('taux_horaire, taux_journee, niveau_experience, nb_observations, source')
+      .eq('metier', metier)
+      .eq('zone', zone)
+      .order('nb_observations', { ascending: false })
+
+    if (zoneData && zoneData.length > 0) {
+      const totalObs = zoneData.reduce((s, r) => s + r.nb_observations, 0)
+      const avgHoraire = Math.round(
+        zoneData.reduce((s, r) => s + r.taux_horaire * r.nb_observations, 0) / totalObs
+      )
+      const avgJournee = Math.round(
+        zoneData.reduce((s, r) => s + r.taux_journee * r.nb_observations, 0) / totalObs
+      )
+      return JSON.stringify({
+        metier, zone,
+        taux_horaire: avgHoraire,
+        taux_journee: avgJournee,
+        nb_observations: totalObs,
+        source: 'Données terrain AfriOne',
+        has_data: true,
+      })
+    }
+
+    // 2. Pas de données pour cette zone — fallback national
+    const { data: nationalData } = await supabaseAdmin
+      .from('pricing_reference')
+      .select('taux_horaire, taux_journee, nb_observations')
+      .eq('metier', metier)
+      .order('nb_observations', { ascending: false })
+
+    if (nationalData && nationalData.length > 0) {
+      const totalObs = nationalData.reduce((s, r) => s + r.nb_observations, 0)
+      const avgHoraire = Math.round(
+        nationalData.reduce((s, r) => s + r.taux_horaire * r.nb_observations, 0) / totalObs
+      )
+      const avgJournee = Math.round(
+        nationalData.reduce((s, r) => s + r.taux_journee * r.nb_observations, 0) / totalObs
+      )
+      return JSON.stringify({
+        metier, zone,
+        taux_horaire: avgHoraire,
+        taux_journee: avgJournee,
+        nb_observations: totalObs,
+        source: 'Moyenne nationale AfriOne (pas de données pour cette zone)',
+        has_data: true,
+        fallback: true,
+      })
+    }
+
+    // 3. Aucune donnée — l'agent devra utiliser get_artisan_rate
+    return JSON.stringify({
+      metier, zone,
+      has_data: false,
+      message: `Pas de données terrain pour ${metier} à ${zone}. Utilise get_artisan_rate comme fallback.`,
+    })
+  }
+
   if (name === 'search_material_price') {
     const { item, category, qty = 1 } = args
     const { data } = await supabaseAdmin.from('price_materials')
@@ -67,6 +130,21 @@ async function runTool(name: string, args: Record<string, any>): Promise<string>
 }
 
 const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_pricing_data',
+      description: 'Récupère les vrais tarifs terrain Abidjan par métier et zone depuis la base AfriOne. TOUJOURS appeler en premier avant tout calcul.',
+      parameters: {
+        type: 'object',
+        properties: {
+          metier: { type: 'string', description: 'Ex: Plombier, Électricien, Maçon, Peintre' },
+          zone:   { type: 'string', description: 'Quartier Abidjan : Plateau, Cocody, Yopougon, Abobo, Adjamé, Treichville, Marcory' },
+        },
+        required: ['metier', 'zone'],
+      },
+    },
+  },
   {
     type: 'function',
     function: {
@@ -120,12 +198,23 @@ const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
 
 const BASE_SYSTEM_PROMPT = `Tu es l'agent de tarification AfriOne pour le marché informel d'Abidjan, Côte d'Ivoire.
 
-Processus obligatoire en 3 étapes :
-1. Appelle get_artisan_rate avec le métier (et artisan_id si fourni)
-2. Pour chaque matériau listé, appelle search_material_price — tu peux les appeler en parallèle
-3. Appelle calculate_final_price avec : hours=durée, hourly_rate=taux récupéré, materials_total=somme de tous les totaux matériaux, urgency et quartier
+Processus OBLIGATOIRE en 4 étapes (ne jamais sauter) :
 
-Réponds UNIQUEMENT avec le JSON brut retourné par calculate_final_price. Aucun texte, aucun markdown.`
+1. Appelle get_pricing_data(metier, zone) → tarifs terrain réels Abidjan
+   - Si has_data=true : utilise taux_horaire comme hourly_rate de référence principale
+   - Si has_data=false : appelle get_artisan_rate(metier, artisan_id?) comme fallback
+
+2. Pour chaque matériau listé, appelle search_material_price (parallélisable)
+
+3. Appelle calculate_final_price avec :
+   - hours = durée estimée
+   - hourly_rate = taux_horaire obtenu à l'étape 1
+   - materials_total = somme des totaux matériaux
+   - urgency et quartier
+
+4. Réponds UNIQUEMENT avec le JSON brut de calculate_final_price. Aucun texte, aucun markdown.
+
+Note : si get_pricing_data retourne fallback=true, mentionne-le dans un champ "data_note" ajouté au JSON final.`
 
 async function buildSystemPrompt(category: string, quartier: string): Promise<string> {
   // Charger les 5 missions les plus récentes acceptées dans la même catégorie
