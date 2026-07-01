@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed:auth": "node scripts/seed-auth-test-users.js"
+    "seed:auth": "node scripts/seed-auth-test-users.js",
+    "test:seed": "npx ts-node --project scripts/tsconfig.json scripts/seed-test-data.ts",
+    "test:simulate": "npx ts-node --project scripts/tsconfig.json scripts/simulate-conversations.ts",
+    "test:matching": "npx ts-node --project scripts/tsconfig.json scripts/test-matching.ts",
+    "test:cleanup": "npx ts-node --project scripts/tsconfig.json scripts/cleanup-test-data.ts",
+    "test:all": "npm run test:seed && npm run test:simulate && npm run test:matching"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -33,14 +38,16 @@
     "zustand": "^4.5.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^20.19.41",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.5.0",
+    "dotenv": "^17.4.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.0",
     "postcss": "^8.5.12",
     "tailwindcss": "^3.3.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

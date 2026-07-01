@@ -69,19 +69,6 @@ export default function Bientot() {
         transition: 'opacity 1.1s cubic-bezier(.16,1,.3,1), transform 1.1s cubic-bezier(.16,1,.3,1)',
       }}>
 
-        {/* Badge */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '7px',
-          background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255,255,255,0.2)', borderRadius: '999px',
-          padding: '5px 14px', marginBottom: '28px',
-        }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#E85D26', display: 'inline-block', animation: 'pulse 1.8s ease-in-out infinite' }} />
-          <span style={{ ...syne, fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase' }}>
-            En construction
-          </span>
-        </div>
-
         {/* Headline */}
         <h1 style={{
           ...syne,
