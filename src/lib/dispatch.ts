@@ -65,26 +65,16 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
     return sortByScore(testArtisans ?? [])
   }
 
-  // ── Session réelle : matching par métier + scoring composite ─────────────
-  const catWord = mission.category?.split(' ')[0] || ''
-
-  let { data: candidates } = await supabaseAdmin
+  // ── Session réelle : broadcast à TOUS les artisans disponibles ──────────
+  // Urgent mode = pas de filtre métier — tout artisan libre peut accepter.
+  // Le scoring composite (attempt_number) détermine qui l'auto-assign choisit
+  // si personne ne répond dans les 45s, mais la notif part à tout le monde.
+  const { data: candidates } = await supabaseAdmin
     .from('artisan_pros')
     .select(ARTISAN_SELECT)
     .eq('kyc_status', 'approved')
     .eq('is_available', true)
-    .ilike('metier', `%${catWord}%`)
-    .limit(50)
-
-  if (!candidates?.length) {
-    const { data: fallback } = await supabaseAdmin
-      .from('artisan_pros')
-      .select(ARTISAN_SELECT)
-      .eq('kyc_status', 'approved')
-      .eq('is_available', true)
-      .limit(50)
-    candidates = fallback
-  }
+    .limit(200)
 
   return sortByScore(candidates ?? [])
 }
