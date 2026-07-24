@@ -5,11 +5,15 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 
 const TEST_ACCOUNTS = [
-  { label: 'Client',       emoji: '👤', email: 'test.client@afrione.ci',   password: 'AfriTest2024!', redirect: '/dashboard' },
-  { label: 'Plombier',     emoji: '🔧', email: 'test.plombier@afrione.ci', password: 'AfriTest2024!', redirect: '/artisan-space/dashboard' },
-  { label: 'Électricien',  emoji: '⚡', email: 'test.elec@afrione.ci',     password: 'AfriTest2024!', redirect: '/artisan-space/dashboard' },
-  { label: 'Admin',        emoji: '🛡️', email: 'test.admin@afrione.ci',    password: 'AfriTest2024!', redirect: '/admin' },
+  { label: 'Client',      emoji: '👤', email: 'test.client@afrione.ci',   password: 'AfriTest2024!', redirect: '/dashboard',             isArtisan: false },
+  { label: 'Plombier',    emoji: '🔧', email: 'test.plombier@afrione.ci', password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
+  { label: 'Électricien', emoji: '⚡', email: 'test.elec@afrione.ci',     password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
+  { label: 'Peintre',     emoji: '🎨', email: 'test.peintre@afrione.ci',  password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
+  { label: 'Admin',       emoji: '🛡️', email: 'test.admin@afrione.ci',    password: 'AfriTest2024!', redirect: '/admin',                  isArtisan: false },
 ] as const
+
+const ARTISAN_ACCOUNTS = TEST_ACCOUNTS.filter(a => a.isArtisan)
+const ARTISAN_EMAILS   = ARTISAN_ACCOUNTS.map(a => a.email) as string[]
 
 const SCENARIOS = [
   { label: '🚰 Fuite plomberie',  text: "Ma fuite d'eau sous l'évier de cuisine s'aggrave depuis ce matin, tache humide sur le mur" },
@@ -30,7 +34,7 @@ const S = {
   },
   panel: {
     position: 'absolute' as const, bottom: 50, left: 0,
-    width: 252,
+    width: 260,
     background: '#111827',
     border: '1px solid #1f2937',
     borderRadius: 12,
@@ -44,6 +48,7 @@ const S = {
   section: { marginBottom: 12 },
   userBox: { background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 10px', marginBottom: 12 },
   grid2:   { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 },
+  grid3:   { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 },
   btnAcct: {
     background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.25)',
     color: 'white', borderRadius: 6, padding: '5px 8px',
@@ -64,37 +69,43 @@ const S = {
     color: '#fbbf24', borderRadius: 6, padding: '7px 10px',
     cursor: 'pointer', fontSize: 11, width: '100%', fontWeight: 700,
   },
+  btnMission: {
+    background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)',
+    color: '#a5b4fc', borderRadius: 4, padding: '3px 6px',
+    cursor: 'pointer', fontSize: 10,
+  },
 }
 
-// Extrait l'ID de mission depuis /dispatch/[missionId]
 function getMissionIdFromPath(pathname: string): string | null {
   const m = pathname.match(/\/dispatch\/([^/]+)/)
   return m ? m[1] : null
 }
 
 export default function DevPanel() {
-  const [open, setOpen]         = useState(false)
-  const [busy, setBusy]         = useState<string | null>(null)
-  const [forceMsg, setForceMsg] = useState<string | null>(null)
+  const [open, setOpen]             = useState(false)
+  const [busy, setBusy]             = useState<string | null>(null)
+  const [forceMsg, setForceMsg]     = useState<string | null>(null)
+  const [lastMissionId, setLastMissionId] = useState<string | null>(null)
   const { user, userRole, userName } = useAuth()
   const router   = useRouter()
   const pathname = usePathname()
 
-  const userEmail = user?.email ?? ''
-  const isDevUser = userRole === 'admin' || userEmail.endsWith('@afrione.ci')
-  const isTestArtisan = ['test.plombier@afrione.ci', 'test.elec@afrione.ci'].includes(userEmail)
+  const userEmail    = user?.email ?? ''
+  const isDevUser    = userRole === 'admin' || userEmail.endsWith('@afrione.ci')
+  const isTestArtisan = ARTISAN_EMAILS.includes(userEmail)
 
-  // Tous les hooks AVANT le return conditionnel
   const autoSwitchedRef = useRef<string | null>(null)
   const missionId = getMissionIdFromPath(pathname)
 
+  // Auto-switch to first artisan when landing on /dispatch/[id] as client
   useEffect(() => {
     if (!isDevUser) return
-    if (isTestArtisan) return   // déjà sur un compte artisan, pas besoin de switcher
+    if (isTestArtisan) return
     if (!missionId) return
     if (autoSwitchedRef.current === missionId) return
 
     autoSwitchedRef.current = missionId
+    const firstArtisan = ARTISAN_ACCOUNTS[0]
 
     const timer = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -106,19 +117,29 @@ export default function DevPanel() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ mission_id: missionId, artisan_email: 'test.plombier@afrione.ci' }),
+        body: JSON.stringify({ mission_id: missionId, artisan_email: firstArtisan.email }),
       })
 
       await supabase.auth.signOut()
-      await supabase.auth.signInWithPassword({
-        email: 'test.plombier@afrione.ci',
-        password: 'AfriTest2024!',
-      })
+      await supabase.auth.signInWithPassword({ email: firstArtisan.email, password: firstArtisan.password })
       window.location.href = '/artisan-space/dashboard'
     }, 1500)
 
     return () => clearTimeout(timer)
   }, [missionId, isDevUser, isTestArtisan])
+
+  // Load last mission for current user to enable quick navigation
+  useEffect(() => {
+    if (!isDevUser || !user) return
+    supabase
+      .from('missions')
+      .select('id')
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+      .then(({ data }) => { if (data) setLastMissionId(data.id) })
+  }, [isDevUser, user])
 
   if (!isDevUser) return null
 
@@ -134,12 +155,10 @@ export default function DevPanel() {
     window.location.href = acct.redirect
   }
 
-  // Switch vers artisan en gardant la mission en contexte (flow réel Uber)
   async function switchToArtisanForMission(acct: typeof TEST_ACCOUNTS[number]) {
     if (!missionId) return
     setBusy('artisan_switch')
 
-    // Rafraîchit la dispatch_attempt avec 2 min de délai avant de switcher
     const { data: { session } } = await supabase.auth.getSession()
     if (session) {
       await fetch('/api/dev/refresh-dispatch', {
@@ -162,7 +181,6 @@ export default function DevPanel() {
     window.location.href = '/artisan-space/dashboard'
   }
 
-  // Force l'acceptation instantanée (bypass artisan)
   async function forceAccept() {
     if (!missionId) return
     setBusy('force')
@@ -205,9 +223,6 @@ export default function DevPanel() {
     { label: 'Auth',        path: '/auth' },
   ]
 
-  // Artisans disponibles pour le switch Uber
-  const ARTISAN_ACCOUNTS = TEST_ACCOUNTS.filter(a => a.label === 'Plombier' || a.label === 'Électricien')
-
   return (
     <div style={S.wrap}>
       <button
@@ -245,7 +260,6 @@ export default function DevPanel() {
                 {missionId.slice(0, 16)}…
               </div>
 
-              {/* Force accept — bypass artisan */}
               <button
                 onClick={forceAccept}
                 disabled={busy === 'force'}
@@ -260,17 +274,16 @@ export default function DevPanel() {
                 </div>
               )}
 
-              {/* Flow réel Uber — switch vers artisan */}
               <div style={{ ...S.label, marginTop: 4 }}>Flow réel (Uber)</div>
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 }}>
                 {ARTISAN_ACCOUNTS.map(a => (
                   <button
                     key={a.email}
                     onClick={() => switchToArtisanForMission(a)}
                     disabled={busy === 'artisan_switch'}
-                    style={{ ...S.btnAcct, flex: 1, opacity: busy === 'artisan_switch' ? 0.5 : 1 }}
+                    style={{ ...S.btnAcct, opacity: busy === 'artisan_switch' ? 0.5 : 1, textAlign: 'center' as const }}
                   >
-                    {a.emoji} {a.label}
+                    {a.emoji}<br /><span style={{ fontSize: 9 }}>{a.label}</span>
                   </button>
                 ))}
               </div>
@@ -310,7 +323,7 @@ export default function DevPanel() {
           </div>
 
           {/* Navigation rapide */}
-          <div>
+          <div style={S.section}>
             <div style={S.label}>Navigation</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
               {NAV_LINKS.map(l => (
@@ -324,6 +337,36 @@ export default function DevPanel() {
               ))}
             </div>
           </div>
+
+          {/* Dernière mission */}
+          {lastMissionId && (
+            <div>
+              <div style={S.label}>Dernière mission</div>
+              <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' as const }}>
+                <button
+                  onClick={() => { router.push(`/warroom/${lastMissionId}`); setOpen(false) }}
+                  style={S.btnMission}
+                >
+                  Warroom
+                </button>
+                <button
+                  onClick={() => { router.push(`/suivi/${lastMissionId}`); setOpen(false) }}
+                  style={S.btnMission}
+                >
+                  Suivi
+                </button>
+                <button
+                  onClick={() => { router.push(`/dispatch/${lastMissionId}`); setOpen(false) }}
+                  style={S.btnMission}
+                >
+                  Dispatch
+                </button>
+              </div>
+              <div style={{ color: '#374151', fontSize: 8.5, marginTop: 3 }}>
+                {lastMissionId.slice(0, 20)}…
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
