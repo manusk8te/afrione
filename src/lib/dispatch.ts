@@ -1,15 +1,27 @@
 import { supabaseAdmin } from '@/lib/supabase'
+import { scoreArtisan } from '@/lib/scoring'
 
 const DISPATCH_TIMEOUT_SECONDS = 45
 
 // ── Trouver TOUS les artisans qualifiés pour la mission ───────────────────────
 
-const TEST_ARTISAN_EMAILS = ['test.plombier@afrione.ci', 'test.elec@afrione.ci']
+const TEST_ARTISAN_EMAILS = [
+  'test.plombier@afrione.ci',
+  'test.elec@afrione.ci',
+  'test.peintre@afrione.ci',
+]
+
+const ARTISAN_SELECT = `
+  id, user_id, metier,
+  rating_avg, rating_count, mission_count, response_time_min,
+  years_experience, certifications, portfolio,
+  users!artisan_pros_user_id_fkey(quartier)
+`
 
 export async function findAllCandidates(missionId: string): Promise<any[]> {
   const { data: mission } = await supabaseAdmin
     .from('missions')
-    .select('category, client_id, users!client_id(email, role)')
+    .select('category, quartier, client_id, users!client_id(email, role)')
     .eq('id', missionId)
     .single()
 
@@ -18,6 +30,7 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
   const clientEmail: string = (mission.users as any)?.email ?? ''
   const clientRole: string  = (mission.users as any)?.role  ?? ''
   const isTestSession = clientEmail.endsWith('@afrione.ci') || clientRole === 'admin'
+  const missionQuartier: string = mission.quartier || 'Cocody'
 
   // Artisans déjà tentés (pour éviter les doublons si relance)
   const { data: attempts } = await supabaseAdmin
@@ -26,6 +39,12 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
     .eq('mission_id', missionId)
 
   const triedIds: string[] = attempts?.map((a: any) => a.artisan_id) ?? []
+
+  const sortByScore = (list: any[]) =>
+    list
+      .filter((a: any) => !triedIds.includes(a.id))
+      .map((a: any) => ({ ...a, _score: scoreArtisan(a, missionQuartier) }))
+      .sort((a: any, b: any) => b._score - a._score)
 
   // ── Session de test : matcher uniquement les artisans test ───────────────
   if (isTestSession) {
@@ -38,38 +57,36 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
 
     const { data: testArtisans } = await supabaseAdmin
       .from('artisan_pros')
-      .select('id, user_id, metier, rating_avg')
+      .select(ARTISAN_SELECT)
       .in('user_id', testUserIds)
       .eq('kyc_status', 'approved')
       .eq('is_available', true)
 
-    return (testArtisans ?? []).filter((a: any) => !triedIds.includes(a.id))
+    return sortByScore(testArtisans ?? [])
   }
 
-  // ── Session réelle : matching normal ─────────────────────────────────────
+  // ── Session réelle : matching par métier + scoring composite ─────────────
   const catWord = mission.category?.split(' ')[0] || ''
 
   let { data: candidates } = await supabaseAdmin
     .from('artisan_pros')
-    .select('id, user_id, metier, rating_avg')
+    .select(ARTISAN_SELECT)
     .eq('kyc_status', 'approved')
     .eq('is_available', true)
     .ilike('metier', `%${catWord}%`)
-    .order('rating_avg', { ascending: false })
     .limit(50)
 
   if (!candidates?.length) {
     const { data: fallback } = await supabaseAdmin
       .from('artisan_pros')
-      .select('id, user_id, metier, rating_avg')
+      .select(ARTISAN_SELECT)
       .eq('kyc_status', 'approved')
       .eq('is_available', true)
-      .order('rating_avg', { ascending: false })
       .limit(50)
     candidates = fallback
   }
 
-  return (candidates ?? []).filter((a: any) => !triedIds.includes(a.id))
+  return sortByScore(candidates ?? [])
 }
 
 // ── Créer un enregistrement de tentative de dispatch ─────────────────────────
