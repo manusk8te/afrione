@@ -2,21 +2,51 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import { Menu, X, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2 } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Menu, X, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2, Bell } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { supabase } from '@/lib/supabase'
 
 const NEU_SM = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
 const NEU_MD = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
 
 export default function Navbar() {
   const isMobile = useIsMobile()
-  const { user, userRole, userName, hasArtisanProfile, loading, signOut } = useAuth()
+  const { user, userRole, userName, hasArtisanProfile, artisanId, loading, signOut } = useAuth()
   const [scrolled,     setScrolled]     = useState(false)
   const [menuOpen,     setMenuOpen]     = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [urgentCount,  setUrgentCount]  = useState(0)
   const pathname = usePathname()
+  const router   = useRouter()
+
+  // Badge urgent — écoute les dispatch_attempts en temps réel pour cet artisan
+  useEffect(() => {
+    if (!artisanId) { setUrgentCount(0); return }
+
+    const loadCount = async () => {
+      const { count } = await supabase
+        .from('dispatch_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('artisan_id', artisanId)
+        .is('response', null)
+        .gt('expires_at', new Date().toISOString())
+      setUrgentCount(count ?? 0)
+    }
+
+    loadCount()
+
+    const channel = supabase
+      .channel(`navbar-urgent:${artisanId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'dispatch_attempts',
+        filter: `artisan_id=eq.${artisanId}`,
+      }, () => loadCount())
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [artisanId])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -111,6 +141,26 @@ export default function Navbar() {
                     <Link href="/entreprise-space/dashboard" style={pillStyle()}>
                       <Building2 size={14} /> Espace Entreprise
                     </Link>
+                  )}
+
+                  {isArtisan && urgentCount > 0 && (
+                    <button
+                      onClick={() => router.push('/artisan-space/dashboard')}
+                      style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', color: onOrange ? 'white' : '#E85D26' }}
+                      title="Mission urgente en attente"
+                    >
+                      <Bell size={20} style={{ animation: 'bellRing 0.6s ease-in-out infinite alternate' }} />
+                      <span style={{
+                        position: 'absolute', top: 2, right: 2,
+                        background: '#ef4444', color: 'white',
+                        borderRadius: '50%', width: 16, height: 16,
+                        fontSize: 10, fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        lineHeight: 1,
+                      }}>
+                        {urgentCount}
+                      </span>
+                    </button>
                   )}
 
                   {isArtisan && (

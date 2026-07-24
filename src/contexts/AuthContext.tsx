@@ -7,6 +7,7 @@ interface AuthState {
   userRole: string
   userName: string
   hasArtisanProfile: boolean
+  artisanId: string | null
   loading: boolean
 }
 
@@ -31,12 +32,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userRole: 'client',
     userName: '',
     hasArtisanProfile: false,
+    artisanId: null,
     loading: true,
   })
 
   const loadUser = useCallback(async (session: any) => {
     if (!session?.user) {
-      setState({ user: null, userRole: 'client', userName: '', hasArtisanProfile: false, loading: false })
+      setState({ user: null, userRole: 'client', userName: '', hasArtisanProfile: false, artisanId: null, loading: false })
       return
     }
 
@@ -52,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       userRole: profile?.role || 'client',
       userName: profile?.name || session.user.email?.split('@')[0] || 'Mon compte',
       hasArtisanProfile: !!artisan,
+      artisanId: artisan?.id ?? null,
       loading: false,
     })
   }, [])
@@ -63,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Single global listener for the entire app lifetime
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
-        setState({ user: null, userRole: 'client', userName: '', hasArtisanProfile: false, loading: false })
+        setState({ user: null, userRole: 'client', userName: '', hasArtisanProfile: false, artisanId: null, loading: false })
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         loadUser(session)
       }
