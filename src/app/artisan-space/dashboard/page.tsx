@@ -634,7 +634,7 @@ export default function ArtisanDashboardPage() {
                 <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
                   <div style={{
                     height: '100%',
-                    width: `${(urgentTimeLeft / 45000) * 100}%`,
+                    width: `${(urgentTimeLeft / 30000) * 100}%`,
                     background: urgentTimeLeft > 15000 ? '#E85D26' : urgentTimeLeft > 7000 ? '#C9A84C' : '#ef4444',
                     borderRadius: '4px',
                     transition: 'width 0.2s linear, background 0.5s',

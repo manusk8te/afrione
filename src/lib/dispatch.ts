@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { scoreArtisan } from '@/lib/scoring'
 
-const DISPATCH_TIMEOUT_SECONDS = 45
+const DISPATCH_TIMEOUT_SECONDS = 30
 
 // ── Trouver TOUS les artisans qualifiés pour la mission ───────────────────────
 
