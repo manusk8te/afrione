@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
   if (mission.mode !== 'urgent') return NextResponse.json({ error: 'Mode non urgent' }, { status: 400 })
 
   const totalAmount   = Number(amount)
-  const platformFee   = Math.round(totalAmount * 0.12)
+  // Urgent mode platform fee is 15% (standard is 12%)
+  const platformFee   = Math.round(totalAmount * 0.15)
   const artisanAmount = totalAmount - platformFee
   const simId         = `sim_${Date.now()}`
 
