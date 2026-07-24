@@ -74,19 +74,27 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Accepté : cet artisan prend la mission ───────────────────────────────
-  // Annuler toutes les autres tentatives en attente
+  // Atomic conditional update — only succeeds if status is still 'dispatching'.
+  // Guards against double-assignment when two artisans accept simultaneously.
+  const { data: claimed, error: claimError } = await supabaseAdmin
+    .from('missions')
+    .update({ status: 'en_route', artisan_id: artisan_id })
+    .eq('id', mission_id)
+    .eq('status', 'dispatching')
+    .select('id')
+    .maybeSingle()
+
+  if (claimError || !claimed) {
+    return NextResponse.json({ error: 'Mission déjà assignée', already_taken: true }, { status: 409 })
+  }
+
+  // Cancel all other pending attempts
   await supabaseAdmin
     .from('dispatch_attempts')
     .update({ response: 'cancelled', responded_at: new Date().toISOString() })
     .eq('mission_id', mission_id)
     .is('response', null)
     .neq('artisan_id', artisan_id)
-
-  // Mission → en_route, artisan assigné
-  await supabaseAdmin
-    .from('missions')
-    .update({ status: 'en_route', artisan_id: artisan_id })
-    .eq('id', mission_id)
 
   // Créditer l'escrow du wallet artisan
   const { data: transaction } = await supabaseAdmin
