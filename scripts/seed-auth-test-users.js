@@ -6,6 +6,7 @@
  *   test.client@afrione.ci    / AfriTest2024!   → client, Cocody
  *   test.plombier@afrione.ci  / AfriTest2024!   → artisan plombier, Yopougon
  *   test.elec@afrione.ci      / AfriTest2024!   → artisan électricien, Abobo
+ *   test.peintre@afrione.ci   / AfriTest2024!   → artisan peintre, Marcory
  *   test.admin@afrione.ci     / AfriTest2024!   → admin
  *
  * NE PAS EXÉCUTER EN PRODUCTION
@@ -76,6 +77,21 @@ const ACCOUNTS = [
       tarif_min: 10000,
       rayon_km: 15,
       years_experience: 5,
+    },
+  },
+  {
+    email: 'test.peintre@afrione.ci',
+    name: 'Traoré Test Peintre',
+    role: 'artisan',
+    quartier: 'Marcory',
+    phone: '+2250700DEV005',
+    artisan: {
+      metier: 'Peinture',
+      bio: 'Peintre de test — 6 ans d\'expérience à Marcory',
+      quartiers: ['Marcory', 'Treichville', 'Port-Bouët'],
+      tarif_min: 7000,
+      rayon_km: 15,
+      years_experience: 6,
     },
   },
   {
@@ -175,6 +191,7 @@ async function seed() {
   console.log('  👤 Client       → test.client@afrione.ci')
   console.log('  🔧 Plombier     → test.plombier@afrione.ci')
   console.log('  ⚡ Électricien  → test.elec@afrione.ci')
+  console.log('  🎨 Peintre      → test.peintre@afrione.ci')
   console.log('  🛡️ Admin        → test.admin@afrione.ci')
   console.log('  Mot de passe    → AfriTest2024!')
   console.log('─────────────────────────────────────────────')
