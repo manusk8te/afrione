@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight, Building2, Droplets, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Wrench } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { scoreArtisan } from '@/lib/scoring'
 
 function MatchingContent() {
   const searchParams = useSearchParams()
@@ -18,6 +19,7 @@ function MatchingContent() {
   const [confirming, setConfirming] = useState(false)
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [missionQuartier, setMissionQuartier] = useState('Cocody')
 
   useEffect(() => {
     const load = async () => {
@@ -25,6 +27,18 @@ function MatchingContent() {
       if (session) setUserId(session.user.id)
 
       const catWord = category.split(' ')[0]
+
+      // Resolve mission quartier for proximity scoring
+      let resolvedQuartier = searchParams.get('quartier') || 'Cocody'
+      if (missionId) {
+        const { data: m } = await supabase
+          .from('missions')
+          .select('quartier')
+          .eq('id', missionId)
+          .single()
+        if (m?.quartier) resolvedQuartier = m.quartier
+      }
+      setMissionQuartier(resolvedQuartier)
 
       // Artisans + entreprises en parallèle
       const [artisanRes, entrepriseRes] = await Promise.all([
@@ -34,8 +48,7 @@ function MatchingContent() {
           .eq('kyc_status', 'approved')
           .eq('is_available', true)
           .ilike('metier', `%${catWord}%`)
-          .order('rating_avg', { ascending: false })
-          .limit(5),
+          .limit(20),
         supabase
           .from('entreprises')
           .select('id, name, description, banner_url, logo_url, secteurs, quartiers, artisan_pros(id)')
@@ -47,18 +60,25 @@ function MatchingContent() {
       // Entreprises qui couvrent ce secteur
       setEntreprises(entrepriseRes.data || [])
 
-      // Fallback artisans
+      // Score and rank artisans client-side
+      const rankAndSet = (raw: any[]) => {
+        const scored = raw
+          .map(a => ({ ...a, _score: scoreArtisan(a, resolvedQuartier) }))
+          .sort((a, b) => b._score - a._score)
+          .slice(0, 5)
+        setArtisans(scored)
+      }
+
       if (!artisanRes.data || artisanRes.data.length === 0) {
         const { data: fallback } = await supabase
           .from('artisan_pros')
           .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
           .eq('kyc_status', 'approved')
           .eq('is_available', true)
-          .order('rating_avg', { ascending: false })
-          .limit(5)
-        setArtisans(fallback || [])
+          .limit(20)
+        rankAndSet(fallback || [])
       } else {
-        setArtisans(artisanRes.data)
+        rankAndSet(artisanRes.data)
       }
       setLoading(false)
     }
@@ -86,7 +106,7 @@ function MatchingContent() {
             artisan_id: selected,
             status: 'negotiation',
             category,
-            quartier: 'Abidjan',
+            quartier: missionQuartier,
           })
           .select()
           .single()
@@ -250,10 +270,6 @@ function MatchingContent() {
                             <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#7A7A6E',marginTop:'2px'}}>
                               <MapPin size={12} /> {a.users?.quartier || 'Abidjan'}
                             </div>
-                          </div>
-                          <div style={{textAlign:'right',flexShrink:0}}>
-                            <div className="font-display" style={{fontWeight:700,color:'#3D4852',fontSize:'16px'}}>{(a.tarif_min || 0).toLocaleString()} FCFA</div>
-                            <div style={{fontSize:'11px',color:'#7A7A6E'}}>tarif min</div>
                           </div>
                         </div>
 
