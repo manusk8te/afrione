@@ -167,12 +167,7 @@ export const runWorkflow = async (workflow: WorkflowInput) => {
       { role: "user", content: [{ type: "input_text", text: workflow.input_as_text }] },
     ];
 
-    const runner = new Runner({
-      traceMetadata: {
-        __trace_source__: "agent-builder",
-        workflow_id: "wf_6a084fa83e648190a097efab184635fb012d5e5358b9e872",
-      },
-    });
+    const runner = new Runner();
 
     const result = await runner.run(afrione, [...conversationHistory]);
     conversationHistory.push(...result.newItems.map((item) => item.rawItem as AgentInputItem));

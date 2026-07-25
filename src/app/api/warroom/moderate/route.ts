@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { chatCompletion } from '@/lib/openai-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,39 +91,16 @@ export async function POST(req: NextRequest) {
 
   const userPrompt = `Conversation récente :\n${recentConversation}\n\nDernier message à analyser :\n[${last_message.sender_role}] : ${last_message.text}`
 
-  const apiKey = process.env.OPENAI_API_KEY
-
   let result: { should_intervene: boolean; trigger_type: string | null; message: string; severity: string }
 
-  if (!apiKey) {
-    // Fallback heuristique si pas de clé OpenAI
+  try {
+    const raw = await chatCompletion(
+      [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+      { model: 'gpt-4o-mini', json: true, temperature: 0.1, max_tokens: 300 },
+    )
+    result = JSON.parse(raw)
+  } catch {
     result = heuristicModeration(last_message.text, last_message.sender_role, marketRef, triggerHistory)
-  } else {
-    try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user',   content: userPrompt },
-          ],
-          response_format: { type: 'json_object' },
-          temperature: 0.1,
-          max_tokens: 300,
-        }),
-      })
-
-      if (!res.ok) throw new Error('OpenAI error')
-      const data = await res.json()
-      result = JSON.parse(data.choices[0].message.content)
-    } catch {
-      result = heuristicModeration(last_message.text, last_message.sender_role, marketRef, triggerHistory)
-    }
   }
 
   if (!result.should_intervene) {
