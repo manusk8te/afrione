@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { withTrace } from '@openai/agents'
 import { CATEGORY_TO_METIER, SMIG_X2_HORAIRE } from '@/lib/pricing'
 import { supabaseAdmin } from '@/lib/supabase'
 import { lookupItemOnJumia } from '@/lib/jumia-lookup'
@@ -244,6 +243,7 @@ export async function POST(req: NextRequest) {
   const metier   = CATEGORY_TO_METIER[category] || category
   const quartier = body.quartier || 'Cocody'
 
+  const { withTrace } = await import('@openai/agents')
   return withTrace('AfriOne Pricing Agent', async () => {
     const systemPrompt = await buildSystemPrompt(category, quartier)
 

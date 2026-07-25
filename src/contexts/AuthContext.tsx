@@ -21,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   userRole: 'client',
   userName: '',
   hasArtisanProfile: false,
+  artisanId: null,
   loading: true,
   signOut: async () => {},
   reload: async () => {},
