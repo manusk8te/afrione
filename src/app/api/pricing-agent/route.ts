@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { withTrace } from '@openai/agents'
 import { CATEGORY_TO_METIER, SMIG_X2_HORAIRE } from '@/lib/pricing'
 import { supabaseAdmin } from '@/lib/supabase'
 import { lookupItemOnJumia } from '@/lib/jumia-lookup'
@@ -243,11 +244,10 @@ export async function POST(req: NextRequest) {
   const metier   = CATEGORY_TO_METIER[category] || category
   const quartier = body.quartier || 'Cocody'
 
-  const [systemPrompt] = await Promise.all([
-    buildSystemPrompt(category, quartier),
-  ])
+  return withTrace('AfriOne Pricing Agent', async () => {
+    const systemPrompt = await buildSystemPrompt(category, quartier)
 
-  const userMessage = `Calcule le prix AfriOne pour :
+    const userMessage = `Calcule le prix AfriOne pour :
 - Métier : ${metier}
 - Description : ${body.description || ''}
 - Matériaux nécessaires : ${(body.items_needed || []).join(', ') || 'aucun'}
@@ -255,46 +255,46 @@ export async function POST(req: NextRequest) {
 - Quartier client : ${quartier}
 - Urgence : ${body.urgency || 'medium'}${body.artisan_id ? `\n- Artisan ID : ${body.artisan_id}` : ''}`
 
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user',   content: userMessage },
-  ]
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userMessage },
+    ]
 
-  for (let turn = 0; turn < 6; turn++) {
-    const response = await openai.chat.completions.create({
-      model:       'gpt-4o-mini',
-      temperature: 0,
-      tools:       TOOLS,
-      tool_choice: 'auto',
-      messages,
-    })
+    for (let turn = 0; turn < 6; turn++) {
+      const response = await openai.chat.completions.create({
+        model:       'gpt-4o-mini',
+        temperature: 0,
+        tools:       TOOLS,
+        tool_choice: 'auto',
+        messages,
+      })
 
-    const msg    = response.choices[0].message
-    const reason = response.choices[0].finish_reason
-    messages.push(msg)
+      const msg    = response.choices[0].message
+      const reason = response.choices[0].finish_reason
+      messages.push(msg)
 
-    if (reason === 'stop') {
-      const text = msg.content || ''
-      try {
-        const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-        return NextResponse.json(JSON.parse(cleaned))
-      } catch {
-        return NextResponse.json({ explanation: text, total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} })
+      if (reason === 'stop') {
+        const text = msg.content || ''
+        try {
+          const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+          return NextResponse.json(JSON.parse(cleaned))
+        } catch {
+          return NextResponse.json({ explanation: text, total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} })
+        }
+      }
+
+      if (reason === 'tool_calls' && msg.tool_calls?.length) {
+        const results = await Promise.all(
+          msg.tool_calls.map(async tc => ({
+            role:         'tool' as const,
+            tool_call_id: tc.id,
+            content:      await runTool(tc.function.name, JSON.parse(tc.function.arguments)),
+          }))
+        )
+        messages.push(...results)
       }
     }
 
-    if (reason === 'tool_calls' && msg.tool_calls?.length) {
-      // Exécuter tous les tool calls en parallèle (search_material_price notamment)
-      const results = await Promise.all(
-        msg.tool_calls.map(async tc => ({
-          role:         'tool' as const,
-          tool_call_id: tc.id,
-          content:      await runTool(tc.function.name, JSON.parse(tc.function.arguments)),
-        }))
-      )
-      messages.push(...results)
-    }
-  }
-
-  return NextResponse.json({ total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} })
+    return NextResponse.json({ total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} })
+  })
 }
