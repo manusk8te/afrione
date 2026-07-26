@@ -28,6 +28,51 @@ const TRANSPORT: Record<string, number> = {
 
 // ── Tools ────────────────────────────────────────────────────────────────────
 
+const getPricingData = tool({
+  name: "get_pricing_data",
+  description: "Récupère les vrais tarifs terrain Abidjan par métier et zone depuis la base AfriOne. TOUJOURS appeler en premier avant tout calcul.",
+  parameters: z.object({
+    metier: z.string().describe("Ex: Plombier, Électricien, Maçon, Peintre"),
+    zone:   z.string().describe("Quartier Abidjan : Plateau, Cocody, Yopougon, Abobo, Adjamé, Treichville, Marcory"),
+  }),
+  execute: async ({ metier, zone }) => {
+    const { data: zoneData } = await supabaseAdmin
+      .from('pricing_reference')
+      .select('taux_horaire, taux_journee, nb_observations')
+      .eq('metier', metier)
+      .eq('zone', zone)
+      .order('nb_observations', { ascending: false });
+
+    if (zoneData?.length) {
+      const total = zoneData.reduce((s, r) => s + r.nb_observations, 0);
+      return {
+        metier, zone, has_data: true,
+        taux_horaire: Math.round(zoneData.reduce((s, r) => s + r.taux_horaire * r.nb_observations, 0) / total),
+        taux_journee: Math.round(zoneData.reduce((s, r) => s + r.taux_journee * r.nb_observations, 0) / total),
+        nb_observations: total, source: 'Données terrain AfriOne',
+      };
+    }
+
+    const { data: national } = await supabaseAdmin
+      .from('pricing_reference')
+      .select('taux_horaire, taux_journee, nb_observations')
+      .eq('metier', metier)
+      .order('nb_observations', { ascending: false });
+
+    if (national?.length) {
+      const total = national.reduce((s, r) => s + r.nb_observations, 0);
+      return {
+        metier, zone, has_data: true, fallback: true,
+        taux_horaire: Math.round(national.reduce((s, r) => s + r.taux_horaire * r.nb_observations, 0) / total),
+        taux_journee: Math.round(national.reduce((s, r) => s + r.taux_journee * r.nb_observations, 0) / total),
+        nb_observations: total, source: 'Moyenne nationale AfriOne',
+      };
+    }
+
+    return { metier, zone, has_data: false, message: `Pas de données pour ${metier} à ${zone}. Utilise get_artisan_rate.` };
+  },
+});
+
 const searchMaterialPrice = tool({
   name: "search_material_price",
   description: "Cherche le prix réel d'un matériau sur Jumia CI et dans la base AfriOne. Appeler pour chaque matériau mentionné.",
@@ -135,26 +180,23 @@ const calculateFinalPrice = tool({
 
 const afrione = new Agent({
   name: "afrione",
-  instructions: `Tu es l'agent de pricing d'AfriOne, plateforme d'artisans à Abidjan, Côte d'Ivoire.
+  instructions: `Tu es l'agent de tarification AfriOne pour le marché informel d'Abidjan, Côte d'Ivoire.
 
-Quand on te demande de calculer le prix d'une prestation :
-1. Appelle get_artisan_rate pour obtenir le vrai taux horaire
-2. Pour chaque matériau mentionné, appelle search_material_price
-3. Additionne tous les matériaux
-4. Appelle calculate_final_price avec les chiffres réels
-5. Réponds avec le détail du prix en français clair
+Processus OBLIGATOIRE en 4 étapes :
+1. Appelle get_pricing_data(metier, zone) → tarifs terrain réels
+   - Si has_data=true : utilise taux_horaire comme référence principale
+   - Si has_data=false : appelle get_artisan_rate(metier, artisan_id?) comme fallback
+2. Pour chaque matériau, appelle search_material_price
+3. Appelle calculate_final_price avec hours, hourly_rate, materials_total, urgency, quartier
+4. Réponds UNIQUEMENT avec le JSON brut. Aucun texte, aucun markdown.
 
 Règles absolues :
 - Taux horaire minimum = 866 FCFA/h (SMIG × 2 Côte d'Ivoire)
 - Les prix viennent toujours des outils, jamais inventés
-- Toujours montrer le détail : main d'œuvre + matériaux + transport + commission AfriOne (10%) + assurance (2%)
-- L'artisan perçoit 88% du total
-- Répondre en JSON : { total, fourchette: {min, max}, artisan_percoit, breakdown, explanation }`,
+- Répondre en JSON : { total, fourchette: {min, max}, artisan_percoit, breakdown, data_note? }`,
   model: "gpt-4o-mini",
-  tools: [searchMaterialPrice, getArtisanRate, calculateFinalPrice],
-  modelSettings: {
-    store: true,
-  },
+  tools: [getPricingData, searchMaterialPrice, getArtisanRate, calculateFinalPrice],
+  modelSettings: { store: true },
 });
 
 // ── Runner ───────────────────────────────────────────────────────────────────
@@ -195,14 +237,27 @@ export interface AgentPricingInput {
 export async function runPricingAgent(input: AgentPricingInput) {
   const metier = CATEGORY_TO_METIER[input.category] || input.category;
 
-  const text = `Calcule le prix pour cette prestation :
+  const { data: examples } = await supabaseAdmin
+    .from('accepted_prices')
+    .select('quartier, urgency, hours, materials_count, description_short, final_price')
+    .eq('category', input.category)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const examplesBlock = examples?.length
+    ? `\nMissions ${input.category} récemment acceptées (calibre ton prix) :\n` +
+      examples.map(e =>
+        `- ${e.quartier} · ${e.urgency} · ${e.hours}h · ${e.materials_count} mat.${e.description_short ? ` · "${e.description_short}"` : ''} → ${e.final_price.toLocaleString('fr')} FCFA ✓`
+      ).join('\n')
+    : '';
+
+  const text = `Calcule le prix AfriOne pour :
 - Métier : ${metier}
 - Description : ${input.description}
 - Matériaux : ${input.items_needed.join(', ') || 'aucun'}
-- Durée : ${input.hours_estimate}h
-- Quartier : ${input.quartier}
-- Urgence : ${input.urgency}
-${input.artisan_id ? `- Artisan ID : ${input.artisan_id}` : ''}`;
+- Durée estimée : ${input.hours_estimate}h
+- Quartier client : ${input.quartier}
+- Urgence : ${input.urgency}${input.artisan_id ? `\n- Artisan ID : ${input.artisan_id}` : ''}${examplesBlock}`;
 
   const result = await runWorkflow({ input_as_text: text });
 
