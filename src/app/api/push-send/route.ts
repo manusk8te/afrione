@@ -1,33 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
-import webpush from 'web-push'
+import { sendPushToUser } from '@/lib/push'
 
 export const dynamic = 'force-dynamic'
 
 
 export async function POST(req: NextRequest) {
   try {
-    const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-    const vapidPrivate = process.env.VAPID_PRIVATE_KEY
-    if (!vapidPublic || !vapidPrivate) {
-      return NextResponse.json({ error: 'VAPID keys not configured' }, { status: 500 })
-    }
-
-    webpush.setVapidDetails('mailto:contact@afrione.ci', vapidPublic, vapidPrivate)
-
     const { user_id, title, body, url } = await req.json()
-    const { data } = await supabaseAdmin
-      .from('push_subscriptions')
-      .select('subscription')
-      .eq('user_id', user_id)
-      .single()
+    if (!user_id) return NextResponse.json({ error: 'user_id requis' }, { status: 400 })
 
-    if (!data) return NextResponse.json({ error: 'No subscription' }, { status: 404 })
-
-    await webpush.sendNotification(
-      data.subscription,
-      JSON.stringify({ title, body, url })
-    )
+    const result = await sendPushToUser(user_id, { title, body, url })
+    if (!result.sent) {
+      return NextResponse.json({ ok: false, reason: result.reason }, { status: result.reason === 'no_subscription' ? 404 : 500 })
+    }
     return NextResponse.json({ ok: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

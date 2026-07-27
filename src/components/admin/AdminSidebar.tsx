@@ -17,6 +17,7 @@ export const ADMIN_NAV = [
   { id: 'sources',      label: 'Sources de prix',  short: 'Sources',      icon: '🏪', href: '/admin/sources' },
   { id: 'cas-c',        label: 'Cas Complexes',     short: 'CasC',         icon: '🎬', href: '/admin/cas-c-review' },
   { id: 'shadow-test',  label: 'Shadow Test IA',    short: 'Shadow',       icon: '🧪', href: '/admin/shadow-test' },
+  { id: 'comptes',      label: 'Comptes & Test',    short: 'Comptes',      icon: '🎭', href: '/admin/comptes' },
 ]
 
 interface Props {
@@ -39,7 +40,7 @@ export default function AdminSidebar({
   casCCount = 0,
 }: Props) {
   const pathname = usePathname()
-  const isSubPage = ['/admin/prix', '/admin/sources', '/admin/shadow-test'].includes(pathname)
+  const isSubPage = ['/admin/prix', '/admin/sources', '/admin/shadow-test', '/admin/comptes'].includes(pathname)
 
   const getHref = (item: typeof ADMIN_NAV[0]) => {
     if (item.href) return item.href

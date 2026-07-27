@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { scoreArtisan } from '@/lib/scoring'
+import { sendPushToUser } from '@/lib/push'
+import { CATEGORY_TO_METIER } from '@/lib/pricing'
 
 const DISPATCH_TIMEOUT_SECONDS = 30
 
@@ -68,14 +70,18 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
   // ── Session réelle : broadcast à TOUS les plombiers/élec/etc disponibles ─
   // Filtre par métier de la mission, notif simultanée à tous, premier qui
   // accepte prend la mission. Fallback sans filtre si aucun spécialiste libre.
+  // Le métier peut être stocké comme catégorie ("Plomberie") ou comme métier
+  // ("Plombier") — on matche les deux, sinon "Plombier" ne matche jamais
+  // ilike '%Plomberie%' et tout part en fallback sans filtre.
   const catWord = mission.category?.split(' ')[0] || ''
+  const metierWord = CATEGORY_TO_METIER[mission.category ?? ''] || catWord
 
   let { data: candidates } = await supabaseAdmin
     .from('artisan_pros')
     .select(ARTISAN_SELECT)
     .eq('kyc_status', 'approved')
     .eq('is_available', true)
-    .ilike('metier', `%${catWord}%`)
+    .or(`metier.ilike.%${catWord}%,metier.ilike.%${metierWord}%`)
     .limit(200)
 
   if (!candidates?.length) {
@@ -123,18 +129,14 @@ export async function sendUrgentNotification(userId: string, category: string) {
   const title = '🚨 Mission Urgente !'
   const body  = `${category} — Tu as ${DISPATCH_TIMEOUT_SECONDS}s pour accepter !`
 
-  await Promise.allSettled([
-    fetch(`${base}/api/notify`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ user_id: userId, title, message: body, url }),
-    }),
-    fetch(`${base}/api/push-send`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ user_id: userId, title, body, url }),
-    }),
-  ])
+  // Web-push direct (même process) — plus de hop HTTP vers /api/push-send qui
+  // partait vers la prod quand NEXT_PUBLIC_APP_URL manquait, ni d'appel
+  // OneSignal (SDK jamais initialisé côté client → livraison impossible).
+  const result = await sendPushToUser(userId, { title, body, url })
+  if (!result.sent) {
+    console.warn(`[dispatch] push non délivré à ${userId}: ${result.reason}`)
+  }
+  return result
 }
 
 // ── Annuler et déclencher le remboursement ────────────────────────────────────

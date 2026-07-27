@@ -36,7 +36,8 @@ export default function ArtisanDashboardPage() {
   const isMobile = useIsMobile()
   const [tab, setTab] = useState('missions')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  usePushNotifications(currentUserId)
+  const { status: pushStatus, enable: enablePush } = usePushNotifications(currentUserId)
+  const [enablingPush, setEnablingPush] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [artisan, setArtisan] = useState<any>(null)
   const [missions, setMissions] = useState<any[]>([])
@@ -516,6 +517,38 @@ export default function ArtisanDashboardPage() {
       </section>
 
       <div className="page-container" style={{padding:isMobile?'20px 16px 48px':'28px 32px 64px',maxWidth:'896px',position:'relative'}}>
+
+        {/* Bannière activation notifications push — indispensable pour recevoir les missions urgentes */}
+        {(pushStatus === 'default' || pushStatus === 'denied') && (
+          <div style={{background:'rgba(232,93,38,0.07)',border:'1.5px solid rgba(232,93,38,0.35)',borderRadius:'16px',padding:'14px 16px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'12px',flexWrap:'wrap'}}>
+            <span style={{fontSize:'22px',flexShrink:0}}>🔔</span>
+            <div style={{flex:1,minWidth:'200px'}}>
+              <div style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>Activez les notifications</div>
+              <div style={{fontSize:'12px',color:'#6B7280',marginTop:'2px'}}>
+                {pushStatus === 'denied'
+                  ? 'Notifications bloquées par le navigateur — autorisez-les dans les paramètres du site pour recevoir les missions urgentes.'
+                  : 'Sans elles, vous ne recevrez pas les missions urgentes quand l\'application est fermée.'}
+              </div>
+            </div>
+            {pushStatus === 'default' && (
+              <button
+                onClick={async () => {
+                  setEnablingPush(true)
+                  const ok = await enablePush()
+                  setEnablingPush(false)
+                  if (ok) toast.success('Notifications activées !')
+                  else toast.error('Permission refusée — activez-les dans les paramètres du navigateur.')
+                }}
+                disabled={enablingPush}
+                className="btn-primary"
+                style={{padding:'10px 18px',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'13px',cursor:'pointer',opacity:enablingPush?0.6:1,flexShrink:0}}
+              >
+                {enablingPush ? 'Activation…' : 'Activer →'}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Floating orange squares — decorative */}
         <div style={{ position: 'absolute', top: '6%',  right: '-18px', width: 54, height: 54, background: 'rgba(232,93,38,0.07)', borderRadius: 12, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: '45%', left: '-18px',  width: 38, height: 38, border: '2px solid rgba(232,93,38,0.11)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-8deg)', pointerEvents: 'none' }} />
