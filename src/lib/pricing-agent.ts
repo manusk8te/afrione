@@ -1,4 +1,4 @@
-import { Agent, AgentInputItem, Runner, tool, withTrace } from "@openai/agents";
+import { Agent, AgentInputItem, Runner, tool, withTrace, getGlobalTraceProvider } from "@openai/agents";
 import { z } from "zod";
 import { supabaseAdmin } from "./supabase";
 import { lookupItemOnJumia } from "./jumia-lookup";
@@ -203,23 +203,52 @@ Règles absolues :
 
 type WorkflowInput = { input_as_text: string };
 
-export const runWorkflow = async (workflow: WorkflowInput) => {
-  return await withTrace("AfriOne Pricing Agent", async () => {
-    const conversationHistory: AgentInputItem[] = [
-      { role: "user", content: [{ type: "input_text", text: workflow.input_as_text }] },
-    ];
+// Étapes du run (appels d'outils + résultats) extraites pour le journal local
+export type AgentStep = { type: string; name?: string; arguments?: any; output?: any };
 
-    const runner = new Runner();
-
-    const result = await runner.run(afrione, [...conversationHistory]);
-    conversationHistory.push(...result.newItems.map((item) => item.rawItem as AgentInputItem));
-
-    if (!result.finalOutput) {
-      throw new Error("Agent result is undefined");
+function extractSteps(newItems: any[]): AgentStep[] {
+  return newItems.map((item: any) => {
+    const raw = item.rawItem ?? {};
+    if (raw.type === 'function_call') {
+      let args: any = raw.arguments;
+      try { args = JSON.parse(raw.arguments) } catch {}
+      return { type: 'tool_call', name: raw.name, arguments: args };
     }
-
-    return { output_text: result.finalOutput ?? "" };
+    if (raw.type === 'function_call_result' || raw.type === 'function_call_output') {
+      let out: any = raw.output?.text ?? raw.output;
+      try { if (typeof out === 'string') out = JSON.parse(out) } catch {}
+      return { type: 'tool_result', name: raw.name, output: out };
+    }
+    return { type: raw.type || item.type || 'item' };
   });
+}
+
+export const runWorkflow = async (workflow: WorkflowInput) => {
+  try {
+    return await withTrace("AfriOne Pricing Agent", async () => {
+      const conversationHistory: AgentInputItem[] = [
+        { role: "user", content: [{ type: "input_text", text: workflow.input_as_text }] },
+      ];
+
+      const runner = new Runner();
+
+      const result = await runner.run(afrione, [...conversationHistory]);
+
+      if (!result.finalOutput) {
+        throw new Error("Agent result is undefined");
+      }
+
+      return {
+        output_text: result.finalOutput ?? "",
+        steps: extractSteps(result.newItems ?? []),
+      };
+    });
+  } finally {
+    // Vercel gèle la function dès que la réponse part — le BatchTraceProcessor
+    // n'a jamais le temps d'exporter. Flush obligatoire AVANT de répondre,
+    // sinon aucune trace n'apparaît sur platform.openai.com/traces.
+    await getGlobalTraceProvider().forceFlush().catch(() => {});
+  }
 };
 
 // ── Interface publique ───────────────────────────────────────────────────────
@@ -259,12 +288,42 @@ export async function runPricingAgent(input: AgentPricingInput) {
 - Quartier client : ${input.quartier}
 - Urgence : ${input.urgency}${input.artisan_id ? `\n- Artisan ID : ${input.artisan_id}` : ''}${examplesBlock}`;
 
-  const result = await runWorkflow({ input_as_text: text });
+  const startedAt = Date.now();
+  let result: Awaited<ReturnType<typeof runWorkflow>> | null = null;
+  let runError: string | null = null;
 
   try {
-    const cleaned = result?.output_text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim() || '';
-    return JSON.parse(cleaned);
-  } catch {
-    return { explanation: result?.output_text || '', total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} };
+    result = await runWorkflow({ input_as_text: text });
+  } catch (err: any) {
+    runError = err?.message || 'run_failed';
   }
+
+  let parsed: any = null;
+  let parseOk = false;
+  try {
+    const cleaned = result?.output_text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim() || '';
+    parsed = JSON.parse(cleaned);
+    parseOk = true;
+  } catch {
+    parsed = { explanation: result?.output_text || '', total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} };
+  }
+
+  // Journal local du run — observabilité indépendante d'OpenAI (table agent_runs).
+  // Awaité : en serverless, un insert fire-and-forget serait perdu au gel de la function.
+  await supabaseAdmin.from('agent_runs').insert({
+    agent_name:  'pricing',
+    model:       'gpt-4o-mini',
+    input:       { category: input.category, metier, quartier: input.quartier, urgency: input.urgency, hours: input.hours_estimate, items: input.items_needed, artisan_id: input.artisan_id ?? null, prompt: text },
+    steps:       result?.steps ?? [],
+    output:      parseOk ? parsed : { raw: result?.output_text ?? null },
+    total_price: parseOk ? (parsed.total ?? null) : null,
+    parse_ok:    parseOk,
+    error:       runError,
+    duration_ms: Date.now() - startedAt,
+  }).then(({ error }) => {
+    if (error) console.warn('[agent_runs] insert failed:', error.message);
+  });
+
+  if (runError) throw new Error(runError);
+  return parsed;
 }
