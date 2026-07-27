@@ -165,7 +165,12 @@ export async function cancelAndRefund(missionId: string, clientId: string) {
 
 // ── Broadcaster à TOUS les artisans qualifiés simultanément ──────────────────
 
-export async function startUrgentDispatch(missionId: string, clientId: string, category: string) {
+export async function startUrgentDispatch(
+  missionId: string,
+  clientId: string,
+  category: string,
+  timeoutSeconds: number = DISPATCH_TIMEOUT_SECONDS,
+) {
   const candidates = await findAllCandidates(missionId)
 
   if (!candidates.length) {
@@ -174,7 +179,7 @@ export async function startUrgentDispatch(missionId: string, clientId: string, c
   }
 
   // Même expiry pour tous — premier arrivé premier servi
-  const expiresAt = new Date(Date.now() + DISPATCH_TIMEOUT_SECONDS * 1000).toISOString()
+  const expiresAt = new Date(Date.now() + timeoutSeconds * 1000).toISOString()
 
   // Créer une tentative pour chaque candidat + notifier en parallèle
   await Promise.all(

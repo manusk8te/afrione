@@ -214,6 +214,39 @@ export default function DevPanel() {
     setOpen(false)
   }
 
+  // Urgence test en un clic : crée + broadcast la mission (timeout 120s),
+  // puis bascule directement sur l'artisan test correspondant — mono-navigateur,
+  // le dashboard artisan charge l'urgence en attente à l'ouverture.
+  async function launchUrgentAndSwitch(category: string, artisanEmail: string) {
+    setBusy('urgent')
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/test-urgent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || ''}`,
+      },
+      body: JSON.stringify({ category }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      alert(`Urgence test échouée : ${data.error || data.reason || 'aucun candidat'}`)
+      setBusy(null)
+      return
+    }
+
+    const acct = TEST_ACCOUNTS.find(a => a.email === artisanEmail)
+    if (!acct) { setBusy(null); return }
+    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signInWithPassword({ email: acct.email, password: acct.password })
+    if (error) {
+      alert(`Connexion artisan échouée : ${error.message}`)
+      setBusy(null)
+      return
+    }
+    window.location.href = '/artisan-space/dashboard'
+  }
+
   const NAV_LINKS = [
     { label: 'Dashboard',   path: '/dashboard' },
     { label: 'Artisan',     path: '/artisan-space/dashboard' },
@@ -309,6 +342,32 @@ export default function DevPanel() {
               ))}
             </div>
           </div>
+
+          {/* Urgence test en un clic (admin uniquement — l'API vérifie le rôle) */}
+          {userRole === 'admin' && (
+            <div style={S.section}>
+              <div style={{ ...S.label, color: '#f87171' }}>🚨 Urgence test → bascule artisan</div>
+              <div style={S.grid2}>
+                <button
+                  onClick={() => launchUrgentAndSwitch('Plomberie', 'test.plombier@afrione.ci')}
+                  disabled={busy === 'urgent'}
+                  style={{ ...S.btnAcct, borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)', opacity: busy === 'urgent' ? 0.5 : 1 }}
+                >
+                  🔧 Plomberie
+                </button>
+                <button
+                  onClick={() => launchUrgentAndSwitch('Électricité', 'test.elec@afrione.ci')}
+                  disabled={busy === 'urgent'}
+                  style={{ ...S.btnAcct, borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)', opacity: busy === 'urgent' ? 0.5 : 1 }}
+                >
+                  ⚡ Électricité
+                </button>
+              </div>
+              <div style={{ color: '#4b5563', fontSize: 9, marginTop: 4 }}>
+                {busy === 'urgent' ? 'Création + bascule en cours…' : 'Crée la mission (120s) puis se connecte en artisan'}
+              </div>
+            </div>
+          )}
 
           {/* Scénarios diagnostic */}
           <div style={S.section}>

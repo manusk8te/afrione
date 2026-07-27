@@ -34,8 +34,17 @@ type DispatchResult = {
   mission_id: string
   count: number
   reason: string | null
+  timeout_seconds?: number
   targets: { name: string; email: string; metier: string }[]
 }
+
+// Bascule mono-navigateur : après le broadcast, se connecter directement
+// sur un artisan test pour recevoir la mission sans second navigateur.
+const ARTISAN_SWITCH = [
+  { label: 'Plombier',    emoji: '🔧', email: 'test.plombier@afrione.ci' },
+  { label: 'Électricien', emoji: '⚡', email: 'test.elec@afrione.ci' },
+  { label: 'Peintre',     emoji: '🎨', email: 'test.peintre@afrione.ci' },
+] as const
 
 export default function AdminComptesPage() {
   const router = useRouter()
@@ -200,8 +209,8 @@ export default function AdminComptesPage() {
 
           <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', lineHeight: 1.6 }}>
             ⚠️ « Se connecter » remplace votre session admin par le compte test dans cet onglet.
-            Pour tester la réception d'une urgence, ouvrez un <strong>second navigateur</strong> (ou une fenêtre privée)
-            connecté en artisan test — dashboard artisan ouvert et notifications activées.
+            Flux mono-navigateur : lancez la mission ci-dessous, puis basculez sur un artisan — vous avez
+            120&nbsp;s pour accepter, le dashboard artisan charge l'urgence dès son ouverture.
           </p>
         </div>
 
@@ -264,6 +273,30 @@ export default function AdminComptesPage() {
                   ))}
                 </div>
               )}
+              {/* Bascule directe : recevoir la mission sur un artisan test (même navigateur) */}
+              {result.ok && (
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.08em', marginBottom: '6px' }}>
+                    RECEVOIR LA MISSION SUR… (bascule de session, {result.timeout_seconds ?? 120}s pour accepter)
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {ARTISAN_SWITCH.map(a => (
+                      <button key={a.email}
+                        onClick={async () => {
+                          setSwitching(a.email)
+                          await supabase.auth.signOut()
+                          const { error } = await supabase.auth.signInWithPassword({ email: a.email, password: TEST_PASSWORD })
+                          if (error) { toast.error(`Connexion échouée : ${error.message}`); setSwitching(null); return }
+                          window.location.href = '/artisan-space/dashboard'
+                        }}
+                        disabled={!!switching}
+                        style={{ padding: '9px 14px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '12px', cursor: 'pointer', opacity: switching === a.email ? 0.6 : 1 }}>
+                        {a.emoji} {switching === a.email ? 'Bascule…' : `${a.label} →`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button onClick={() => router.push(`/dispatch/${result.mission_id}`)}
                   style={{ padding: '8px 14px', background: '#FFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', fontWeight: 600, fontSize: '12px', cursor: 'pointer', color: '#3D4852' }}>
@@ -275,8 +308,8 @@ export default function AdminComptesPage() {
                 </button>
               </div>
               <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '10px', margin: '10px 0 0', lineHeight: 1.6 }}>
-                Côté artisan : le dashboard affiche la bannière 🚨 en temps réel s'il est ouvert,
-                et une notification push arrive si « Push OK » est vert ci-dessus.
+                Le dashboard artisan charge l'urgence en attente dès son ouverture — pas besoin de rafraîchir
+                ni d'un second navigateur.
               </p>
             </div>
           )}

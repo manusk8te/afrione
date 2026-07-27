@@ -83,10 +83,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { category = 'Plomberie', amount = 15000 } = await req.json().catch(() => ({}))
+  const { category = 'Plomberie', amount = 15000, timeout_seconds = 120 } = await req.json().catch(() => ({}))
 
   const auth = await requireAdmin(req)
   if (!auth.ok) return auth.res
+
+  // Timeout élargi par défaut (120s) : laisse le temps de basculer sur un
+  // compte artisan test dans le même navigateur avant l'expiration.
+  const timeoutSec = Math.min(300, Math.max(30, Number(timeout_seconds) || 120))
 
   // ── Client de test ─────────────────────────────────────────────────────────
   const { data: testClient } = await supabaseAdmin
@@ -140,7 +144,7 @@ export async function POST(req: NextRequest) {
   })
 
   // ── Broadcast aux artisans test ────────────────────────────────────────────
-  const result = await startUrgentDispatch(mission.id, testClient.id, category)
+  const result = await startUrgentDispatch(mission.id, testClient.id, category, timeoutSec)
 
   // Détails des tentatives pour le retour admin (qui a été notifié)
   const { data: attempts } = await supabaseAdmin
@@ -160,6 +164,7 @@ export async function POST(req: NextRequest) {
     dispatched:  result.dispatched,
     count:       (result as any).count ?? 0,
     expires_at:  (result as any).expires_at ?? null,
+    timeout_seconds: timeoutSec,
     reason:      (result as any).reason ?? null,
     targets,
   })
