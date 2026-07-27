@@ -3,7 +3,7 @@ import { scoreArtisan } from '@/lib/scoring'
 import { sendPushToUser } from '@/lib/push'
 import { CATEGORY_TO_METIER } from '@/lib/pricing'
 
-const DISPATCH_TIMEOUT_SECONDS = 30
+const DISPATCH_TIMEOUT_SECONDS = 60
 
 // ── Trouver TOUS les artisans qualifiés pour la mission ───────────────────────
 
@@ -142,10 +142,19 @@ export async function sendUrgentNotification(userId: string, category: string) {
 // ── Annuler et déclencher le remboursement ────────────────────────────────────
 
 export async function cancelAndRefund(missionId: string, clientId: string) {
-  await supabaseAdmin
+  // Garde de statut : sans elle, un timeout qui arrive au moment exact où un
+  // artisan accepte annulerait une mission déjà passée en_route (et
+  // rembourserait une transaction dont le wallet artisan a été crédité).
+  const { data: cancelled } = await supabaseAdmin
     .from('missions')
     .update({ status: 'cancelled' })
     .eq('id', missionId)
+    .in('status', ['payment', 'dispatching', 'diagnostic'])
+    .select('id')
+    .maybeSingle()
+
+  // Mission déjà assignée (ou déjà annulée) → ne rien faire, l'acceptation gagne
+  if (!cancelled) return { cancelled: false }
 
   await supabaseAdmin
     .from('transactions')
@@ -161,6 +170,8 @@ export async function cancelAndRefund(missionId: string, clientId: string) {
     text:        '😔 Aucun artisan disponible n\'a pu accepter ta mission urgente. Tu seras remboursé intégralement sous 24h.',
     type:        'system',
   })
+
+  return { cancelled: true }
 }
 
 // ── Broadcaster à TOUS les artisans qualifiés simultanément ──────────────────

@@ -32,7 +32,11 @@ export async function POST(req: NextRequest) {
     .eq('mission_id', mission_id)
     .is('response', null)
 
-  // Plus personne n'a accepté → remboursement
-  await cancelAndRefund(mission_id, mission.client_id)
+  // Plus personne n'a accepté → remboursement (sauf si un artisan a accepté
+  // dans l'intervalle — la garde de statut de cancelAndRefund tranche)
+  const result = await cancelAndRefund(mission_id, mission.client_id)
+  if (!result.cancelled) {
+    return NextResponse.json({ dispatched: true, already_accepted: true })
+  }
   return NextResponse.json({ dispatched: false, reason: 'timeout_all' })
 }

@@ -465,6 +465,84 @@ export default function ArtisanDashboardPage() {
     </div>
   )
 
+  // ── Carte offre urgente — affichée dans Missions ET dans la messagerie ────
+  // 60s pour répondre, premier qui accepte prend la mission.
+  const URGENT_WINDOW_MS = 60_000
+  const urgentOfferCard = urgentDispatch ? (
+    <div style={{
+      background: 'linear-gradient(135deg, #1A0A00, #2D1200)',
+      border: '2px solid rgba(232,93,38,0.6)',
+      borderRadius: '20px',
+      padding: '20px',
+      boxShadow: '0 0 40px rgba(232,93,38,0.25)',
+      animation: 'urgentPulse 2s ease-in-out infinite',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(232,93,38,0.5)' }}>
+          <Zap size={18} color="white" />
+        </div>
+        <div>
+          <div style={{ fontSize: '13px', fontWeight: 800, color: '#E85D26', letterSpacing: '0.08em' }}>MISSION URGENTE</div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Premier arrivé, premier servi — 1 minute pour répondre</div>
+        </div>
+        {/* Countdown */}
+        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+          <div style={{
+            fontSize: '28px', fontWeight: 900, fontFamily: 'Tahoma',
+            color: urgentTimeLeft > 30000 ? '#E85D26' : urgentTimeLeft > 12000 ? '#C9A84C' : '#ef4444',
+            lineHeight: 1,
+          }}>
+            {Math.ceil(urgentTimeLeft / 1000)}s
+          </div>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>restantes</div>
+        </div>
+      </div>
+
+      {/* Barre de progression */}
+      <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
+        <div style={{
+          height: '100%',
+          width: `${Math.min(100, (urgentTimeLeft / URGENT_WINDOW_MS) * 100)}%`,
+          background: urgentTimeLeft > 30000 ? '#E85D26' : urgentTimeLeft > 12000 ? '#C9A84C' : '#ef4444',
+          borderRadius: '4px',
+          transition: 'width 0.2s linear, background 0.5s',
+        }} />
+      </div>
+
+      {/* Infos mission */}
+      <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px' }}>
+        <div style={{ fontSize: '16px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
+          {(urgentDispatch.missions as any)?.category || 'Intervention'}
+        </div>
+        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', display: 'flex', gap: '12px' }}>
+          {(urgentDispatch.missions as any)?.quartier && <span>📍 {(urgentDispatch.missions as any).quartier}</span>}
+          {(urgentDispatch.missions as any)?.total_price > 0 && (
+            <span>💰 {(urgentDispatch.missions as any).total_price.toLocaleString()} FCFA</span>
+          )}
+        </div>
+      </div>
+
+      {/* Boutons */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <button
+          onClick={() => !respondingUrgent && respondUrgent('refused')}
+          disabled={respondingUrgent}
+          style={{ padding: '14px', background: 'rgba(239,68,68,0.12)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: '12px', color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: respondingUrgent ? 'not-allowed' : 'pointer', opacity: respondingUrgent ? 0.5 : 1 }}
+        >
+          ✕ Refuser
+        </button>
+        <button
+          onClick={() => !respondingUrgent && respondUrgent('accepted')}
+          disabled={respondingUrgent}
+          style={{ padding: '14px', background: respondingUrgent ? 'rgba(232,93,38,0.3)' : 'linear-gradient(135deg,#E85D26,#ff7043)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: 800, cursor: respondingUrgent ? 'not-allowed' : 'pointer', boxShadow: respondingUrgent ? 'none' : '0 4px 16px rgba(232,93,38,0.45)' }}
+        >
+          {respondingUrgent ? '…' : '⚡ Accepter'}
+        </button>
+      </div>
+    </div>
+  ) : null
+
   return (
     <div className="min-h-screen" style={{background:'#F5F7FA'}}>
       {/* Navbar */}
@@ -611,7 +689,9 @@ export default function ArtisanDashboardPage() {
             const content = (
               <>
                 <t.icon size={13} /> {isMobile ? t.label.split(' ')[0] : t.label}
-                {t.id === 'messages' && unreadCount > 0 && (
+                {t.id === 'messages' && urgentDispatch ? (
+                  <span style={{position:'absolute',top:'4px',right:'4px',fontSize:'11px',animation:'urgentPulse 1s ease-in-out infinite'}}>🚨</span>
+                ) : t.id === 'messages' && unreadCount > 0 && (
                   <span className="afrione-gradient" style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',borderRadius:'50%',fontSize:'10px',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
@@ -632,80 +712,7 @@ export default function ArtisanDashboardPage() {
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
 
             {/* ── Mission urgente en attente ── */}
-            {urgentDispatch && (
-              <div style={{
-                background: 'linear-gradient(135deg, #1A0A00, #2D1200)',
-                border: '2px solid rgba(232,93,38,0.6)',
-                borderRadius: '20px',
-                padding: '20px',
-                boxShadow: '0 0 40px rgba(232,93,38,0.25)',
-                animation: 'urgentPulse 2s ease-in-out infinite',
-              }}>
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(232,93,38,0.5)' }}>
-                    <Zap size={18} color="white" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#E85D26', letterSpacing: '0.08em' }}>MISSION URGENTE</div>
-                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Premier arrivé, premier servi</div>
-                  </div>
-                  {/* Countdown */}
-                  <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                    <div style={{
-                      fontSize: '28px', fontWeight: 900, fontFamily: 'Tahoma',
-                      color: urgentTimeLeft > 15000 ? '#E85D26' : urgentTimeLeft > 7000 ? '#C9A84C' : '#ef4444',
-                      lineHeight: 1,
-                    }}>
-                      {Math.ceil(urgentTimeLeft / 1000)}s
-                    </div>
-                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>restantes</div>
-                  </div>
-                </div>
-
-                {/* Barre de progression */}
-                <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${(urgentTimeLeft / 30000) * 100}%`,
-                    background: urgentTimeLeft > 15000 ? '#E85D26' : urgentTimeLeft > 7000 ? '#C9A84C' : '#ef4444',
-                    borderRadius: '4px',
-                    transition: 'width 0.2s linear, background 0.5s',
-                  }} />
-                </div>
-
-                {/* Infos mission */}
-                <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: 'white', marginBottom: '4px' }}>
-                    {(urgentDispatch.missions as any)?.category || 'Intervention'}
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', display: 'flex', gap: '12px' }}>
-                    {(urgentDispatch.missions as any)?.quartier && <span>📍 {(urgentDispatch.missions as any).quartier}</span>}
-                    {(urgentDispatch.missions as any)?.total_price > 0 && (
-                      <span>💰 {(urgentDispatch.missions as any).total_price.toLocaleString()} FCFA</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Boutons */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <button
-                    onClick={() => !respondingUrgent && respondUrgent('refused')}
-                    disabled={respondingUrgent}
-                    style={{ padding: '14px', background: 'rgba(239,68,68,0.12)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: '12px', color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: respondingUrgent ? 'not-allowed' : 'pointer', opacity: respondingUrgent ? 0.5 : 1 }}
-                  >
-                    ✕ Refuser
-                  </button>
-                  <button
-                    onClick={() => !respondingUrgent && respondUrgent('accepted')}
-                    disabled={respondingUrgent}
-                    style={{ padding: '14px', background: respondingUrgent ? 'rgba(232,93,38,0.3)' : 'linear-gradient(135deg,#E85D26,#ff7043)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: 800, cursor: respondingUrgent ? 'not-allowed' : 'pointer', boxShadow: respondingUrgent ? 'none' : '0 4px 16px rgba(232,93,38,0.45)' }}
-                  >
-                    {respondingUrgent ? '…' : '⚡ Accepter'}
-                  </button>
-                </div>
-              </div>
-            )}
+            {urgentOfferCard}
 
             {/* Questionnaire banner — si pas encore soumis */}
             {(questionnaireStatus === null || questionnaireStatus === 'none') && (
@@ -884,7 +891,9 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET MESSAGES ===== */}
         {tab === 'messages' && (
           <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
-            {conversations.length === 0 ? (
+            {/* Offre urgente en tête de messagerie — 60s, premier qui accepte */}
+            {urgentOfferCard}
+            {conversations.length === 0 && !urgentDispatch ? (
               <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'48px',textAlign:'center'}}>
                 <MessageCircle size={40} style={{margin:'0 auto 16px',color:'#E2E8F0'}} />
                 <h3 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#3D4852',marginBottom:'8px'}}>Aucune conversation</h3>

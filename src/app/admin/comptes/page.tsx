@@ -261,7 +261,7 @@ export default function AdminComptesPage() {
             <div style={{ marginTop: '16px', padding: '14px 16px', borderRadius: '14px', background: result.ok ? 'rgba(22,163,74,0.06)' : 'rgba(220,38,38,0.06)', border: `1px solid ${result.ok ? 'rgba(22,163,74,0.25)' : 'rgba(220,38,38,0.25)'}` }}>
               <div style={{ fontWeight: 700, fontSize: '13px', color: result.ok ? '#16a34a' : '#dc2626', marginBottom: '8px' }}>
                 {result.ok
-                  ? `✅ Broadcastée à ${result.count} artisan(s) — ils ont 30s pour accepter`
+                  ? `✅ Broadcastée à ${result.count} artisan(s) — ils ont ${result.timeout_seconds ?? 60}s pour accepter`
                   : `❌ Dispatch échoué : ${result.reason || 'aucun candidat disponible'}`}
               </div>
               {result.targets?.length > 0 && (

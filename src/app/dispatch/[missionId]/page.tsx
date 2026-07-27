@@ -4,7 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { CheckCircle, XCircle, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-const DISPATCH_TIMEOUT_MS = 45_000
+const DISPATCH_TIMEOUT_MS = 60_000
 
 const syne = { fontFamily: "'Satoshi', sans-serif" }  as const
 const body = { fontFamily: "'Inter', sans-serif" }    as const
