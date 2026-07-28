@@ -63,9 +63,12 @@ function MatchingContent() {
       // Entreprises qui couvrent ce secteur
       setEntreprises(entrepriseRes.data || [])
 
-      // Score and rank artisans client-side
+      // Score and rank artisans client-side (dédoublonné par id — défensif
+      // contre un éventuel join en éventail futur)
       const rankAndSet = (raw: any[]) => {
-        const scored = raw
+        const seen = new Set<string>()
+        const unique = raw.filter(a => (seen.has(a.id) ? false : (seen.add(a.id), true)))
+        const scored = unique
           .map(a => ({ ...a, _score: scoreArtisan(a, resolvedQuartier) }))
           .sort((a, b) => b._score - a._score)
           .slice(0, 5)

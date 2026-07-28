@@ -53,7 +53,7 @@ export default function WarRoomPage() {
   const [user, setUser]               = useState<any>(null)
   const [userRole, setUserRole]       = useState<string>('client')
   const [missionRole, setMissionRole] = useState<'client'|'artisan'|'admin'>('client')
-  const [sending, setSending]         = useState(false)
+  const [sendStatus, setSendStatus]   = useState<'idle'|'sending'|'sent'>('idle')
   const [mission, setMission]         = useState<any>(null)
   const [loading, setLoading]         = useState(true)
   const [acting, setActing]           = useState(false)
@@ -216,6 +216,31 @@ export default function WarRoomPage() {
               )
             }
             setDiagData(diag)
+
+            // Message de contexte auto — persisté et partagé (pas juste une
+            // bulle locale calculée à chaque rendu), envoyé une seule fois
+            // par le premier arrivé sur un fil vide.
+            if ((msgs?.length ?? 0) === 0) {
+              const briefPayload = JSON.stringify({
+                category:        diag.category,
+                urgency:         diag.urgency,
+                price_min:       diag.price_min,
+                price_max:       diag.price_max,
+                technical_notes: diag.technical_notes,
+                items_needed:    diag.items_needed,
+                photos:          diag.photos,
+              })
+              const { data: briefMsg } = await supabase.from('chat_history').insert({
+                mission_id:  missionId,
+                sender_id:   missionData?.client_id ?? session.user.id,
+                sender_role: 'system',
+                sender_type: 'afrione_system',
+                text:        briefPayload,
+                type:        'brief',
+              }).select().single()
+              if (briefMsg) setMessages(prev => [...prev, briefMsg])
+            }
+
             if (mr === 'client') {
               const artName = diagJson.participants?.artisan?.name || missionData?.artisan_pros?.users?.name || 'Artisan'
               const greeting = diag.ai_summary
@@ -280,10 +305,10 @@ export default function WarRoomPage() {
 
   // Envoyer message texte
   const send = async () => {
-    if (!input.trim() || !user || sending) return
+    if (!input.trim() || !user || sendStatus !== 'idle') return
     const text = input.trim()
     setInput('')
-    setSending(true)
+    setSendStatus('sending')
     const { error } = await supabase.from('chat_history').insert({
       mission_id:  missionId,
       sender_id:   user.id,
@@ -292,8 +317,9 @@ export default function WarRoomPage() {
       text,
       type: 'text',
     })
-    setSending(false)
-    if (error) { toast.error('Message non envoyé.'); setInput(text); return }
+    if (error) { toast.error('Message non envoyé.'); setInput(text); setSendStatus('idle'); return }
+    setSendStatus('sent')
+    setTimeout(() => setSendStatus('idle'), 1100)
     const rid = getRecipientId(mission, user.id)
     if (rid) notifyOther(text, rid)
 
@@ -2607,10 +2633,18 @@ export default function WarRoomPage() {
               <input type="text" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
                 placeholder="Votre message…" className="input" style={{flex:1}} />
-              <button onClick={send} disabled={!input.trim() || sending} className="btn-primary"
-                style={{width:'44px',height:'44px',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',cursor:(!input.trim()||sending)?'not-allowed':'pointer',flexShrink:0,opacity:(input.trim()&&!sending)?1:0.4}}>
-                {sending
+              <button onClick={send} disabled={!input.trim() || sendStatus !== 'idle'} className="btn-primary"
+                style={{
+                  width:'44px',height:'44px',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',flexShrink:0,
+                  cursor:(!input.trim()||sendStatus!=='idle')?'not-allowed':'pointer',
+                  opacity:(input.trim()&&sendStatus==='idle')||sendStatus!=='idle'?1:0.4,
+                  background: sendStatus==='sent' ? '#2B6B3E' : undefined,
+                  transition:'background 0.2s',
+                }}>
+                {sendStatus === 'sending'
                   ? <div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+                  : sendStatus === 'sent'
+                  ? <CheckCircle size={18} />
                   : <Send size={18} />}
               </button>
             </div>

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -94,39 +94,7 @@ export default function DevPanel() {
   const isDevUser    = userRole === 'admin' || userEmail.endsWith('@afrione.ci')
   const isTestArtisan = ARTISAN_EMAILS.includes(userEmail)
 
-  const autoSwitchedRef = useRef<string | null>(null)
   const missionId = getMissionIdFromPath(pathname)
-
-  // Auto-switch to first artisan when landing on /dispatch/[id] as client
-  useEffect(() => {
-    if (!isDevUser) return
-    if (isTestArtisan) return
-    if (!missionId) return
-    if (autoSwitchedRef.current === missionId) return
-
-    autoSwitchedRef.current = missionId
-    const firstArtisan = ARTISAN_ACCOUNTS[0]
-
-    const timer = setTimeout(async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-
-      await fetch('/api/dev/refresh-dispatch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ mission_id: missionId, artisan_email: firstArtisan.email }),
-      })
-
-      await supabase.auth.signOut()
-      await supabase.auth.signInWithPassword({ email: firstArtisan.email, password: firstArtisan.password })
-      window.location.href = '/artisan-space/dashboard'
-    }, 1500)
-
-    return () => clearTimeout(timer)
-  }, [missionId, isDevUser, isTestArtisan])
 
   // Load last mission for current user to enable quick navigation
   useEffect(() => {
