@@ -56,7 +56,7 @@ const ACCOUNTS = [
     quartier: 'Yopougon',
     phone: '+2250700DEV002',
     artisan: {
-      metier: 'Plombier',
+      metier: 'Plomberie',
       bio: 'Plombier de test — 8 ans d\'expérience à Yopougon',
       quartiers: ['Yopougon', 'Cocody', 'Adjamé'],
       tarif_min: 8000,
@@ -71,7 +71,7 @@ const ACCOUNTS = [
     quartier: 'Abobo',
     phone: '+2250700DEV003',
     artisan: {
-      metier: 'Électricien',
+      metier: 'Électricité',
       bio: 'Électricien de test — 5 ans d\'expérience à Abobo',
       quartiers: ['Abobo', 'Adjamé', 'Plateau'],
       tarif_min: 10000,

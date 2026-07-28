@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { scoreArtisan } from '@/lib/scoring'
 import { sendPushToUser } from '@/lib/push'
-import { CATEGORY_TO_METIER } from '@/lib/pricing'
+import { normalizeMetier } from '@/lib/metier'
 
 const DISPATCH_TIMEOUT_SECONDS = 60
 
@@ -48,7 +48,15 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
       .map((a: any) => ({ ...a, _score: scoreArtisan(a, missionQuartier) }))
       .sort((a: any, b: any) => b._score - a._score)
 
-  // ── Session de test : matcher uniquement les artisans test ───────────────
+  // Le métier stocké en base a historiquement 2 conventions incompatibles
+  // ("Plomberie" via l'inscription artisan vs "Plombier" via d'anciens scripts
+  // de seed) — normalizeMetier() les ramène toutes à la même catégorie
+  // canonique pour un matching fiable, quelle que soit la valeur brute stockée.
+  const missionMetier = normalizeMetier(mission.category)
+
+  // ── Session de test : ne cible que les 3 artisans test, filtrés par métier
+  // pour refléter le vrai comportement de matching (fallback si aucun ne
+  // correspond au métier demandé, ex: mission Peinture sans test.peintre) ──
   if (isTestSession) {
     const { data: testUsers } = await supabaseAdmin
       .from('users')
@@ -64,37 +72,25 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
       .eq('kyc_status', 'approved')
       .eq('is_available', true)
 
-    return sortByScore(testArtisans ?? [])
+    const matched = (testArtisans ?? []).filter(a => normalizeMetier(a.metier) === missionMetier)
+    return sortByScore(matched.length ? matched : (testArtisans ?? []))
   }
 
   // ── Session réelle : broadcast à TOUS les plombiers/élec/etc disponibles ─
-  // Filtre par métier de la mission, notif simultanée à tous, premier qui
-  // accepte prend la mission. Fallback sans filtre si aucun spécialiste libre.
-  // Le métier peut être stocké comme catégorie ("Plomberie") ou comme métier
-  // ("Plombier") — on matche les deux, sinon "Plombier" ne matche jamais
-  // ilike '%Plomberie%' et tout part en fallback sans filtre.
-  const catWord = mission.category?.split(' ')[0] || ''
-  const metierWord = CATEGORY_TO_METIER[mission.category ?? ''] || catWord
-
-  let { data: candidates } = await supabaseAdmin
+  // Filtre par métier de la mission (normalisé), notif simultanée à tous,
+  // premier qui accepte prend la mission. Fallback sans filtre si aucun
+  // spécialiste libre — mieux vaut un artisan du mauvais corps de métier
+  // que zéro artisan.
+  const { data: allCandidates } = await supabaseAdmin
     .from('artisan_pros')
     .select(ARTISAN_SELECT)
     .eq('kyc_status', 'approved')
     .eq('is_available', true)
-    .or(`metier.ilike.%${catWord}%,metier.ilike.%${metierWord}%`)
     .limit(200)
 
-  if (!candidates?.length) {
-    const { data: fallback } = await supabaseAdmin
-      .from('artisan_pros')
-      .select(ARTISAN_SELECT)
-      .eq('kyc_status', 'approved')
-      .eq('is_available', true)
-      .limit(200)
-    candidates = fallback
-  }
+  const matched = (allCandidates ?? []).filter(a => normalizeMetier(a.metier) === missionMetier)
 
-  return sortByScore(candidates ?? [])
+  return sortByScore(matched.length ? matched : (allCandidates ?? []))
 }
 
 // ── Créer un enregistrement de tentative de dispatch ─────────────────────────

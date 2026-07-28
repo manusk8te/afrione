@@ -56,7 +56,7 @@ async function main() {
     .from('artisan_pros')
     .insert({
       user_id: userId,
-      metier: 'Plombier',
+      metier: 'Plomberie',
       bio: 'Plombier expérimenté, 8 ans de métier à Abidjan. Spécialisé fuites, WC, chauffe-eau et canalisation encastrée.',
       quartiers: ['Cocody', 'Marcory', 'Plateau'],
       zone_gps: { lat: 5.3569, lng: -3.9780 },

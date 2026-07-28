@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight, Building2, Droplets, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Wrench } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { scoreArtisan } from '@/lib/scoring'
+import { normalizeMetier } from '@/lib/metier'
 
 function MatchingContent() {
   const searchParams = useSearchParams()
@@ -26,7 +27,7 @@ function MatchingContent() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) setUserId(session.user.id)
 
-      const catWord = category.split(' ')[0]
+      const missionMetier = normalizeMetier(category)
 
       // Resolve mission quartier for proximity scoring
       let resolvedQuartier = searchParams.get('quartier') || 'Cocody'
@@ -40,15 +41,17 @@ function MatchingContent() {
       }
       setMissionQuartier(resolvedQuartier)
 
-      // Artisans + entreprises en parallèle
+      // Artisans + entreprises en parallèle — le filtre métier est appliqué
+      // côté client via normalizeMetier() : la colonne metier a historiquement
+      // 2 conventions incompatibles ("Plomberie" vs "Plombier"), un ilike SQL
+      // simple en ratait la moitié.
       const [artisanRes, entrepriseRes] = await Promise.all([
         supabase
           .from('artisan_pros')
           .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
           .eq('kyc_status', 'approved')
           .eq('is_available', true)
-          .ilike('metier', `%${catWord}%`)
-          .limit(20),
+          .limit(100),
         supabase
           .from('entreprises')
           .select('id, name, description, banner_url, logo_url, secteurs, quartiers, artisan_pros(id)')
@@ -69,17 +72,9 @@ function MatchingContent() {
         setArtisans(scored)
       }
 
-      if (!artisanRes.data || artisanRes.data.length === 0) {
-        const { data: fallback } = await supabase
-          .from('artisan_pros')
-          .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
-          .eq('kyc_status', 'approved')
-          .eq('is_available', true)
-          .limit(20)
-        rankAndSet(fallback || [])
-      } else {
-        rankAndSet(artisanRes.data)
-      }
+      const allArtisans = artisanRes.data || []
+      const matched = allArtisans.filter(a => normalizeMetier(a.metier) === missionMetier)
+      rankAndSet(matched.length ? matched : allArtisans)
       setLoading(false)
     }
     load()

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TrendingUp, Users, CheckCircle, AlertCircle, DollarSign, Activity, Shield, X, Bell, RotateCcw, MessageSquare, ExternalLink, ShieldCheck, UserX, UserCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { metierDisplay } from '@/lib/metier'
 import toast from 'react-hot-toast'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 
@@ -402,7 +403,7 @@ export default function AdminDashboard() {
                         <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: '#F5F7FA', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '13px', fontWeight: 500, color: '#3D4852' }}>{k.users?.name || '—'}</div>
-                            <div style={{ fontSize: '11px', color: '#6B7280' }}>{k.metier} · {new Date(k.created_at).toLocaleDateString('fr-FR')}</div>
+                            <div style={{ fontSize: '11px', color: '#6B7280' }}>{metierDisplay(k.metier).icon} {metierDisplay(k.metier).label} · {new Date(k.created_at).toLocaleDateString('fr-FR')}</div>
                           </div>
                           <div style={{ display: 'flex', gap: '6px' }}>
                             <button onClick={() => approveKyc(k.id, k.kyc_security?.[0]?.id)} style={{ width: '28px', height: '28px', background: 'rgba(43,107,62,0.15)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2B6B3E' }}>
@@ -739,7 +740,7 @@ export default function AdminDashboard() {
                                 </span>
                               </div>
                               <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
-                                {k.metier} · {k.users?.email || '—'} · Inscrit le {new Date(k.created_at).toLocaleDateString('fr-FR')}
+                                {metierDisplay(k.metier).icon} {metierDisplay(k.metier).label} · {k.users?.email || '—'} · Inscrit le {new Date(k.created_at).toLocaleDateString('fr-FR')}
                                 {kycDoc?.reviewed_at && (
                                   <span style={{ marginLeft: '8px', color: '#8B95A5' }}>
                                     · Traité le {new Date(kycDoc.reviewed_at).toLocaleDateString('fr-FR')}
@@ -832,7 +833,7 @@ export default function AdminDashboard() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '14px', fontWeight: 500, color: '#3D4852' }}>{a.users?.name || '—'}</div>
-                        <div style={{ fontSize: '12px', color: '#6B7280' }}>{a.metier} · {a.rating_avg?.toFixed(1) || '0.0'}⭐ · {a.mission_count || 0} missions</div>
+                        <div style={{ fontSize: '12px', color: '#6B7280' }}>{metierDisplay(a.metier).icon} {metierDisplay(a.metier).label} · {a.rating_avg?.toFixed(1) || '0.0'}⭐ · {a.mission_count || 0} missions</div>
                       </div>
                       <span style={{
                         fontSize: '11px', padding: '3px 10px', borderRadius: '20px',
@@ -1078,8 +1079,8 @@ export default function AdminDashboard() {
                                             {a.users?.avatar_url ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <span style={{ fontSize: '11px' }}>🔧</span>}
                                           </div>
                                           <div>
-                                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#3D4852' }}>{a.users?.name || a.metier}</div>
-                                            <div style={{ fontSize: '10px', color: '#6B7280' }}>{a.metier}</div>
+                                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#3D4852' }}>{a.users?.name || metierDisplay(a.metier).label}</div>
+                                            <div style={{ fontSize: '10px', color: '#6B7280' }}>{metierDisplay(a.metier).icon} {metierDisplay(a.metier).label}</div>
                                           </div>
                                           <span style={{ fontSize: '9px', padding: '1px 7px', borderRadius: '10px', fontWeight: 700,
                                             background: a.kyc_status === 'approved' ? 'rgba(43,107,62,0.1)' : 'rgba(201,168,76,0.1)',
@@ -1177,7 +1178,7 @@ export default function AdminDashboard() {
                               </span>
                               {artisan && (
                                 <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: '#F5F7FA', color: '#6B7280', border: '1px solid #E2E8F0' }}>
-                                  {artisan.metier}
+                                  {metierDisplay(artisan.metier).icon} {metierDisplay(artisan.metier).label}
                                 </span>
                               )}
                             </div>
@@ -1335,7 +1336,7 @@ export default function AdminDashboard() {
                                   </span>
                                 </div>
                                 <div style={{ fontSize: '12px', color: '#6B7280' }}>
-                                  {artisan?.metier || '—'} · {q.experience_years || '—'} ans d'exp · Taux : <strong style={{ color: '#3D4852' }}>{q.hourly_rate_declared ? q.hourly_rate_declared.toLocaleString() + ' FCFA/h' : '—'}</strong>
+                                  {artisan ? `${metierDisplay(artisan.metier).icon} ${metierDisplay(artisan.metier).label}` : '—'} · {q.experience_years || '—'} ans d'exp · Taux : <strong style={{ color: '#3D4852' }}>{q.hourly_rate_declared ? q.hourly_rate_declared.toLocaleString() + ' FCFA/h' : '—'}</strong>
                                 </div>
                                 <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>
                                   Soumis le {new Date(q.submitted_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
