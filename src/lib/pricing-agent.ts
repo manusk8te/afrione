@@ -19,59 +19,100 @@ const FALLBACK_MAT: Record<string, number> = {
   'Serrurerie': 1500, 'Carrelage': 2800,
 };
 
-const TRANSPORT: Record<string, number> = {
-  'Cocody': 1000, 'Plateau': 800, 'Adjamé': 900, 'Yopougon': 1500,
-  'Abobo': 1800, 'Marcory': 1000, 'Treichville': 800, 'Koumassi': 1200,
-  'Port-Bouët': 1400, 'Bingerville': 2000, 'Riviera': 1200,
-  'Zone 4': 900, 'Deux-Plateaux': 1100, 'Angré': 1300,
+// ── Résolution urgence (C4) ─────────────────────────────────────────────────
+// Mapping texte libre → enum fait en TypeScript, jamais délégué au modèle.
+// Par défaut medium si aucun mot-clé ne matche — jamais low par défaut.
+
+type Urgency = 'low' | 'medium' | 'high' | 'emergency';
+
+const URGENCY_KEYWORDS: Record<'emergency' | 'high' | 'low', string[]> = {
+  emergency: ['urgence', 'urgent', 'immédiat', 'immediat', 'critique', 'emergency', 'panne'],
+  high:      ['rapide', 'prioritaire', "aujourd'hui", 'vite', 'high'],
+  low:       ['flexible', 'pas pressé', 'pas presse', 'quand possible', 'sans urgence', 'low'],
 };
 
+function resolveUrgency(raw: string | undefined): Urgency {
+  const text = (raw || '').toLowerCase();
+  if (URGENCY_KEYWORDS.emergency.some(k => text.includes(k))) return 'emergency';
+  if (URGENCY_KEYWORDS.high.some(k => text.includes(k))) return 'high';
+  if (URGENCY_KEYWORDS.low.some(k => text.includes(k))) return 'low';
+  return 'medium';
+}
+
+// ── Résolution taux horaire (C4) ────────────────────────────────────────────
+// Résolution déterministe de la source de prix EN AMONT de l'appel agent.
+// Priorité : artisan déclaré (résout C-08) > données de zone > moyenne
+// nationale > repli marché statique. Plancher SMIG appliqué ici, en code,
+// jamais délégué au prompt.
+
+type PriceSource = 'artisan_declare' | 'donnees_zone' | 'moyenne_nationale' | 'fallback_marche';
+
+interface ResolvedRate {
+  hourly_rate: number;
+  source_tarif: PriceSource;
+  rate_floored: boolean;
+  nb_observations?: number;
+}
+
+function applyFloor(rate: number, source: PriceSource, nb_observations?: number): ResolvedRate {
+  return {
+    hourly_rate: Math.max(rate, SMIG_X2_HORAIRE),
+    source_tarif: source,
+    rate_floored: rate < SMIG_X2_HORAIRE,
+    nb_observations,
+  };
+}
+
+async function resolveHourlyRate(metier: string, zone: string, artisan_id?: string): Promise<ResolvedRate> {
+  // 1. Tarif déclaré par l'artisan lui-même — priorité absolue (C-08)
+  if (artisan_id) {
+    const { data } = await supabaseAdmin
+      .from('artisan_pros')
+      .select('tarif_min')
+      .eq('id', artisan_id)
+      .maybeSingle();
+
+    if (data?.tarif_min && data.tarif_min > 0) {
+      return applyFloor(data.tarif_min, 'artisan_declare');
+    }
+  }
+
+  // 2. Données terrain réelles pour la zone
+  const { data: zoneData } = await supabaseAdmin
+    .from('pricing_reference')
+    .select('taux_horaire, nb_observations')
+    .eq('metier', metier)
+    .eq('zone', zone);
+
+  if (zoneData?.length) {
+    const total = zoneData.reduce((s, r) => s + r.nb_observations, 0);
+    const rate = Math.round(zoneData.reduce((s, r) => s + r.taux_horaire * r.nb_observations, 0) / total);
+    return applyFloor(rate, 'donnees_zone', total);
+  }
+
+  // 3. Moyenne nationale
+  const { data: national } = await supabaseAdmin
+    .from('pricing_reference')
+    .select('taux_horaire, nb_observations')
+    .eq('metier', metier);
+
+  if (national?.length) {
+    const total = national.reduce((s, r) => s + r.nb_observations, 0);
+    const rate = Math.round(national.reduce((s, r) => s + r.taux_horaire * r.nb_observations, 0) / total);
+    return applyFloor(rate, 'moyenne_nationale', total);
+  }
+
+  // 4. Repli marché statique
+  const { data: labor } = await supabaseAdmin
+    .from('labor_rates')
+    .select('tarif_horaire')
+    .eq('metier', metier)
+    .maybeSingle();
+
+  return applyFloor(labor?.tarif_horaire || FALLBACK_RATES[metier] || 3000, 'fallback_marche');
+}
+
 // ── Tools ────────────────────────────────────────────────────────────────────
-
-const getPricingData = tool({
-  name: "get_pricing_data",
-  description: "Récupère les vrais tarifs terrain Abidjan par métier et zone depuis la base AfriOne. TOUJOURS appeler en premier avant tout calcul.",
-  parameters: z.object({
-    metier: z.string().describe("Ex: Plombier, Électricien, Maçon, Peintre"),
-    zone:   z.string().describe("Quartier Abidjan : Plateau, Cocody, Yopougon, Abobo, Adjamé, Treichville, Marcory"),
-  }),
-  execute: async ({ metier, zone }) => {
-    const { data: zoneData } = await supabaseAdmin
-      .from('pricing_reference')
-      .select('taux_horaire, taux_journee, nb_observations')
-      .eq('metier', metier)
-      .eq('zone', zone)
-      .order('nb_observations', { ascending: false });
-
-    if (zoneData?.length) {
-      const total = zoneData.reduce((s, r) => s + r.nb_observations, 0);
-      return {
-        metier, zone, has_data: true,
-        taux_horaire: Math.round(zoneData.reduce((s, r) => s + r.taux_horaire * r.nb_observations, 0) / total),
-        taux_journee: Math.round(zoneData.reduce((s, r) => s + r.taux_journee * r.nb_observations, 0) / total),
-        nb_observations: total, source: 'Données terrain AfriOne',
-      };
-    }
-
-    const { data: national } = await supabaseAdmin
-      .from('pricing_reference')
-      .select('taux_horaire, taux_journee, nb_observations')
-      .eq('metier', metier)
-      .order('nb_observations', { ascending: false });
-
-    if (national?.length) {
-      const total = national.reduce((s, r) => s + r.nb_observations, 0);
-      return {
-        metier, zone, has_data: true, fallback: true,
-        taux_horaire: Math.round(national.reduce((s, r) => s + r.taux_horaire * r.nb_observations, 0) / total),
-        taux_journee: Math.round(national.reduce((s, r) => s + r.taux_journee * r.nb_observations, 0) / total),
-        nb_observations: total, source: 'Moyenne nationale AfriOne',
-      };
-    }
-
-    return { metier, zone, has_data: false, message: `Pas de données pour ${metier} à ${zone}. Utilise get_artisan_rate.` };
-  },
-});
 
 const searchMaterialPrice = tool({
   name: "search_material_price",
@@ -82,75 +123,49 @@ const searchMaterialPrice = tool({
     qty:      z.number().optional().describe("Quantité nécessaire (défaut: 1)"),
   }),
   execute: async ({ item, category, qty = 1 }) => {
-    // 1. Base AfriOne
+    // 1. Base AfriOne — ORDER BY déterministe : sans lui, deux appels
+    // identiques peuvent renvoyer des lignes différentes en Postgres.
     const { data: cached } = await supabaseAdmin
       .from('price_materials')
-      .select('price_market, source, name')
+      .select('id, price_market, source, name')
       .ilike('name', `%${item}%`)
+      .order('id', { ascending: true })
       .limit(1)
       .maybeSingle();
 
     if (cached) {
-      return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne', product_name: cached.name };
+      return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne', product_name: cached.name, is_fallback: false };
     }
 
     // 2. Jumia CI live
     const jumia = await lookupItemOnJumia(item, category);
     if (jumia.found && jumia.price) {
-      return { item, qty, price_unit: jumia.price, total: jumia.price * qty, source: 'Jumia CI', product_name: jumia.name };
+      return { item, qty, price_unit: jumia.price, total: jumia.price * qty, source: 'Jumia CI', product_name: jumia.name, is_fallback: false };
     }
 
-    // 3. Fallback catégorie
+    // 3. Fallback catégorie — marqué explicitement comme tel, jamais présenté comme un prix trouvé
     const fallback = FALLBACK_MAT[category] || 1500;
-    return { item, qty, price_unit: fallback, total: fallback * qty, source: 'Estimation marché Abidjan' };
-  },
-});
-
-const getArtisanRate = tool({
-  name: "get_artisan_rate",
-  description: "Récupère le taux horaire réel de l'artisan depuis AfriOne. Appeler en premier avant tout calcul.",
-  parameters: z.object({
-    metier:     z.string().describe("Métier (ex: Plombier, Électricien, Maçon)"),
-    artisan_id: z.string().optional().describe("ID artisan si disponible"),
-  }),
-  execute: async ({ metier, artisan_id }) => {
-    if (artisan_id) {
-      const { data } = await supabaseAdmin
-        .from('artisan_pros')
-        .select('tarif_min, years_experience')
-        .eq('id', artisan_id)
-        .maybeSingle();
-
-      if (data?.tarif_min && data.tarif_min >= SMIG_X2_HORAIRE) {
-        return { rate: data.tarif_min, years_exp: data.years_experience ?? 3, source: "Déclaré par l'artisan", smig_floor: SMIG_X2_HORAIRE };
-      }
-    }
-
-    const { data: labor } = await supabaseAdmin
-      .from('labor_rates')
-      .select('tarif_horaire')
-      .eq('metier', metier)
-      .maybeSingle();
-
-    const rate = Math.max(labor?.tarif_horaire || FALLBACK_RATES[metier] || 3000, SMIG_X2_HORAIRE);
-    return { rate, source: labor ? 'Référence AfriOne' : 'Référence marché', smig_floor: SMIG_X2_HORAIRE };
+    return { item, qty, price_unit: fallback, total: fallback * qty, source: 'Estimation marché Abidjan', is_fallback: true };
   },
 });
 
 const calculateFinalPrice = tool({
   name: "calculate_final_price",
-  description: "Calcule le prix final AfriOne avec dégressivité longues tâches + commission. Appeler après avoir tous les prix.",
+  description: "Calcule le prix final AfriOne avec dégressivité longues tâches + commission. Appeler après avoir tous les prix. Utilise le taux horaire et l'urgence donnés dans le contexte, ne les recalcule jamais.",
   parameters: z.object({
     hours:           z.number().describe("Durée en heures"),
-    hourly_rate:     z.number().describe("Taux horaire FCFA"),
+    hourly_rate:     z.number().describe("Taux horaire FCFA déjà résolu, donné dans le contexte"),
     materials_total: z.number().describe("Total matériaux FCFA"),
-    urgency:         z.enum(['low', 'medium', 'high', 'emergency']).optional(),
+    urgency:         z.enum(['low', 'medium', 'high', 'emergency']).optional().describe("Urgence déjà résolue, donnée dans le contexte"),
     quartier:        z.string().optional().describe("Quartier client Abidjan"),
   }),
   execute: async ({ hours, hourly_rate, materials_total, urgency = 'medium', quartier = 'Cocody' }) => {
+    // Plancher SMIG appliqué en code par défense en profondeur (déjà garanti en amont par resolveHourlyRate)
+    const flooredRate = Math.max(hourly_rate, SMIG_X2_HORAIRE);
+
     const LABOR_CAP   = 30_000;
     const degressif   = hours <= 2 ? 1.0 : hours <= 4 ? 0.85 : hours <= 8 ? 0.70 : 0.60;
-    const labor_base  = Math.min(Math.round(hourly_rate * hours * degressif), LABOR_CAP);
+    const labor_base  = Math.min(Math.round(flooredRate * hours * degressif), LABOR_CAP);
     const urgency_pct = urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0;
     const labor_final = Math.round(labor_base * (1 + urgency_pct));
     const transport   = getTransport(quartier);
@@ -176,26 +191,55 @@ const calculateFinalPrice = tool({
   },
 });
 
+// ── Sortie structurée (C3) ──────────────────────────────────────────────────
+// Remplace le JSON.parse manuel sur output_text par un schéma zod appliqué
+// nativement par le SDK. Plus de fallback silencieux à total:0 : un échec
+// de run ou de validation lève désormais une erreur.
+
+const pricingOutputSchema = z.object({
+  total:           z.number(),
+  fourchette:      z.object({ min: z.number(), max: z.number() }),
+  artisan_percoit: z.number(),
+  breakdown: z.object({
+    main_oeuvre:        z.number(),
+    degressivite:       z.string().nullable(),
+    urgence:             z.string().nullable(),
+    materiaux:           z.number(),
+    transport:           z.number(),
+    commission_afrione:  z.number(),
+    assurance_sav:       z.number(),
+  }),
+  // Injecté/écrasé côté TypeScript après le run — voir runPricingAgent.
+  // Conservé dans le schéma pour que le modèle le reporte de façon cohérente.
+  source_tarif:      z.enum(['artisan_declare', 'donnees_zone', 'moyenne_nationale', 'fallback_marche']),
+  version_reference: z.string(),
+  data_note:         z.string().min(1).describe(
+    "Toujours renseigné. Explique la source du taux horaire donné. Signale explicitement tout matériau au prix marqué is_fallback:true (jamais présenté comme un prix trouvé)."
+  ),
+});
+
+export type PricingAgentOutput = z.infer<typeof pricingOutputSchema>;
+
 // ── Agent ────────────────────────────────────────────────────────────────────
+// Prompt réduit (C4) : la résolution du taux horaire et de l'urgence se fait
+// en amont, en TypeScript. L'agent ne fait plus que chercher les matériaux,
+// calculer le prix final, et rédiger data_note.
 
 const afrione = new Agent({
   name: "afrione",
   instructions: `Tu es l'agent de tarification AfriOne pour le marché informel d'Abidjan, Côte d'Ivoire.
 
-Processus OBLIGATOIRE en 4 étapes :
-1. Appelle get_pricing_data(metier, zone) → tarifs terrain réels
-   - Si has_data=true : utilise taux_horaire comme référence principale
-   - Si has_data=false : appelle get_artisan_rate(metier, artisan_id?) comme fallback
-2. Pour chaque matériau, appelle search_material_price
-3. Appelle calculate_final_price avec hours, hourly_rate, materials_total, urgency, quartier
-4. Réponds UNIQUEMENT avec le JSON brut. Aucun texte, aucun markdown.
+Le taux horaire et l'urgence sont déjà résolus et te sont donnés dans le message. Ne les recalcule jamais, ne les déduis pas d'autre chose que ce qui t'est donné.
 
-Règles absolues :
-- Taux horaire minimum = 866 FCFA/h (SMIG × 2 Côte d'Ivoire)
-- Les prix viennent toujours des outils, jamais inventés
-- Répondre en JSON : { total, fourchette: {min, max}, artisan_percoit, breakdown, data_note? }`,
+Processus :
+1. Pour chaque matériau nécessaire, appelle search_material_price.
+2. Appelle calculate_final_price avec le taux horaire donné, hours, materials_total, l'urgence donnée telle quelle, et le quartier.
+3. Rédige data_note : mentionne toujours la source du taux horaire donnée dans le message (et si un plancher a été appliqué), et signale explicitement tout matériau dont le résultat a is_fallback:true — ce n'est pas un prix trouvé, ne le présente jamais comme tel.
+
+Règle absolue : les prix viennent toujours des outils, jamais inventés.`,
   model: "gpt-4o-mini",
-  tools: [getPricingData, searchMaterialPrice, getArtisanRate, calculateFinalPrice],
+  tools: [searchMaterialPrice, calculateFinalPrice],
+  outputType: pricingOutputSchema,
   modelSettings: { store: true },
 });
 
@@ -239,7 +283,7 @@ export const runWorkflow = async (workflow: WorkflowInput) => {
       }
 
       return {
-        output_text: result.finalOutput ?? "",
+        output: result.finalOutput,
         steps: extractSteps(result.newItems ?? []),
       };
     });
@@ -263,8 +307,10 @@ export interface AgentPricingInput {
   artisan_id?:    string;
 }
 
-export async function runPricingAgent(input: AgentPricingInput) {
-  const metier = CATEGORY_TO_METIER[input.category] || input.category;
+export async function runPricingAgent(input: AgentPricingInput): Promise<PricingAgentOutput> {
+  const metier  = CATEGORY_TO_METIER[input.category] || input.category;
+  const urgency = resolveUrgency(input.urgency);
+  const rate    = await resolveHourlyRate(metier, input.quartier, input.artisan_id);
 
   const { data: examples } = await supabaseAdmin
     .from('accepted_prices')
@@ -286,7 +332,8 @@ export async function runPricingAgent(input: AgentPricingInput) {
 - Matériaux : ${input.items_needed.join(', ') || 'aucun'}
 - Durée estimée : ${input.hours_estimate}h
 - Quartier client : ${input.quartier}
-- Urgence : ${input.urgency}${input.artisan_id ? `\n- Artisan ID : ${input.artisan_id}` : ''}${examplesBlock}`;
+- Taux horaire résolu : ${rate.hourly_rate} FCFA/h (source : ${rate.source_tarif}${rate.rate_floored ? ', plancher SMIG appliqué' : ''}${rate.nb_observations ? `, ${rate.nb_observations} observations` : ''})
+- Urgence résolue : ${urgency}${input.artisan_id ? `\n- Artisan ID : ${input.artisan_id}` : ''}${examplesBlock}`;
 
   const startedAt = Date.now();
   let result: Awaited<ReturnType<typeof runWorkflow>> | null = null;
@@ -298,32 +345,33 @@ export async function runPricingAgent(input: AgentPricingInput) {
     runError = err?.message || 'run_failed';
   }
 
-  let parsed: any = null;
-  let parseOk = false;
-  try {
-    const cleaned = result?.output_text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim() || '';
-    parsed = JSON.parse(cleaned);
-    parseOk = true;
-  } catch {
-    parsed = { explanation: result?.output_text || '', total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} };
-  }
-
   // Journal local du run — observabilité indépendante d'OpenAI (table agent_runs).
   // Awaité : en serverless, un insert fire-and-forget serait perdu au gel de la function.
   await supabaseAdmin.from('agent_runs').insert({
     agent_name:  'pricing',
     model:       'gpt-4o-mini',
-    input:       { category: input.category, metier, quartier: input.quartier, urgency: input.urgency, hours: input.hours_estimate, items: input.items_needed, artisan_id: input.artisan_id ?? null, prompt: text },
+    input:       { category: input.category, metier, quartier: input.quartier, urgency, hours: input.hours_estimate, items: input.items_needed, artisan_id: input.artisan_id ?? null, source_tarif: rate.source_tarif, hourly_rate: rate.hourly_rate, prompt: text },
     steps:       result?.steps ?? [],
-    output:      parseOk ? parsed : { raw: result?.output_text ?? null },
-    total_price: parseOk ? (parsed.total ?? null) : null,
-    parse_ok:    parseOk,
+    output:      result?.output ?? null,
+    total_price: result?.output?.total ?? null,
+    parse_ok:    result != null,
     error:       runError,
     duration_ms: Date.now() - startedAt,
   }).then(({ error }) => {
     if (error) console.warn('[agent_runs] insert failed:', error.message);
   });
 
-  if (runError) throw new Error(runError);
-  return parsed;
+  // Plus de fallback silencieux à total:0 — un échec de run lève une erreur.
+  if (runError || !result) {
+    throw new Error(runError || 'pricing_agent_failed');
+  }
+
+  // source_tarif et version_reference sont des faits résolus en TypeScript,
+  // jamais laissés au jugement du modèle : on les écrase après coup pour
+  // garantir la cohérence même si le modèle a mal recopié le contexte.
+  return {
+    ...result.output,
+    source_tarif: rate.source_tarif,
+    version_reference: 'hourly-fallback-v1', // pas de catalogue de tâches tant que C2 n'est pas fait
+  };
 }
