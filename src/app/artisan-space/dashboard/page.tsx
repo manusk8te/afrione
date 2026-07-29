@@ -273,6 +273,30 @@ export default function ArtisanDashboardPage() {
           style: { background: '#E85D26', color: 'white', fontWeight: 700 },
         })
       })
+      // Détection passive : un autre artisan a accepté pendant que l'offre
+      // était affichée ici (response passe de null à 'cancelled'/'timeout')
+      // — la carte se ferme avec attribution, sans attendre un clic.
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'dispatch_attempts',
+        filter: `artisan_id=eq.${artisan.id}`,
+      }, async (payload: any) => {
+        if (payload.new?.response == null) return
+        setUrgentDispatch((prev: any) => {
+          if (prev?.mission_id !== payload.new.mission_id) return prev
+          clearInterval(urgentIntervalRef.current!)
+          return null
+        })
+        if (payload.new.response === 'cancelled') {
+          const { data: m } = await supabase
+            .from('missions').select('status, artisan_id').eq('id', payload.new.mission_id).maybeSingle()
+          if (m?.status === 'en_route' && m.artisan_id) {
+            const { data: pro } = await supabase
+              .from('artisan_pros').select('users!artisan_pros_user_id_fkey(name)').eq('id', m.artisan_id).maybeSingle()
+            const name = (pro?.users as any)?.name || 'Un autre artisan'
+            toast(`Mission prise par ${name}`, { icon: '⚡', duration: 5000 })
+          }
+        }
+      })
       .subscribe()
 
     return () => {
@@ -299,7 +323,11 @@ export default function ArtisanDashboardPage() {
     setRespondingUrgent(false)
 
     if (data.already_taken) {
-      toast('Mission déjà prise par un autre artisan', { icon: '⚡' })
+      const name = data.taken_by?.name || 'un autre artisan'
+      const at   = data.taken_by?.at ? new Date(data.taken_by.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null
+      toast(`Mission prise par ${name}${at ? ` à ${at}` : ''}`, { icon: '⚡', duration: 6000 })
+    } else if (data.expired) {
+      toast.error('Mission expirée avant que ta réponse soit confirmée.')
     } else if (response === 'accepted') {
       toast.success('Mission acceptée ! Rends-toi chez le client.')
       router.push(`/warroom/${urgentDispatch.mission_id}`)

@@ -4,6 +4,19 @@ import { cancelAndRefund } from '@/lib/dispatch'
 
 export const dynamic = 'force-dynamic'
 
+// Nom + horodatage de l'artisan qui a réellement remporté la mission —
+// pour une attribution explicite plutôt qu'un "prise par un autre" générique.
+async function getTakenByInfo(missionId: string, artisanId: string) {
+  const [{ data: pro }, { data: attempt }] = await Promise.all([
+    supabaseAdmin.from('artisan_pros').select('users!artisan_pros_user_id_fkey(name)').eq('id', artisanId).maybeSingle(),
+    supabaseAdmin.from('dispatch_attempts').select('responded_at').eq('mission_id', missionId).eq('artisan_id', artisanId).eq('response', 'accepted').maybeSingle(),
+  ])
+  return {
+    name: (pro?.users as any)?.name || 'Un autre artisan',
+    at:   attempt?.responded_at || null,
+  }
+}
+
 export async function POST(req: NextRequest) {
   const { mission_id, artisan_id, response } = await req.json()
 
@@ -18,15 +31,16 @@ export async function POST(req: NextRequest) {
   // Vérifier que la mission est encore en cours de dispatch
   const { data: mission } = await supabaseAdmin
     .from('missions')
-    .select('status, client_id, category')
+    .select('status, client_id, category, artisan_id')
     .eq('id', mission_id)
     .single()
 
   if (!mission) return NextResponse.json({ error: 'Mission introuvable' }, { status: 404 })
 
-  // Si déjà assignée (un autre artisan a accepté en premier)
-  if (mission.status === 'en_route') {
-    return NextResponse.json({ error: 'Mission déjà assignée', already_taken: true }, { status: 409 })
+  // Si déjà assignée à un AUTRE artisan — attribution explicite (qui, quand)
+  if (mission.status === 'en_route' && mission.artisan_id && mission.artisan_id !== artisan_id) {
+    const taken_by = await getTakenByInfo(mission_id, mission.artisan_id)
+    return NextResponse.json({ error: 'Mission déjà assignée', already_taken: true, taken_by }, { status: 409 })
   }
 
   // Récupérer la tentative de cet artisan
@@ -52,13 +66,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Délai expiré' }, { status: 410 })
   }
 
-  // Enregistrer la réponse de cet artisan
-  await supabaseAdmin
-    .from('dispatch_attempts')
-    .update({ response, responded_at: new Date().toISOString() })
-    .eq('id', attempt.id)
-
   if (response === 'refused') {
+    await supabaseAdmin
+      .from('dispatch_attempts')
+      .update({ response: 'refused', responded_at: new Date().toISOString() })
+      .eq('id', attempt.id)
+
     // Vérifier si tous les artisans ont refusé
     const { data: pending } = await supabaseAdmin
       .from('dispatch_attempts')
@@ -73,9 +86,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ refused: true })
   }
 
-  // ── Accepté : cet artisan prend la mission ───────────────────────────────
-  // Atomic conditional update — only succeeds if status is still 'dispatching'.
-  // Guards against double-assignment when two artisans accept simultaneously.
+  // ── Accepté : tenter la prise atomique AVANT de marquer la tentative ──────
+  // Ordre important : marquer response='accepted' avant ce claim laissait la
+  // tentative figée sur "accepted" même quand le claim échouait (ex: le
+  // timeout client — même fenêtre 60s — annule la mission dans l'instant qui
+  // sépare les deux requêtes) → incohérence observée en base (dispatch_attempts
+  // accepted, mission cancelled, artisan_id null) et message "prise par un
+  // autre artisan" alors que personne ne l'a réellement obtenue.
   const { data: claimed, error: claimError } = await supabaseAdmin
     .from('missions')
     .update({ status: 'en_route', artisan_id: artisan_id })
@@ -85,8 +102,29 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (claimError || !claimed) {
-    return NextResponse.json({ error: 'Mission déjà assignée', already_taken: true }, { status: 409 })
+    // Refléter l'échec réel plutôt que de laisser la tentative sur "accepted"
+    await supabaseAdmin
+      .from('dispatch_attempts')
+      .update({ response: 'timeout', responded_at: new Date().toISOString() })
+      .eq('id', attempt.id)
+
+    // Distinguer "prise par quelqu'un d'autre" (attribution réelle) de
+    // "expirée/annulée entre-temps" (aucun gagnant) — messages différents
+    const { data: current } = await supabaseAdmin
+      .from('missions').select('status, artisan_id').eq('id', mission_id).maybeSingle()
+
+    if (current?.status === 'en_route' && current.artisan_id) {
+      const taken_by = await getTakenByInfo(mission_id, current.artisan_id)
+      return NextResponse.json({ error: 'Mission déjà assignée', already_taken: true, taken_by }, { status: 409 })
+    }
+    return NextResponse.json({ error: 'Mission expirée ou annulée avant confirmation', expired: true }, { status: 410 })
   }
+
+  // Confirmer la tentative seulement maintenant que la prise a réussi
+  await supabaseAdmin
+    .from('dispatch_attempts')
+    .update({ response: 'accepted', responded_at: new Date().toISOString() })
+    .eq('id', attempt.id)
 
   // Cancel all other pending attempts
   await supabaseAdmin
