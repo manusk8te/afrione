@@ -1,0 +1,60 @@
+{
+  "clientId": 33,
+  "persona": "exigeant",
+  "quartier": "Cocody",
+  "problem": "J'ai un robinet mitigeur thermostatique Hansgrohe qui présente une perte de pression en amont. Le joint de siège semble usé. Besoin d'un plombier certifié avec expérience sur robinetterie haut de gamme.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Quand vous parlez de perte de pression, est-ce que ça affecte tous les points d'eau de la maison ou seulement ce robinet ?",
+      "answer": "Tous les points d'eau",
+      "type": "choice"
+    },
+    {
+      "question": "La pression d'eau de la SODECI est-elle stable ou y a-t-il des coupures fréquentes ?",
+      "answer": "Stable en général",
+      "type": "choice"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 2500,
+      "commission_afrione": 550,
+      "assurance_sav": 110
+    },
+    "total": 6160,
+    "fourchette": {
+      "min": 5667,
+      "max": 6653
+    },
+    "artisan_percoit": 5421
+  },
+  "missionId": null,
+  "durationMs": 8039,
+  "stepsCompleted": 7
+}

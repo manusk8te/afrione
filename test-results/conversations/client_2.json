@@ -1,0 +1,64 @@
+{
+  "clientId": 2,
+  "persona": "urgent",
+  "quartier": "Yopougon",
+  "problem": "Court-circuit grave ! Toute la maison est sans courant depuis 2h, ça sentait le brûlé avant.",
+  "status": "success",
+  "qa": [],
+  "diagnostic": {
+    "summary": "Votre maison est actuellement sans courant en raison d'un court-circuit grave. L'odeur de brûlé indique probablement un fil noirci ou un composant électrique endommagé. L'artisan va d'abord couper le disjoncteur général pour sécuriser l'installation, puis inspecter le tableau électrique et les circuits pour identifier la source du court-circuit. Cette intervention pourrait durer entre 1 et 2 heures, et il est conseillé de rester hors de la zone affectée pour des raisons de sécurité. Pour éviter de futurs incidents, assurez-vous que votre installation électrique est régulièrement inspectée et entretenue.",
+    "technical_notes": "1. Couper immédiatement le disjoncteur général pour sécuriser l'installation. 2. Inspecter le tableau électrique pour identifier les signes de brûlure ou de court-circuit. 3. Vérifier les circuits et les prises pour détecter les fils noircis ou les composants endommagés. 4. Remplacer les fils ou les disjoncteurs endommagés avec des produits conformes (ex: disjoncteur Legrand/Schneider). 5. Attention aux prises brûlées, surtout en zone humide, qui nécessitent un remplacement complet. 6. Valider la réparation en rétablissant le courant et en vérifiant que le disjoncteur ne saute plus.",
+    "category": "Électricité",
+    "urgency": "emergency",
+    "price_min": 8,
+    "price_max": 25,
+    "items_needed": [
+      {
+        "name": "Disjoncteur Legrand",
+        "qty": 1,
+        "unit": "pièce"
+      },
+      {
+        "name": "Câble électrique 2.5mm²",
+        "qty": 5,
+        "unit": "mètre"
+      }
+    ],
+    "duration_estimate": "1 à 2 heures",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": [
+      {
+        "item": "Disjoncteur Legrand",
+        "found": true,
+        "price": 27500,
+        "photo_url": "https://ci.jumia.is/unsafe/fit-in/300x300/filters:fill(white)/product/65/043023/1.jpg?9989",
+        "url": "https://www.jumia.ci/legrand-disjoncteur-dismatic-20-a-bornes-a-vis-blanc-encastrable-ip2x-ik04-32034056.html",
+        "name": "Disjoncteur Dismatic - 20 A - bornes a vis - blanc - encastrable - IP2X - IK04",
+        "saved": 11
+      },
+      {
+        "item": "Câble électrique 2.5mm²",
+        "found": false
+      }
+    ]
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 11200,
+      "materiaux": 28700,
+      "transport": 6000,
+      "commission_afrione": 4590,
+      "assurance_sav": 918
+    },
+    "total": 51408,
+    "fourchette": {
+      "min": 47295,
+      "max": 55521
+    },
+    "artisan_percoit": 45239
+  },
+  "missionId": null,
+  "durationMs": 13451,
+  "stepsCompleted": 3
+}

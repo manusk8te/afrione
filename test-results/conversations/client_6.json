@@ -1,0 +1,59 @@
+{
+  "clientId": 6,
+  "persona": "urgent",
+  "quartier": "Abobo",
+  "problem": "Tuyau d'eau pété dans la salle de bain, l'eau gicle fort, j'ai coupé le général mais besoin urgent d'intervention !",
+  "status": "success",
+  "qa": [],
+  "diagnostic": {
+    "summary": "Un tuyau d'eau dans votre salle de bain s'est rompu, provoquant une fuite d'eau importante. La cause probable est un choc thermique ou une usure du matériau. L'artisan va d'abord sécuriser la zone en s'assurant que l'eau est coupée, puis remplacer le tuyau défectueux. Cette intervention devrait prendre environ 1 à 2 heures. Vous devrez rester sans eau pendant la réparation. Pour éviter ce problème à l'avenir, vérifiez régulièrement l'état de vos tuyaux et assurez-vous qu'ils sont bien isolés contre les variations de température.",
+    "technical_notes": "1. Vérifier que l'eau générale est bien coupée pour sécuriser la zone. 2. Inspecter le tuyau endommagé pour identifier la section à remplacer. 3. Couper la section défectueuse avec une scie à métaux. 4. Remplacer par un nouveau tuyau PVC PN10 de même diamètre, en utilisant des raccords adaptés. 5. S'assurer que tous les raccords sont bien serrés pour éviter les fuites. 6. Ouvrir l'eau générale et vérifier l'absence de fuites. 7. Vérifier la pression de l'eau pour s'assurer qu'elle est stable. 8. Confirmer que la réparation est réussie en observant l'absence de fuites pendant au moins 10 minutes.",
+    "category": "Plomberie",
+    "urgency": "emergency",
+    "price_min": 5000,
+    "price_max": 15000,
+    "items_needed": [
+      {
+        "name": "Tuyau PVC PN10",
+        "qty": 1,
+        "unit": "mètre"
+      },
+      {
+        "name": "Raccord PVC",
+        "qty": 2,
+        "unit": "pièce"
+      }
+    ],
+    "duration_estimate": "1 à 2 heures",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": [
+      {
+        "item": "Tuyau PVC PN10",
+        "found": false
+      },
+      {
+        "item": "Raccord PVC",
+        "found": false
+      }
+    ]
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 9800,
+      "materiaux": 3000,
+      "transport": 7000,
+      "commission_afrione": 1980,
+      "assurance_sav": 396
+    },
+    "total": 22176,
+    "fourchette": {
+      "min": 20402,
+      "max": 23950
+    },
+    "artisan_percoit": 19515
+  },
+  "missionId": null,
+  "durationMs": 20893,
+  "stepsCompleted": 3
+}

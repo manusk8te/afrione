@@ -1,0 +1,60 @@
+{
+  "clientId": 36,
+  "persona": "exigeant",
+  "quartier": "Angré",
+  "problem": "Fissures diagonales à 45° depuis les linteaux de mes baies vitrées. Bâtiment de 2002, sol argileux. Besoin d'un expert maçon qui sait distinguer tassement structurel d'une fissure cosmétique.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Les fissures sont-elles visibles uniquement à l'intérieur, à l'extérieur, ou des deux côtés ?",
+      "answer": "Uniquement à l'intérieur",
+      "type": "choice"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 4500,
+      "commission_afrione": 750,
+      "assurance_sav": 150
+    },
+    "total": 8400,
+    "fourchette": {
+      "min": 7728,
+      "max": 9072
+    },
+    "artisan_percoit": 7392
+  },
+  "missionId": null,
+  "durationMs": 6167,
+  "stepsCompleted": 7
+}

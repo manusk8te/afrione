@@ -188,17 +188,22 @@ export async function startUrgentDispatch(
   // Même expiry pour tous — premier arrivé premier servi
   const expiresAt = new Date(Date.now() + timeoutSeconds * 1000).toISOString()
 
+  // Statut 'dispatching' posé AVANT de créer les tentatives / notifier : sinon
+  // un artisan rapide qui accepte pendant la fenêtre où les dispatch_attempts
+  // existent déjà mais où la mission a encore son ancien statut se voit
+  // refuser la prise atomique (respond/route.ts exige status='dispatching')
+  // et reçoit un faux message "mission expirée" alors que personne n'a accepté.
+  await supabaseAdmin
+    .from('missions')
+    .update({ status: 'dispatching' })
+    .eq('id', missionId)
+
   // Créer une tentative pour chaque candidat + notifier en parallèle
   await Promise.all(
     candidates.map((c: any, i: number) =>
       createDispatchAttempt(missionId, c.id, i + 1, expiresAt)
     )
   )
-
-  await supabaseAdmin
-    .from('missions')
-    .update({ status: 'dispatching' })
-    .eq('id', missionId)
 
   // Notifier tous les artisans en parallèle (fire-and-forget)
   Promise.allSettled(candidates.map((c: any) => sendUrgentNotification(c.user_id, category)))

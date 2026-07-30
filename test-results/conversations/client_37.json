@@ -1,0 +1,60 @@
+{
+  "clientId": 37,
+  "persona": "exigeant",
+  "quartier": "Marcory",
+  "problem": "Menuiserie aluminium à remplacer : 4 baies coulissantes 2,4m × 2,1m, double vitrage 4/12/4, rupture de pont thermique. Je veux une offre précise en fourniture + pose.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Pour ces baies coulissantes, souhaitez-vous une couleur spécifique pour l'aluminium ou une finition particulière ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 1500,
+      "commission_afrione": 450,
+      "assurance_sav": 90
+    },
+    "total": 5040,
+    "fourchette": {
+      "min": 4637,
+      "max": 5443
+    },
+    "artisan_percoit": 4435
+  },
+  "missionId": null,
+  "durationMs": 6828,
+  "stepsCompleted": 7
+}

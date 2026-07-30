@@ -1,0 +1,60 @@
+{
+  "clientId": 25,
+  "persona": "vague",
+  "quartier": "Abobo",
+  "problem": "Problème chez moi.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Quel type de problème rencontrez-vous exactement ?",
+      "answer": "Plomberie",
+      "type": "choice"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 7000,
+      "commission_afrione": 1000,
+      "assurance_sav": 200
+    },
+    "total": 11200,
+    "fourchette": {
+      "min": 10304,
+      "max": 12096
+    },
+    "artisan_percoit": 9856
+  },
+  "missionId": null,
+  "durationMs": 5602,
+  "stepsCompleted": 7
+}

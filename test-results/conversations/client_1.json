@@ -1,0 +1,55 @@
+{
+  "clientId": 1,
+  "persona": "urgent",
+  "quartier": "Cocody",
+  "problem": "URGENT ! Il y a une fuite d'eau massive sous mon évier, l'eau coule partout sur le sol de la cuisine !",
+  "status": "success",
+  "qa": [],
+  "diagnostic": {
+    "summary": "Il y a une fuite d'eau importante sous votre évier, probablement causée par un joint torique usé ou un raccord desserré. L'artisan va d'abord couper l'eau pour éviter plus de dégâts, puis inspecter et remplacer le joint ou resserrer le raccord défectueux. Cette intervention devrait prendre environ 1 heure, et il est conseillé de ne pas utiliser l'évier pendant ce temps. Pour éviter que cela ne se reproduise, vérifiez régulièrement l'état des joints et des raccords sous l'évier.",
+    "technical_notes": "1. Couper immédiatement l'eau générale pour éviter l'inondation. \n2. Inspecter le joint torique sous le robinet et les raccords pour identifier la source exacte de la fuite. \n3. Remplacer le joint torique usé ou resserrer le raccord desserré avec une clé appropriée. \n4. Utiliser un joint torique de rechange de qualité (ex: Wavin) pour assurer l'étanchéité. \n5. Vérifier la pression de l'eau après réparation pour s'assurer qu'il n'y a pas de coup de bélier. \n6. Confirmer l'absence de fuite en ouvrant l'eau et en observant pendant quelques minutes.",
+    "category": "Plomberie",
+    "urgency": "emergency",
+    "price_min": 2000,
+    "price_max": 6000,
+    "items_needed": [
+      {
+        "name": "Joint torique",
+        "qty": 1,
+        "unit": "piece"
+      }
+    ],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": [
+      {
+        "item": "Joint torique",
+        "found": true,
+        "price": 7443,
+        "photo_url": "https://ci.jumia.is/unsafe/fit-in/300x300/filters:fill(white)/product/20/239713/1.jpg?8749",
+        "url": "https://www.jumia.ci/generic-machine-a-sceller-les-snacks-thermoscelleuse-31793202.html",
+        "name": "Machine à Sceller Les Snacks, Thermoscelleuse",
+        "saved": 4
+      }
+    ]
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 4900,
+      "materiaux": 7443,
+      "transport": 2500,
+      "commission_afrione": 1484,
+      "assurance_sav": 297
+    },
+    "total": 16624,
+    "fourchette": {
+      "min": 15294,
+      "max": 17954
+    },
+    "artisan_percoit": 14629
+  },
+  "missionId": null,
+  "durationMs": 19062,
+  "stepsCompleted": 3
+}

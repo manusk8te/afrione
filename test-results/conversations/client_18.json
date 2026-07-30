@@ -1,0 +1,60 @@
+{
+  "clientId": 18,
+  "persona": "entreprise",
+  "quartier": "Cocody",
+  "problem": "Notre restaurant doit être remis aux normes. Toute la plomberie de la cuisine professionnelle + salle de bain handicapé à refaire. Budget conséquent.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Pour la plomberie de la cuisine, est-ce que vous avez des problèmes spécifiques comme des fuites, des tuyaux bouchés, ou c'est surtout une mise aux normes générale ?",
+      "answer": "Fuites ou problèmes spécifiques",
+      "type": "choice"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 2500,
+      "commission_afrione": 550,
+      "assurance_sav": 110
+    },
+    "total": 6160,
+    "fourchette": {
+      "min": 5667,
+      "max": 6653
+    },
+    "artisan_percoit": 5421
+  },
+  "missionId": null,
+  "durationMs": 5759,
+  "stepsCompleted": 7
+}

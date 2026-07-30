@@ -1,0 +1,60 @@
+{
+  "clientId": 12,
+  "persona": "hesitant",
+  "quartier": "Marcory",
+  "problem": "Mon interrupteur dans la chambre marche parfois pas. C'est peut-être normal ?",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Quand l'interrupteur ne fonctionne pas, est-ce qu'il y a un bruit ou une étincelle quand vous essayez de l'allumer ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Quand l'interrupteur ne fonctionne pas, est-ce que c'est tout le circuit du salon qui est affecté ou seulement cet interrupteur ?",
+      "answer": "Tout le circuit du salon",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 1500,
+      "commission_afrione": 450,
+      "assurance_sav": 90
+    },
+    "total": 5040,
+    "fourchette": {
+      "min": 4637,
+      "max": 5443
+    },
+    "artisan_percoit": 4435
+  },
+  "missionId": null,
+  "durationMs": 7770,
+  "stepsCompleted": 7
+}

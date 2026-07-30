@@ -1,0 +1,60 @@
+{
+  "clientId": 39,
+  "persona": "exigeant",
+  "quartier": "Zone 4",
+  "problem": "Rénovation électrique complète d'un appartement de 120m² : passage de 1P+N à 3P+N, ajout de 6 circuits supplémentaires, pose de prises USB-C, mise aux normes NFC 15-100.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "L'installation actuelle est-elle encastrée dans les murs ou apparente ?",
+      "answer": "Encastree dans les murs",
+      "type": "choice"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 1500,
+      "commission_afrione": 450,
+      "assurance_sav": 90
+    },
+    "total": 5040,
+    "fourchette": {
+      "min": 4637,
+      "max": 5443
+    },
+    "artisan_percoit": 4435
+  },
+  "missionId": null,
+  "durationMs": 6490,
+  "stepsCompleted": 7
+}

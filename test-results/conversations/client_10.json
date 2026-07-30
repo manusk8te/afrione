@@ -1,0 +1,108 @@
+{
+  "clientId": 10,
+  "persona": "hesitant",
+  "quartier": "Bingerville",
+  "problem": "Hum, y a une petite tache humide au mur du salon. Je sais pas si c'est grave ou pas.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "La tache humide est-elle située près du plafond, au milieu du mur, ou près du sol ?",
+      "answer": "Près du plafond",
+      "type": "choice"
+    },
+    {
+      "question": "Est-ce que la tache humide près du plafond est située sous une terrasse ou un toit plat ?",
+      "answer": "Oui, sous une terrasse ou un toit plat",
+      "type": "choice"
+    },
+    {
+      "question": "La terrasse au-dessus est-elle carrelée ou en béton brut ?",
+      "answer": "Carrelée",
+      "type": "choice"
+    },
+    {
+      "question": "Y a-t-il des fissures visibles sur le carrelage de la terrasse ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "La tache humide est-elle active avec de l'eau qui coule ou juste une tache sèche ?",
+      "answer": "Eau qui coule",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Il semble que vous ayez une infiltration d'eau provenant de la terrasse carrelée au-dessus de votre salon. La cause probable est une fissure dans le carrelage de la terrasse, permettant à l'eau de s'infiltrer et de couler le long du mur. L'artisan va d'abord inspecter et identifier précisément l'origine de la fuite, puis réparer les fissures du carrelage et appliquer un traitement d'étanchéité. Cette intervention devrait prendre environ 1 à 2 jours, et il sera nécessaire de ne pas utiliser la terrasse pendant ce temps. Pour éviter que cela ne se reproduise, il est conseillé de vérifier régulièrement l'état du carrelage et de refaire les joints si nécessaire.",
+    "technical_notes": "1. Couper l'eau si nécessaire pour éviter toute aggravation de l'infiltration. 2. Inspecter la terrasse pour localiser précisément les fissures dans le carrelage. 3. Retirer les carreaux endommagés et nettoyer la surface sous-jacente. 4. Appliquer un produit d'étanchéité (SikaTop Seal 107) sur la surface exposée. 5. Reposer les carreaux avec un mortier-colle adapté (Holcim) et refaire les joints. 6. Vérifier l'absence de nouvelles infiltrations après 24 heures de séchage. 7. Conseiller au client de surveiller régulièrement l'état des joints de carrelage.",
+    "category": "Maçonnerie",
+    "urgency": "high",
+    "price_min": 6000,
+    "price_max": 16000,
+    "items_needed": [
+      {
+        "name": "SikaTop Seal 107",
+        "qty": 1,
+        "unit": "kit"
+      },
+      {
+        "name": "Mortier-colle Holcim",
+        "qty": 1,
+        "unit": "sac"
+      },
+      {
+        "name": "Carreaux de remplacement",
+        "qty": 5,
+        "unit": "pièces"
+      },
+      {
+        "name": "Joint de carrelage",
+        "qty": 1,
+        "unit": "kg"
+      }
+    ],
+    "duration_estimate": "1 à 2 jours",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": [
+      {
+        "item": "SikaTop Seal 107",
+        "found": false
+      },
+      {
+        "item": "Mortier-colle Holcim",
+        "found": false
+      },
+      {
+        "item": "Carreaux de remplacement",
+        "found": false
+      },
+      {
+        "item": "Joint de carrelage",
+        "found": true,
+        "price": 6000,
+        "photo_url": "https://ci.jumia.is/unsafe/fit-in/300x300/filters:fill(white)/product/44/553323/1.jpg?0437",
+        "url": "https://www.jumia.ci/generic-un-mastic-de-jointoiement-et-de-renovation-concu-pour-blanchir-reparer-et-impermeabiliser-les-joints-de-carrelage-uses-ou-encrasses-32335544.html",
+        "name": "un mastic de jointoiement et de rénovation conçu pour blanchir, réparer et imperméabiliser les joint",
+        "saved": 4
+      }
+    ]
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 21000,
+      "materiaux": 18500,
+      "transport": 9000,
+      "commission_afrione": 4850,
+      "assurance_sav": 970
+    },
+    "total": 54320,
+    "fourchette": {
+      "min": 49974,
+      "max": 58666
+    },
+    "artisan_percoit": 47802
+  },
+  "missionId": null,
+  "durationMs": 24434,
+  "stepsCompleted": 8
+}

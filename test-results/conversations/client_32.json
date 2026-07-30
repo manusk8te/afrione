@@ -1,0 +1,60 @@
+{
+  "clientId": 32,
+  "persona": "vague",
+  "quartier": "Bingerville",
+  "problem": "Clim.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "La clim souffle de l'air tiède ou elle ne démarre pas du tout ?",
+      "answer": "Elle souffle de l'air tiède",
+      "type": "choice"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 9000,
+      "commission_afrione": 1200,
+      "assurance_sav": 240
+    },
+    "total": 13440,
+    "fourchette": {
+      "min": 12365,
+      "max": 14515
+    },
+    "artisan_percoit": 11827
+  },
+  "missionId": null,
+  "durationMs": 6551,
+  "stepsCompleted": 7
+}

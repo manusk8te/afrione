@@ -1,0 +1,60 @@
+{
+  "clientId": 28,
+  "persona": "vague",
+  "quartier": "Treichville",
+  "problem": "Y a quelque chose qui va pas.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Pouvez-vous me dire dans quel domaine se situe le problème ?",
+      "answer": "Plomberie",
+      "type": "choice"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "L'eau coule-t-elle du mur ou voyez-vous une tache humide qui s'étend ?",
+      "answer": "Eau qui coule du mur",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 800,
+      "commission_afrione": 380,
+      "assurance_sav": 76
+    },
+    "total": 4256,
+    "fourchette": {
+      "min": 3916,
+      "max": 4596
+    },
+    "artisan_percoit": 3745
+  },
+  "missionId": null,
+  "durationMs": 9303,
+  "stepsCompleted": 7
+}

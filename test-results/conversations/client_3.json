@@ -1,0 +1,65 @@
+{
+  "clientId": 3,
+  "persona": "urgent",
+  "quartier": "Plateau",
+  "problem": "Ma clim a completement lâché, il fait 38 degrés dans la maison et j'ai des enfants en bas âge !",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Quand vous dites qu'elle a lâché, est-ce qu'elle ne démarre plus du tout ou elle souffle de l'air mais pas froid ?",
+      "answer": "Elle ne démarre plus du tout",
+      "type": "choice"
+    },
+    {
+      "question": "Quand vous essayez de la démarrer, est-ce qu'il y a un bruit ou un clic ?",
+      "answer": "Aucun bruit du tout",
+      "type": "choice"
+    },
+    {
+      "question": "La clim est-elle branchée sur une prise murale ou directement sur le tableau électrique ?",
+      "answer": "Prise murale",
+      "type": "choice"
+    },
+    {
+      "question": "Avez-vous vérifié si la prise murale fonctionne avec un autre appareil ?",
+      "answer": "Oui, la prise fonctionne",
+      "type": "choice"
+    },
+    {
+      "question": "La prise murale est-elle en bon état ou montre-t-elle des signes de brûlure ou de dégradation ?",
+      "answer": "En bon état",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Votre climatiseur ne démarre plus du tout, ce qui est probablement dû à un problème électrique interne, étant donné que la prise murale fonctionne correctement. Il est possible que le problème soit lié à un relais ou à un composant électronique défectueux à l'intérieur de l'unité. L'artisan va d'abord vérifier l'alimentation électrique de l'unité, puis inspecter les composants internes pour identifier et remplacer la pièce défectueuse. L'intervention devrait durer environ 1 à 2 heures, et vous n'aurez pas besoin de quitter la pièce, mais il est conseillé de couper l'alimentation électrique de l'unité pour des raisons de sécurité. Pour éviter ce type de problème à l'avenir, assurez-vous que l'entretien régulier de la climatisation est effectué, y compris la vérification des connexions électriques.",
+    "technical_notes": "1. Couper l'alimentation électrique de la climatisation à partir du disjoncteur pour sécuriser l'intervention. \n2. Vérifier la continuité du circuit électrique de l'unité avec un multimètre pour identifier toute coupure de courant. \n3. Inspecter le relais et les composants électroniques internes pour détecter tout signe de défaillance ou de dommage. \n4. Remplacer le relais ou tout autre composant défectueux par des pièces compatibles disponibles localement. \n5. Vérifier les connexions électriques pour s'assurer qu'elles sont bien serrées et sans corrosion. \n6. Tester la climatisation après réparation pour confirmer qu'elle démarre et fonctionne correctement. \n7. Conseiller le client sur l'importance d'un entretien régulier pour prévenir les pannes futures.",
+    "category": "Climatisation",
+    "urgency": "high",
+    "price_min": 8000,
+    "price_max": 15000,
+    "items_needed": [],
+    "duration_estimate": "1 à 2 heures",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 12500,
+      "materiaux": 0,
+      "transport": 300,
+      "commission_afrione": 1280,
+      "assurance_sav": 256
+    },
+    "total": 14336,
+    "fourchette": {
+      "min": 13189,
+      "max": 15483
+    },
+    "artisan_percoit": 12616
+  },
+  "missionId": null,
+  "durationMs": 24657,
+  "stepsCompleted": 8
+}

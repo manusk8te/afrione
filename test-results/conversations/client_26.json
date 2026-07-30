@@ -1,0 +1,60 @@
+{
+  "clientId": 26,
+  "persona": "vague",
+  "quartier": "Yopougon",
+  "problem": "Ça marche plus.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Qu'est-ce qui ne marche plus exactement ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 6000,
+      "commission_afrione": 900,
+      "assurance_sav": 180
+    },
+    "total": 10080,
+    "fourchette": {
+      "min": 9274,
+      "max": 10886
+    },
+    "artisan_percoit": 8870
+  },
+  "missionId": null,
+  "durationMs": 9285,
+  "stepsCompleted": 7
+}

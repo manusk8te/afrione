@@ -1,0 +1,60 @@
+{
+  "clientId": 38,
+  "persona": "exigeant",
+  "quartier": "Plateau",
+  "problem": "Carrelage de ma terrasse 45m² à reprendre entièrement : dépose de l'existant, pose chape réglante, carrelage grès cérame 60×60 antidérapant R11. Qui peut me faire une étude de prix sérieuse ?",
+  "status": "success",
+  "qa": [
+    {
+      "question": "La terrasse est-elle facilement accessible pour le transport des matériaux et des débris ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "L'eau qui coule vient-elle d'une infiltration par le carrelage fissuré ou d'une autre source ?",
+      "answer": "Infiltration par le carrelage",
+      "type": "choice"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 300,
+      "commission_afrione": 330,
+      "assurance_sav": 66
+    },
+    "total": 3696,
+    "fourchette": {
+      "min": 3400,
+      "max": 3992
+    },
+    "artisan_percoit": 3252
+  },
+  "missionId": null,
+  "durationMs": 8424,
+  "stepsCompleted": 7
+}

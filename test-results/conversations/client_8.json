@@ -1,0 +1,60 @@
+{
+  "clientId": 8,
+  "persona": "urgent",
+  "quartier": "Koumassi",
+  "problem": "Fuite sous le chauffe-eau, l'eau s'écoule depuis 1h, j'ai mis des serviettes partout.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Pour une fuite sous le chauffe-eau, ça peut venir de deux endroits principaux. L'eau s'écoule-t-elle directement du bas du chauffe-eau ou plutôt des raccords/tuyaux qui y sont connectés ?",
+      "answer": "Directement du bas du chauffe-eau",
+      "type": "choice"
+    },
+    {
+      "question": "Y a-t-il une odeur de brûlé ou de surchauffe autour du chauffe-eau ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Le chauffe-eau est-il monté sur un support ou directement au sol ?",
+      "answer": "Sur un support",
+      "type": "choice"
+    },
+    {
+      "question": "Le chauffe-eau est-il électrique ou à gaz ?",
+      "answer": "Électrique",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Votre chauffe-eau présente une fuite qui semble provenir directement de sa base. Cela est probablement dû à une usure ou une défaillance du réservoir interne. L'artisan va d'abord couper l'alimentation électrique pour sécuriser l'intervention, puis inspecter le réservoir pour identifier la source exacte de la fuite. Si le réservoir est endommagé, un remplacement pourrait être nécessaire. L'intervention pourrait durer environ 1 à 2 heures, et il est conseillé de ne pas utiliser le chauffe-eau pendant ce temps. Pour éviter ce type de problème à l'avenir, envisagez un entretien régulier du chauffe-eau pour détecter toute usure prématurée.",
+    "technical_notes": "1. Couper l'alimentation électrique du chauffe-eau pour sécuriser l'intervention. \n2. Inspecter visuellement la base du chauffe-eau pour identifier la source exacte de la fuite. \n3. Vérifier l'état du réservoir interne, rechercher des signes de corrosion ou de fissures. \n4. Si le réservoir est endommagé, prévoir un remplacement complet du chauffe-eau. \n5. Utiliser des raccords et tuyaux en PVC PN10 si des connexions doivent être refaites. \n6. Vérifier l'étanchéité après intervention en remettant l'eau sous pression. \n7. S'assurer qu'il n'y a plus de fuite avant de remettre le chauffe-eau en service.",
+    "category": "Plomberie",
+    "urgency": "high",
+    "price_min": 5000,
+    "price_max": 15000,
+    "items_needed": [],
+    "duration_estimate": "1 à 2 heures",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 8750,
+      "materiaux": 0,
+      "transport": 3000,
+      "commission_afrione": 1175,
+      "assurance_sav": 235
+    },
+    "total": 13160,
+    "fourchette": {
+      "min": 12107,
+      "max": 14213
+    },
+    "artisan_percoit": 11581
+  },
+  "missionId": null,
+  "durationMs": 19933,
+  "stepsCompleted": 7
+}

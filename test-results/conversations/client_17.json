@@ -1,0 +1,60 @@
+{
+  "clientId": 17,
+  "persona": "entreprise",
+  "quartier": "Plateau",
+  "problem": "Bonjour, je représente une société. Nous avons besoin de rénover entièrement nos bureaux de 200m², peinture, électricité et plomberie. Délai : 3 semaines.",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Pour la peinture, les murs actuels sont de quelle couleur ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Y a-t-il un danger immédiat — eau qui coule activement, odeur de brûlé, étincelles ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "C'est dans quelle pièce exactement, et quelle surface est concernée ?",
+      "answer": "Dans le salon, au mur",
+      "type": "text"
+    },
+    {
+      "question": "Vous êtes dans une maison ou un appartement ?",
+      "answer": "Maison individuelle (RDC)",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "Problème artisanal identifié, intervention recommandée.",
+    "technical_notes": "Diagnostic complet à réaliser sur place.",
+    "category": "Maçonnerie",
+    "urgency": "medium",
+    "price_min": 5000,
+    "price_max": 20000,
+    "items_needed": [],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": []
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 3000,
+      "materiaux": 0,
+      "transport": 300,
+      "commission_afrione": 330,
+      "assurance_sav": 66
+    },
+    "total": 3696,
+    "fourchette": {
+      "min": 3400,
+      "max": 3992
+    },
+    "artisan_percoit": 3252
+  },
+  "missionId": null,
+  "durationMs": 5506,
+  "stepsCompleted": 7
+}

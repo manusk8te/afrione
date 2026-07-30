@@ -1,0 +1,64 @@
+{
+  "clientId": 7,
+  "persona": "urgent",
+  "quartier": "Treichville",
+  "problem": "Odeur de brûlé forte dans ma cuisine, une prise a cramé, j'ai coupé le courant par sécurité.",
+  "status": "success",
+  "qa": [],
+  "diagnostic": {
+    "summary": "Vous avez une odeur de brûlé persistante dans votre cuisine, causée par une prise qui a brûlé. Cela est probablement dû à une surcharge électrique ou à une prise desserrée qui a surchauffé. L'artisan va d'abord vérifier l'état de la prise et du câblage, puis remplacer la prise endommagée. Cette intervention devrait prendre environ 1 heure, et il est conseillé de rester hors de la cuisine pendant ce temps pour des raisons de sécurité. Pour éviter que cela ne se reproduise, assurez-vous de ne pas surcharger les prises électriques et de faire vérifier régulièrement l'état des installations électriques.",
+    "technical_notes": "1. Couper le courant général pour sécuriser la zone. \n2. Inspecter visuellement la prise brûlée et le câblage environnant pour évaluer les dommages. \n3. Remplacer la prise endommagée par une nouvelle prise de qualité (Legrand ou Schneider recommandé). \n4. Vérifier l'état des fils électriques, remplacer si nécessaire avec du câble de section appropriée (2.5 mm² pour prise standard). \n5. Attention à bien serrer les connexions pour éviter les échauffements futurs. \n6. Tester la nouvelle prise avec un appareil pour s'assurer qu'elle fonctionne correctement sans surchauffe.",
+    "category": "Électricité",
+    "urgency": "emergency",
+    "price_min": 5000,
+    "price_max": 15000,
+    "items_needed": [
+      {
+        "name": "Prise électrique",
+        "qty": 1,
+        "unit": "pièce"
+      },
+      {
+        "name": "Câble électrique 2.5 mm²",
+        "qty": 2,
+        "unit": "mètre"
+      }
+    ],
+    "duration_estimate": "1 heure",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": [
+      {
+        "item": "Prise électrique",
+        "found": true,
+        "price": 6750,
+        "photo_url": "https://ci.jumia.is/unsafe/fit-in/300x300/filters:fill(white)/product/33/776251/1.jpg?6606",
+        "url": "https://www.jumia.ci/generic-multiprise-parafoudre-avec-protection-contre-les-surchages6prises2usb-15267733.html",
+        "name": "Multiprise Parafoudre  Avec Protection Contre Les Surchages(6prises+2USB)",
+        "saved": 26
+      },
+      {
+        "item": "Câble électrique 2.5 mm²",
+        "found": false
+      }
+    ]
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 5600,
+      "materiaux": 7360,
+      "transport": 800,
+      "commission_afrione": 1376,
+      "assurance_sav": 275
+    },
+    "total": 15411,
+    "fourchette": {
+      "min": 14178,
+      "max": 16644
+    },
+    "artisan_percoit": 13562
+  },
+  "missionId": null,
+  "durationMs": 16751,
+  "stepsCompleted": 3
+}

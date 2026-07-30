@@ -1,0 +1,71 @@
+{
+  "clientId": 4,
+  "persona": "urgent",
+  "quartier": "Marcory",
+  "problem": "Fuite d'eau au plafond de ma chambre, l'eau tombe directement sur mon lit, situation critique !",
+  "status": "success",
+  "qa": [
+    {
+      "question": "Pour une fuite au plafond comme ça, ça peut venir soit d'une infiltration depuis le toit-terrasse, soit d'une canalisation encastrée qui fuit. Vous savez si c'est plus intense quand il pleut ?",
+      "answer": "Oui",
+      "type": "yesno"
+    },
+    {
+      "question": "Le plafond est comment ?",
+      "answer": "Humide avec des gouttes qui tombent",
+      "type": "choice"
+    },
+    {
+      "question": "Le toit-terrasse est-il accessible pour vérifier s'il y a des fissures ou des zones d'accumulation d'eau ?",
+      "answer": "Oui, je peux y accéder",
+      "type": "choice"
+    },
+    {
+      "question": "Quand vous regardez sur le toit-terrasse, vous voyez des fissures ou des flaques d'eau stagnante ?",
+      "answer": "Fissures visibles",
+      "type": "choice"
+    }
+  ],
+  "diagnostic": {
+    "summary": "La fuite d'eau au plafond de votre chambre est causée par des infiltrations provenant du toit-terrasse. Les fissures visibles sur le toit permettent à l'eau de s'infiltrer, surtout lors des pluies. L'artisan va d'abord inspecter et nettoyer la zone du toit-terrasse, puis appliquer un produit d'étanchéité sur les fissures pour stopper l'infiltration. Cette intervention devrait durer environ 3 heures, et il est conseillé de ne pas utiliser la chambre pendant ce temps pour éviter les désagréments. Pour prévenir de futurs problèmes, il est recommandé de vérifier régulièrement l'état du toit-terrasse et de réparer immédiatement toute fissure ou accumulation d'eau.",
+    "technical_notes": "1. Couper l'alimentation électrique de la chambre pour sécuriser la zone. 2. Inspecter le toit-terrasse pour localiser toutes les fissures et accumulations d'eau. 3. Nettoyer la surface autour des fissures pour assurer une bonne adhérence du produit d'étanchéité. 4. Appliquer un produit d'étanchéité (type SikaTop Seal-107) sur les fissures identifiées. 5. Vérifier l'absence de nouvelles infiltrations après application. 6. Conseiller au client de surveiller régulièrement le toit-terrasse pour éviter les récidives.",
+    "category": "Maçonnerie",
+    "urgency": "high",
+    "price_min": 9000,
+    "price_max": 24000,
+    "items_needed": [
+      {
+        "name": "SikaTop Seal-107",
+        "qty": 1,
+        "unit": "seau"
+      }
+    ],
+    "duration_estimate": "3 heures",
+    "surface_m2": null,
+    "budget_client": null,
+    "jumia_items": [
+      {
+        "item": "SikaTop Seal-107",
+        "found": false
+      }
+    ]
+  },
+  "pricing": {
+    "breakdown": {
+      "main_oeuvre": 9563,
+      "materiaux": 2500,
+      "transport": 1500,
+      "commission_afrione": 1356,
+      "assurance_sav": 271
+    },
+    "total": 15190,
+    "fourchette": {
+      "min": 13975,
+      "max": 16405
+    },
+    "artisan_percoit": 13367
+  },
+  "missionId": null,
+  "durationMs": 38111,
+  "stepsCompleted": 7
+}

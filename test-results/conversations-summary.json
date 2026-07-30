@@ -1,0 +1,916 @@
+{
+  "totalClients": 40,
+  "successCount": 40,
+  "errorCount": 0,
+  "partialCount": 0,
+  "byPersona": {
+    "urgent": {
+      "success": 8,
+      "error": 0,
+      "partial": 0
+    },
+    "hesitant": {
+      "success": 8,
+      "error": 0,
+      "partial": 0
+    },
+    "entreprise": {
+      "success": 8,
+      "error": 0,
+      "partial": 0
+    },
+    "vague": {
+      "success": 8,
+      "error": 0,
+      "partial": 0
+    },
+    "exigeant": {
+      "success": 8,
+      "error": 0,
+      "partial": 0
+    }
+  },
+  "missions": [
+    {
+      "clientId": 1,
+      "persona": "urgent",
+      "quartier": "Cocody",
+      "category": "Plomberie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 4900,
+          "materiaux": 7443,
+          "transport": 2500,
+          "commission_afrione": 1484,
+          "assurance_sav": 297
+        },
+        "total": 16624,
+        "fourchette": {
+          "min": 15294,
+          "max": 17954
+        },
+        "artisan_percoit": 14629
+      }
+    },
+    {
+      "clientId": 2,
+      "persona": "urgent",
+      "quartier": "Yopougon",
+      "category": "Électricité",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 11200,
+          "materiaux": 28700,
+          "transport": 6000,
+          "commission_afrione": 4590,
+          "assurance_sav": 918
+        },
+        "total": 51408,
+        "fourchette": {
+          "min": 47295,
+          "max": 55521
+        },
+        "artisan_percoit": 45239
+      }
+    },
+    {
+      "clientId": 3,
+      "persona": "urgent",
+      "quartier": "Plateau",
+      "category": "Climatisation",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 12500,
+          "materiaux": 0,
+          "transport": 300,
+          "commission_afrione": 1280,
+          "assurance_sav": 256
+        },
+        "total": 14336,
+        "fourchette": {
+          "min": 13189,
+          "max": 15483
+        },
+        "artisan_percoit": 12616
+      }
+    },
+    {
+      "clientId": 4,
+      "persona": "urgent",
+      "quartier": "Marcory",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 9563,
+          "materiaux": 2500,
+          "transport": 1500,
+          "commission_afrione": 1356,
+          "assurance_sav": 271
+        },
+        "total": 15190,
+        "fourchette": {
+          "min": 13975,
+          "max": 16405
+        },
+        "artisan_percoit": 13367
+      }
+    },
+    {
+      "clientId": 5,
+      "persona": "urgent",
+      "quartier": "Adjamé",
+      "category": "Électricité",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 12750,
+          "materiaux": 2400,
+          "transport": 1200,
+          "commission_afrione": 1635,
+          "assurance_sav": 327
+        },
+        "total": 18312,
+        "fourchette": {
+          "min": 16847,
+          "max": 19777
+        },
+        "artisan_percoit": 16115
+      }
+    },
+    {
+      "clientId": 6,
+      "persona": "urgent",
+      "quartier": "Abobo",
+      "category": "Plomberie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 9800,
+          "materiaux": 3000,
+          "transport": 7000,
+          "commission_afrione": 1980,
+          "assurance_sav": 396
+        },
+        "total": 22176,
+        "fourchette": {
+          "min": 20402,
+          "max": 23950
+        },
+        "artisan_percoit": 19515
+      }
+    },
+    {
+      "clientId": 7,
+      "persona": "urgent",
+      "quartier": "Treichville",
+      "category": "Électricité",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 5600,
+          "materiaux": 7360,
+          "transport": 800,
+          "commission_afrione": 1376,
+          "assurance_sav": 275
+        },
+        "total": 15411,
+        "fourchette": {
+          "min": 14178,
+          "max": 16644
+        },
+        "artisan_percoit": 13562
+      }
+    },
+    {
+      "clientId": 8,
+      "persona": "urgent",
+      "quartier": "Koumassi",
+      "category": "Plomberie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 8750,
+          "materiaux": 0,
+          "transport": 3000,
+          "commission_afrione": 1175,
+          "assurance_sav": 235
+        },
+        "total": 13160,
+        "fourchette": {
+          "min": 12107,
+          "max": 14213
+        },
+        "artisan_percoit": 11581
+      }
+    },
+    {
+      "clientId": 9,
+      "persona": "hesitant",
+      "quartier": "Cocody",
+      "category": "Plomberie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 1750,
+          "materiaux": 7443,
+          "transport": 2500,
+          "commission_afrione": 1169,
+          "assurance_sav": 234
+        },
+        "total": 13096,
+        "fourchette": {
+          "min": 12048,
+          "max": 14144
+        },
+        "artisan_percoit": 11524
+      }
+    },
+    {
+      "clientId": 10,
+      "persona": "hesitant",
+      "quartier": "Bingerville",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 21000,
+          "materiaux": 18500,
+          "transport": 9000,
+          "commission_afrione": 4850,
+          "assurance_sav": 970
+        },
+        "total": 54320,
+        "fourchette": {
+          "min": 49974,
+          "max": 58666
+        },
+        "artisan_percoit": 47802
+      }
+    },
+    {
+      "clientId": 11,
+      "persona": "hesitant",
+      "quartier": "Riviera",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 3500,
+          "commission_afrione": 650,
+          "assurance_sav": 130
+        },
+        "total": 7280,
+        "fourchette": {
+          "min": 6698,
+          "max": 7862
+        },
+        "artisan_percoit": 6406
+      }
+    },
+    {
+      "clientId": 12,
+      "persona": "hesitant",
+      "quartier": "Marcory",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 1500,
+          "commission_afrione": 450,
+          "assurance_sav": 90
+        },
+        "total": 5040,
+        "fourchette": {
+          "min": 4637,
+          "max": 5443
+        },
+        "artisan_percoit": 4435
+      }
+    },
+    {
+      "clientId": 13,
+      "persona": "hesitant",
+      "quartier": "Yopougon",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 6000,
+          "commission_afrione": 900,
+          "assurance_sav": 180
+        },
+        "total": 10080,
+        "fourchette": {
+          "min": 9274,
+          "max": 10886
+        },
+        "artisan_percoit": 8870
+      }
+    },
+    {
+      "clientId": 14,
+      "persona": "hesitant",
+      "quartier": "Abobo",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 7000,
+          "commission_afrione": 1000,
+          "assurance_sav": 200
+        },
+        "total": 11200,
+        "fourchette": {
+          "min": 10304,
+          "max": 12096
+        },
+        "artisan_percoit": 9856
+      }
+    },
+    {
+      "clientId": 15,
+      "persona": "hesitant",
+      "quartier": "Treichville",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 800,
+          "commission_afrione": 380,
+          "assurance_sav": 76
+        },
+        "total": 4256,
+        "fourchette": {
+          "min": 3916,
+          "max": 4596
+        },
+        "artisan_percoit": 3745
+      }
+    },
+    {
+      "clientId": 16,
+      "persona": "hesitant",
+      "quartier": "Koumassi",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 3000,
+          "commission_afrione": 600,
+          "assurance_sav": 120
+        },
+        "total": 6720,
+        "fourchette": {
+          "min": 6182,
+          "max": 7258
+        },
+        "artisan_percoit": 5914
+      }
+    },
+    {
+      "clientId": 17,
+      "persona": "entreprise",
+      "quartier": "Plateau",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 300,
+          "commission_afrione": 330,
+          "assurance_sav": 66
+        },
+        "total": 3696,
+        "fourchette": {
+          "min": 3400,
+          "max": 3992
+        },
+        "artisan_percoit": 3252
+      }
+    },
+    {
+      "clientId": 18,
+      "persona": "entreprise",
+      "quartier": "Cocody",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 2500,
+          "commission_afrione": 550,
+          "assurance_sav": 110
+        },
+        "total": 6160,
+        "fourchette": {
+          "min": 5667,
+          "max": 6653
+        },
+        "artisan_percoit": 5421
+      }
+    },
+    {
+      "clientId": 19,
+      "persona": "entreprise",
+      "quartier": "Marcory",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 1500,
+          "commission_afrione": 450,
+          "assurance_sav": 90
+        },
+        "total": 5040,
+        "fourchette": {
+          "min": 4637,
+          "max": 5443
+        },
+        "artisan_percoit": 4435
+      }
+    },
+    {
+      "clientId": 20,
+      "persona": "entreprise",
+      "quartier": "Zone 4",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 1500,
+          "commission_afrione": 450,
+          "assurance_sav": 90
+        },
+        "total": 5040,
+        "fourchette": {
+          "min": 4637,
+          "max": 5443
+        },
+        "artisan_percoit": 4435
+      }
+    },
+    {
+      "clientId": 21,
+      "persona": "entreprise",
+      "quartier": "Adjamé",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 1200,
+          "commission_afrione": 420,
+          "assurance_sav": 84
+        },
+        "total": 4704,
+        "fourchette": {
+          "min": 4328,
+          "max": 5080
+        },
+        "artisan_percoit": 4140
+      }
+    },
+    {
+      "clientId": 22,
+      "persona": "entreprise",
+      "quartier": "Yopougon",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 6000,
+          "commission_afrione": 900,
+          "assurance_sav": 180
+        },
+        "total": 10080,
+        "fourchette": {
+          "min": 9274,
+          "max": 10886
+        },
+        "artisan_percoit": 8870
+      }
+    },
+    {
+      "clientId": 23,
+      "persona": "entreprise",
+      "quartier": "Treichville",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 800,
+          "commission_afrione": 380,
+          "assurance_sav": 76
+        },
+        "total": 4256,
+        "fourchette": {
+          "min": 3916,
+          "max": 4596
+        },
+        "artisan_percoit": 3745
+      }
+    },
+    {
+      "clientId": 24,
+      "persona": "entreprise",
+      "quartier": "Koumassi",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 3000,
+          "commission_afrione": 600,
+          "assurance_sav": 120
+        },
+        "total": 6720,
+        "fourchette": {
+          "min": 6182,
+          "max": 7258
+        },
+        "artisan_percoit": 5914
+      }
+    },
+    {
+      "clientId": 25,
+      "persona": "vague",
+      "quartier": "Abobo",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 7000,
+          "commission_afrione": 1000,
+          "assurance_sav": 200
+        },
+        "total": 11200,
+        "fourchette": {
+          "min": 10304,
+          "max": 12096
+        },
+        "artisan_percoit": 9856
+      }
+    },
+    {
+      "clientId": 26,
+      "persona": "vague",
+      "quartier": "Yopougon",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 6000,
+          "commission_afrione": 900,
+          "assurance_sav": 180
+        },
+        "total": 10080,
+        "fourchette": {
+          "min": 9274,
+          "max": 10886
+        },
+        "artisan_percoit": 8870
+      }
+    },
+    {
+      "clientId": 27,
+      "persona": "vague",
+      "quartier": "Adjamé",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 1200,
+          "commission_afrione": 420,
+          "assurance_sav": 84
+        },
+        "total": 4704,
+        "fourchette": {
+          "min": 4328,
+          "max": 5080
+        },
+        "artisan_percoit": 4140
+      }
+    },
+    {
+      "clientId": 28,
+      "persona": "vague",
+      "quartier": "Treichville",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 800,
+          "commission_afrione": 380,
+          "assurance_sav": 76
+        },
+        "total": 4256,
+        "fourchette": {
+          "min": 3916,
+          "max": 4596
+        },
+        "artisan_percoit": 3745
+      }
+    },
+    {
+      "clientId": 29,
+      "persona": "vague",
+      "quartier": "Koumassi",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 3000,
+          "commission_afrione": 600,
+          "assurance_sav": 120
+        },
+        "total": 6720,
+        "fourchette": {
+          "min": 6182,
+          "max": 7258
+        },
+        "artisan_percoit": 5914
+      }
+    },
+    {
+      "clientId": 30,
+      "persona": "vague",
+      "quartier": "Marcory",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 1500,
+          "commission_afrione": 450,
+          "assurance_sav": 90
+        },
+        "total": 5040,
+        "fourchette": {
+          "min": 4637,
+          "max": 5443
+        },
+        "artisan_percoit": 4435
+      }
+    },
+    {
+      "clientId": 31,
+      "persona": "vague",
+      "quartier": "Cocody",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 2500,
+          "commission_afrione": 550,
+          "assurance_sav": 110
+        },
+        "total": 6160,
+        "fourchette": {
+          "min": 5667,
+          "max": 6653
+        },
+        "artisan_percoit": 5421
+      }
+    },
+    {
+      "clientId": 32,
+      "persona": "vague",
+      "quartier": "Bingerville",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 9000,
+          "commission_afrione": 1200,
+          "assurance_sav": 240
+        },
+        "total": 13440,
+        "fourchette": {
+          "min": 12365,
+          "max": 14515
+        },
+        "artisan_percoit": 11827
+      }
+    },
+    {
+      "clientId": 33,
+      "persona": "exigeant",
+      "quartier": "Cocody",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 2500,
+          "commission_afrione": 550,
+          "assurance_sav": 110
+        },
+        "total": 6160,
+        "fourchette": {
+          "min": 5667,
+          "max": 6653
+        },
+        "artisan_percoit": 5421
+      }
+    },
+    {
+      "clientId": 34,
+      "persona": "exigeant",
+      "quartier": "Riviera",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 3500,
+          "commission_afrione": 650,
+          "assurance_sav": 130
+        },
+        "total": 7280,
+        "fourchette": {
+          "min": 6698,
+          "max": 7862
+        },
+        "artisan_percoit": 6406
+      }
+    },
+    {
+      "clientId": 35,
+      "persona": "exigeant",
+      "quartier": "Deux-Plateaux",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 4000,
+          "commission_afrione": 700,
+          "assurance_sav": 140
+        },
+        "total": 7840,
+        "fourchette": {
+          "min": 7213,
+          "max": 8467
+        },
+        "artisan_percoit": 6899
+      }
+    },
+    {
+      "clientId": 36,
+      "persona": "exigeant",
+      "quartier": "Angré",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 4500,
+          "commission_afrione": 750,
+          "assurance_sav": 150
+        },
+        "total": 8400,
+        "fourchette": {
+          "min": 7728,
+          "max": 9072
+        },
+        "artisan_percoit": 7392
+      }
+    },
+    {
+      "clientId": 37,
+      "persona": "exigeant",
+      "quartier": "Marcory",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 1500,
+          "commission_afrione": 450,
+          "assurance_sav": 90
+        },
+        "total": 5040,
+        "fourchette": {
+          "min": 4637,
+          "max": 5443
+        },
+        "artisan_percoit": 4435
+      }
+    },
+    {
+      "clientId": 38,
+      "persona": "exigeant",
+      "quartier": "Plateau",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 300,
+          "commission_afrione": 330,
+          "assurance_sav": 66
+        },
+        "total": 3696,
+        "fourchette": {
+          "min": 3400,
+          "max": 3992
+        },
+        "artisan_percoit": 3252
+      }
+    },
+    {
+      "clientId": 39,
+      "persona": "exigeant",
+      "quartier": "Zone 4",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 1500,
+          "commission_afrione": 450,
+          "assurance_sav": 90
+        },
+        "total": 5040,
+        "fourchette": {
+          "min": 4637,
+          "max": 5443
+        },
+        "artisan_percoit": 4435
+      }
+    },
+    {
+      "clientId": 40,
+      "persona": "exigeant",
+      "quartier": "Bingerville",
+      "category": "Maçonnerie",
+      "missionId": null,
+      "pricing": {
+        "breakdown": {
+          "main_oeuvre": 3000,
+          "materiaux": 0,
+          "transport": 9000,
+          "commission_afrione": 1200,
+          "assurance_sav": 240
+        },
+        "total": 13440,
+        "fourchette": {
+          "min": 12365,
+          "max": 14515
+        },
+        "artisan_percoit": 11827
+      }
+    }
+  ],
+  "generatedAt": "2026-06-05T12:04:51.018Z"
+}

@@ -289,7 +289,9 @@ export default function WarRoomPage() {
       .channel(`warroom-${missionId}`)
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_history', filter: `mission_id=eq.${missionId}` },
-        payload => setMessages(prev => [...prev, payload.new])
+        payload => setMessages(prev =>
+          prev.some(m => m.id === payload.new.id) ? prev : [...prev, payload.new]
+        )
       )
       // Realtime — changement de statut mission
       .on('postgres_changes',
@@ -309,15 +311,20 @@ export default function WarRoomPage() {
     const text = input.trim()
     setInput('')
     setSendStatus('sending')
-    const { error } = await supabase.from('chat_history').insert({
+    const { data: inserted, error } = await supabase.from('chat_history').insert({
       mission_id:  missionId,
       sender_id:   user.id,
       sender_role: missionRole,
       sender_type: missionRole === 'artisan' ? 'artisan' : 'client',
       text,
       type: 'text',
-    })
+    }).select().single()
     if (error) { toast.error('Message non envoyé.'); setInput(text); setSendStatus('idle'); return }
+    // Affichage optimiste — ne pas dépendre uniquement du Realtime pour voir
+    // son propre message (déco WS, onglet en arrière-plan, latence de
+    // réplication) : le message était bien enregistré mais jamais rendu, ce
+    // qui donnait l'impression que l'envoi ne marchait pas.
+    if (inserted) setMessages(prev => prev.some(m => m.id === inserted.id) ? prev : [...prev, inserted])
     setSendStatus('sent')
     setTimeout(() => setSendStatus('idle'), 1100)
     const rid = getRecipientId(mission, user.id)
