@@ -42,6 +42,12 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
 
   const triedIds: string[] = attempts?.map((a: any) => a.artisan_id) ?? []
 
+  // Le métier stocké en base a historiquement 2 conventions incompatibles
+  // ("Plomberie" via l'inscription artisan vs "Plombier" via d'anciens scripts
+  // de seed) — normalizeMetier() les ramène toutes à la même catégorie
+  // canonique pour un matching fiable, quelle que soit la valeur brute stockée.
+  const missionMetier = normalizeMetier(mission.category)
+
   const sortByScore = (list: any[]) => {
     const filtered = list.filter((a: any) => !triedIds.includes(a.id))
     const scored = filtered.map((a: any) => ({
@@ -57,12 +63,6 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
       return b._score - a._score
     })
   }
-
-  // Le métier stocké en base a historiquement 2 conventions incompatibles
-  // ("Plomberie" via l'inscription artisan vs "Plombier" via d'anciens scripts
-  // de seed) — normalizeMetier() les ramène toutes à la même catégorie
-  // canonique pour un matching fiable, quelle que soit la valeur brute stockée.
-  const missionMetier = normalizeMetier(mission.category)
 
   // ── Session de test : ne cible que les 3 artisans test, filtrés par métier
   // pour refléter le vrai comportement de matching (fallback si aucun ne
