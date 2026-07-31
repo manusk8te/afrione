@@ -37,6 +37,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   en_route:    { label: '🚗 En route',                color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
   en_cours:    { label: '⚡ Mission en cours',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
   payment:     { label: '💳 Paiement',               color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
+  pending_validation: { label: '⏳ En attente de validation', color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
   completed:   { label: '✅ Mission terminée',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)'  },
   disputed:    { label: '⚠️ Litige en cours',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)'  },
   cancelled:   { label: '✗ Annulée',                 color: '#6B7280', bg: 'rgba(122,122,110,0.1)' },
@@ -258,8 +259,13 @@ export default function WarRoomPage() {
                 .catch(() => {})
             }
           }
+        } else {
+          toast.error(`Diagnostic non chargé (${diagRes.status}). Vérifiez votre connexion.`)
         }
-      } catch {}
+      } catch (e) {
+        toast.error('Erreur chargement diagnostic — veuillez rafraîchir.')
+        console.error('[mission-brief]', e)
+      }
 
       // Marquer lus
       await supabase
@@ -307,6 +313,7 @@ export default function WarRoomPage() {
 
   // Envoyer message texte
   const send = async () => {
+    if (loading) { toast.error('Chargement en cours — attendez.'); return }
     if (!input.trim() || !user || sendStatus !== 'idle') return
     const text = input.trim()
     setInput('')
@@ -1339,16 +1346,16 @@ export default function WarRoomPage() {
         </div>
       </div>
 
-      {/* Bannière mission active → suivi */}
-      {(status === 'en_route' || status === 'en_cours') && (
+      {/* Bannière mission active → suivi ou validation */}
+      {(status === 'en_route' || status === 'en_cours' || status === 'pending_validation') && (
         <Link href={`/suivi/${missionId}`} className="afrione-gradient" style={{
           display:'flex',alignItems:'center',justifyContent:'space-between',
           color:'white',padding:'10px 16px',
           textDecoration:'none',flexShrink:0,
         }}>
           <div style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'13px',fontWeight:700}}>
-            <span>{status === 'en_route' ? '🚗' : '⚡'}</span>
-            <span>Mission en cours — GPS, photos, litige</span>
+            <span>{status === 'en_route' ? '🚗' : status === 'pending_validation' ? '⏳' : '⚡'}</span>
+            <span>{status === 'pending_validation' ? 'Valider et libérer le paiement' : 'Mission en cours — GPS, photos, litige'}</span>
           </div>
           <span style={{fontSize:'12px',fontWeight:600,opacity:0.9}}>Voir →</span>
         </Link>
@@ -1909,7 +1916,7 @@ export default function WarRoomPage() {
             if (msg.type === 'devis' || msg.type === 'quotation') {
               let devisData: any = {}
               try { devisData = JSON.parse(msg.text) } catch {}
-              const canAct = !isMe && status !== 'en_cours' && status !== 'completed' && status !== 'cancelled'
+              const canAct = !isMe && !['en_cours', 'completed', 'cancelled', 'payment', 'scheduled', 'en_route', 'pending_validation', 'disputed'].includes(status)
               const isClientProposal = msg.sender_role === 'client'
               return (
                 <div key={msg.id} style={{display:'flex',justifyContent: isMe ? 'flex-end' : 'flex-start'}}>
@@ -2225,7 +2232,7 @@ export default function WarRoomPage() {
             if (msg.type === 'price_proposal') {
               let d: any = {}
               try { d = JSON.parse(msg.text) } catch {}
-              const canValidate = !isMe && !acting && status !== 'completed' && status !== 'cancelled' && status !== 'en_cours'
+              const canValidate = !isMe && !acting && !['completed', 'cancelled', 'en_cours', 'payment', 'scheduled', 'en_route', 'pending_validation', 'disputed'].includes(status)
               return (
                 <div key={msg.id} style={{padding:'4px 0'}}>
                   <div style={{background:'white',border:'2px solid #E2E8F0',borderRadius:'18px',overflow:'hidden',maxWidth:'94%',boxShadow:'0 4px 20px rgba(0,0,0,0.1)'}}>
@@ -2640,7 +2647,7 @@ export default function WarRoomPage() {
               <input type="text" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
                 placeholder="Votre message…" className="input" style={{flex:1}} />
-              <button onClick={send} disabled={!input.trim() || sendStatus !== 'idle'} className="btn-primary"
+              <button onClick={send} disabled={loading || !input.trim() || sendStatus !== 'idle'} className="btn-primary"
                 style={{
                   width:'44px',height:'44px',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',flexShrink:0,
                   cursor:(!input.trim()||sendStatus!=='idle')?'not-allowed':'pointer',
