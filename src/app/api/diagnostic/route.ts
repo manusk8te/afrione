@@ -278,14 +278,15 @@ function fallbackResult(text: string) {
 
 // ─── Détecte et traduit l'anglais en français ───────────────────────────────
 async function ensureFrench(text: string): Promise<string> {
-  if (!text) return text
+  if (!text || !process.env.OPENAI_API_KEY) return text
+
   // Heuristique rapide : compte de mots anglais courants
   const englishKeywords = /\b(problem|issue|leak|water|electricity|paint|crack|wall|pipe|plug|circuit|broken|damage|humid|smell|noise|burn)\b/gi
   const matches = text.match(englishKeywords) || []
 
-  // Si ≥30% de mots anglais détectés, traduction
+  // Si < 15% de mots anglais détectés, c'est probablement déjà français
   const englishRatio = matches.length / (text.split(/\s+/).length || 1)
-  if (englishRatio < 0.15) return text // probablement déjà français
+  if (englishRatio < 0.15) return text
 
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -303,10 +304,14 @@ async function ensureFrench(text: string): Promise<string> {
         }],
       }),
     })
+
+    if (!res.ok) return text // Si réponse non-OK, garder l'original
+
     const data = await res.json()
     const translated = data.choices?.[0]?.message?.content || text
     return translated.trim()
-  } catch {
+  } catch (e) {
+    console.error('[ensureFrench]', e)
     return text // Si erreur traduction, garder l'original
   }
 }
