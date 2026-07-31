@@ -1064,14 +1064,14 @@ export default function WarRoomPage() {
             {payStep === 'form' && (
               <div>
                 {/* Bénéficiaire */}
-                <div style={{background:'#F5F7FA',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'16px',padding:'14px 18px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'14px'}}>
+                <div style={{background:'#F5F7FA',border:'1px solid rgba(0,0,0,0.1)',borderRadius:'16px',padding:'14px 18px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'14px'}}>
                   <div style={{width:'42px',height:'42px',borderRadius:'11px',background:'linear-gradient(135deg,#E85D26,#F87900)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                     <Zap size={18} color="white" />
                   </div>
                   <div>
-                    <div style={{color:'rgba(255,255,255,0.4)',fontSize:'10px',letterSpacing:'0.08em',marginBottom:'2px',textTransform:'uppercase'}}>Bénéficiaire</div>
-                    <div style={{color:'white',fontWeight:700,fontSize:'14px'}}>AfriOne — Mission Escrow</div>
-                    <div style={{color:'rgba(255,255,255,0.35)',fontSize:'11px'}}>Fonds libérés à la fin de la mission</div>
+                    <div style={{color:'#8B95A5',fontSize:'10px',letterSpacing:'0.08em',marginBottom:'2px',textTransform:'uppercase'}}>Bénéficiaire</div>
+                    <div style={{color:'#1A1A1A',fontWeight:700,fontSize:'14px'}}>AfriOne — Mission Escrow</div>
+                    <div style={{color:'#6B7280',fontSize:'11px'}}>Fonds libérés à la fin de la mission</div>
                   </div>
                 </div>
 
@@ -1099,7 +1099,7 @@ export default function WarRoomPage() {
                     borderRadius:'14px',overflow:'hidden',
                     transition:'border-color 0.2s',
                   }}>
-                    <div style={{padding:'15px 16px',borderRight:'1px solid rgba(255,255,255,0.08)',fontSize:'14px',color:'rgba(255,255,255,0.5)',whiteSpace:'nowrap',flexShrink:0}}>
+                    <div style={{padding:'15px 16px',borderRight:'1px solid rgba(0,0,0,0.1)',fontSize:'14px',color:'#6B7280',whiteSpace:'nowrap',flexShrink:0}}>
                       🇨🇮 +225
                     </div>
                     <input
@@ -1111,7 +1111,7 @@ export default function WarRoomPage() {
                       style={{
                         flex:1,padding:'15px 16px',background:'transparent',
                         border:'none',outline:'none',fontSize:'17px',
-                        color:'white',fontFamily:'Tahoma',letterSpacing:'0.06em',
+                        color:'#1A1A1A',fontFamily:'Tahoma',letterSpacing:'0.06em',
                       }}
                     />
                   </div>
@@ -1190,22 +1190,22 @@ export default function WarRoomPage() {
                 <div style={{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginBottom:'28px'}}>Transaction sécurisée par Wave</div>
 
                 {/* Reçu style Wave */}
-                <div style={{width:'100%',background:'#F5F7FA',border:'1px solid rgba(255,255,255,0.07)',borderRadius:'20px',overflow:'hidden',marginBottom:'20px'}}>
-                  <div style={{padding:'18px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Montant</span>
-                    <span style={{color:'white',fontWeight:900,fontSize:'20px',fontFamily:'Tahoma'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#1DC6FF',fontWeight:700}}>FCFA</span></span>
+                <div style={{width:'100%',background:'#F5F7FA',border:'1px solid rgba(0,0,0,0.1)',borderRadius:'20px',overflow:'hidden',marginBottom:'20px'}}>
+                  <div style={{padding:'18px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Montant</span>
+                    <span style={{color:'#1A1A1A',fontWeight:900,fontSize:'20px',fontFamily:'Tahoma'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#0D99FF',fontWeight:700}}>FCFA</span></span>
                   </div>
-                  <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Bénéficiaire</span>
-                    <span style={{color:'rgba(255,255,255,0.8)',fontSize:'13px',fontWeight:600}}>AfriOne Escrow</span>
+                  <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between'}}>
+                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Bénéficiaire</span>
+                    <span style={{color:'#3D4852',fontSize:'13px',fontWeight:600}}>AfriOne Escrow</span>
                   </div>
-                  <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Numéro Wave</span>
-                    <span style={{color:'rgba(255,255,255,0.8)',fontSize:'13px',fontFamily:'Tahoma'}}>+225 {wavePhone}</span>
+                  <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between'}}>
+                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Numéro Wave</span>
+                    <span style={{color:'#3D4852',fontSize:'13px',fontFamily:'Tahoma'}}>+225 {wavePhone}</span>
                   </div>
                   <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'rgba(255,255,255,0.4)',fontSize:'12px'}}>Statut</span>
-                    <span style={{color:'#1DC6FF',fontSize:'13px',fontWeight:700}}>✓ Escrow sécurisé</span>
+                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Statut</span>
+                    <span style={{color:'#0D99FF',fontSize:'13px',fontWeight:700}}>✓ Escrow sécurisé</span>
                   </div>
                 </div>
 
