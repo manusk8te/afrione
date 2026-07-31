@@ -42,11 +42,21 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
 
   const triedIds: string[] = attempts?.map((a: any) => a.artisan_id) ?? []
 
-  const sortByScore = (list: any[]) =>
-    list
-      .filter((a: any) => !triedIds.includes(a.id))
-      .map((a: any) => ({ ...a, _score: scoreArtisan(a, missionQuartier) }))
-      .sort((a: any, b: any) => b._score - a._score)
+  const sortByScore = (list: any[]) => {
+    const filtered = list.filter((a: any) => !triedIds.includes(a.id))
+    const scored = filtered.map((a: any) => ({
+      ...a,
+      _score: scoreArtisan(a, missionQuartier),
+      _isGobly: a.users?.email === 'goblyemmanuel95@gmail.com'
+    }))
+    // Plombier prioritaire pour missions plomberie
+    const isPlomberie = missionMetier === 'Plomberie' || missionMetier === 'Plombier'
+    return scored.sort((a: any, b: any) => {
+      if (isPlomberie && a._isGobly && !b._isGobly) return -1
+      if (isPlomberie && !a._isGobly && b._isGobly) return 1
+      return b._score - a._score
+    })
+  }
 
   // Le métier stocké en base a historiquement 2 conventions incompatibles
   // ("Plomberie" via l'inscription artisan vs "Plombier" via d'anciens scripts
