@@ -276,10 +276,50 @@ function fallbackResult(text: string) {
   }
 }
 
+// ─── Détecte et traduit l'anglais en français ───────────────────────────────
+async function ensureFrench(text: string): Promise<string> {
+  if (!text) return text
+  // Heuristique rapide : compte de mots anglais courants
+  const englishKeywords = /\b(problem|issue|leak|water|electricity|paint|crack|wall|pipe|plug|circuit|broken|damage|humid|smell|noise|burn)\b/gi
+  const matches = text.match(englishKeywords) || []
+
+  // Si ≥30% de mots anglais détectés, traduction
+  const englishRatio = matches.length / (text.split(/\s+/).length || 1)
+  if (englishRatio < 0.15) return text // probablement déjà français
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: `Traduis UNIQUEMENT en français, sans ajout ni commentaire :\n\n${text}`,
+        }],
+      }),
+    })
+    const data = await res.json()
+    const translated = data.choices?.[0]?.message?.content || text
+    return translated.trim()
+  } catch {
+    return text // Si erreur traduction, garder l'original
+  }
+}
+
 // ─── Handler principal ────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { mode, text, photos = [], qa = [], index = 0, user_id, quartier } = body
+  let { mode, text, photos = [], qa = [], index = 0, user_id, quartier } = body
+
+  // Traduire la description en français si détectée en anglais
+  if (mode === 'start' && text && process.env.OPENAI_API_KEY) {
+    text = await ensureFrench(text)
+  }
 
   const hasKey = !!process.env.OPENAI_API_KEY
 
