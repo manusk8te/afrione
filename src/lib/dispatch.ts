@@ -56,7 +56,7 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
       _isGobly: a.users?.email === 'goblyemmanuel95@gmail.com'
     }))
     // Plombier prioritaire pour missions plomberie
-    const isPlomberie = missionMetier === 'Plomberie' || missionMetier === 'Plombier'
+    const isPlomberie = missionMetier === 'Plomberie'
     return scored.sort((a: any, b: any) => {
       if (isPlomberie && a._isGobly && !b._isGobly) return -1
       if (isPlomberie && !a._isGobly && b._isGobly) return 1
