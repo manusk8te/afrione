@@ -28,17 +28,23 @@ export async function POST(request: Request) {
   const apiKey = process.env.WAVE_API_KEY
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://afrione-sepia.vercel.app'
 
-  // ── SIMULATION MODE ────────────────────────────────────────────────────────
+  // ── MODE DÉMO ──────────────────────────────────────────────────────────────
+  // Aucune clé Wave : on ne peut pas encaisser. Le parcours continue en mode
+  // démo, mais la réponse le dit explicitement pour que l'interface l'affiche
+  // au client — jamais un écran qui imite un vrai paiement.
   if (!apiKey) {
-    console.log('[Wave] Simulation mode — no WAVE_API_KEY configured')
+    console.warn('[Wave] MODE DÉMO — WAVE_API_KEY absente, aucun paiement réel possible')
     return Response.json({
-      simulation: true,
-      id: `sim_${Date.now()}`,
-      checkout_status: 'pending',
-      wave_launch_url: null,          // In prod: deep link to Wave app
-      client_reference: mission_id,
+      simulation:        true,
+      demo_mode:         true,
+      demo_notice:       'MODE DÉMO — aucun paiement réel n\'est effectué.',
+      simulation_reason: 'WAVE_API_KEY absente',
+      id:                `sim_${Date.now()}`,
+      checkout_status:   'pending',
+      wave_launch_url:   null,
+      client_reference:  mission_id,
       amount,
-      currency: 'XOF',
+      currency:          'XOF',
     })
   }
 
@@ -66,17 +72,18 @@ export async function POST(request: Request) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     console.error('[Wave] Checkout session error:', err)
-    // Fall back to simulation so the UX flow continues (key misconfigured / sandbox)
-    return Response.json({
-      simulation: true,
-      simulation_reason: `Wave API ${res.status}`,
-      id: `sim_fallback_${Date.now()}`,
-      checkout_status: 'pending',
-      wave_launch_url: null,
-      client_reference: mission_id,
-      amount,
-      currency: 'XOF',
-    })
+    // Une clé Wave EST configurée : le client a donc engagé un vrai paiement.
+    // Retomber en simulation ici présentait un échec de paiement comme un
+    // succès — la mission partait en dispatch sans qu'un franc ait été encaissé.
+    // Un échec Wave doit rester un échec.
+    return Response.json(
+      {
+        error:  'Le paiement Wave a échoué. Aucun montant n\'a été débité.',
+        code:   'wave_error',
+        status: res.status,
+      },
+      { status: 502 },
+    )
   }
 
   const data = await res.json()
@@ -92,8 +99,19 @@ export async function GET(request: Request) {
   const sessionId = searchParams.get('session_id')
   const apiKey = process.env.WAVE_API_KEY
 
-  if (!apiKey || !sessionId) {
-    return Response.json({ simulation: true, checkout_status: 'complete' })
+  // Sans clé Wave on ne peut rien vérifier : répondre 'complete' revenait à
+  // certifier un encaissement qui n'a jamais eu lieu.
+  if (!apiKey) {
+    return Response.json({
+      simulation:      true,
+      demo_mode:       true,
+      demo_notice:     'MODE DÉMO — statut non vérifiable, aucun paiement réel.',
+      checkout_status: 'demo',
+    })
+  }
+
+  if (!sessionId) {
+    return Response.json({ error: 'session_id requis' }, { status: 400 })
   }
 
   const res = await fetch(`${WAVE_BASE}/checkout/sessions/${sessionId}`, {

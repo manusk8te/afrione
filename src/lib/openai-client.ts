@@ -20,7 +20,12 @@ export async function chatCompletion(
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY
 
+  // Sans clé, l'IA ne tourne pas : on renvoie des réponses écrites en dur.
+  // C'était fait en silence — le produit affichait un « diagnostic IA » qui
+  // n'était qu'un gabarit. Le mode démo doit être bruyant côté serveur et
+  // signalé dans la réponse pour que l'interface puisse l'afficher.
   if (!apiKey) {
+    console.warn('[IA] MODE DÉMO — OPENAI_API_KEY absente, réponse pré-écrite (aucun modèle appelé)')
     return mockCompletion(messages)
   }
 

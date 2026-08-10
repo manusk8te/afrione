@@ -111,11 +111,23 @@ function ModeSelectContent() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
           <div style={{ width: '100%', maxWidth: '380px', background: 'linear-gradient(180deg,#1A1D2E 0%,#0D0F1C 100%)', borderRadius: '28px', padding: '28px 24px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
 
-            {/* Header Wave */}
+            {/* Bandeau MODE DÉMO — jamais masqué, à toutes les étapes.
+                L'écran imitait auparavant l'application Wave (logo, couleurs,
+                « Chiffrement TLS 1.3 ») alors qu'aucun paiement n'était
+                effectué. Identité AfriOne neutre + mention explicite. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'rgba(201,168,76,0.14)', border: '1px solid rgba(201,168,76,0.45)', borderRadius: '12px', marginBottom: '18px' }}>
+              <span style={{ fontSize: '15px', flexShrink: 0 }}>🧪</span>
+              <div style={{ flex: 1, fontSize: '11.5px', color: '#E8D9A8', lineHeight: 1.45, fontWeight: 600 }}>
+                MODE DÉMO — aucun paiement réel n'est effectué et aucun montant n'est débité.
+              </div>
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#4144FF,#1DC6FF)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '16px', color: 'white', fontFamily: 'Arial Black,sans-serif' }}>W</div>
-                <span style={{ color: 'white', fontWeight: 700, fontSize: '15px' }}>Wave</span>
+                <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Zap size={17} color="white" />
+                </div>
+                <span style={{ color: 'white', fontWeight: 700, fontSize: '15px' }}>AfriOne — Paiement</span>
               </div>
               {waveStep === 'form' && (
                 <button onClick={() => setShowWave(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>✕</button>
@@ -129,7 +141,7 @@ function ModeSelectContent() {
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Montant total</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
                     <span style={{ color: 'white', fontSize: '52px', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1, fontFamily: 'Tahoma' }}>{(price ?? 8000).toLocaleString()}</span>
-                    <span style={{ color: '#1DC6FF', fontSize: '18px', fontWeight: 700 }}>FCFA</span>
+                    <span style={{ color: '#E85D26', fontSize: '18px', fontWeight: 700 }}>FCFA</span>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '6px' }}>Urgent · {category}</div>
                 </div>
@@ -137,8 +149,8 @@ function ModeSelectContent() {
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 0 20px' }} />
 
                 <div style={{ marginBottom: '12px' }}>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Votre numéro Wave</div>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: `1.5px solid ${wavePhone.trim() ? '#1DC6FF' : 'rgba(255,255,255,0.08)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.2s' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Votre numéro mobile money</div>
+                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: `1.5px solid ${wavePhone.trim() ? '#E85D26' : 'rgba(255,255,255,0.08)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.2s' }}>
                     <div style={{ padding: '15px 16px', borderRight: '1px solid rgba(255,255,255,0.08)', fontSize: '14px', color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', flexShrink: 0 }}>🇨🇮 +225</div>
                     <input
                       type="tel"
@@ -161,12 +173,12 @@ function ModeSelectContent() {
                 <button
                   onClick={confirmWave}
                   disabled={!wavePhone.trim()}
-                  style={{ width: '100%', padding: '18px', background: wavePhone.trim() ? 'linear-gradient(135deg,#4144FF,#0D99FF)' : 'rgba(255,255,255,0.08)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.2px', cursor: wavePhone.trim() ? 'pointer' : 'default', boxShadow: wavePhone.trim() ? '0 8px 28px rgba(65,68,255,0.45)' : 'none', transition: 'all 0.2s' }}
+                  style={{ width: '100%', padding: '18px', background: wavePhone.trim() ? 'linear-gradient(135deg,#E85D26,#ff7043)' : 'rgba(255,255,255,0.08)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.2px', cursor: wavePhone.trim() ? 'pointer' : 'default', boxShadow: wavePhone.trim() ? '0 8px 28px rgba(232,93,38,0.45)' : 'none', transition: 'all 0.2s' }}
                 >
-                  Payer avec Wave
+                  Simuler le paiement
                 </button>
-                <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '11px', color: 'rgba(255,255,255,0.2)' }}>
-                  Sécurisé par <strong style={{ color: '#1DC6FF' }}>Wave</strong> · Chiffrement TLS 1.3
+                <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>
+                  Démonstration — l'encaissement Wave n'est pas encore activé
                 </div>
               </>
             )}
@@ -175,19 +187,19 @@ function ModeSelectContent() {
             {waveStep === 'processing' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '280px', gap: '24px' }}>
                 <div style={{ position: 'relative', width: '80px', height: '80px' }}>
-                  <div style={{ position: 'absolute', inset: 0, border: '3px solid rgba(13,153,255,0.12)', borderRadius: '50%' }} />
-                  <div style={{ position: 'absolute', inset: 0, border: '3px solid transparent', borderTopColor: '#0D99FF', borderRadius: '50%', animation: 'spin 0.85s linear infinite' }} />
-                  <div style={{ position: 'absolute', inset: '10px', background: 'linear-gradient(135deg,#4144FF,#1DC6FF)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(29,198,255,0.3)' }}>
-                    <span style={{ color: 'white', fontWeight: 900, fontSize: '22px', fontFamily: 'Arial Black,sans-serif' }}>W</span>
+                  <div style={{ position: 'absolute', inset: 0, border: '3px solid rgba(232,93,38,0.12)', borderRadius: '50%' }} />
+                  <div style={{ position: 'absolute', inset: 0, border: '3px solid transparent', borderTopColor: '#E85D26', borderRadius: '50%', animation: 'spin 0.85s linear infinite' }} />
+                  <div style={{ position: 'absolute', inset: '10px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(232,93,38,0.3)' }}>
+                    <Zap size={24} color="white" />
                   </div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ color: 'white', fontWeight: 700, fontSize: '18px', marginBottom: '8px' }}>Traitement en cours…</div>
-                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>Vérification via Wave sécurisée</div>
+                  <div style={{ color: 'white', fontWeight: 700, fontSize: '18px', marginBottom: '8px' }}>Simulation en cours…</div>
+                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>Aucun montant n'est débité</div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {[0, 1, 2].map(i => (
-                    <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#1DC6FF', opacity: 0.4, animation: `pulse 1.2s ease-in-out ${i * 0.35}s infinite` }} />
+                    <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#E85D26', opacity: 0.4, animation: `pulse 1.2s ease-in-out ${i * 0.35}s infinite` }} />
                   ))}
                 </div>
               </div>
@@ -196,29 +208,29 @@ function ModeSelectContent() {
             {/* Étape 3 — Succès */}
             {waveStep === 'success' && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '8px' }}>
-                <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg,#4144FF,#1DC6FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 0 0 14px rgba(29,198,255,0.07), 0 0 0 28px rgba(29,198,255,0.03)' }}>
+                <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg,#E85D26,#ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 0 0 14px rgba(232,93,38,0.07), 0 0 0 28px rgba(232,93,38,0.03)' }}>
                   <CheckCircle size={44} color="white" strokeWidth={2.5} />
                 </div>
-                <div style={{ color: 'white', fontSize: '22px', fontWeight: 900, marginBottom: '4px', letterSpacing: '-0.5px' }}>Paiement réussi !</div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginBottom: '24px' }}>Transaction sécurisée par Wave</div>
+                <div style={{ color: 'white', fontSize: '22px', fontWeight: 900, marginBottom: '4px', letterSpacing: '-0.5px' }}>Paiement simulé</div>
+                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginBottom: '24px' }}>Aucun montant n'a été débité</div>
 
                 <div style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
                   {[
-                    { label: 'Montant', value: `${(price ?? 8000).toLocaleString()} FCFA`, color: 'white' },
-                    { label: 'Bénéficiaire', value: 'AfriOne Escrow', color: 'rgba(255,255,255,0.8)' },
-                    { label: 'Numéro Wave', value: `+225 ${wavePhone}`, color: 'rgba(255,255,255,0.8)' },
-                    { label: 'Statut', value: '✓ Escrow sécurisé', color: '#1DC6FF' },
+                    { label: 'Montant simulé', value: `${(price ?? 8000).toLocaleString()} FCFA`, color: 'white' },
+                    { label: 'Bénéficiaire', value: 'AfriOne Escrow (démo)', color: 'rgba(255,255,255,0.8)' },
+                    { label: 'Numéro saisi', value: `+225 ${wavePhone}`, color: 'rgba(255,255,255,0.8)' },
+                    { label: 'Statut', value: '🧪 Démo — non encaissé', color: '#C9A84C' },
                   ].map((row, i, arr) => (
                     <div key={row.label} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
                       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{row.label}</span>
-                      <span style={{ color: row.color, fontSize: '13px', fontWeight: 600, fontFamily: row.label === 'Numéro Wave' ? 'Tahoma' : undefined }}>{row.value}</span>
+                      <span style={{ color: row.color, fontSize: '13px', fontWeight: 600, fontFamily: row.label === 'Numéro saisi' ? 'Tahoma' : undefined }}>{row.value}</span>
                     </div>
                   ))}
                 </div>
 
                 <button
                   onClick={afterWave}
-                  style={{ width: '100%', padding: '18px', background: 'linear-gradient(135deg,#4144FF,#0D99FF)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 28px rgba(65,68,255,0.4)', letterSpacing: '-0.2px' }}
+                  style={{ width: '100%', padding: '18px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 28px rgba(232,93,38,0.4)', letterSpacing: '-0.2px' }}
                 >
                   Trouver un artisan →
                 </button>
@@ -302,7 +314,7 @@ function ModeSelectContent() {
                   {[
                     { icon: '⚡', text: 'Artisan dispatché en moins de 2 minutes' },
                     { icon: '🔒', text: 'Prix fixé — aucune négociation' },
-                    { icon: '💳', text: 'Paiement sécurisé Wave maintenant' },
+                    { icon: '💳', text: 'Paiement à la commande — escrow AfriOne' },
                   ].map(({ icon, text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '14px' }}>{icon}</span>
@@ -405,7 +417,7 @@ function ModeSelectContent() {
             {[
               { Icon: Shield, text: 'KYC vérifié' },
               { Icon: Clock,  text: 'Remboursé si personne' },
-              { Icon: Zap,    text: 'Paiement Wave sécurisé' },
+              { Icon: Zap,    text: 'Paiement sécurisé' },
             ].map(({ Icon, text }) => (
               <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Icon size={11} color="#8B95A5" />

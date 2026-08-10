@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     sender_id:   mission.client_id,
     sender_role: 'system',
     sender_type: 'afrione_system',
-    text:        `💳 Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé (simulation). Recherche d'un artisan en cours...`,
+    text:        `🧪 MODE DÉMO — paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA simulé, aucun montant n'a été débité. Recherche d'un artisan en cours…`,
     type:        'system',
   })
 

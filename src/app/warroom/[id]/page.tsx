@@ -477,7 +477,7 @@ export default function WarRoomPage() {
 
   // Paiement Wave confirmé → escrow + scheduling
   const confirmPayment = async () => {
-    if (!wavePhone.trim()) { toast.error('Entrez votre numéro Wave'); return }
+    if (!wavePhone.trim()) { toast.error('Entrez votre numéro mobile money'); return }
     setPayStep('processing')
     // Simulation délai traitement Wave (2s)
     await new Promise(r => setTimeout(r, 2000))
@@ -523,7 +523,7 @@ export default function WarRoomPage() {
     // Message système dans le chat
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id, sender_role: missionRole,
-      text: `💳 Paiement de ${pendingAmount.toLocaleString()} FCFA sécurisé via Wave. L'argent sera transféré à l'artisan à la fin de la mission.`,
+      text: `🧪 MODE DÉMO — paiement de ${pendingAmount.toLocaleString()} FCFA simulé, aucun montant n'a été débité. En production, les fonds seraient placés en escrow et transférés à l'artisan à la fin de la mission.`,
       type: 'system',
     })
     const rid = getRecipientId(mission, user.id)
@@ -1021,38 +1021,39 @@ export default function WarRoomPage() {
       {showPayment && (
         <div style={{position:'fixed',inset:0,zIndex:9999,background:'#0A0B2E',display:'flex',flexDirection:'column'}}>
 
-          {/* Status bar simulé */}
-          <div style={{height:'44px',flexShrink:0,display:'flex',alignItems:'center',padding:'0 20px',justifyContent:'space-between'}}>
-            <span style={{fontSize:'12px',color:'rgba(255,255,255,0.4)',fontFamily:'Tahoma'}}>9:41</span>
-            <div style={{display:'flex',gap:'6px',alignItems:'center'}}>
-              <div style={{display:'flex',gap:'2px'}}>
-                {[3,5,7,9].map(h => <div key={h} style={{width:'3px',height:`${h}px`,background:'rgba(255,255,255,0.4)',borderRadius:'1px'}} />)}
+          {/* Bandeau MODE DÉMO — permanent, toutes étapes confondues.
+              Cet écran reproduisait l'application Wave (fausse barre de statut
+              « 9:41 », logo W, « Chiffrement TLS 1.3 », reçu) alors qu'aucun
+              encaissement n'a lieu. Remplacé par une identité AfriOne
+              explicite. */}
+          <div style={{flexShrink:0,padding:'14px 20px 0'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'9px',padding:'11px 13px',background:'rgba(201,168,76,0.14)',border:'1px solid rgba(201,168,76,0.45)',borderRadius:'12px'}}>
+              <span style={{fontSize:'15px',flexShrink:0}}>🧪</span>
+              <div style={{flex:1,fontSize:'11.5px',color:'#E8D9A8',lineHeight:1.45,fontWeight:600}}>
+                MODE DÉMO — aucun paiement réel n'est effectué et aucun montant n'est débité.
               </div>
-              <span style={{fontSize:'11px',color:'rgba(255,255,255,0.4)'}}>WiFi</span>
-              <span style={{fontSize:'11px',color:'rgba(255,255,255,0.4)'}}>🔋</span>
             </div>
           </div>
 
-          {/* Header Wave app */}
-          <div style={{display:'flex',alignItems:'center',padding:'8px 20px 20px',gap:'16px',flexShrink:0}}>
+          {/* Header AfriOne */}
+          <div style={{display:'flex',alignItems:'center',padding:'16px 20px 20px',gap:'16px',flexShrink:0}}>
             {payStep === 'form' && (
               <button onClick={() => setShowPayment(false)} style={{background:'rgba(255,255,255,0.07)',border:'none',borderRadius:'50%',width:'36px',height:'36px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'white',fontSize:'18px',flexShrink:0}}>
                 ←
               </button>
             )}
             <div style={{flex:1,display:'flex',alignItems:'center',gap:'10px'}}>
-              {/* Logo Wave — W blanc sur gradient bleu officiel */}
               <div style={{
                 width:'38px',height:'38px',borderRadius:'10px',flexShrink:0,
-                background:'linear-gradient(135deg,#4144FF,#1DC6FF)',
+                background:'linear-gradient(135deg,#E85D26,#ff7043)',
                 display:'flex',alignItems:'center',justifyContent:'center',
-                boxShadow:'0 4px 16px rgba(29,198,255,0.35)',
+                boxShadow:'0 4px 16px rgba(232,93,38,0.35)',
               }}>
-                <span style={{color:'white',fontWeight:900,fontSize:'20px',letterSpacing:'-1px',fontFamily:'Arial Black,sans-serif'}}>W</span>
+                <Zap size={19} color="white" />
               </div>
               <div>
-                <div style={{color:'white',fontWeight:800,fontSize:'16px',letterSpacing:'-0.3px'}}>Wave</div>
-                <div style={{color:'rgba(255,255,255,0.4)',fontSize:'11px'}}>Paiement sécurisé</div>
+                <div style={{color:'white',fontWeight:800,fontSize:'16px',letterSpacing:'-0.3px'}}>AfriOne — Paiement</div>
+                <div style={{color:'rgba(255,255,255,0.4)',fontSize:'11px'}}>Escrow · démonstration</div>
               </div>
             </div>
           </div>
@@ -1082,20 +1083,20 @@ export default function WarRoomPage() {
                     <span style={{color:'white',fontSize:'56px',fontWeight:900,letterSpacing:'-2px',lineHeight:1,fontFamily:'Tahoma'}}>
                       {pendingAmount.toLocaleString()}
                     </span>
-                    <span style={{color:'#1DC6FF',fontSize:'18px',fontWeight:700}}>FCFA</span>
+                    <span style={{color:'#E85D26',fontSize:'18px',fontWeight:700}}>FCFA</span>
                   </div>
                 </div>
 
                 {/* Séparateur */}
                 <div style={{height:'1px',background:'#F5F7FA',margin:'0 0 20px'}} />
 
-                {/* Numéro Wave */}
+                {/* Numéro saisi */}
                 <div style={{marginBottom:'12px'}}>
-                  <div style={{color:'rgba(255,255,255,0.4)',fontSize:'10px',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'10px'}}>Votre numéro Wave</div>
+                  <div style={{color:'rgba(255,255,255,0.4)',fontSize:'10px',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'10px'}}>Votre numéro mobile money</div>
                   <div style={{
                     display:'flex',alignItems:'center',
                     background:'#F5F7FA',
-                    border:`1.5px solid ${wavePhone.trim() ? '#1DC6FF' : 'rgba(255,255,255,0.08)'}`,
+                    border:`1.5px solid ${wavePhone.trim() ? '#E85D26' : 'rgba(255,255,255,0.08)'}`,
                     borderRadius:'14px',overflow:'hidden',
                     transition:'border-color 0.2s',
                   }}>
@@ -1132,20 +1133,20 @@ export default function WarRoomPage() {
                   style={{
                     width:'100%',padding:'18px',
                     background: wavePhone.trim()
-                      ? 'linear-gradient(135deg,#4144FF,#0D99FF)'
+                      ? 'linear-gradient(135deg,#E85D26,#ff7043)'
                       : 'rgba(255,255,255,0.08)',
                     color:'white',border:'none',borderRadius:'16px',
                     fontSize:'16px',fontWeight:800,letterSpacing:'-0.2px',
                     cursor: wavePhone.trim() ? 'pointer' : 'default',
-                    boxShadow: wavePhone.trim() ? '0 8px 28px rgba(65,68,255,0.45)' : 'none',
+                    boxShadow: wavePhone.trim() ? '0 8px 28px rgba(232,93,38,0.45)' : 'none',
                     transition:'all 0.2s',
                   }}
                 >
-                  Payer avec Wave
+                  Simuler le paiement
                 </button>
 
                 <div style={{textAlign:'center',marginTop:'14px',fontSize:'11px',color:'rgba(255,255,255,0.2)'}}>
-                  Sécurisé par <strong style={{color:'#1DC6FF'}}>Wave</strong> · Chiffrement TLS 1.3
+                  Démonstration — l'encaissement Wave n'est pas encore activé
                 </div>
               </div>
             )}
@@ -1154,19 +1155,19 @@ export default function WarRoomPage() {
             {payStep === 'processing' && (
               <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'320px',gap:'24px'}}>
                 <div style={{position:'relative',width:'80px',height:'80px'}}>
-                  <div style={{position:'absolute',inset:0,border:'3px solid rgba(13,153,255,0.12)',borderRadius:'50%'}} />
-                  <div style={{position:'absolute',inset:0,border:'3px solid transparent',borderTopColor:'#0D99FF',borderRadius:'50%',animation:'spin 0.85s linear infinite'}} />
-                  <div style={{position:'absolute',inset:'10px',background:'linear-gradient(135deg,#4144FF,#1DC6FF)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px rgba(29,198,255,0.3)'}}>
-                    <span style={{color:'white',fontWeight:900,fontSize:'22px',fontFamily:'Arial Black,sans-serif'}}>W</span>
+                  <div style={{position:'absolute',inset:0,border:'3px solid rgba(232,93,38,0.12)',borderRadius:'50%'}} />
+                  <div style={{position:'absolute',inset:0,border:'3px solid transparent',borderTopColor:'#E85D26',borderRadius:'50%',animation:'spin 0.85s linear infinite'}} />
+                  <div style={{position:'absolute',inset:'10px',background:'linear-gradient(135deg,#E85D26,#ff7043)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px rgba(232,93,38,0.3)'}}>
+                    <Zap size={22} color="white" />
                   </div>
                 </div>
                 <div style={{textAlign:'center'}}>
-                  <div style={{color:'white',fontWeight:700,fontSize:'18px',marginBottom:'8px'}}>Traitement en cours…</div>
-                  <div style={{color:'rgba(255,255,255,0.35)',fontSize:'13px'}}>Vérification via Wave sécurisée</div>
+                  <div style={{color:'white',fontWeight:700,fontSize:'18px',marginBottom:'8px'}}>Simulation en cours…</div>
+                  <div style={{color:'rgba(255,255,255,0.35)',fontSize:'13px'}}>Aucun montant nʼest débité</div>
                 </div>
                 <div style={{display:'flex',gap:'8px'}}>
                   {[0,1,2].map(i => (
-                    <div key={i} style={{width:'7px',height:'7px',borderRadius:'50%',background:'#1DC6FF',opacity: 0.4,animation:`pulse 1.2s ease-in-out ${i*0.35}s infinite`}} />
+                    <div key={i} style={{width:'7px',height:'7px',borderRadius:'50%',background:'#E85D26',opacity: 0.4,animation:`pulse 1.2s ease-in-out ${i*0.35}s infinite`}} />
                   ))}
                 </div>
               </div>
@@ -1178,34 +1179,34 @@ export default function WarRoomPage() {
                 {/* Cercle succès — cyan Wave */}
                 <div style={{
                   width:'90px',height:'90px',borderRadius:'50%',
-                  background:'linear-gradient(135deg,#4144FF,#1DC6FF)',
+                  background:'linear-gradient(135deg,#E85D26,#ff7043)',
                   display:'flex',alignItems:'center',justifyContent:'center',
                   marginBottom:'20px',
-                  boxShadow:'0 0 0 14px rgba(29,198,255,0.07), 0 0 0 28px rgba(29,198,255,0.03)',
+                  boxShadow:'0 0 0 14px rgba(232,93,38,0.07), 0 0 0 28px rgba(232,93,38,0.03)',
                 }}>
                   <CheckCircle size={46} color="white" strokeWidth={2.5} />
                 </div>
 
-                <div style={{color:'white',fontSize:'24px',fontWeight:900,marginBottom:'4px',letterSpacing:'-0.5px'}}>Paiement réussi !</div>
-                <div style={{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginBottom:'28px'}}>Transaction sécurisée par Wave</div>
+                <div style={{color:'white',fontSize:'24px',fontWeight:900,marginBottom:'4px',letterSpacing:'-0.5px'}}>Paiement simulé</div>
+                <div style={{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginBottom:'28px'}}>Aucun montant nʼa été débité</div>
 
                 {/* Reçu style Wave */}
                 <div style={{width:'100%',background:'#F5F7FA',border:'1px solid rgba(0,0,0,0.1)',borderRadius:'20px',overflow:'hidden',marginBottom:'20px'}}>
                   <div style={{padding:'18px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     <span style={{color:'#8B95A5',fontSize:'12px'}}>Montant</span>
-                    <span style={{color:'#1A1A1A',fontWeight:900,fontSize:'20px',fontFamily:'Tahoma'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#0D99FF',fontWeight:700}}>FCFA</span></span>
+                    <span style={{color:'#1A1A1A',fontWeight:900,fontSize:'20px',fontFamily:'Tahoma'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#E85D26',fontWeight:700}}>FCFA</span></span>
                   </div>
                   <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between'}}>
                     <span style={{color:'#8B95A5',fontSize:'12px'}}>Bénéficiaire</span>
-                    <span style={{color:'#3D4852',fontSize:'13px',fontWeight:600}}>AfriOne Escrow</span>
+                    <span style={{color:'#3D4852',fontSize:'13px',fontWeight:600}}>AfriOne Escrow (démo)</span>
                   </div>
                   <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Numéro Wave</span>
+                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Numéro saisi</span>
                     <span style={{color:'#3D4852',fontSize:'13px',fontFamily:'Tahoma'}}>+225 {wavePhone}</span>
                   </div>
                   <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between'}}>
                     <span style={{color:'#8B95A5',fontSize:'12px'}}>Statut</span>
-                    <span style={{color:'#0D99FF',fontSize:'13px',fontWeight:700}}>✓ Escrow sécurisé</span>
+                    <span style={{color:'#E85D26',fontSize:'13px',fontWeight:700}}>🧪 Démo — non encaissé</span>
                   </div>
                 </div>
 
@@ -1213,10 +1214,10 @@ export default function WarRoomPage() {
                   onClick={afterPayment}
                   style={{
                     width:'100%',padding:'18px',
-                    background:'linear-gradient(135deg,#4144FF,#0D99FF)',
+                    background:'linear-gradient(135deg,#E85D26,#ff7043)',
                     color:'white',border:'none',borderRadius:'16px',
                     fontSize:'16px',fontWeight:800,cursor:'pointer',
-                    boxShadow:'0 8px 28px rgba(65,68,255,0.4)',
+                    boxShadow:'0 8px 28px rgba(232,93,38,0.4)',
                     letterSpacing:'-0.2px',
                   }}
                 >
