@@ -3,7 +3,15 @@ import { scoreArtisan } from '@/lib/scoring'
 import { sendPushToUser } from '@/lib/push'
 import { normalizeMetier } from '@/lib/metier'
 
-export const DISPATCH_TIMEOUT_SECONDS = 60
+// Fenêtre de réponse de l'artisan. Configurable pour pouvoir dérouler un test
+// manuel à deux comptes sans courir : 60s suffisent à un artisan déjà sur son
+// dashboard, pas à quelqu'un qui doit encore changer de navigateur. Préfixe
+// NEXT_PUBLIC_ obligatoire — l'écran d'attente client lit la MÊME valeur, et
+// deux compteurs désynchronisés annulent la mission sous les doigts de
+// l'artisan.
+const parsedTimeout = Number(process.env.NEXT_PUBLIC_DISPATCH_TIMEOUT_SECONDS)
+export const DISPATCH_TIMEOUT_SECONDS =
+  Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 60
 
 // Marge accordée à un artisan dont la requête d'acceptation part juste avant
 // l'expiration : sans elle, le timer client (même fenêtre de 60s) annule la

@@ -81,12 +81,23 @@ export async function POST(req: NextRequest) {
     return fail('attempt_not_found', "Cette mission ne t'a pas été proposée", 404)
   }
 
+  // Une tentative close a QUATRE causes possibles, et les confondre sous un
+  // « offre déjà clôturée » générique fait croire à l'artisan qu'un concurrent
+  // l'a doublé alors qu'il a simplement laissé le délai passer. Chaque cause a
+  // son message et son code.
   if (attempt.response !== null) {
+    if (attempt.response === 'timeout') {
+      return fail('expired', 'Le délai de réponse de cette offre est écoulé', 410, {
+        previous_response: 'timeout',
+      })
+    }
     return fail(
       'already_answered',
       attempt.response === 'refused'
         ? 'Tu as déjà refusé cette mission'
-        : "Cette offre a déjà été clôturée",
+        : attempt.response === 'cancelled'
+          ? 'Un autre artisan a pris cette mission'
+          : 'Tu as déjà accepté cette mission',
       409,
       { previous_response: attempt.response },
     )

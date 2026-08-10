@@ -4,7 +4,12 @@ import { useRouter, useParams } from 'next/navigation'
 import { CheckCircle, XCircle, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-const DISPATCH_TIMEOUT_MS = 60_000
+// Même variable que le serveur (src/lib/dispatch.ts) : ce compteur décide de
+// l'annulation de la mission, il ne doit jamais être plus court que la fenêtre
+// réellement accordée à l'artisan.
+const parsedTimeout       = Number(process.env.NEXT_PUBLIC_DISPATCH_TIMEOUT_SECONDS)
+const DISPATCH_TIMEOUT_MS =
+  (Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 60) * 1000
 // Doit rester aligné sur DISPATCH_GRACE_SECONDS (src/lib/dispatch.ts)
 const DISPATCH_GRACE_MS   = 6_000
 
