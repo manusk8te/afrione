@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { cancelAndRefund } from '@/lib/dispatch'
+import { cancelAndRefund, closeAttempts, DISPATCH_GRACE_SECONDS } from '@/lib/dispatch'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,15 +22,31 @@ export async function POST(req: NextRequest) {
   if (!mission) return NextResponse.json({ error: 'Mission introuvable' }, { status: 404 })
   if (mission.mode !== 'urgent') return NextResponse.json({ ok: true, skipped: true })
 
-  // Si déjà acceptée (en_route), ne rien faire
-  if (mission.status === 'en_route') return NextResponse.json({ dispatched: true, already_accepted: true })
+  // Si déjà acceptée, ne rien faire
+  if (mission.status !== 'dispatching') {
+    return NextResponse.json({ dispatched: true, already_accepted: true, status: mission.status })
+  }
 
-  // Marquer toutes les tentatives encore en attente comme timeout
-  await supabaseAdmin
+  // Le timer client et la fenêtre artisan durent tous deux 60s : sans marge,
+  // l'artisan qui clique à 59,8s voit sa mission annulée sous ses doigts et
+  // reçoit « mission expirée » alors qu'il a répondu dans les temps. On ne
+  // conclut au timeout que si plus aucune tentative n'est dans sa grâce.
+  const graceCutoff = new Date(Date.now() - DISPATCH_GRACE_SECONDS * 1000).toISOString()
+
+  const { data: stillLive } = await supabaseAdmin
     .from('dispatch_attempts')
-    .update({ response: 'timeout', responded_at: new Date().toISOString() })
+    .select('id')
     .eq('mission_id', mission_id)
     .is('response', null)
+    .gt('expires_at', graceCutoff)
+    .limit(1)
+
+  if (stillLive?.length) {
+    return NextResponse.json({ dispatched: true, waiting: true, grace: true })
+  }
+
+  // Marquer toutes les tentatives encore en attente comme timeout
+  await closeAttempts(mission_id, 'timeout')
 
   // Plus personne n'a accepté → remboursement (sauf si un artisan a accepté
   // dans l'intervalle — la garde de statut de cancelAndRefund tranche)

@@ -5,6 +5,8 @@ import { CheckCircle, XCircle, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const DISPATCH_TIMEOUT_MS = 60_000
+// Doit rester aligné sur DISPATCH_GRACE_SECONDS (src/lib/dispatch.ts)
+const DISPATCH_GRACE_MS   = 6_000
 
 const syne = { fontFamily: "'Satoshi', sans-serif" }  as const
 const body = { fontFamily: "'Inter', sans-serif" }    as const
@@ -58,6 +60,17 @@ export default function DispatchLoadingPage() {
 
       if (!data.dispatched) {
         setState('failed')
+        return
+      }
+
+      // Un artisan est déjà passé — le Realtime va basculer l'écran.
+      if (data.already_accepted) return
+
+      // Une tentative est encore dans sa marge de grâce : on redonne quelques
+      // secondes au lieu de relancer une fenêtre complète, sinon l'écran
+      // affiche « tentative 2 » alors que personne n'a été recontacté.
+      if (data.grace) {
+        startCountdown(DISPATCH_GRACE_MS)
         return
       }
 

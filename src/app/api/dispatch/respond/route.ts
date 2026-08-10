@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { cancelAndRefund } from '@/lib/dispatch'
+import { cancelAndRefund, closeAttempts, DISPATCH_GRACE_SECONDS } from '@/lib/dispatch'
 
 export const dynamic = 'force-dynamic'
+
+// Toute réponse d'échec porte un `code` stable : le client s'appuie dessus
+// plutôt que sur la présence d'un booléen, sans quoi un statut HTTP non géré
+// retombe dans la branche « succès » et annonce « Mission acceptée ! » alors
+// que rien n'a été pris.
+type FailureCode =
+  | 'bad_request'
+  | 'mission_not_found'
+  | 'already_taken'
+  | 'attempt_not_found'
+  | 'already_answered'
+  | 'expired'
+  | 'mission_gone'
 
 // Nom + horodatage de l'artisan qui a réellement remporté la mission —
 // pour une attribution explicite plutôt qu'un "prise par un autre" générique.
@@ -17,15 +30,18 @@ async function getTakenByInfo(missionId: string, artisanId: string) {
   }
 }
 
+const fail = (code: FailureCode, error: string, status: number, extra: object = {}) =>
+  NextResponse.json({ ok: false, code, error, ...extra }, { status })
+
 export async function POST(req: NextRequest) {
   const { mission_id, artisan_id, response } = await req.json()
 
   if (!mission_id || !artisan_id || !response) {
-    return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
+    return fail('bad_request', 'Paramètres manquants', 400)
   }
 
   if (!['accepted', 'refused'].includes(response)) {
-    return NextResponse.json({ error: 'Réponse invalide' }, { status: 400 })
+    return fail('bad_request', 'Réponse invalide', 400)
   }
 
   // Vérifier que la mission est encore en cours de dispatch
@@ -35,42 +51,67 @@ export async function POST(req: NextRequest) {
     .eq('id', mission_id)
     .single()
 
-  if (!mission) return NextResponse.json({ error: 'Mission introuvable' }, { status: 404 })
+  if (!mission) return fail('mission_not_found', 'Mission introuvable', 404)
 
-  // Si déjà assignée à un AUTRE artisan — attribution explicite (qui, quand)
-  if (mission.status === 'en_route' && mission.artisan_id && mission.artisan_id !== artisan_id) {
+  // Déjà assignée à un AUTRE artisan — attribution explicite (qui, quand)
+  if (mission.artisan_id && mission.artisan_id !== artisan_id) {
     const taken_by = await getTakenByInfo(mission_id, mission.artisan_id)
-    return NextResponse.json({ error: 'Mission déjà assignée', already_taken: true, taken_by }, { status: 409 })
+    return fail('already_taken', 'Mission déjà assignée', 409, { already_taken: true, taken_by })
   }
 
-  // Récupérer la tentative de cet artisan
+  // Déjà assignée à CET artisan (double-clic, retry réseau, ou auto-assign) —
+  // c'est un succès, pas une erreur : on le dit clairement au lieu de renvoyer
+  // « tentative introuvable » sur la tentative déjà consommée.
+  if (mission.artisan_id === artisan_id && response === 'accepted') {
+    return NextResponse.json({ ok: true, accepted: true, already_yours: true })
+  }
+
+  // Récupérer la dernière tentative de cet artisan, répondue ou non : distinguer
+  // « aucune offre ne t'a été envoyée » de « tu as déjà répondu ».
   const { data: attempt } = await supabaseAdmin
     .from('dispatch_attempts')
     .select('id, expires_at, response')
     .eq('mission_id', mission_id)
     .eq('artisan_id', artisan_id)
-    .is('response', null)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (!attempt) {
-    return NextResponse.json({ error: 'Tentative introuvable ou expirée' }, { status: 404 })
+    return fail('attempt_not_found', "Cette mission ne t'a pas été proposée", 404)
   }
 
-  if (new Date(attempt.expires_at) < new Date()) {
+  if (attempt.response !== null) {
+    return fail(
+      'already_answered',
+      attempt.response === 'refused'
+        ? 'Tu as déjà refusé cette mission'
+        : "Cette offre a déjà été clôturée",
+      409,
+      { previous_response: attempt.response },
+    )
+  }
+
+  // Marge de grâce : la requête partie juste avant l'expiration reste valable.
+  const deadline = new Date(attempt.expires_at).getTime() + DISPATCH_GRACE_SECONDS * 1000
+  if (deadline < Date.now()) {
     await supabaseAdmin
       .from('dispatch_attempts')
       .update({ response: 'timeout', responded_at: new Date().toISOString() })
       .eq('id', attempt.id)
-    return NextResponse.json({ error: 'Délai expiré' }, { status: 410 })
+    return fail('expired', 'Délai de réponse dépassé', 410)
   }
 
   if (response === 'refused') {
-    await supabaseAdmin
+    const { error: refuseError } = await supabaseAdmin
       .from('dispatch_attempts')
       .update({ response: 'refused', responded_at: new Date().toISOString() })
       .eq('id', attempt.id)
+
+    if (refuseError) {
+      console.error('[dispatch/respond] refus non enregistré :', refuseError.message)
+      return fail('bad_request', 'Refus non enregistré — réessaie', 500)
+    }
 
     // Vérifier si tous les artisans ont refusé
     const { data: pending } = await supabaseAdmin
@@ -81,9 +122,9 @@ export async function POST(req: NextRequest) {
 
     if (!pending?.length) {
       await cancelAndRefund(mission_id, mission.client_id)
-      return NextResponse.json({ refused: true, refunded: true })
+      return NextResponse.json({ ok: true, refused: true, refunded: true })
     }
-    return NextResponse.json({ refused: true })
+    return NextResponse.json({ ok: true, refused: true })
   }
 
   // ── Accepté : tenter la prise atomique AVANT de marquer la tentative ──────
@@ -102,37 +143,60 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (claimError || !claimed) {
-    // Refléter l'échec réel plutôt que de laisser la tentative sur "accepted"
-    await supabaseAdmin
-      .from('dispatch_attempts')
-      .update({ response: 'timeout', responded_at: new Date().toISOString() })
-      .eq('id', attempt.id)
-
-    // Distinguer "prise par quelqu'un d'autre" (attribution réelle) de
-    // "expirée/annulée entre-temps" (aucun gagnant) — messages différents
+    // Distinguer les trois échecs possibles — ils n'ont pas le même sens pour
+    // l'artisan et ne doivent surtout pas se ranger tous sous « expirée ».
     const { data: current } = await supabaseAdmin
       .from('missions').select('status, artisan_id').eq('id', mission_id).maybeSingle()
 
-    if (current?.status === 'en_route' && current.artisan_id) {
+    // 1. Un autre artisan a gagné la course : sa tentative est bien close.
+    if (current?.artisan_id && current.artisan_id !== artisan_id) {
+      await supabaseAdmin
+        .from('dispatch_attempts')
+        .update({ response: 'cancelled', responded_at: new Date().toISOString() })
+        .eq('id', attempt.id)
       const taken_by = await getTakenByInfo(mission_id, current.artisan_id)
-      return NextResponse.json({ error: 'Mission déjà assignée', already_taken: true, taken_by }, { status: 409 })
+      return fail('already_taken', 'Mission déjà assignée', 409, { already_taken: true, taken_by })
     }
-    return NextResponse.json({ error: 'Mission expirée ou annulée avant confirmation', expired: true }, { status: 410 })
+
+    // 2. La mission a été annulée/remboursée entre-temps (timeout client).
+    if (current?.status === 'cancelled') {
+      await supabaseAdmin
+        .from('dispatch_attempts')
+        .update({ response: 'timeout', responded_at: new Date().toISOString() })
+        .eq('id', attempt.id)
+      return fail('mission_gone', 'La mission a été annulée avant ta réponse', 410)
+    }
+
+    // 3. La mission est toujours là mais la transition a été refusée (statut
+    //    inattendu, trigger de machine à états). Ce n'est PAS la faute de
+    //    l'artisan : on laisse sa tentative ouverte pour qu'il puisse retenter,
+    //    et on loggue de quoi diagnostiquer côté serveur.
+    console.error(
+      `[dispatch/respond] prise refusée pour mission ${mission_id} — statut='${current?.status}' artisan_id='${current?.artisan_id}' erreur='${claimError?.message ?? 'aucune ligne'}'`,
+    )
+    return fail('mission_gone', "La mission n'est plus disponible à la prise", 409, {
+      mission_status: current?.status ?? null,
+      retryable: true,
+    })
   }
 
   // Confirmer la tentative seulement maintenant que la prise a réussi
-  await supabaseAdmin
+  const { error: confirmError } = await supabaseAdmin
     .from('dispatch_attempts')
     .update({ response: 'accepted', responded_at: new Date().toISOString() })
     .eq('id', attempt.id)
 
-  // Cancel all other pending attempts
-  await supabaseAdmin
-    .from('dispatch_attempts')
-    .update({ response: 'cancelled', responded_at: new Date().toISOString() })
-    .eq('mission_id', mission_id)
-    .is('response', null)
-    .neq('artisan_id', artisan_id)
+  if (confirmError) {
+    // La mission est bien à lui (claim réussi) — on ne revient pas en arrière,
+    // mais l'incohérence doit être visible dans les logs.
+    console.error(
+      `[dispatch/respond] mission ${mission_id} attribuée à ${artisan_id} mais tentative ${attempt.id} non confirmée : ${confirmError.message}`,
+    )
+  }
+
+  // Clore les offres des autres artisans — vérifié : tant que cette écriture
+  // échouait, leur carte urgente restait affichée indéfiniment.
+  await closeAttempts(mission_id, 'cancelled', artisan_id)
 
   // Créditer l'escrow du wallet artisan
   const { data: transaction } = await supabaseAdmin
@@ -174,5 +238,5 @@ export async function POST(req: NextRequest) {
     type:        'system',
   })
 
-  return NextResponse.json({ accepted: true })
+  return NextResponse.json({ ok: true, accepted: true })
 }

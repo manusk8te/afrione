@@ -306,33 +306,82 @@ export default function ArtisanDashboardPage() {
   }, [artisan?.id, loadUrgentDispatch])
 
   const respondUrgent = async (response: 'accepted' | 'refused') => {
-    if (!urgentDispatch || !artisan) return
+    if (!urgentDispatch || !artisan || respondingUrgent) return
+    const missionId = urgentDispatch.mission_id
     setRespondingUrgent(true)
-    const res = await fetch('/api/dispatch/respond', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        mission_id: urgentDispatch.mission_id,
-        artisan_id: artisan.id,
-        response,
-      }),
-    })
-    const data = await res.json()
-    clearInterval(urgentIntervalRef.current!)
-    setUrgentDispatch(null)
+
+    // La carte reste ouverte tant qu'on ne sait pas ce qui s'est passé : la
+    // fermer d'avance faisait disparaître définitivement une offre encore
+    // valable dès qu'une requête échouait.
+    const closeCard = () => {
+      clearInterval(urgentIntervalRef.current!)
+      setUrgentDispatch(null)
+    }
+
+    let res: Response
+    let data: any
+    try {
+      res  = await fetch('/api/dispatch/respond', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ mission_id: missionId, artisan_id: artisan.id, response }),
+      })
+      data = await res.json().catch(() => ({}))
+    } catch {
+      setRespondingUrgent(false)
+      toast.error('Connexion perdue — ta réponse n\'est pas partie. Réessaie.')
+      return
+    }
+
     setRespondingUrgent(false)
 
-    if (data.already_taken) {
-      const name = data.taken_by?.name || 'un autre artisan'
-      const at   = data.taken_by?.at ? new Date(data.taken_by.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null
-      toast(`Mission prise par ${name}${at ? ` à ${at}` : ''}`, { icon: '⚡', duration: 6000 })
-    } else if (data.expired) {
-      toast.error('Mission expirée avant que ta réponse soit confirmée.')
-    } else if (response === 'accepted') {
+    // Un échec HTTP ne doit JAMAIS retomber dans la branche succès : c'est ce
+    // qui annonçait « Mission acceptée ! » puis redirigeait vers une warroom
+    // sur une mission que l'artisan n'avait pas obtenue.
+    if (!res.ok || data.ok === false) {
+      switch (data.code) {
+        case 'already_taken': {
+          const name = data.taken_by?.name || 'un autre artisan'
+          const at   = data.taken_by?.at
+            ? new Date(data.taken_by.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+            : null
+          toast(`Mission prise par ${name}${at ? ` à ${at}` : ''}`, { icon: '⚡', duration: 6000 })
+          closeCard()
+          break
+        }
+        case 'expired':
+          toast.error('Le délai de réponse est dépassé.')
+          closeCard()
+          break
+        case 'mission_gone':
+          toast.error(data.error || "La mission n'est plus disponible.")
+          // `retryable` = la mission existe toujours mais la prise a été
+          // refusée : l'offre reste ouverte, l'artisan peut retenter.
+          if (!data.retryable) closeCard()
+          break
+        case 'already_answered':
+          toast(data.error || 'Offre déjà clôturée.', { icon: 'ℹ️' })
+          closeCard()
+          break
+        case 'attempt_not_found':
+        case 'mission_not_found':
+          toast.error(data.error || 'Offre introuvable.')
+          closeCard()
+          break
+        default:
+          toast.error(data.error || `Réponse non enregistrée (${res.status}). Réessaie.`)
+      }
+      loadUrgentDispatch(artisan.id)
+      return
+    }
+
+    closeCard()
+
+    if (response === 'accepted') {
       toast.success('Mission acceptée ! Rends-toi chez le client.')
-      router.push(`/warroom/${urgentDispatch.mission_id}`)
+      router.push(`/warroom/${missionId}`)
     } else {
-      toast('Mission refusée')
+      toast(data.refunded ? 'Mission refusée — le client est remboursé.' : 'Mission refusée')
     }
   }
 

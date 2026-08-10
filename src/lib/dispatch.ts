@@ -3,15 +3,24 @@ import { scoreArtisan } from '@/lib/scoring'
 import { sendPushToUser } from '@/lib/push'
 import { normalizeMetier } from '@/lib/metier'
 
-const DISPATCH_TIMEOUT_SECONDS = 60
+export const DISPATCH_TIMEOUT_SECONDS = 60
+
+// Marge accordée à un artisan dont la requête d'acceptation part juste avant
+// l'expiration : sans elle, le timer client (même fenêtre de 60s) annule la
+// mission dans les millisecondes qui séparent le clic de son traitement, et
+// l'artisan reçoit « Mission expirée » alors qu'il a répondu dans les temps.
+export const DISPATCH_GRACE_SECONDS = 5
 
 // ── Trouver TOUS les artisans qualifiés pour la mission ───────────────────────
 
-const TEST_ARTISAN_EMAILS = [
-  'test.plombier@afrione.ci',
-  'test.elec@afrione.ci',
-  'test.peintre@afrione.ci',
-]
+// Le dispatch branchait autrefois sur l'email du client : un compte @afrione.ci
+// ou de rôle admin ne diffusait qu'à trois artisans écrits en dur
+// (test.plombier / test.elec / test.peintre @afrione.ci). Deux conséquences :
+//   1. tester depuis un compte admin n'empruntait PAS le chemin de production,
+//      donc ne testait rien de réel ;
+//   2. ces trois comptes ayant été supprimés, le broadcast retournait zéro
+//      candidat et la mission était annulée sur-le-champ.
+// Le matching se comporte désormais de façon identique pour tous les clients.
 
 const ARTISAN_SELECT = `
   id, user_id, metier,
@@ -23,15 +32,12 @@ const ARTISAN_SELECT = `
 export async function findAllCandidates(missionId: string): Promise<any[]> {
   const { data: mission } = await supabaseAdmin
     .from('missions')
-    .select('category, quartier, client_id, users!client_id(email, role)')
+    .select('category, quartier, client_id')
     .eq('id', missionId)
     .single()
 
   if (!mission) return []
 
-  const clientEmail: string = (mission.users as any)?.email ?? ''
-  const clientRole: string  = (mission.users as any)?.role  ?? ''
-  const isTestSession = clientEmail.endsWith('@afrione.ci') || clientRole === 'admin'
   const missionQuartier: string = mission.quartier || 'Cocody'
 
   // Artisans déjà tentés (pour éviter les doublons si relance)
@@ -48,45 +54,17 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
   // canonique pour un matching fiable, quelle que soit la valeur brute stockée.
   const missionMetier = normalizeMetier(mission.category)
 
-  const sortByScore = (list: any[]) => {
-    const filtered = list.filter((a: any) => !triedIds.includes(a.id))
-    const scored = filtered.map((a: any) => ({
-      ...a,
-      _score: scoreArtisan(a, missionQuartier),
-      _isGobly: a.users?.email === 'goblyemmanuel95@gmail.com'
-    }))
-    // Plombier prioritaire pour missions plomberie
-    const isPlomberie = missionMetier === 'Plomberie'
-    return scored.sort((a: any, b: any) => {
-      if (isPlomberie && a._isGobly && !b._isGobly) return -1
-      if (isPlomberie && !a._isGobly && b._isGobly) return 1
-      return b._score - a._score
-    })
-  }
+  // Classement par score seul. Un email d'artisan était auparavant remonté de
+  // force en tête des missions de plomberie — un biais permanent sur de vraies
+  // missions. Il était de surcroît inopérant : ARTISAN_SELECT ne récupère pas
+  // users.email, donc la comparaison était toujours fausse.
+  const sortByScore = (list: any[]) =>
+    list
+      .filter((a: any) => !triedIds.includes(a.id))
+      .map((a: any) => ({ ...a, _score: scoreArtisan(a, missionQuartier) }))
+      .sort((a: any, b: any) => b._score - a._score)
 
-  // ── Session de test : ne cible que les 3 artisans test, filtrés par métier
-  // pour refléter le vrai comportement de matching (fallback si aucun ne
-  // correspond au métier demandé, ex: mission Peinture sans test.peintre) ──
-  if (isTestSession) {
-    const { data: testUsers } = await supabaseAdmin
-      .from('users')
-      .select('id')
-      .in('email', TEST_ARTISAN_EMAILS)
-
-    const testUserIds = testUsers?.map((u: any) => u.id) ?? []
-
-    const { data: testArtisans } = await supabaseAdmin
-      .from('artisan_pros')
-      .select(ARTISAN_SELECT)
-      .in('user_id', testUserIds)
-      .eq('kyc_status', 'approved')
-      .eq('is_available', true)
-
-    const matched = (testArtisans ?? []).filter(a => normalizeMetier(a.metier) === missionMetier)
-    return sortByScore(matched.length ? matched : (testArtisans ?? []))
-  }
-
-  // ── Session réelle : broadcast à TOUS les plombiers/élec/etc disponibles ─
+  // ── Broadcast à TOUS les artisans disponibles du métier demandé ─────────
   // Filtre par métier de la mission (normalisé), notif simultanée à tous,
   // premier qui accepte prend la mission. Fallback sans filtre si aucun
   // spécialiste libre — mieux vaut un artisan du mauvais corps de métier
@@ -101,6 +79,35 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
   const matched = (allCandidates ?? []).filter(a => normalizeMetier(a.metier) === missionMetier)
 
   return sortByScore(matched.length ? matched : (allCandidates ?? []))
+}
+
+// ── Clore les tentatives encore ouvertes d'une mission ───────────────────────
+// Centralisé et vérifié. Les appelants faisaient cet UPDATE sans regarder
+// `.error` : si l'écriture échoue, les tentatives restent NULL, la carte
+// urgente ne se ferme jamais chez les artisans perdants, et leur clic
+// « Accepter » sur cette offre fantôme renvoie « Mission déjà assignée ».
+// Un échec est désormais tracé au lieu de passer inaperçu.
+
+export async function closeAttempts(
+  missionId: string,
+  response: 'cancelled' | 'timeout',
+  exceptArtisanId?: string,
+) {
+  let query = supabaseAdmin
+    .from('dispatch_attempts')
+    .update({ response, responded_at: new Date().toISOString() })
+    .eq('mission_id', missionId)
+    .is('response', null)
+
+  if (exceptArtisanId) query = query.neq('artisan_id', exceptArtisanId)
+
+  const { error } = await query
+  if (error) {
+    console.error(
+      `[dispatch] clôture des tentatives de ${missionId} en '${response}' échouée : ${error.message}`,
+    )
+  }
+  return { ok: !error, error }
 }
 
 // ── Créer un enregistrement de tentative de dispatch ─────────────────────────
@@ -203,10 +210,31 @@ export async function startUrgentDispatch(
   // existent déjà mais où la mission a encore son ancien statut se voit
   // refuser la prise atomique (respond/route.ts exige status='dispatching')
   // et reçoit un faux message "mission expirée" alors que personne n'a accepté.
-  await supabaseAdmin
+  //
+  // L'erreur DOIT être vérifiée : la machine à états (trigger SQL) ou le CHECK
+  // de statut peuvent refuser la transition. Sans ce contrôle on notifiait
+  // quand même tous les artisans d'une mission qui n'entrerait jamais en
+  // dispatching — chaque acceptation renvoyait alors « Mission expirée ou
+  // annulée avant confirmation » sans qu'aucune mission n'ait expiré.
+  const { data: dispatching, error: statusError } = await supabaseAdmin
     .from('missions')
     .update({ status: 'dispatching' })
     .eq('id', missionId)
+    .select('id')
+    .maybeSingle()
+
+  if (statusError || !dispatching) {
+    console.error(
+      `[dispatch] mission ${missionId} n'a pas pu passer en 'dispatching' — dispatch abandonné`,
+      statusError?.message ?? 'aucune ligne mise à jour',
+    )
+    await cancelAndRefund(missionId, clientId)
+    return {
+      dispatched: false,
+      reason: 'status_transition_failed',
+      detail: statusError?.message ?? 'mission introuvable ou statut non modifiable',
+    }
+  }
 
   // Créer une tentative pour chaque candidat + notifier en parallèle
   await Promise.all(
