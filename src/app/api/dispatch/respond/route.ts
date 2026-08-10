@@ -16,6 +16,7 @@ type FailureCode =
   | 'already_answered'
   | 'expired'
   | 'mission_gone'
+  | 'artisan_busy'
 
 // Nom + horodatage de l'artisan qui a réellement remporté la mission —
 // pour une attribution explicite plutôt qu'un "prise par un autre" générique.
@@ -154,6 +155,28 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (claimError || !claimed) {
+    // L'artisan a déjà une mission active. idx_artisan_single_active_mission
+    // (migrations/003) est un UNIQUE partiel sur artisan_id où le statut vaut
+    // 'en_route' ou 'en_cours' : la règle métier est « une mission à la fois ».
+    // Ce n'est pas une anomalie mais un refus légitime, et il doit se dire
+    // comme tel — sinon l'artisan lit « mission indisponible » et croit qu'on
+    // la lui a volée, alors que c'est SA mission en cours qui le bloque.
+    if (claimError?.message?.includes('idx_artisan_single_active_mission')) {
+      const { data: active } = await supabaseAdmin
+        .from('missions')
+        .select('id, category')
+        .eq('artisan_id', artisan_id)
+        .in('status', ['en_route', 'en_cours'])
+        .maybeSingle()
+
+      return fail(
+        'artisan_busy',
+        'Tu as déjà une mission en cours. Termine-la avant d\'en accepter une autre.',
+        409,
+        { active_mission_id: active?.id ?? null, active_mission_category: active?.category ?? null },
+      )
+    }
+
     // Distinguer les trois échecs possibles — ils n'ont pas le même sens pour
     // l'artisan et ne doivent surtout pas se ranger tous sous « expirée ».
     const { data: current } = await supabaseAdmin

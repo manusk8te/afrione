@@ -363,6 +363,12 @@ export default function ArtisanDashboardPage() {
           toast(data.error || 'Offre déjà clôturée.', { icon: 'ℹ️' })
           closeCard()
           break
+        // L'artisan est bloqué par SA propre mission en cours, pas par un
+        // concurrent. La carte reste ouverte : s'il clôture l'autre mission
+        // avant expiration, il peut encore prendre celle-ci.
+        case 'artisan_busy':
+          toast.error(data.error || 'Tu as déjà une mission en cours.', { duration: 7000 })
+          break
         case 'attempt_not_found':
         case 'mission_not_found':
           toast.error(data.error || 'Offre introuvable.')
