@@ -30,7 +30,38 @@ function materialEmoji(name: string): string {
   return '🔧'
 }
 
+// Postgres refuse certaines écritures sur missions pour des raisons métier
+// précises. Les afficher toutes en « Erreur. » a coûté une journée de
+// débogage : le message doit dire ce qui bloque et ce qu'on peut y faire.
+function explainMissionWriteError(error: { message?: string } | null): string {
+  const m = error?.message ?? ''
+  if (m.includes('idx_artisan_single_active_mission')) {
+    return "L'artisan a déjà une mission en cours. Elle doit être terminée avant d'en démarrer une autre."
+  }
+  if (m.includes('Transition interdite')) {
+    return "Cette action n'est plus possible dans l'état actuel de la mission. Rafraîchis la page."
+  }
+  if (m.includes('missions_status_check')) {
+    return 'Statut de mission refusé par la base — préviens le support AfriOne.'
+  }
+  return m ? `Action refusée : ${m}` : 'Action refusée — réessaie.'
+}
+
+type PricingSuggestion = {
+  estimate: number
+  interval: { low: number; high: number }
+  decomp: { labor: number; materials: number; transport: number; premium: number }
+  market_reference_fcfa?: number
+  savings_vs_market?: number
+  below_market?: boolean
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  // 'diagnostic' et 'dispatching' manquaient : toute mission dans ces états
+  // retombait sur le libellé par défaut « En discussion », alors que personne
+  // n'est encore en face.
+  diagnostic:  { label: '📝 Diagnostic en cours',     color: '#6B7280', bg: 'rgba(122,122,110,0.1)' },
+  dispatching: { label: '📡 Recherche d\'un artisan', color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
   negotiation: { label: '💬 En discussion',          color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
   matching:    { label: '🔔 Nouvelle demande',        color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
   scheduled:   { label: '📅 Intervention programmée', color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
@@ -63,15 +94,13 @@ export default function WarRoomPage() {
   const [showDevis, setShowDevis]     = useState(false)
   const [devisAmount, setDevisAmount] = useState('')
   const [devisDesc, setDevisDesc]     = useState('')
-  const [pricingSuggestion, setPricingSuggestion] = useState<{
-    estimate: number
-    interval: { low: number; high: number }
-    decomp: { labor: number; materials: number; transport: number; premium: number }
-    market_reference_fcfa?: number
-    savings_vs_market?: number
-    below_market?: boolean
-  } | null>(null)
+  const [pricingSuggestion, setPricingSuggestion] = useState<PricingSuggestion | null>(null)
   const [pricingSugLoading, setPricingSugLoading] = useState(false)
+  // Miroir du state, lisible SYNCHRONEMENT dans un handler. setState ne met à
+  // jour la variable capturée qu'au rendu suivant : `await load()` puis lire
+  // `pricingSuggestion` renvoyait encore null, et le prix de base tombait à 0
+  // dans la proposition finale sans que rien ne le signale.
+  const pricingRef = useRef<PricingSuggestion | null>(null)
 
   // Proximité vendeur physique pour les matériaux (artisan side)
   const [materialsProximity, setMaterialsProximity] = useState<any[]>([])
@@ -143,6 +172,10 @@ export default function WarRoomPage() {
   const [schedTime, setSchedTime]           = useState('')
 
   const bottomRef = useRef<HTMLDivElement>(null)
+  // L'abonnement Realtime est créé une seule fois (dép. [missionId]) : il ne
+  // peut pas lire l'état `user`, qui n'est renseigné qu'après. Ce ref le lui
+  // donne sans le recréer à chaque rendu.
+  const userIdRef = useRef<string | null>(null)
   usePushNotifications(user?.id || null)
 
   const isArtisan = missionRole === 'artisan' || missionRole === 'admin'
@@ -170,6 +203,7 @@ export default function WarRoomPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/auth'); return }
       setUser(session.user)
+      userIdRef.current = session.user.id
 
       const { data: userData } = await supabase.from('users').select('role').eq('id', session.user.id).single()
       setUserRole(userData?.role ?? 'client')
@@ -239,15 +273,32 @@ export default function WarRoomPage() {
                 items_needed:    diag.items_needed,
                 photos:          diag.photos,
               })
-              const { data: briefMsg } = await supabase.from('chat_history').insert({
+              const { data: briefMsg, error: briefError } = await supabase.from('chat_history').insert({
                 mission_id:  missionId,
                 sender_id:   missionData?.client_id ?? session.user.id,
                 sender_role: 'system',
                 sender_type: 'afrione_system',
                 text:        briefPayload,
                 type:        'brief',
-              }).select().single()
-              if (briefMsg) setMessages(prev => [...prev, briefMsg])
+              }).select().maybeSingle()
+
+              if (briefMsg) {
+                setMessages(prev => [...prev, briefMsg])
+              } else if (briefError) {
+                // Index unique posé par la migration 006 : le second arrivant
+                // sur un fil vide perd la course. Ce n'est pas une erreur —
+                // mais sans relire, il n'affichait aucune fiche technique.
+                const { data: existant } = await supabase
+                  .from('chat_history')
+                  .select('*, users(name, avatar_url)')
+                  .eq('mission_id', missionId)
+                  .eq('type', 'brief')
+                  .maybeSingle()
+                if (existant) setMessages(prev =>
+                  prev.some(m => m.id === existant.id) ? prev : [...prev, existant]
+                )
+                else console.warn('[brief] non inséré et introuvable :', briefError.message)
+              }
             }
 
             // Le message d'ouverture est écrit du point de vue du client
@@ -261,6 +312,11 @@ export default function WarRoomPage() {
               setInput(greeting)
               setPrefillMsg(greeting)
             }
+            // Prix AfriOne chargé dès l'ouverture, plus seulement à l'ouverture
+            // du drawer devis. Six actions le lisaient : sans ce préchargement,
+            // celle qui partait la première calculait sur un prix absent.
+            loadPricingSuggestion(diag, missionData).catch(() => {})
+
             // Charger les liens d'achat des matériaux dès l'init (artisan uniquement)
             if (mr !== 'client' && diag.items_needed?.length) {
               const clientQ = missionData?.quartier || 'Cocody'
@@ -288,13 +344,21 @@ export default function WarRoomPage() {
 
       // Vérifier si le client a déjà laissé un avis pour cette mission
       if (mr !== 'artisan') {
+        // On relit aussi la note : ne charger que l'`id` affichait « Merci pour
+        // votre avis ! » au-dessus de cinq étoiles vides.
         const { data: existingReview } = await supabase
           .from('sentiment_logs')
-          .select('id')
+          .select('id, sentiment_score, raw_text')
           .eq('mission_id', missionId)
           .eq('source', 'review')
           .maybeSingle()
-        if (existingReview) setHasReviewed(true)
+        if (existingReview) {
+          setHasReviewed(true)
+          if (existingReview.sentiment_score != null) {
+            setRating(Math.round(existingReview.sentiment_score * 5))
+          }
+          if (existingReview.raw_text) setReviewText(existingReview.raw_text)
+        }
       }
 
       setLoading(false)
@@ -306,14 +370,48 @@ export default function WarRoomPage() {
       .channel(`warroom-${missionId}`)
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_history', filter: `mission_id=eq.${missionId}` },
-        payload => setMessages(prev =>
-          prev.some(m => m.id === payload.new.id) ? prev : [...prev, payload.new]
-        )
+        payload => {
+          setMessages(prev =>
+            prev.some(m => m.id === payload.new.id) ? prev : [...prev, payload.new]
+          )
+          // Marquer lu à l'arrivée. Le `read_at` n'était posé qu'au montage :
+          // tout message reçu pendant qu'on lit la conversation restait
+          // « non lu » indéfiniment côté expéditeur.
+          const msg: any = payload.new
+          if (msg?.sender_id && msg.sender_id !== userIdRef.current && !msg.read_at) {
+            supabase.from('chat_history')
+              .update({ read_at: new Date().toISOString() })
+              .eq('id', msg.id)
+              .then(() => {})
+          }
+        }
       )
       // Realtime — changement de statut mission
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'missions', filter: `id=eq.${missionId}` },
-        payload => setMission((prev: any) => ({ ...prev, ...payload.new }))
+        async payload => {
+          setMission((prev: any) => ({ ...prev, ...payload.new }))
+
+          // Le payload Realtime ne contient que la ligne `missions` brute,
+          // sans les jointures. Quand un artisan vient d'être attribué,
+          // artisan_id change mais artisan_pros reste null : le client
+          // continuait de voir « Artisan » et aucun numéro de téléphone
+          // jusqu'à ce qu'il recharge la page. On relit la ligne complète.
+          const nouvelArtisan = (payload.new as any)?.artisan_id
+          if (nouvelArtisan && nouvelArtisan !== (payload.old as any)?.artisan_id) {
+            const { data: complet } = await supabase
+              .from('missions')
+              .select('*, scheduled_at, artisan_pros(id, user_id, metier, users!artisan_pros_user_id_fkey(name, avatar_url, phone)), users!missions_client_id_fkey(name, avatar_url)')
+              .eq('id', missionId)
+              .maybeSingle()
+            if (complet) setMission(complet)
+
+            fetch(`/api/mission-brief?mission_id=${missionId}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(j => { if (j?.participants) setParticipants(j.participants) })
+              .catch(() => {})
+          }
+        }
       )
       .subscribe()
 
@@ -333,7 +431,10 @@ export default function WarRoomPage() {
       mission_id:  missionId,
       sender_id:   user.id,
       sender_role: missionRole,
-      sender_type: missionRole === 'artisan' ? 'artisan' : 'client',
+      // `isArtisan` et non `missionRole === 'artisan'` : un compte admin voit
+      // l'interface artisan mais ses messages étaient enregistrés comme venant
+      // du client.
+      sender_type: isArtisan ? 'artisan' : 'client',
       text,
       type: 'text',
     }).select().single()
@@ -384,15 +485,29 @@ export default function WarRoomPage() {
     return isJours ? val * 8 : val
   }
 
-  // Charge la suggestion de prix sans ouvrir le drawer devis
-  const loadPricingSuggestion = async () => {
-    if (pricingSuggestion || pricingSugLoading || !diagData) return
+  // Charge la suggestion de prix sans ouvrir le drawer devis.
+  // RETOURNE la valeur : tout appelant qui doit calculer un montant doit
+  // utiliser ce retour, jamais l'état `pricingSuggestion` juste après l'await.
+  const applyPricing = (p: PricingSuggestion): PricingSuggestion => {
+    pricingRef.current = p
+    setPricingSuggestion(p)
+    return p
+  }
+
+  // `miss` est passé explicitement depuis l'init : à ce moment-là l'état
+  // `mission` du closure vaut encore null, et le prix serait calculé sur le
+  // quartier par défaut sans artisan_id — puis mis en cache tel quel.
+  const loadPricingSuggestion = async (
+    diag: any = diagData,
+    miss: any = mission,
+  ): Promise<PricingSuggestion | null> => {
+    if (pricingRef.current) return pricingRef.current
+    if (!diag) return null
 
     // 1. Prix sauvegardé en DB au moment du diagnostic (source canonique)
-    if ((diagData as any).afrione_pricing?.estimate && (diagData as any).afrione_pricing?.decomp) {
-      const p = (diagData as any).afrione_pricing
-      setPricingSuggestion({ estimate: p.estimate, interval: p.interval, decomp: p.decomp })
-      return
+    if (diag.afrione_pricing?.estimate && diag.afrione_pricing?.decomp) {
+      const p = diag.afrione_pricing
+      return applyPricing({ estimate: p.estimate, interval: p.interval, decomp: p.decomp })
     }
 
     // 2. Cache sessionStorage (même session navigateur que le client)
@@ -402,17 +517,16 @@ export default function WarRoomPage() {
       try {
         const c = JSON.parse(cached)
         if (c.estimate && c.decomp) {
-          setPricingSuggestion({ estimate: c.estimate, interval: c.interval, decomp: c.decomp })
-          return
+          return applyPricing({ estimate: c.estimate, interval: c.interval, decomp: c.decomp })
         }
       } catch {}
     }
 
     setPricingSugLoading(true)
 
-    if (diagData.items_needed?.length && !materialsProximity.length) {
-      const clientQ = mission?.quartier || 'Cocody'
-      fetch(`/api/materials?category=${encodeURIComponent(diagData.category || 'Plomberie')}&items=${encodeURIComponent((diagData.items_needed || []).join(','))}&client_quartier=${encodeURIComponent(clientQ)}`)
+    if (diag.items_needed?.length && !materialsProximity.length) {
+      const clientQ = miss?.quartier || 'Cocody'
+      fetch(`/api/materials?category=${encodeURIComponent(diag.category || 'Plomberie')}&items=${encodeURIComponent((diag.items_needed || []).join(','))}&client_quartier=${encodeURIComponent(clientQ)}`)
         .then(r => r.ok ? r.json() : null)
         .then(data => { if (data?.materials) setMaterialsProximity(data.materials) })
         .catch(() => {})
@@ -423,13 +537,13 @@ export default function WarRoomPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          category:       diagData.category    || 'Maçonnerie',
-          description:    diagData.description || diagData.problem_description || '',
-          urgency:        diagData.urgency     || 'medium',
-          hours_estimate: parseDurLow(diagData.duration_estimate || '2 heures'),
-          quartier:       mission?.quartier    || 'Cocody',
-          items_needed:   diagData.items_needed || [],
-          artisan_id:     mission?.artisan_pros?.id,
+          category:       diag.category    || 'Maçonnerie',
+          description:    diag.description || diag.problem_description || '',
+          urgency:        diag.urgency     || 'medium',
+          hours_estimate: parseDurLow(diag.duration_estimate || '2 heures'),
+          quartier:       miss?.quartier || 'Cocody',
+          items_needed:   diag.items_needed || [],
+          artisan_id:     miss?.artisan_pros?.id,
         }),
       })
       if (res.ok) {
@@ -439,16 +553,34 @@ export default function WarRoomPage() {
         const materials = bd.materiaux       || 0
         const transport = bd.transport       || 0
         const premium   = (bd.commission_afrione || 0) + (bd.assurance_sav || 0)
-        const suggestion = {
-          estimate: d.total || 0,
-          interval: { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
-          decomp:   { labor, materials, transport, premium },
+        // Un total à 0 n'est pas un prix : le traiter comme un échec plutôt
+        // que le mémoriser, sinon tous les montants dérivés valent 0.
+        if (d.total > 0) {
+          const suggestion: PricingSuggestion = {
+            estimate: d.total,
+            interval: { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
+            decomp:   { labor, materials, transport, premium },
+          }
+          try { sessionStorage.setItem(cacheKey, JSON.stringify(suggestion)) } catch {}
+          setPricingSugLoading(false)
+          return applyPricing(suggestion)
         }
-        setPricingSuggestion(suggestion)
-        try { sessionStorage.setItem(cacheKey, JSON.stringify(suggestion)) } catch {}
       }
     } catch {}
     setPricingSugLoading(false)
+    return null
+  }
+
+  // Garde commune à tous les boutons qui produisent un montant. Remplace les
+  // `pricingSuggestion?.estimate ?? 0` disséminés, qui envoyaient au client un
+  // devis amputé de la main-d'œuvre sans que l'artisan puisse s'en apercevoir.
+  const requirePricing = async (): Promise<PricingSuggestion | null> => {
+    const p = pricingRef.current ?? await loadPricingSuggestion()
+    if (!p || p.estimate <= 0) {
+      toast.error("Le prix AfriOne n'a pas pu être calculé. Réessaie dans un instant — rien n'a été envoyé.")
+      return null
+    }
+    return p
   }
 
   const openDevis = async () => {
@@ -463,8 +595,9 @@ export default function WarRoomPage() {
       .map(m => { try { return JSON.parse(m.text) } catch { return null } })
       .filter(Boolean)
     const extraMat = matMessages.reduce((s: number, m: any) => s + (m.total || 0), 0)
-    const amount   = (pricingSuggestion?.estimate ?? 0) + extraMat
-    if (!amount || amount <= 0) { toast.error('Prix non calculé — attendez le chargement IA'); return }
+    const pricing  = await requirePricing()
+    if (!pricing) return
+    const amount   = pricing.estimate + extraMat
     setActing(true)
     const payload = JSON.stringify({ amount, description: devisDesc.trim(), calculated_by: 'afrione_agent' })
     const { error } = await supabase.from('chat_history').insert({
@@ -555,7 +688,7 @@ export default function WarRoomPage() {
     setActing(true)
     const { error } = await supabase.from('missions')
       .update({ status: 'en_route' }).eq('id', missionId)
-    if (error) { toast.error('Erreur.'); setActing(false); return }
+    if (error) { toast.error(explainMissionWriteError(error)); setActing(false); return }
     setMission((prev: any) => ({ ...prev, status: 'en_route' }))
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id, sender_role: missionRole,
@@ -575,18 +708,22 @@ export default function WarRoomPage() {
     const scheduledAt = new Date(`${schedDate}T${schedTime}`).toISOString()
     const dateStr = new Date(scheduledAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
 
-    // Essai avec scheduled_at, fallback sans si la colonne n'existe pas encore
-    let error: any = null
-    const res1 = await supabase.from('missions')
+    // Le fallback ne se déclenche QUE pour une colonne scheduled_at absente.
+    // Il rejouait auparavant l'UPDATE sur n'importe quelle erreur — y compris
+    // une transition refusée ou l'index « une mission active » — puis affichait
+    // un message générique qui masquait la vraie cause.
+    let { error } = await supabase.from('missions')
       .update({ status: 'scheduled', scheduled_at: scheduledAt }).eq('id', missionId)
-    error = res1.error
-    if (error) {
-      // Fallback : mise à jour sans scheduled_at (colonne peut-être absente en base)
-      const res2 = await supabase.from('missions')
-        .update({ status: 'scheduled' }).eq('id', missionId)
-      error = res2.error
+
+    const colonneAbsente = /scheduled_at/i.test(error?.message ?? '')
+      && /column|schema cache|does not exist/i.test(error?.message ?? '')
+
+    if (error && colonneAbsente) {
+      console.warn('[scheduling] colonne scheduled_at absente — repli sans date')
+      error = (await supabase.from('missions')
+        .update({ status: 'scheduled' }).eq('id', missionId)).error
     }
-    if (error) { toast.error('Erreur lors de la programmation.'); setActing(false); return }
+    if (error) { toast.error(explainMissionWriteError(error)); setActing(false); return }
 
     setMission((prev: any) => ({ ...prev, status: 'scheduled', scheduled_at: scheduledAt }))
     await supabase.from('chat_history').insert({
@@ -664,8 +801,12 @@ export default function WarRoomPage() {
 
   const sendMatUpdate = async () => {
     if (!purchasedMats.length) { toast.error('Ajoutez au moins un matériau'); return }
+    // Sans ce prix, laborFixed valait 0 et l'artisan envoyait un total amputé
+    // de sa propre main-d'œuvre.
+    const pricing = await requirePricing()
+    if (!pricing) return
     setSendingMatUpdate(true)
-    const laborFixed = pricingSuggestion?.decomp.labor ?? 0
+    const laborFixed = pricing.decomp.labor
     const matTotal   = purchasedMats.reduce((s, m) => s + m.qty * m.prix_unitaire, 0)
     const payload = JSON.stringify({
       labor_fixed:     laborFixed,
@@ -812,12 +953,15 @@ export default function WarRoomPage() {
     if (!suggestName.trim()) return
     setLookingUp(true)
     const qty    = parseInt(suggestQty) || 1
-    const lookup = await lookupMatPrice(suggestName.trim())
+    // Chargé ici pour que « nouvel estimé » soit un vrai total et non le seul
+    // prix du matériau ajouté à zéro.
+    const pricing = await loadPricingSuggestion()
+    const lookup  = await lookupMatPrice(suggestName.trim())
     setSuggestPreview({
       price:        lookup.price,
       web_price:    lookup.web_price,
       total:        lookup.price * qty,
-      newEstimate:  (pricingSuggestion?.estimate ?? 0) + lookup.price * qty,
+      newEstimate:  (pricing?.estimate ?? 0) + lookup.price * qty,
       product_name: lookup.product_name,
       photo_url:    lookup.photo_url,
       source_url:   lookup.source_url,
@@ -892,9 +1036,13 @@ export default function WarRoomPage() {
   const sendTimeAdj = async () => {
     const extra = parseFloat(adjHours)
     if (!extra || extra <= 0) return
+    // Sans ce prix, baseLabor valait 0 : le taux horaire tombait à 0 et
+    // l'artisan annonçait « +2h — impact : +0 FCFA ».
+    const pricing = await requirePricing()
+    if (!pricing) return
     const baseDur   = parseDurLow(diagData?.duration_estimate || '2 heures')
-    const baseLabor = pricingSuggestion?.decomp.labor ?? 0
-    const hourlyRate = baseDur > 0 ? baseLabor / baseDur : 2500
+    const baseLabor = pricing.decomp.labor
+    const hourlyRate = baseDur > 0 && baseLabor > 0 ? baseLabor / baseDur : 2500
     const laborImpact = Math.round(extra * hourlyRate)
     const payload = JSON.stringify({
       extra_hours:  extra,
@@ -916,7 +1064,11 @@ export default function WarRoomPage() {
 
   // Artisan prépare la proposition — ouvre la confirmation avec total modifiable
   const openFinalProposal = async () => {
-    if (!pricingSuggestion) await loadPricingSuggestion()
+    // La valeur RETOURNÉE, pas l'état : `pricingSuggestion` est encore null
+    // juste après l'await, ce qui mettait le prix de base à 0 dans la
+    // proposition envoyée au client.
+    const pricing = await requirePricing()
+    if (!pricing) return
 
     const rejectedIds = new Set(
       messages
@@ -934,7 +1086,7 @@ export default function WarRoomPage() {
       .map(m => { try { return JSON.parse(m.text) } catch { return null } })
       .filter(Boolean)
 
-    const baseEstimate    = pricingSuggestion?.estimate ?? 0
+    const baseEstimate    = pricing.estimate
     const extraMatTotal   = matSuggests.reduce((s: number, m: any) => s + (m.total || 0), 0)
     const extraLaborTotal = timeAdjs.reduce((s: number, t: any) => s + (t.labor_impact || 0), 0)
     const autoTotal       = baseEstimate + extraMatTotal + extraLaborTotal
@@ -976,8 +1128,14 @@ export default function WarRoomPage() {
   // Client soumet un avis
   const submitReview = async () => {
     if (rating === 0) { toast.error('Choisissez une note'); return }
-    setSubmittingReview(true)
     const artisanId = mission?.artisan_pros?.id
+    // Sans artisan, l'avis serait enregistré sans destinataire et ne compterait
+    // dans la note de personne.
+    if (!artisanId) {
+      toast.error("Aucun artisan n'est rattaché à cette mission — l'avis ne peut pas être enregistré.")
+      return
+    }
+    setSubmittingReview(true)
     const { error } = await supabase.from('sentiment_logs').insert({
       mission_id: missionId,
       artisan_id: artisanId,
@@ -1023,7 +1181,13 @@ export default function WarRoomPage() {
     ? (participants?.client?.avatar_url  || mission?.users?.avatar_url)
     : (participants?.artisan?.avatar_url || mission?.artisan_pros?.users?.avatar_url)
   const otherSub      = isArtisan ? 'Client' : artisanMetier
-  const isClosed = status === 'completed' || status === 'cancelled'
+  // Une mission annulée et une mission terminée se ressemblent en base mais
+  // n'ont rien à voir pour le client : les confondre lui affichait
+  // « ✅ Mission terminée » et lui demandait de noter un artisan qui n'est
+  // jamais venu, juste après un remboursement.
+  const isCompleted = status === 'completed'
+  const isCancelled = status === 'cancelled'
+  const isClosed    = isCompleted || isCancelled
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'#F5F0E8'}}>
@@ -2674,6 +2838,30 @@ export default function WarRoomPage() {
                   : <Send size={18} />}
               </button>
             </div>
+          </div>
+        </div>
+      ) : isCancelled ? (
+        /* Mission annulée — surtout pas de demande d'avis */
+        <div style={{background:'#F5F0E8',borderTop:'1px solid #D8D2C4',padding:'16px',flexShrink:0}}>
+          <div style={{maxWidth:'672px',margin:'0 auto',textAlign:'center'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginBottom:'8px'}}>
+              <X size={16} color="#6B7280" />
+              <span style={{fontWeight:700,color:'#6B7280',fontSize:'14px'}}>Mission annulée</span>
+            </div>
+            <p style={{fontSize:'13px',color:'#6B7280',lineHeight:1.5}}>
+              {isArtisan
+                ? "Cette mission a été annulée. Elle ne compte pas dans tes statistiques."
+                : "Cette mission a été annulée et tu es remboursé intégralement. Tu peux en relancer une quand tu veux."}
+            </p>
+            {!isArtisan && (
+              <Link href="/mode-select" className="btn-primary" style={{
+                display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'8px',
+                marginTop:'14px',padding:'12px 20px',color:'white',
+                borderRadius:'12px',fontWeight:700,fontSize:'14px',textDecoration:'none',
+              }}>
+                Relancer une demande →
+              </Link>
+            )}
           </div>
         </div>
       ) : (
