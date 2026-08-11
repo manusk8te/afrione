@@ -181,15 +181,23 @@ export default function WarRoomPage() {
         .single()
       setMission(missionData)
 
-      // Role dans CETTE mission (indépendant du rôle global du profil)
-      const globalRole = userData?.role ?? 'client'
+      // Role dans CETTE mission (indépendant du rôle global du profil).
+      // Le client de la mission l'emporte : un compte qui est à la fois client
+      // et artisan (courant en test) reste client sur SA propre demande.
+      const globalRole      = userData?.role ?? 'client'
+      const isMissionClient = missionData?.client_id === session.user.id
+      const missionArtisanUserId = missionData?.artisan_pros?.user_id ?? null
+
       const mr: 'client'|'artisan'|'admin' =
-        missionData?.artisan_pros?.user_id === session.user.id && missionData?.client_id !== session.user.id
-        ? 'artisan'
-        : missionData?.client_id === session.user.id
-        ? 'client'
-        : globalRole === 'admin'
-        ? 'admin'
+        isMissionClient                                   ? 'client'
+        : missionArtisanUserId === session.user.id        ? 'artisan'
+        : globalRole === 'admin'                          ? 'admin'
+        // Tant que la mission n'a pas d'artisan attribué, la jointure
+        // artisan_pros est nulle : aucune branche ci-dessus ne matche. Le
+        // fallback historique était 'client', si bien qu'un artisan ouvrant
+        // une mission non encore attribuée héritait de tout le comportement
+        // client — dont le message de contexte préécrit pour le client.
+        : globalRole === 'artisan'                        ? 'artisan'
         : 'client'
       setMissionRole(mr)
 
@@ -242,7 +250,10 @@ export default function WarRoomPage() {
               if (briefMsg) setMessages(prev => [...prev, briefMsg])
             }
 
-            if (mr === 'client') {
+            // Le message d'ouverture est écrit du point de vue du client
+            // (« Bonjour {artisan}, … ») : il ne se prérédige que pour le
+            // client RÉEL de cette mission, jamais pour un rôle déduit.
+            if (isMissionClient) {
               const artName = diagJson.participants?.artisan?.name || missionData?.artisan_pros?.users?.name || 'Artisan'
               const greeting = diag.ai_summary
                 ? `Bonjour ${artName}, ${diag.ai_summary.charAt(0).toLowerCase()}${diag.ai_summary.slice(1)}`
