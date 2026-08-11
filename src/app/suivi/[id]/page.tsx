@@ -151,13 +151,15 @@ export default function MissionLivePage() {
       if (!m) { setLoading(false); return }
       setMission(m)
 
+      // Même règle que la warroom. Le fallback historique était 'client' :
+      // tant que la mission n'a pas d'artisan attribué, la jointure
+      // artisan_pros est nulle et un artisan se retrouvait traité comme le
+      // client (voir `const artisan = mr !== 'client'` juste en dessous).
       const mr: 'client'|'artisan'|'admin' =
-        m.artisan_pros?.user_id === session.user.id && m.client_id !== session.user.id
-        ? 'artisan'
-        : m.client_id === session.user.id
-        ? 'client'
-        : role === 'admin'
-        ? 'admin'
+        m.client_id === session.user.id            ? 'client'
+        : m.artisan_pros?.user_id === session.user.id ? 'artisan'
+        : role === 'admin'                         ? 'admin'
+        : role === 'artisan'                       ? 'artisan'
         : 'client'
       setMissionRole(mr)
       const artisan = mr !== 'client'
