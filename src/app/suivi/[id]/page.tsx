@@ -151,16 +151,28 @@ export default function MissionLivePage() {
       if (!m) { setLoading(false); return }
       setMission(m)
 
-      // Même règle que la warroom. Le fallback historique était 'client' :
-      // tant que la mission n'a pas d'artisan attribué, la jointure
-      // artisan_pros est nulle et un artisan se retrouvait traité comme le
-      // client (voir `const artisan = mr !== 'client'` juste en dessous).
-      const mr: 'client'|'artisan'|'admin' =
+      // Déduction locale provisoire, puis rôle décidé côté serveur. Les
+      // boutons qui font avancer la mission (« Démarrer le suivi GPS »,
+      // « Je suis arrivé », « Terminer ») sont tous conditionnés à ce rôle :
+      // une jointure artisan_pros vide à cause de RLS les faisait disparaître
+      // pour l'artisan, qui ne pouvait plus rien faire de sa mission.
+      let mr: 'client'|'artisan'|'admin' =
         m.client_id === session.user.id            ? 'client'
         : m.artisan_pros?.user_id === session.user.id ? 'artisan'
         : role === 'admin'                         ? 'admin'
         : role === 'artisan'                       ? 'artisan'
         : 'client'
+
+      try {
+        const res = await fetch(`/api/mission-brief?mission_id=${missionId}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (res.ok) {
+          const j = await res.json()
+          if (j.viewer_role && j.viewer_role !== 'guest') mr = j.viewer_role
+        }
+      } catch {}
+
       setMissionRole(mr)
       const artisan = mr !== 'client'
 

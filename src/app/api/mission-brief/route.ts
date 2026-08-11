@@ -1,7 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
+
+/**
+ * Rôle du visiteur DANS cette mission, décidé ici et pas dans le navigateur.
+ *
+ * Le client déduisait ce rôle d'une jointure `artisan_pros` soumise à RLS :
+ * quand la jointure revenait vide — mission sans artisan attribué, ou lecture
+ * refusée — il retombait sur 'client'. L'artisan héritait alors de l'écran
+ * client (message d'ouverture préécrit, nom du client en en-tête, actions de
+ * mission absentes). Trois bugs distincts, une seule cause.
+ *
+ * Ici supabaseAdmin ignore RLS : la réponse est un fait, pas une déduction.
+ */
+async function resolveViewerRole(
+  req: NextRequest,
+  mission: { client_id: string | null; artisan_pros?: { user_id?: string } | null } | null,
+): Promise<{ viewer_id: string | null; viewer_role: 'client' | 'artisan' | 'admin' | 'guest' }> {
+  const token = (req.headers.get('authorization') || '').replace('Bearer ', '').trim()
+  if (!token || !mission) return { viewer_id: null, viewer_role: 'guest' }
+
+  const userClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+  const { data: { user } } = await userClient.auth.getUser(token)
+  if (!user) return { viewer_id: null, viewer_role: 'guest' }
+
+  // Le client de la mission l'emporte : un compte à la fois client et artisan
+  // reste client sur SA propre demande.
+  if (mission.client_id === user.id) return { viewer_id: user.id, viewer_role: 'client' }
+  if ((mission.artisan_pros as any)?.user_id === user.id) return { viewer_id: user.id, viewer_role: 'artisan' }
+
+  const { data: profil } = await supabaseAdmin
+    .from('users').select('role').eq('id', user.id).maybeSingle()
+
+  if (profil?.role === 'admin') return { viewer_id: user.id, viewer_role: 'admin' }
+
+  // Un artisan qui consulte une mission pas encore attribuée : il n'en est pas
+  // le client pour autant.
+  if (profil?.role === 'artisan') return { viewer_id: user.id, viewer_role: 'artisan' }
+
+  return { viewer_id: user.id, viewer_role: 'guest' }
+}
 
 
 // GET — récupère les données du diagnostic pour affichage dans la warroom
@@ -38,7 +81,9 @@ export async function GET(req: NextRequest) {
     artisan: { name: artisanUser.name  || null, avatar_url: artisanUser.avatar_url  || null, metier: (mission?.artisan_pros as any)?.metier || null },
   }
 
-  if (!diag) return NextResponse.json({ diag: null, participants })
+  const viewer = await resolveViewerRole(req, mission as any)
+
+  if (!diag) return NextResponse.json({ diag: null, participants, ...viewer })
 
   let rawCtx: any = {}
   try { rawCtx = JSON.parse(diag.raw_text || '{}') } catch {}
@@ -57,5 +102,6 @@ export async function GET(req: NextRequest) {
       afrione_pricing:   rawCtx.afrione_pricing || null,
     },
     participants,
+    ...viewer,
   })
 }

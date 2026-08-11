@@ -222,15 +222,14 @@ export default function WarRoomPage() {
       const isMissionClient = missionData?.client_id === session.user.id
       const missionArtisanUserId = missionData?.artisan_pros?.user_id ?? null
 
-      const mr: 'client'|'artisan'|'admin' =
+      // Calcul provisoire, à partir de ce que RLS a bien voulu renvoyer. Il est
+      // remplacé quelques lignes plus bas par le rôle décidé côté serveur, qui
+      // seul fait autorité — cette version-ci sert uniquement à ne pas afficher
+      // un écran vide pendant l'aller-retour.
+      let mr: 'client'|'artisan'|'admin' =
         isMissionClient                                   ? 'client'
         : missionArtisanUserId === session.user.id        ? 'artisan'
         : globalRole === 'admin'                          ? 'admin'
-        // Tant que la mission n'a pas d'artisan attribué, la jointure
-        // artisan_pros est nulle : aucune branche ci-dessus ne matche. Le
-        // fallback historique était 'client', si bien qu'un artisan ouvrant
-        // une mission non encore attribuée héritait de tout le comportement
-        // client — dont le message de contexte préécrit pour le client.
         : globalRole === 'artisan'                        ? 'artisan'
         : 'client'
       setMissionRole(mr)
@@ -245,11 +244,21 @@ export default function WarRoomPage() {
 
       // Charger le diagnostic + noms des participants (bypass RLS via supabaseAdmin)
       try {
-        const diagRes = await fetch(`/api/mission-brief?mission_id=${missionId}`)
+        const diagRes = await fetch(`/api/mission-brief?mission_id=${missionId}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
         if (diagRes.ok) {
           const diagJson = await diagRes.json()
           // Participants — toujours disponibles même sans diagnostic
           if (diagJson.participants) setParticipants(diagJson.participants)
+
+          // Rôle décidé côté serveur (supabaseAdmin, hors RLS) : il remplace la
+          // déduction locale, qui se trompait dès que la jointure artisan_pros
+          // revenait vide.
+          if (diagJson.viewer_role && diagJson.viewer_role !== 'guest') {
+            mr = diagJson.viewer_role
+            setMissionRole(mr)
+          }
           if (diagJson.diag) {
             const diag = diagJson.diag
             // Normalize items_needed to string[] for rendering
@@ -304,7 +313,7 @@ export default function WarRoomPage() {
             // Le message d'ouverture est écrit du point de vue du client
             // (« Bonjour {artisan}, … ») : il ne se prérédige que pour le
             // client RÉEL de cette mission, jamais pour un rôle déduit.
-            if (isMissionClient) {
+            if (mr === 'client') {
               const artName = diagJson.participants?.artisan?.name || missionData?.artisan_pros?.users?.name || 'Artisan'
               const greeting = diag.ai_summary
                 ? `Bonjour ${artName}, ${diag.ai_summary.charAt(0).toLowerCase()}${diag.ai_summary.slice(1)}`
@@ -1529,11 +1538,22 @@ export default function WarRoomPage() {
           color:'white',padding:'10px 16px',
           textDecoration:'none',flexShrink:0,
         }}>
+          {/* Les deux côtés voyaient « Mission en cours — GPS, photos, litige ».
+              L'artisan est celui qui doit AGIR (démarrer le GPS, signaler son
+              arrivée, terminer) : le libellé lui dit maintenant quoi faire. */}
           <div style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'13px',fontWeight:700}}>
             <span>{status === 'en_route' ? '🚗' : status === 'pending_validation' ? '⏳' : '⚡'}</span>
-            <span>{status === 'pending_validation' ? 'Valider et libérer le paiement' : 'Mission en cours — GPS, photos, litige'}</span>
+            <span>
+              {status === 'pending_validation'
+                ? (isArtisan ? 'En attente de validation du client' : 'Valider et libérer le paiement')
+                : status === 'en_route'
+                ? (isArtisan ? 'Démarrer le suivi GPS et signaler ton arrivée' : "L'artisan est en route — suivre son trajet")
+                : (isArtisan ? 'Mission en cours — photos, matériaux, clôture' : 'Mission en cours — suivi, photos, litige')}
+            </span>
           </div>
-          <span style={{fontSize:'12px',fontWeight:600,opacity:0.9}}>Voir →</span>
+          <span style={{fontSize:'12px',fontWeight:600,opacity:0.9}}>
+            {isArtisan && status !== 'pending_validation' ? 'Ouvrir →' : 'Voir →'}
+          </span>
         </Link>
       )}
 
