@@ -66,8 +66,14 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
   // force en tête des missions de plomberie — un biais permanent sur de vraies
   // missions. Il était de surcroît inopérant : ARTISAN_SELECT ne récupère pas
   // users.email, donc la comparaison était toujours fausse.
+  // Un artisan ne reçoit jamais l'offre d'une mission qu'il a lui-même
+  // commandée. Rien ne l'excluait : un artisan qui passe commande dans son
+  // propre métier recevait sa propre urgence et pouvait se l'attribuer —
+  // avec, à la clé, une mission dont il est à la fois client et prestataire,
+  // et une commission prélevée sur lui-même.
   const sortByScore = (list: any[]) =>
     list
+      .filter((a: any) => a.user_id !== mission.client_id)
       .filter((a: any) => !triedIds.includes(a.id))
       .map((a: any) => ({ ...a, _score: scoreArtisan(a, missionQuartier) }))
       .sort((a: any, b: any) => b._score - a._score)
