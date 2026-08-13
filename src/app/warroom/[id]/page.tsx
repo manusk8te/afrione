@@ -6,6 +6,10 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, Star, Camera, Plus } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase'
+import {
+  resolveMissionRole, can, denialReason, nextStepHint, ROLE_LABEL,
+  type MissionRole, type MissionAction,
+} from '@/lib/mission-roles'
 import toast from 'react-hot-toast'
 
 function materialEmoji(name: string): string {
@@ -83,8 +87,10 @@ export default function WarRoomPage() {
   const [input, setInput]             = useState('')
   const [prefillMsg, setPrefillMsg]   = useState('')
   const [user, setUser]               = useState<any>(null)
-  const [userRole, setUserRole]       = useState<string>('client')
-  const [missionRole, setMissionRole] = useState<'client'|'artisan'|'admin'>('client')
+  // Rôle DANS cette mission. `null` = pas encore tranché : tant qu'on ne sait
+  // pas, on n'affiche aucune action. L'ancienne valeur initiale 'client'
+  // faisait clignoter la barre d'actions entre deux rôles au chargement.
+  const [missionRole, setMissionRole] = useState<MissionRole | null>(null)
   const [sendStatus, setSendStatus]   = useState<'idle'|'sending'|'sent'>('idle')
   const [mission, setMission]         = useState<any>(null)
   const [loading, setLoading]         = useState(true)
@@ -178,7 +184,56 @@ export default function WarRoomPage() {
   const userIdRef = useRef<string | null>(null)
   usePushNotifications(user?.id || null)
 
-  const isArtisan = missionRole === 'artisan' || missionRole === 'admin'
+  const status     = (mission?.status as string) || 'negotiation'
+  const roleReady  = missionRole !== null
+  const role: MissionRole = missionRole ?? 'guest'
+
+  // `isArtisan` n'est plus qu'un raccourci d'AFFICHAGE (de quel côté de la
+  // conversation suis-je ?). Il ne décide plus d'aucune action : chaque bouton
+  // passe par `allow()`. Il exclut l'admin, qui n'est pas l'artisan — le
+  // confondre enregistrait ses messages comme venant du prestataire.
+  const isArtisan = role === 'artisan'
+
+  /** Seule porte d'entrée des conditions de rendu : rôle + état + permission. */
+  const allow = useCallback(
+    (action: MissionAction) => roleReady && can(action, { role, status }),
+    [roleReady, role, status],
+  )
+
+  /** Garde d'exécution : refuse ET explique, plutôt que d'échouer en silence. */
+  const guard = useCallback((action: MissionAction): boolean => {
+    if (!roleReady) { toast.error('Chargement en cours — patientez.'); return false }
+    if (can(action, { role, status })) return true
+    toast.error(denialReason(action, { role, status }) ?? 'Action non autorisée.')
+    return false
+  }, [roleReady, role, status])
+
+  /**
+   * Changement d'état de mission — toujours via l'API, jamais en écriture
+   * directe. Le serveur revérifie le rôle : un bouton masqué n'est pas une
+   * autorisation, et la policy RLS `missions_participants` (FOR ALL, sans
+   * distinction de rôle) laissait le client écrire `en_route` ou `en_cours`.
+   */
+  const transition = useCallback(async (
+    action: 'start_now' | 'schedule' | 'start_tracking' | 'arrived' | 'done' | 'dispute',
+    extra: Record<string, any> = {},
+  ): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/mission/transition', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token || ''}`,
+      },
+      body: JSON.stringify({ mission_id: missionId, action, ...extra }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      toast.error(err.error || 'Action refusée — réessayez.')
+      return false
+    }
+    return true
+  }, [missionId])
 
   // Notifier l'autre partie par push
   const notifyOther = useCallback((text: string, recipientId: string) => {
@@ -206,7 +261,6 @@ export default function WarRoomPage() {
       userIdRef.current = session.user.id
 
       const { data: userData } = await supabase.from('users').select('role').eq('id', session.user.id).single()
-      setUserRole(userData?.role ?? 'client')
 
       const { data: missionData } = await supabase
         .from('missions')
@@ -215,24 +269,24 @@ export default function WarRoomPage() {
         .single()
       setMission(missionData)
 
-      // Role dans CETTE mission (indépendant du rôle global du profil).
-      // Le client de la mission l'emporte : un compte qui est à la fois client
-      // et artisan (courant en test) reste client sur SA propre demande.
-      const globalRole      = userData?.role ?? 'client'
-      const isMissionClient = missionData?.client_id === session.user.id
-      const missionArtisanUserId = missionData?.artisan_pros?.user_id ?? null
-
-      // Calcul provisoire, à partir de ce que RLS a bien voulu renvoyer. Il est
-      // remplacé quelques lignes plus bas par le rôle décidé côté serveur, qui
-      // seul fait autorité — cette version-ci sert uniquement à ne pas afficher
-      // un écran vide pendant l'aller-retour.
-      let mr: 'client'|'artisan'|'admin' =
-        isMissionClient                                   ? 'client'
-        : missionArtisanUserId === session.user.id        ? 'artisan'
-        : globalRole === 'admin'                          ? 'admin'
-        : globalRole === 'artisan'                        ? 'artisan'
-        : 'client'
-      setMissionRole(mr)
+      // Rôle DANS cette mission — jamais déduit du profil global.
+      //
+      // L'ancienne cascade finissait par `globalRole === 'artisan' → 'artisan'`
+      // puis `→ 'client'` : tout compte artisan héritait de l'écran prestataire
+      // sur n'importe quelle mission, et un inconnu obtenait l'écran client.
+      // `resolveMissionRole` n'a plus de repli : hors client et artisan
+      // assignés, c'est `guest`.
+      //
+      // Calcul provisoire à partir de ce que RLS a renvoyé ; il est remplacé
+      // quelques lignes plus bas par le rôle décidé côté serveur, qui seul fait
+      // autorité. Aucune action n'est rendue tant que ce dernier n'est pas
+      // arrivé (voir `roleReady`).
+      let mr: MissionRole = resolveMissionRole({
+        userId:        session.user.id,
+        globalRole:    userData?.role,
+        clientId:      missionData?.client_id,
+        artisanUserId: missionData?.artisan_pros?.user_id ?? null,
+      })
 
       const { data: msgs } = await supabase
         .from('chat_history')
@@ -252,13 +306,12 @@ export default function WarRoomPage() {
           // Participants — toujours disponibles même sans diagnostic
           if (diagJson.participants) setParticipants(diagJson.participants)
 
-          // Rôle décidé côté serveur (supabaseAdmin, hors RLS) : il remplace la
-          // déduction locale, qui se trompait dès que la jointure artisan_pros
-          // revenait vide.
-          if (diagJson.viewer_role && diagJson.viewer_role !== 'guest') {
-            mr = diagJson.viewer_role
-            setMissionRole(mr)
-          }
+          // Rôle décidé côté serveur (supabaseAdmin, hors RLS) : il fait
+          // autorité, y compris quand il vaut 'guest'. L'ancienne version
+          // ignorait le 'guest' et gardait la déduction locale — un
+          // non-participant conservait donc un écran fonctionnel.
+          if (diagJson.viewer_role) mr = diagJson.viewer_role as MissionRole
+          setMissionRole(mr)
           if (diagJson.diag) {
             const diag = diagJson.diag
             // Normalize items_needed to string[] for rendering
@@ -284,7 +337,11 @@ export default function WarRoomPage() {
               })
               const { data: briefMsg, error: briefError } = await supabase.from('chat_history').insert({
                 mission_id:  missionId,
-                sender_id:   missionData?.client_id ?? session.user.id,
+                // C'est celui qui insère qui signe. Poser `client_id` alors que
+                // l'artisan est le premier à ouvrir le fil enregistrait un
+                // message au nom de quelqu'un d'autre — et rendait impossible
+                // toute contrainte `sender_id = auth.uid()` côté base.
+                sender_id:   session.user.id,
                 sender_role: 'system',
                 sender_type: 'afrione_system',
                 text:        briefPayload,
@@ -326,8 +383,9 @@ export default function WarRoomPage() {
             // celle qui partait la première calculait sur un prix absent.
             loadPricingSuggestion(diag, missionData).catch(() => {})
 
-            // Charger les liens d'achat des matériaux dès l'init (artisan uniquement)
-            if (mr !== 'client' && diag.items_needed?.length) {
+            // Charger les liens d'achat des matériaux dès l'init (artisan uniquement).
+            // `mr !== 'client'` incluait l'admin et le guest.
+            if (mr === 'artisan' && diag.items_needed?.length) {
               const clientQ = missionData?.quartier || 'Cocody'
               fetch(`/api/materials?category=${encodeURIComponent(diag.category || 'Plomberie')}&items=${encodeURIComponent(diag.items_needed.join(','))}&client_quartier=${encodeURIComponent(clientQ)}`)
                 .then(r => r.ok ? r.json() : null)
@@ -335,10 +393,18 @@ export default function WarRoomPage() {
                 .catch(() => {})
             }
           }
+        } else if (diagRes.status === 401 || diagRes.status === 403 || diagRes.status === 404) {
+          // Le serveur refuse l'accès : c'est un fait, pas un incident réseau.
+          // On ne retombe surtout pas sur la déduction locale.
+          setMissionRole('guest')
         } else {
+          setMissionRole(mr)
           toast.error(`Diagnostic non chargé (${diagRes.status}). Vérifiez votre connexion.`)
         }
       } catch (e) {
+        // Panne réseau : on garde la déduction locale, qui ne peut donner
+        // 'artisan' que si la jointure a confirmé l'identité de l'artisan.
+        setMissionRole(mr)
         toast.error('Erreur chargement diagnostic — veuillez rafraîchir.')
         console.error('[mission-brief]', e)
       }
@@ -351,8 +417,9 @@ export default function WarRoomPage() {
         .neq('sender_id', session.user.id)
         .is('read_at', null)
 
-      // Vérifier si le client a déjà laissé un avis pour cette mission
-      if (mr !== 'artisan') {
+      // Vérifier si le client a déjà laissé un avis pour cette mission.
+      // `mr !== 'artisan'` chargeait aussi l'avis pour l'admin et le guest.
+      if (mr === 'client') {
         // On relit aussi la note : ne charger que l'`id` affichait « Merci pour
         // votre avis ! » au-dessus de cinq étoiles vides.
         const { data: existingReview } = await supabase
@@ -415,9 +482,19 @@ export default function WarRoomPage() {
               .maybeSingle()
             if (complet) setMission(complet)
 
-            fetch(`/api/mission-brief?mission_id=${missionId}`)
+            // Cet appel partait sans en-tête Authorization : la route le
+            // traitait en visiteur anonyme. Elle exige désormais un token —
+            // et le rôle peut avoir changé (artisan fraîchement attribué),
+            // donc on le relit aussi.
+            const { data: { session: s } } = await supabase.auth.getSession()
+            fetch(`/api/mission-brief?mission_id=${missionId}`, {
+              headers: { Authorization: `Bearer ${s?.access_token || ''}` },
+            })
               .then(r => r.ok ? r.json() : null)
-              .then(j => { if (j?.participants) setParticipants(j.participants) })
+              .then(j => {
+                if (j?.participants) setParticipants(j.participants)
+                if (j?.viewer_role)  setMissionRole(j.viewer_role as MissionRole)
+              })
               .catch(() => {})
           }
         }
@@ -433,17 +510,15 @@ export default function WarRoomPage() {
   const send = async () => {
     if (loading) { toast.error('Chargement en cours — attendez.'); return }
     if (!input.trim() || !user || sendStatus !== 'idle') return
+    if (!guard('send_message')) return
     const text = input.trim()
     setInput('')
     setSendStatus('sending')
     const { data: inserted, error } = await supabase.from('chat_history').insert({
       mission_id:  missionId,
       sender_id:   user.id,
-      sender_role: missionRole,
-      // `isArtisan` et non `missionRole === 'artisan'` : un compte admin voit
-      // l'interface artisan mais ses messages étaient enregistrés comme venant
-      // du client.
-      sender_type: isArtisan ? 'artisan' : 'client',
+      sender_role: role,
+      sender_type: role === 'artisan' ? 'artisan' : 'client',
       text,
       type: 'text',
     }).select().single()
@@ -461,13 +536,19 @@ export default function WarRoomPage() {
     // Modération IA — uniquement en mode libre (pas urgent / standard)
     const isLibre = !['urgent', 'standard'].includes(mission?.mode ?? '')
     if (isLibre) {
+      const { data: { session } } = await supabase.auth.getSession()
       fetch('/api/warroom/moderate', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // La route exige désormais un token : elle écrivait dans le chat de
+          // n'importe quelle mission sans la moindre authentification.
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
         body:    JSON.stringify({
           mission_id:   missionId,
           messages:     messages.slice(-20),
-          last_message: { text, sender_role: missionRole },
+          last_message: { text, sender_role: role },
         }),
       }).catch(() => {})
     }
@@ -593,12 +674,14 @@ export default function WarRoomPage() {
   }
 
   const openDevis = async () => {
+    if (!guard('send_quote')) return
     setShowDevis(true)
     await loadPricingSuggestion()
   }
 
   // Envoyer un devis — prix IA + extras matériaux, non modifiable par l'artisan
   const sendDevis = async () => {
+    if (!guard('send_quote')) return
     const matMessages = messages
       .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
       .map(m => { try { return JSON.parse(m.text) } catch { return null } })
@@ -611,7 +694,7 @@ export default function WarRoomPage() {
     const payload = JSON.stringify({ amount, description: devisDesc.trim(), calculated_by: 'afrione_agent' })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'devis',
+      sender_role: role, text: payload, type: 'devis',
     })
     if (error) { toast.error('Erreur envoi devis.'); setActing(false); return }
     const rid = getRecipientId(mission, user.id)
@@ -623,6 +706,7 @@ export default function WarRoomPage() {
 
   // Client accepte le devis → paiement Wave d'abord
   const acceptDevis = (amount: number) => {
+    if (!guard('pay_mission')) return
     setPendingAmount(amount)
     setPayStep('form')
     setShowPayment(true)
@@ -631,6 +715,7 @@ export default function WarRoomPage() {
   // Paiement Wave confirmé → escrow + scheduling
   const confirmPayment = async () => {
     if (!wavePhone.trim()) { toast.error('Entrez votre numéro mobile money'); return }
+    if (!guard('pay_mission')) return
     setPayStep('processing')
     // Simulation délai traitement Wave (2s)
     await new Promise(r => setTimeout(r, 2000))
@@ -675,7 +760,7 @@ export default function WarRoomPage() {
 
     // Message système dans le chat
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
+      mission_id: missionId, sender_id: user.id, sender_role: role,
       text: `🧪 MODE DÉMO — paiement de ${pendingAmount.toLocaleString()} FCFA simulé, aucun montant n'a été débité. En production, les fonds seraient placés en escrow et transférés à l'artisan à la fin de la mission.`,
       type: 'system',
     })
@@ -692,67 +777,42 @@ export default function WarRoomPage() {
     setSchedMode(null)
   }
 
-  // Intervention maintenant → en_route → redirect suivi
+  // Intervention maintenant → en_route → redirect suivi.
+  // Le statut, le message système et la notification sont posés par l'API,
+  // qui revérifie que c'est bien le client de la mission qui demande.
   const confirmNow = async () => {
+    if (!guard('schedule_mission')) return
     setActing(true)
-    const { error } = await supabase.from('missions')
-      .update({ status: 'en_route' }).eq('id', missionId)
-    if (error) { toast.error(explainMissionWriteError(error)); setActing(false); return }
-    setMission((prev: any) => ({ ...prev, status: 'en_route' }))
-    await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
-      text: 'Devis accepté — intervention maintenant 🚗 Suivi GPS activé', type: 'system',
-    })
-    const rid = getRecipientId(mission, user.id)
-    if (rid) notifyOther("C'est parti ! L'artisan arrive.", rid)
-    setShowScheduling(false)
+    const ok = await transition('start_now')
     setActing(false)
+    if (!ok) return
+    setMission((prev: any) => ({ ...prev, status: 'en_route' }))
+    setShowScheduling(false)
     router.push(`/suivi/${missionId}`)
   }
 
   // Intervention programmée → scheduled + scheduled_at
   const confirmScheduled = async () => {
     if (!schedDate || !schedTime) { toast.error('Choisissez une date et une heure'); return }
+    if (!guard('schedule_mission')) return
     setActing(true)
     const scheduledAt = new Date(`${schedDate}T${schedTime}`).toISOString()
-    const dateStr = new Date(scheduledAt).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-
-    // Le fallback ne se déclenche QUE pour une colonne scheduled_at absente.
-    // Il rejouait auparavant l'UPDATE sur n'importe quelle erreur — y compris
-    // une transition refusée ou l'index « une mission active » — puis affichait
-    // un message générique qui masquait la vraie cause.
-    let { error } = await supabase.from('missions')
-      .update({ status: 'scheduled', scheduled_at: scheduledAt }).eq('id', missionId)
-
-    const colonneAbsente = /scheduled_at/i.test(error?.message ?? '')
-      && /column|schema cache|does not exist/i.test(error?.message ?? '')
-
-    if (error && colonneAbsente) {
-      console.warn('[scheduling] colonne scheduled_at absente — repli sans date')
-      error = (await supabase.from('missions')
-        .update({ status: 'scheduled' }).eq('id', missionId)).error
-    }
-    if (error) { toast.error(explainMissionWriteError(error)); setActing(false); return }
-
+    const ok = await transition('schedule', { scheduled_at: scheduledAt })
+    setActing(false)
+    if (!ok) return
     setMission((prev: any) => ({ ...prev, status: 'scheduled', scheduled_at: scheduledAt }))
-    await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
-      text: `Devis accepté — intervention programmée le ${dateStr} à ${schedTime} 📅`, type: 'system',
-    })
-    const rid = getRecipientId(mission, user.id)
-    if (rid) notifyOther(`Mission programmée le ${dateStr} à ${schedTime}`, rid)
     setShowScheduling(false)
     toast.success('Mission programmée !')
-    setActing(false)
   }
 
   // Artisan accepte la contre-proposition du client → renvoie un devis artisan au même montant
   const acceptCounterProposal = async (amount: number) => {
+    if (!guard('answer_counter_offer')) return
     setActing(true)
     const payload = JSON.stringify({ amount, description: `Tarif convenu : ${amount.toLocaleString()} FCFA` })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'devis',
+      sender_role: role, text: payload, type: 'devis',
     })
     if (!error) {
       const rid = getRecipientId(mission, user.id)
@@ -761,13 +821,21 @@ export default function WarRoomPage() {
     setActing(false)
   }
 
-  // Client refuse le devis → ouvre le panneau contre-proposition
+  // Contre-proposition — le client conteste un devis artisan, l'artisan
+  // conteste une contre-offre client. Deux permissions distinctes, un seul
+  // panneau. Le bouton « Contrer » de l'artisan ouvrait auparavant un panneau
+  // rendu sous `!isArtisan` : il ne s'affichait jamais, et l'artisan restait
+  // bloqué face à une contre-offre qu'il ne pouvait ni accepter ni discuter.
+  const counterAction: MissionAction = role === 'artisan' ? 'answer_counter_offer' : 'counter_offer'
+
   const refuseDevis = () => {
+    if (!guard(counterAction)) return
     setShowCounterProposal(true)
   }
 
-  // Client confirme refus — avec ou sans contre-proposition
+  // Confirmation du refus — avec ou sans contre-proposition
   const sendRefusal = async (withCounter: boolean) => {
+    if (!guard(counterAction)) return
     setActing(true)
     const rid = getRecipientId(mission, user.id)
     if (withCounter) {
@@ -776,7 +844,7 @@ export default function WarRoomPage() {
         const payload = JSON.stringify({ amount, description: `Contre-proposition client : ${amount.toLocaleString()} FCFA` })
         await supabase.from('chat_history').insert({
           mission_id: missionId, sender_id: user.id,
-          sender_role: missionRole, text: payload, type: 'devis',
+          sender_role: role, text: payload, type: 'devis',
         })
         if (rid) notifyOther(`Contre-proposition : ${amount.toLocaleString()} FCFA`, rid)
         toast('Contre-proposition envoyée.')
@@ -788,7 +856,7 @@ export default function WarRoomPage() {
     } else {
       await supabase.from('chat_history').insert({
         mission_id: missionId, sender_id: user.id,
-        sender_role: missionRole, text: 'Devis refusé — une contre-proposition est bienvenue.', type: 'system',
+        sender_role: role, text: 'Devis refusé — une contre-proposition est bienvenue.', type: 'system',
       })
       toast('Devis refusé.')
     }
@@ -810,6 +878,7 @@ export default function WarRoomPage() {
 
   const sendMatUpdate = async () => {
     if (!purchasedMats.length) { toast.error('Ajoutez au moins un matériau'); return }
+    if (!guard('declare_materials')) return
     // Sans ce prix, laborFixed valait 0 et l'artisan envoyait un total amputé
     // de sa propre main-d'œuvre.
     const pricing = await requirePricing()
@@ -825,7 +894,7 @@ export default function WarRoomPage() {
     })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'material_update',
+      sender_role: role, text: payload, type: 'material_update',
     })
     if (error) { toast.error('Erreur envoi.'); setSendingMatUpdate(false); return }
     const rid = getRecipientId(mission, user.id)
@@ -960,6 +1029,7 @@ export default function WarRoomPage() {
   // Artisan signale un matériau non prévu — étape 1 : lookup prix + aperçu impact
   const previewMatSuggest = async () => {
     if (!suggestName.trim()) return
+    if (!guard('suggest_material')) return
     setLookingUp(true)
     const qty    = parseInt(suggestQty) || 1
     // Chargé ici pour que « nouvel estimé » soit un vrai total et non le seul
@@ -984,6 +1054,7 @@ export default function WarRoomPage() {
   // Artisan signale un matériau non prévu — étape 2 : confirmation envoi (fallback direct lookup si preview absent)
   const sendMatSuggest = async () => {
     if (!suggestName.trim()) return
+    if (!guard('suggest_material')) return
     setLookingUp(true)
     const qty = parseInt(suggestQty) || 1
 
@@ -1014,7 +1085,7 @@ export default function WarRoomPage() {
     })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'material_suggest',
+      sender_role: role, text: payload, type: 'material_suggest',
     })
     if (error) { toast.error('Erreur envoi matériau.'); setLookingUp(false); return }
     const rid = getRecipientId(mission, user.id)
@@ -1027,10 +1098,11 @@ export default function WarRoomPage() {
 
   // Client accepte ou refuse un matériau non prévu
   const sendMatResponse = async (refId: string, name: string, action: 'approved' | 'rejected') => {
+    if (!guard('answer_material')) return
     const payload = JSON.stringify({ ref_id: refId, name, action })
     await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'material_response',
+      sender_role: role, text: payload, type: 'material_response',
     })
     const rid = getRecipientId(mission, user.id)
     if (rid) notifyOther(
@@ -1045,6 +1117,7 @@ export default function WarRoomPage() {
   const sendTimeAdj = async () => {
     const extra = parseFloat(adjHours)
     if (!extra || extra <= 0) return
+    if (!guard('adjust_time')) return
     // Sans ce prix, baseLabor valait 0 : le taux horaire tombait à 0 et
     // l'artisan annonçait « +2h — impact : +0 FCFA ».
     const pricing = await requirePricing()
@@ -1061,7 +1134,7 @@ export default function WarRoomPage() {
     })
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'time_adjust',
+      sender_role: role, text: payload, type: 'time_adjust',
     })
     if (!error) {
       const rid = getRecipientId(mission, user.id)
@@ -1073,6 +1146,7 @@ export default function WarRoomPage() {
 
   // Artisan prépare la proposition — ouvre la confirmation avec total modifiable
   const openFinalProposal = async () => {
+    if (!guard('send_final_proposal')) return
     // La valeur RETOURNÉE, pas l'état : `pricingSuggestion` est encore null
     // juste après l'await, ce qui mettait le prix de base à 0 dans la
     // proposition envoyée au client.
@@ -1107,6 +1181,7 @@ export default function WarRoomPage() {
 
   // Artisan envoie la proposition finale avec le total calculé
   const sendFinalProposal = async () => {
+    if (!guard('send_final_proposal')) return
     const total = parseInt(proposalTotal) || 0
     if (!total || total <= 0) { toast.error('Montant invalide'); return }
     const { baseEstimate, matSuggests, timeAdjs, extraMatTotal, extraLaborTotal } = proposalDraft || {}
@@ -1124,7 +1199,7 @@ export default function WarRoomPage() {
     setShowProposalConfirm(false)
     const { error } = await supabase.from('chat_history').insert({
       mission_id: missionId, sender_id: user.id,
-      sender_role: missionRole, text: payload, type: 'price_proposal',
+      sender_role: role, text: payload, type: 'price_proposal',
     })
     if (!error) {
       const rid = getRecipientId(mission, user.id)
@@ -1137,6 +1212,7 @@ export default function WarRoomPage() {
   // Client soumet un avis
   const submitReview = async () => {
     if (rating === 0) { toast.error('Choisissez une note'); return }
+    if (!guard('leave_review')) return
     const artisanId = mission?.artisan_pros?.id
     // Sans artisan, l'avis serait enregistré sans destinataire et ne compterait
     // dans la note de personne.
@@ -1178,7 +1254,6 @@ export default function WarRoomPage() {
     setSubmittingReview(false)
   }
 
-  const status = mission?.status || 'negotiation'
   const statusInfo = STATUS_CONFIG[status] || STATUS_CONFIG.negotiation
   // Noms réels via API (bypass RLS) avec fallback sur les joins Supabase
   const artisanName   = participants?.artisan?.name   || mission?.artisan_pros?.users?.name   || 'Artisan'
@@ -1197,6 +1272,27 @@ export default function WarRoomPage() {
   const isCompleted = status === 'completed'
   const isCancelled = status === 'cancelled'
   const isClosed    = isCompleted || isCancelled
+
+  // Accès refusé — écran explicite plutôt qu'une War Room à moitié remplie.
+  // Sans cette branche, un utilisateur sans lien avec la mission voyait
+  // l'interface client (valeur initiale du state) et devait deviner pourquoi
+  // rien ne fonctionnait.
+  if (roleReady && role === 'guest') {
+    return (
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100dvh',background:'#F5F0E8',padding:'32px',textAlign:'center'}}>
+        <div style={{width:'64px',height:'64px',borderRadius:'50%',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.25)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:'18px'}}>
+          <X size={28} color="#ef4444" />
+        </div>
+        <h1 style={{fontWeight:800,fontSize:'19px',color:'#3D4852',marginBottom:'8px'}}>Accès non autorisé</h1>
+        <p style={{fontSize:'14px',color:'#6B7280',lineHeight:1.6,maxWidth:'380px',marginBottom:'22px'}}>
+          Cette conversation appartient à une mission dont vous n'êtes ni le client ni l'artisan.
+        </p>
+        <Link href="/dashboard" className="btn-primary" style={{padding:'12px 22px',color:'white',borderRadius:'12px',fontWeight:700,fontSize:'14px',textDecoration:'none'}}>
+          Retour à mes missions →
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'#F5F0E8'}}>
@@ -1518,21 +1614,48 @@ export default function WarRoomPage() {
             </div>
           </div>
           {/* Actions à droite */}
-          {!isArtisan && artisanPhone && (
+          {allow('view_other_phone') && !isArtisan && artisanPhone && (
             <a href={`tel:${artisanPhone}`} style={{background:'rgba(43,107,62,0.1)',border:'1px solid rgba(43,107,62,0.3)',borderRadius:'50%',width:'36px',height:'36px',color:'#2B6B3E',fontSize:'17px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',textDecoration:'none'}} title={`Appeler ${artisanName}`}>
               📞
             </a>
           )}
-          {isArtisan && diagData && !showDiagPanel && (
+          {/* La fiche technique était réservée à l'artisan : le client ne
+              pouvait pas relire le diagnostic qu'il avait lui-même produit. */}
+          {allow('view_diagnostic') && diagData && !showDiagPanel && (
             <button onClick={() => setShowDiagPanel(true)} style={{background:'rgba(232,93,38,0.1)',border:'1px solid rgba(232,93,38,0.3)',borderRadius:'8px',padding:'5px 9px',cursor:'pointer',color:'#E85D26',fontSize:'11px',fontWeight:700,flexShrink:0}}>
               📋 Fiche
             </button>
           )}
         </div>
+
+        {/* Qui suis-je, et que dois-je faire maintenant ?
+            Rien nulle part ne le disait — l'utilisateur devait le déduire des
+            boutons affichés, c'est-à-dire de la chose même qui était fausse. */}
+        {roleReady && (
+          <div style={{
+            maxWidth:'672px',margin:'0 auto',padding:'0 14px 9px',
+            display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap',
+          }}>
+            <span style={{
+              fontSize:'10.5px',fontWeight:700,letterSpacing:'0.04em',
+              padding:'3px 9px',borderRadius:'20px',flexShrink:0,
+              color:      role === 'artisan' ? '#E85D26' : role === 'admin' ? '#6B7280' : '#2B6B3E',
+              background: role === 'artisan' ? 'rgba(232,93,38,0.09)' : role === 'admin' ? 'rgba(107,114,128,0.09)' : 'rgba(43,107,62,0.09)',
+              border:`1px solid ${role === 'artisan' ? 'rgba(232,93,38,0.28)' : role === 'admin' ? 'rgba(107,114,128,0.28)' : 'rgba(43,107,62,0.28)'}`,
+            }}>
+              {role === 'artisan' ? '🔧' : role === 'admin' ? '🛡️' : '👤'} {ROLE_LABEL[role]}
+            </span>
+            <span style={{fontSize:'11.5px',color:'#6B7280',lineHeight:1.4,minWidth:0}}>
+              {nextStepHint(role, status)}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Bannière mission active → suivi ou validation */}
-      {(status === 'en_route' || status === 'en_cours' || status === 'pending_validation') && (
+      {/* Bannière mission active → suivi ou validation.
+          Conditionnée à `view_gps` : elle s'affichait à quiconque ouvrait la
+          page dans un de ces états, y compris un rôle non résolu. */}
+      {allow('view_gps') && (status === 'en_route' || status === 'en_cours' || status === 'pending_validation') && (
         <Link href={`/suivi/${missionId}`} className="afrione-gradient" style={{
           display:'flex',alignItems:'center',justifyContent:'space-between',
           color:'white',padding:'10px 16px',
@@ -1544,7 +1667,9 @@ export default function WarRoomPage() {
           <div style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'13px',fontWeight:700}}>
             <span>{status === 'en_route' ? '🚗' : status === 'pending_validation' ? '⏳' : '⚡'}</span>
             <span>
-              {status === 'pending_validation'
+              {role === 'admin'
+                ? 'Suivi de la mission — observation'
+                : status === 'pending_validation'
                 ? (isArtisan ? 'En attente de validation du client' : 'Valider et libérer le paiement')
                 : status === 'en_route'
                 ? (isArtisan ? 'Démarrer le suivi GPS et signaler ton arrivée' : "L'artisan est en route — suivre son trajet")
@@ -1558,7 +1683,7 @@ export default function WarRoomPage() {
       )}
 
       {/* ─── DRAWER : Matériau non prévu (artisan) ────────────────────── */}
-      {showMatSuggest && isArtisan && (
+      {showMatSuggest && allow('suggest_material') && (
         <div style={{background:'#FFFFFF',borderTop:'2px solid #C9A84C',padding:'14px 16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
@@ -1643,7 +1768,7 @@ export default function WarRoomPage() {
       )}
 
       {/* ─── DRAWER : Requalification du temps (artisan) ──────────────── */}
-      {showTimeAdj && isArtisan && (
+      {showTimeAdj && allow('adjust_time') && (
         <div style={{background:'#FFFFFF',borderTop:'2px solid #E85D26',padding:'14px 16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
@@ -1831,7 +1956,7 @@ export default function WarRoomPage() {
       )}
 
       {/* ─── FICHE TECHNIQUE ARTISAN (panel, invisible pour le client) ─── */}
-      {isArtisan && diagData && showDiagPanel && (
+      {allow('view_diagnostic') && diagData && showDiagPanel && (
         <div style={{background:'#FFFFFF',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto',padding:'10px 14px'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
@@ -2112,8 +2237,14 @@ export default function WarRoomPage() {
             if (msg.type === 'devis' || msg.type === 'quotation') {
               let devisData: any = {}
               try { devisData = JSON.parse(msg.text) } catch {}
-              const canAct = !isMe && !['en_cours', 'completed', 'cancelled', 'payment', 'scheduled', 'en_route', 'pending_validation', 'disputed'].includes(status)
               const isClientProposal = msg.sender_role === 'client'
+              // La liste noire de statuts est remplacée par la permission :
+              // « qui peut répondre à ce type de proposition, et dans quel
+              // état ». Une liste à maintenir à la main oubliait 'dispatching'
+              // et laissait le bouton « Accepter & Payer » actif.
+              const canAct = !isMe && (isClientProposal
+                ? allow('answer_counter_offer')
+                : allow('answer_quote'))
               return (
                 <div key={msg.id} style={{display:'flex',justifyContent: isMe ? 'flex-end' : 'flex-start'}}>
                   <div style={{
@@ -2134,7 +2265,7 @@ export default function WarRoomPage() {
                         <span style={{fontSize:'13px',color:'#6B7280'}}>FCFA</span>
                       </div>
                       {canAct && !acting && (
-                        isClientProposal && isArtisan ? (
+                        isClientProposal ? (
                           /* Artisan répond à une contre-proposition client */
                           <div style={{display:'flex',gap:'8px'}}>
                             <button onClick={() => acceptCounterProposal(devisData.amount)} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
@@ -2144,7 +2275,7 @@ export default function WarRoomPage() {
                               <X size={14}/> Contrer
                             </button>
                           </div>
-                        ) : !isClientProposal ? (
+                        ) : (
                           /* Client répond à un devis artisan */
                           <div style={{display:'flex',gap:'8px'}}>
                             <button onClick={() => acceptDevis(devisData.amount)} style={{flex:1,padding:'10px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
@@ -2154,7 +2285,7 @@ export default function WarRoomPage() {
                               <X size={14}/> Refuser
                             </button>
                           </div>
-                        ) : null
+                        )
                       )}
                       {isMe && (
                         <div style={{fontSize:'12px',color:'#6B7280',display:'flex',alignItems:'center',gap:'4px'}}>
@@ -2275,7 +2406,7 @@ export default function WarRoomPage() {
                 .find(m => m?.ref_id === msg.id)
               const isApproved = matResponse?.action === 'approved'
               const isRejected = matResponse?.action === 'rejected'
-              const canRespond = missionRole === 'client' && !isMe && !matResponse
+              const canRespond = allow('answer_material') && !isMe && !matResponse
 
               return (
                 <div key={msg.id} style={{display:'flex',justifyContent:isMe?'flex-end':'flex-start'}}>
@@ -2391,7 +2522,7 @@ export default function WarRoomPage() {
             if (msg.type === 'time_adjust') {
               let d: any = {}
               try { d = JSON.parse(msg.text) } catch {}
-              const canDiscuss = missionRole === 'client' && !isMe
+              const canDiscuss = role === 'client' && !isMe
               return (
                 <div key={msg.id} style={{padding:'6px 0'}}>
                   <div style={{background:'white',border:'1.5px solid rgba(232,93,38,0.35)',borderRadius:'14px',overflow:'hidden',maxWidth:'90%'}}>
@@ -2564,7 +2695,7 @@ export default function WarRoomPage() {
       </div>
 
       {/* ─── DRAWER MISE À JOUR MATÉRIAUX (artisan, en_cours) ──────────── */}
-      {showMatUpdate && isArtisan && (
+      {showMatUpdate && allow('declare_materials') && (
         <div style={{background:'white',borderTop:'2px solid #2B6B3E',padding:'16px',flexShrink:0,maxHeight:'70vh',overflowY:'auto'}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
@@ -2641,7 +2772,7 @@ export default function WarRoomPage() {
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
 
             {/* Artisan : Actions de discussion (negotiation/matching) */}
-            {isArtisan && (status === 'negotiation' || status === 'matching') && !showDevis && !showMatSuggest && !showTimeAdj && (
+            {allow('send_quote') && !showDevis && !showMatSuggest && !showTimeAdj && (
               <div style={{marginBottom:'8px',display:'flex',gap:'6px',flexWrap:'wrap'}}>
                 {/* Matériau non prévu */}
                 <button onClick={() => { setShowMatSuggest(true); setShowTimeAdj(false); loadPricingSuggestion() }} style={{
@@ -2681,7 +2812,7 @@ export default function WarRoomPage() {
             )}
 
             {/* Bouton artisan : Mise à jour matériaux (en_cours) */}
-            {isArtisan && (status === 'en_cours' || status === 'en_route') && !showMatUpdate && (
+            {allow('declare_materials') && !showMatUpdate && (
               <div style={{marginBottom:'8px'}}>
                 <button onClick={() => { setShowMatUpdate(true); loadPricingSuggestion() }} style={{
                   width:'100%',padding:'10px',background:'rgba(43,107,62,0.08)',
@@ -2694,7 +2825,7 @@ export default function WarRoomPage() {
             )}
 
             {/* Confirmation proposition finale — artisan review + total modifiable */}
-            {showProposalConfirm && proposalDraft && (
+            {showProposalConfirm && proposalDraft && allow('send_final_proposal') && (
               <div style={{marginBottom:'8px',background:'white',border:'2px solid #E2E8F0',borderRadius:'16px',overflow:'hidden'}}>
                 <div style={{background:'#FFFFFF',padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily:'Tahoma',letterSpacing:'0.1em'}}>⚖️ CONFIRMATION PROPOSITION</span>
@@ -2753,20 +2884,15 @@ export default function WarRoomPage() {
             )}
 
             {/* Artisan : Démarrer le suivi (scheduled) */}
-            {isArtisan && status === 'scheduled' && (
+            {allow('start_tracking') && status === 'scheduled' && (
               <div style={{marginBottom:'8px'}}>
                 <button onClick={async () => {
+                  if (!guard('start_tracking')) return
                   setActing(true)
-                  const { error } = await supabase.from('missions').update({ status: 'en_route' }).eq('id', missionId)
-                  if (error) { toast.error('Erreur.'); setActing(false); return }
-                  setMission((prev: any) => ({ ...prev, status: 'en_route' }))
-                  await supabase.from('chat_history').insert({
-                    mission_id: missionId, sender_id: user.id, sender_role: missionRole,
-                    text: "L'artisan est en route 🚗 Suivi GPS activé", type: 'system',
-                  })
-                  const rid = getRecipientId(mission, user.id)
-                  if (rid) notifyOther("L'artisan arrive ! Suivez-le en temps réel.", rid)
+                  const ok = await transition('start_tracking')
                   setActing(false)
+                  if (!ok) return
+                  setMission((prev: any) => ({ ...prev, status: 'en_route' }))
                   router.push(`/suivi/${missionId}`)
                 }} disabled={acting} className="btn-primary" style={{
                   width:'100%',padding:'12px',color:'white',
@@ -2780,7 +2906,7 @@ export default function WarRoomPage() {
             )}
 
             {/* Les deux : Voir le suivi (en_route) */}
-            {status === 'en_route' && (
+            {allow('view_gps') && status === 'en_route' && (
               <div style={{marginBottom:'8px'}}>
                 <Link href={`/suivi/${missionId}`} className="btn-primary" style={{
                   display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
@@ -2793,7 +2919,7 @@ export default function WarRoomPage() {
             )}
 
             {/* Contre-proposition client (après refus devis) */}
-            {showCounterProposal && !isArtisan && (
+            {showCounterProposal && (allow('counter_offer') || allow('answer_counter_offer')) && (
               <div style={{marginBottom:'10px',background:'white',border:'2px solid #E85D26',borderRadius:'14px',overflow:'hidden'}}>
                 <div style={{background:'rgba(232,93,38,0.06)',padding:'10px 14px',borderBottom:'1px solid rgba(232,93,38,0.15)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <span style={{fontWeight:700,fontSize:'13px',color:'#E85D26'}}>💬 Refuser le devis</span>
@@ -2827,7 +2953,7 @@ export default function WarRoomPage() {
             )}
 
             {/* Label résumé pré-rempli (client uniquement) */}
-            {!isArtisan && prefillMsg && input === prefillMsg && (
+            {role === 'client' && prefillMsg && input === prefillMsg && (
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px',padding:'6px 10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:'8px'}}>
                 <span style={{fontSize:'11px',color:'#C9A84C',fontWeight:600,display:'flex',alignItems:'center',gap:'5px'}}>
                   📋 Message pré-rédigé — envoyez-le ou modifiez-le
@@ -2838,7 +2964,17 @@ export default function WarRoomPage() {
               </div>
             )}
 
-            {/* Input message — toujours présent sauf si closed */}
+            {/* Input message — réservé aux deux parties de la mission.
+                Il s'affichait pour tout le monde : l'admin (rangé avec
+                l'artisan) pouvait écrire dans la conversation, et ses messages
+                étaient enregistrés comme venant du prestataire. */}
+            {!allow('send_message') ? (
+              <div style={{padding:'11px 14px',background:'#F5F0E8',border:'1px solid #D8D2C4',borderRadius:'12px',fontSize:'12.5px',color:'#6B7280',textAlign:'center'}}>
+                {role === 'admin'
+                  ? '🛡️ Mode administrateur — conversation en lecture seule.'
+                  : "La conversation est close pour cette mission."}
+              </div>
+            ) : (
             <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
               <input type="text" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
@@ -2858,6 +2994,7 @@ export default function WarRoomPage() {
                   : <Send size={18} />}
               </button>
             </div>
+            )}
           </div>
         </div>
       ) : isCancelled ? (
@@ -2869,11 +3006,13 @@ export default function WarRoomPage() {
               <span style={{fontWeight:700,color:'#6B7280',fontSize:'14px'}}>Mission annulée</span>
             </div>
             <p style={{fontSize:'13px',color:'#6B7280',lineHeight:1.5}}>
-              {isArtisan
+              {role === 'artisan'
                 ? "Cette mission a été annulée. Elle ne compte pas dans tes statistiques."
+                : role === 'admin'
+                ? "Mission annulée — vue administrateur, aucune action disponible."
                 : "Cette mission a été annulée et tu es remboursé intégralement. Tu peux en relancer une quand tu veux."}
             </p>
-            {!isArtisan && (
+            {role === 'client' && (
               <Link href="/mode-select" className="btn-primary" style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'8px',
                 marginTop:'14px',padding:'12px 20px',color:'white',
@@ -2893,8 +3032,13 @@ export default function WarRoomPage() {
               <span style={{fontWeight:700,color:'#2B6B3E',fontSize:'14px'}}>Mission terminée</span>
             </div>
 
-            {isArtisan ? (
-              <p style={{textAlign:'center',fontSize:'13px',color:'#6B7280'}}>Bravo ! La mission est bouclée.</p>
+            {/* L'avis appartient au client. Le test précédent (`isArtisan ?`)
+                envoyait l'admin — et tout rôle non résolu — sur le formulaire
+                de notation d'un artisan qu'il n'a jamais employé. */}
+            {!allow('leave_review') ? (
+              <p style={{textAlign:'center',fontSize:'13px',color:'#6B7280'}}>
+                {role === 'artisan' ? 'Bravo ! La mission est bouclée.' : 'Mission terminée.'}
+              </p>
             ) : hasReviewed ? (
               <div style={{textAlign:'center',padding:'16px',background:'white',borderRadius:'14px',border:'1px solid #D8D2C4'}}>
                 <div style={{display:'flex',justifyContent:'center',gap:'4px',marginBottom:'8px'}}>

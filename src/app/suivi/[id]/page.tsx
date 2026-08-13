@@ -5,6 +5,10 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Navigation, MapPin, CheckCircle, Clock, Camera, Upload, AlertCircle, MessageCircle, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import {
+  resolveMissionRole, can, denialReason, nextStepHint, ROLE_LABEL,
+  type MissionRole, type MissionAction,
+} from '@/lib/mission-roles'
 import toast from 'react-hot-toast'
 import { useJsApiLoader, GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api'
 
@@ -54,8 +58,10 @@ export default function MissionLivePage() {
 
   const [mission, setMission]         = useState<any>(null)
   const [user, setUser]               = useState<any>(null)
-  const [userRole, setUserRole]       = useState('client')
-  const [missionRole, setMissionRole] = useState<'client'|'artisan'|'admin'>('client')
+  // `null` tant que le serveur n'a pas tranché : aucune action de terrain ne
+  // doit apparaître pendant l'aller-retour. La valeur initiale 'client' faisait
+  // rendre la barre d'actions avec un rôle qui pouvait être faux.
+  const [missionRole, setMissionRole] = useState<MissionRole | null>(null)
   const [artisanPos, setArtisanPos]   = useState<{ lat: number; lng: number } | null>(null)
   const [clientPos, setClientPos]     = useState<[number, number]>(ABIDJAN_CENTER)
   const [isTracking, setIsTracking]   = useState(false)
@@ -81,7 +87,48 @@ export default function MissionLivePage() {
   const watchRef     = useRef<number | null>(null)
   const clientPosRef = useRef<[number, number]>(ABIDJAN_CENTER)
 
-  const isArtisan = missionRole === 'artisan' || missionRole === 'admin'
+  // Raccourci d'AFFICHAGE seulement (de quel côté suis-je ?). Il exclut
+  // l'admin, qui n'est pas l'artisan : le confondre lui donnait « Démarrer le
+  // suivi GPS », « Je suis arrivé » et « Terminer » sur une mission réelle.
+  const role: MissionRole = missionRole ?? 'guest'
+  const roleReady = missionRole !== null
+  const isArtisan = role === 'artisan'
+  const status = (mission?.status as string) || 'en_route'
+
+  /** Seule porte d'entrée des conditions de rendu : rôle + état + permission. */
+  const allow = (action: MissionAction) => roleReady && can(action, { role, status })
+
+  /** Garde d'exécution : refuse ET explique. */
+  const guard = (action: MissionAction): boolean => {
+    if (!roleReady) { toast.error('Chargement en cours — patientez.'); return false }
+    if (can(action, { role, status })) return true
+    toast.error(denialReason(action, { role, status }) ?? 'Action non autorisée.')
+    return false
+  }
+
+  /**
+   * Changement d'état — toujours via l'API, qui revérifie le rôle. Les
+   * écritures directes `supabase.from('missions').update({ status })` passaient
+   * sous une RLS `FOR ALL` sans distinction de rôle : le client pouvait
+   * déclencher lui-même « en route », « en cours » et « terminé ».
+   */
+  const transition = async (
+    action: 'start_tracking' | 'arrived' | 'done' | 'dispute',
+    extra: Record<string, any> = {},
+  ): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/mission/transition', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+      body: JSON.stringify({ mission_id: missionId, action, ...extra }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      toast.error(err.error || 'Action refusée — réessayez.')
+      return false
+    }
+    return true
+  }
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') { setShowLitige(false); setConfirmDone(false) } }
@@ -141,27 +188,27 @@ export default function MissionLivePage() {
       setUser(session.user)
 
       const { data: ud } = await supabase.from('users').select('role').eq('id', session.user.id).single()
-      const role = ud?.role ?? 'client'
-      setUserRole(role)
 
       const { data: m } = await supabase
         .from('missions')
         .select('*, artisan_pros(id, user_id, metier, users(name, avatar_url)), users!missions_client_id_fkey(name, quartier, avatar_url)')
         .eq('id', missionId).single()
-      if (!m) { setLoading(false); return }
+      if (!m) { setMissionRole('guest'); setLoading(false); return }
       setMission(m)
 
-      // Déduction locale provisoire, puis rôle décidé côté serveur. Les
-      // boutons qui font avancer la mission (« Démarrer le suivi GPS »,
-      // « Je suis arrivé », « Terminer ») sont tous conditionnés à ce rôle :
-      // une jointure artisan_pros vide à cause de RLS les faisait disparaître
-      // pour l'artisan, qui ne pouvait plus rien faire de sa mission.
-      let mr: 'client'|'artisan'|'admin' =
-        m.client_id === session.user.id            ? 'client'
-        : m.artisan_pros?.user_id === session.user.id ? 'artisan'
-        : role === 'admin'                         ? 'admin'
-        : role === 'artisan'                       ? 'artisan'
-        : 'client'
+      // Déduction locale provisoire, puis rôle décidé côté serveur.
+      //
+      // L'ancienne cascade se terminait par `role === 'artisan' → 'artisan'`
+      // puis `→ 'client'` : tout compte de type artisan récupérait les boutons
+      // « Démarrer le suivi GPS », « Je suis arrivé » et « Terminer » sur des
+      // missions qui ne le concernaient pas, et un inconnu obtenait l'écran
+      // client. `resolveMissionRole` n'a plus de repli sur le profil global.
+      let mr: MissionRole = resolveMissionRole({
+        userId:        session.user.id,
+        globalRole:    ud?.role,
+        clientId:      m.client_id,
+        artisanUserId: m.artisan_pros?.user_id ?? null,
+      })
 
       try {
         const res = await fetch(`/api/mission-brief?mission_id=${missionId}`, {
@@ -169,12 +216,16 @@ export default function MissionLivePage() {
         })
         if (res.ok) {
           const j = await res.json()
-          if (j.viewer_role && j.viewer_role !== 'guest') mr = j.viewer_role
+          // Le 'guest' du serveur fait autorité lui aussi : l'ignorer laissait
+          // un non-participant sur un écran de suivi fonctionnel.
+          if (j.viewer_role) mr = j.viewer_role as MissionRole
+        } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+          mr = 'guest'
         }
       } catch {}
 
       setMissionRole(mr)
-      const artisan = mr !== 'client'
+      const artisan = mr === 'artisan'
 
       const quartier = m.users?.quartier || m.quartier || ''
       const coords: [number, number] = QUARTIER_COORDS[quartier] || ABIDJAN_CENTER
@@ -222,12 +273,13 @@ export default function MissionLivePage() {
   }, [missionId])
 
   const startTracking = async () => {
+    if (!guard('start_tracking')) return
     if (!('geolocation' in navigator)) { toast.error('GPS non disponible'); return }
-    setIsTracking(true)
     if (mission?.status !== 'en_route') {
-      await supabase.from('missions').update({ status: 'en_route' }).eq('id', missionId)
+      if (!(await transition('start_tracking'))) return
       setMission((prev: any) => ({ ...prev, status: 'en_route' }))
     }
+    setIsTracking(true)
     const id = navigator.geolocation.watchPosition(
       async pos => {
         const { latitude: lat, longitude: lng } = pos.coords
@@ -251,21 +303,15 @@ export default function MissionLivePage() {
   }
 
   const markArrived = async () => {
+    if (!guard('mark_arrived')) return
     setActing(true)
     stopTracking()
-    await supabase.from('missions').update({ status: 'en_cours', started_at: new Date().toISOString() }).eq('id', missionId)
+    const ok = await transition('arrived')
+    setActing(false)
+    if (!ok) return
     setMission((prev: any) => ({ ...prev, status: 'en_cours' }))
-    await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
-      text: "L'artisan est arrivé — mission démarrée ! ⚡", type: 'system',
-    })
-    if (mission?.client_id) {
-      fetch('/api/push-send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: mission.client_id, title: "AfriOne — L'artisan est arrivé !", body: 'La mission vient de démarrer.', url: `https://afrione-sepia.vercel.app/suivi/${missionId}` }) }).catch(() => {})
-    }
     setTab('photos')
     toast.success("Mission démarrée !")
-    setActing(false)
   }
 
   const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -286,12 +332,13 @@ export default function MissionLivePage() {
 
   const saveProof = async () => {
     if (!proofAfterUrls.length) { toast.error('Ajoutez au moins une photo'); return }
+    if (!guard('upload_proof')) return
     const { data: existing } = await supabase.from('proof_of_work').select('id').eq('mission_id', missionId).maybeSingle()
     const payload = { mission_id: missionId, photo_after_urls: proofAfterUrls, artisan_notes: proofNotes.trim() || null }
     if (existing) await supabase.from('proof_of_work').update(payload).eq('mission_id', missionId)
     else await supabase.from('proof_of_work').insert(payload)
     await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
+      mission_id: missionId, sender_id: user.id, sender_role: role,
       text: JSON.stringify({ urls: proofAfterUrls, notes: proofNotes.trim() }), type: 'proof',
     })
     setProofSaved(true)
@@ -299,28 +346,21 @@ export default function MissionLivePage() {
   }
 
   const markDone = async () => {
+    if (!guard('mark_done')) return
     setActing(true)
-    const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-    await supabase.from('missions').update({
-      status: 'pending_validation',
-      completed_at: new Date().toISOString(),
-      validation_deadline: deadline,
-    }).eq('id', missionId)
-    setMission((prev: any) => ({ ...prev, status: 'pending_validation', validation_deadline: deadline }))
-    await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
-      text: `Travaux terminés ✅ — En attente de validation client. L'escrow reste sécurisé jusqu'à validation (max 24h).`,
-      type: 'system',
-    })
-    if (mission?.client_id) {
-      fetch('/api/push-send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: mission.client_id, title: 'AfriOne — Travaux terminés !', body: 'Validez la mission pour libérer le paiement. Vous avez 24h — sinon validation automatique.', url: `https://afrione-sepia.vercel.app/suivi/${missionId}` }) }).catch(() => {})
-    }
-    toast.success('Mission marquée terminée — en attente de validation client.')
+    const ok = await transition('done')
     setActing(false)
+    if (!ok) return
+    setMission((prev: any) => ({
+      ...prev,
+      status: 'pending_validation',
+      validation_deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    }))
+    toast.success('Mission marquée terminée — en attente de validation client.')
   }
 
   const validateMission = async () => {
+    if (!guard('validate_mission')) return
     setValidating(true)
     const { data: { session } } = await supabase.auth.getSession()
     const res = await fetch('/api/validate-mission', {
@@ -332,7 +372,7 @@ export default function MissionLivePage() {
       const amount = mission?.total_price || 0
       setMission((prev: any) => ({ ...prev, status: 'completed' }))
       await supabase.from('chat_history').insert({
-        mission_id: missionId, sender_id: user.id, sender_role: missionRole,
+        mission_id: missionId, sender_id: user.id, sender_role: role,
         text: `Mission validée par le client ✅ — ${amount > 0 ? `${amount.toLocaleString()} FCFA libérés à l'artisan.` : 'Paiement libéré.'}`,
         type: 'system',
       })
@@ -350,20 +390,14 @@ export default function MissionLivePage() {
 
   const submitLitige = async () => {
     if (!litigeText.trim()) { toast.error('Décrivez le problème'); return }
+    if (!guard('report_issue')) return
     setSubmittingLitige(true)
-    await supabase.from('missions').update({ status: 'disputed' }).eq('id', missionId)
+    const ok = await transition('dispute', { reason: litigeText.trim() })
+    setSubmittingLitige(false)
+    if (!ok) return
     setMission((prev: any) => ({ ...prev, status: 'disputed' }))
-    await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: missionRole,
-      text: `⚠️ Litige signalé : ${litigeText.trim()}`, type: 'system',
-    })
-    if (mission?.artisan_pros?.user_id) {
-      fetch('/api/push-send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: mission.artisan_pros.user_id, title: 'AfriOne — Litige ouvert', body: 'Un problème a été signalé sur cette mission.', url: `https://afrione-sepia.vercel.app/suivi/${missionId}` }) }).catch(() => {})
-    }
     setShowLitige(false)
     setLitigeText('')
-    setSubmittingLitige(false)
     toast('Litige signalé. Notre équipe va examiner le cas.', { icon: '⚠️', duration: 5000 })
   }
 
@@ -373,7 +407,21 @@ export default function MissionLivePage() {
     </div>
   )
 
-  const status      = mission?.status || 'en_route'
+  // Accès refusé — la position GPS d'un artisan et les photos d'un chantier
+  // n'ont pas à s'afficher à qui possède simplement l'URL.
+  if (roleReady && role === 'guest') return (
+    <div style={{ height: '100dvh', background: '#FFFFFF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center' }}>
+      <AlertCircle size={40} color="#ef4444" style={{ marginBottom: '16px' }} />
+      <div style={{ fontWeight: 800, fontSize: '18px', color: '#3D4852', marginBottom: '8px' }}>Accès non autorisé</div>
+      <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: 1.6, maxWidth: '360px', marginBottom: '20px' }}>
+        Ce suivi appartient à une mission dont vous n'êtes ni le client ni l'artisan.
+      </p>
+      <Link href="/dashboard" className="btn-primary" style={{ padding: '12px 22px', color: 'white', borderRadius: '12px', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+        Retour à mes missions →
+      </Link>
+    </div>
+  )
+
   const artisanName = mission?.artisan_pros?.users?.name || 'Artisan'
   const artisanMetier = mission?.artisan_pros?.metier || ''
   const clientName  = mission?.users?.name || 'Client'
@@ -446,6 +494,23 @@ export default function MissionLivePage() {
             <MessageCircle size={13} /> Chat
           </Link>
         </div>
+
+        {/* Qui suis-je, et que dois-je faire maintenant ? */}
+        {roleReady && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px 10px', flexWrap: 'wrap' }}>
+            <span style={{
+              fontSize: '10.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '20px', flexShrink: 0,
+              color:      role === 'artisan' ? '#E85D26' : role === 'admin' ? '#6B7280' : '#2B6B3E',
+              background: role === 'artisan' ? 'rgba(232,93,38,0.09)' : role === 'admin' ? 'rgba(107,114,128,0.09)' : 'rgba(43,107,62,0.09)',
+              border: `1px solid ${role === 'artisan' ? 'rgba(232,93,38,0.28)' : role === 'admin' ? 'rgba(107,114,128,0.28)' : 'rgba(43,107,62,0.28)'}`,
+            }}>
+              {role === 'artisan' ? '🔧' : role === 'admin' ? '🛡️' : '👤'} {ROLE_LABEL[role]}
+            </span>
+            <span style={{ fontSize: '11.5px', color: '#6B7280', lineHeight: 1.4, minWidth: 0 }}>
+              {nextStepHint(role, status)}
+            </span>
+          </div>
+        )}
 
         {/* Timeline */}
         <div style={{ display: 'flex', alignItems: 'center', padding: '12px 20px 14px', gap: 0 }}>
@@ -554,7 +619,7 @@ export default function MissionLivePage() {
         {/* PHOTOS */}
         {tab === 'photos' && (
           <div style={{ height: '100%', overflowY: 'auto', padding: '16px' }}>
-            {isArtisan ? (
+            {allow('upload_proof') ? (
               <div>
                 <div style={{ marginBottom: '14px' }}>
                   <h3 style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852', marginBottom: '4px' }}>Photos de chantier</h3>
@@ -657,7 +722,7 @@ export default function MissionLivePage() {
       {/* BARRE D'ACTIONS */}
       <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E2E8F0', padding: '14px 16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-        {isArtisan && status === 'en_route' && (
+        {allow('start_tracking') && status === 'en_route' && (
           <>
             {!isTracking ? (
               <button onClick={startTracking} className="btn-primary" style={{ width: '100%', padding: '15px', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
@@ -680,7 +745,7 @@ export default function MissionLivePage() {
           </>
         )}
 
-        {isArtisan && status === 'en_cours' && (
+        {allow('mark_done') && (
           confirmDone ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', fontSize: '13px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>
@@ -702,7 +767,7 @@ export default function MissionLivePage() {
           )
         )}
 
-        {!isArtisan && status === 'en_route' && (
+        {role === 'client' && status === 'en_route' && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
               <span style={{ width: '8px', height: '8px', background: '#E85D26', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(232,93,38,0.15)' }} />
@@ -715,13 +780,13 @@ export default function MissionLivePage() {
           </div>
         )}
 
-        {!isArtisan && status === 'en_cours' && (
+        {allow('report_issue') && status === 'en_cours' && (
           <button onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <AlertCircle size={15} /> Signaler un problème
           </button>
         )}
 
-        {isArtisan && status === 'pending_validation' && (
+        {role === 'artisan' && status === 'pending_validation' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(232,93,38,0.06)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(232,93,38,0.2)' }}>
             <Clock size={18} color="#E85D26" style={{ flexShrink: 0 }} />
             <div>
@@ -733,7 +798,7 @@ export default function MissionLivePage() {
           </div>
         )}
 
-        {!isArtisan && status === 'pending_validation' && (
+        {allow('validate_mission') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ padding: '14px 16px', background: 'rgba(43,107,62,0.06)', border: '1px solid rgba(43,107,62,0.2)', borderRadius: '14px' }}>
               <div style={{ fontWeight: 700, fontSize: '14px', color: '#2B6B3E', marginBottom: '3px' }}>
@@ -763,7 +828,7 @@ export default function MissionLivePage() {
               <span style={{ fontWeight: 700, fontSize: '15px', color: '#2B6B3E' }}>Mission validée — paiement libéré !</span>
             </div>
             <Link href={`/warroom/${missionId}`} className="afrione-gradient-text" style={{ fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
-              {isArtisan ? 'Voir le récapitulatif →' : 'Laisser un avis →'}
+              {role === 'client' ? 'Laisser un avis →' : 'Voir le récapitulatif →'}
             </Link>
           </div>
         )}

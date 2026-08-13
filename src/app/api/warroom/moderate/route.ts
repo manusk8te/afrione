@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { chatCompletion } from '@/lib/openai-client'
+import { resolveMissionViewer } from '@/lib/mission-auth'
+import { can } from '@/lib/mission-roles'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +59,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ should_intervene: false })
   }
 
+  // La route écrivait dans chat_history via supabaseAdmin, avec
+  // `sender_id: mission.client_id`, sans exiger le moindre token : un UUID de
+  // mission suffisait à injecter un message signé « AfriOne » dans n'importe
+  // quelle conversation, et à consommer du quota OpenAI à volonté.
+  // Seul un participant de la mission peut désormais déclencher l'analyse.
+  const resolved = await resolveMissionViewer(req, mission_id)
+  if (!resolved.ok) return resolved.res
+  const { viewer } = resolved
+
+  if (!can('send_message', { role: viewer.role, status: viewer.mission.status })) {
+    return NextResponse.json({ should_intervene: false, skipped: 'not_a_participant' })
+  }
+
   // Vérifier que c'est bien une mission en mode libre (ou sans mode)
   const { data: mission } = await supabaseAdmin
     .from('missions')
@@ -68,6 +83,11 @@ export async function POST(req: NextRequest) {
   if (['urgent', 'standard'].includes(mission.mode ?? '')) {
     return NextResponse.json({ should_intervene: false, skipped: 'mode_not_libre' })
   }
+
+  // Le rôle de l'émetteur vient du serveur, pas du corps de la requête :
+  // `last_message.sender_role` était pris au mot, et sert à décider si
+  // l'alerte « prix anormal » vise l'artisan.
+  const senderRoleTrusted = viewer.role
 
   // Vérifier si ce trigger a déjà été utilisé récemment (anti-spam)
   const recentMessages = messages?.slice(-20) ?? []
@@ -89,7 +109,7 @@ export async function POST(req: NextRequest) {
     `\n\nContexte: catégorie "${mission.category}", fourchette marché estimée: ${marketRef.low.toLocaleString('fr')}–${marketRef.high.toLocaleString('fr')} FCFA.` +
     (triggerHistory.length ? `\nDéjà intervenu pour : ${Array.from(new Set(triggerHistory)).join(', ')} — ne pas répéter ces triggers.` : '')
 
-  const userPrompt = `Conversation récente :\n${recentConversation}\n\nDernier message à analyser :\n[${last_message.sender_role}] : ${last_message.text}`
+  const userPrompt = `Conversation récente :\n${recentConversation}\n\nDernier message à analyser :\n[${senderRoleTrusted}] : ${last_message.text}`
 
   let result: { should_intervene: boolean; trigger_type: string | null; message: string; severity: string }
 
@@ -100,7 +120,7 @@ export async function POST(req: NextRequest) {
     )
     result = JSON.parse(raw)
   } catch {
-    result = heuristicModeration(last_message.text, last_message.sender_role, marketRef, triggerHistory)
+    result = heuristicModeration(last_message.text, senderRoleTrusted, marketRef, triggerHistory)
   }
 
   if (!result.should_intervene) {

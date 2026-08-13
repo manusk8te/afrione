@@ -91,7 +91,13 @@ export default function DevPanel() {
   const pathname = usePathname()
 
   const userEmail    = user?.email ?? ''
-  const isDevUser    = userRole === 'admin' || userEmail.endsWith('@afrione.ci')
+  // Le panneau était visible dès que l'adresse finissait par @afrione.ci —
+  // donc pour test.client@afrione.ci. Or c'est le SEUL endroit de
+  // l'application qui change réellement de compte (signOut + signInWithPassword) :
+  // un clic sur « Urgence test » déconnectait le client et reconnectait
+  // l'artisan, d'où l'impression que « lancer une mission » faisait basculer
+  // l'interface côté prestataire. Réservé aux admins, et jamais en production.
+  const isDevUser    = userRole === 'admin' && process.env.NODE_ENV !== 'production'
   const isTestArtisan = ARTISAN_EMAILS.includes(userEmail)
 
   const missionId = getMissionIdFromPath(pathname)
@@ -111,7 +117,16 @@ export default function DevPanel() {
 
   if (!isDevUser) return null
 
+  /** Toute bascule de compte est confirmée : elle change l'identité de session. */
+  function confirmSwitch(label: string): boolean {
+    return window.confirm(
+      `Changer de compte ?\n\nVous allez être déconnecté et reconnecté en « ${label} ».\n` +
+      `Tout ce que vous ferez ensuite le sera sous cette identité.`
+    )
+  }
+
   async function switchTo(acct: typeof TEST_ACCOUNTS[number]) {
+    if (!confirmSwitch(acct.label)) return
     setBusy(acct.email)
     await supabase.auth.signOut()
     const { error } = await supabase.auth.signInWithPassword({ email: acct.email, password: acct.password })
@@ -125,6 +140,7 @@ export default function DevPanel() {
 
   async function switchToArtisanForMission(acct: typeof TEST_ACCOUNTS[number]) {
     if (!missionId) return
+    if (!confirmSwitch(acct.label)) return
     setBusy('artisan_switch')
 
     const { data: { session } } = await supabase.auth.getSession()
@@ -186,6 +202,8 @@ export default function DevPanel() {
   // puis bascule directement sur l'artisan test correspondant — mono-navigateur,
   // le dashboard artisan charge l'urgence en attente à l'ouverture.
   async function launchUrgentAndSwitch(category: string, artisanEmail: string) {
+    const acctLabel = TEST_ACCOUNTS.find(a => a.email === artisanEmail)?.label ?? artisanEmail
+    if (!confirmSwitch(acctLabel)) return
     setBusy('urgent')
     const { data: { session } } = await supabase.auth.getSession()
     const res = await fetch('/api/admin/test-urgent', {
@@ -236,8 +254,12 @@ export default function DevPanel() {
 
       {open && (
         <div style={S.panel}>
-          <div style={{ color: '#e85d26', fontWeight: 700, fontSize: 10, letterSpacing: 1.5, marginBottom: 12 }}>
+          <div style={{ color: '#e85d26', fontWeight: 700, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
             ⚙ DEV PANEL
+          </div>
+          <div style={{ background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: 6, padding: '6px 8px', marginBottom: 12, color: '#fbbf24', fontSize: 9.5, lineHeight: 1.5 }}>
+            ⚠️ Les boutons ci-dessous CHANGENT DE COMPTE : déconnexion puis
+            reconnexion sous une autre identité.
           </div>
 
           {/* Utilisateur courant */}
