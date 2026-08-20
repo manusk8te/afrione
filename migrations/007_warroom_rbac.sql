@@ -1,31 +1,42 @@
 -- Migration 007 — Autorisation par rôle dans la War Room
--- À exécuter dans Supabase SQL Editor. Idempotente : rejouable sans risque.
+-- Idempotente : rejouable sans risque.
+--
+-- Appliquée et vérifiée le 2026-08-20 :
+--   node scripts/sql.mjs -f migrations/007_warroom_rbac.sql
+--
+-- Trois tests joués en transaction annulée après application :
+--   client → status 'pending_validation'  refusé  (42501, enforce_mission_actor)
+--   artisan → status 'pending_validation' accepté
+--   client → chat sender_role 'artisan'   refusé  (42501, enforce_chat_sender_role)
 --
 -- Contexte (audit du 2026-08-13) : toute la séparation client / artisan de la
 -- War Room vivait dans le navigateur, sous la forme d'un booléen `isArtisan`
--- recopié dans une quarantaine de conditions JSX. Côté base, la seule policy
--- concernée était :
+-- recopié dans une quarantaine de conditions JSX. Masquer un bouton n'a jamais
+-- été une autorisation.
 --
---     CREATE POLICY "missions_participants" ON missions FOR ALL USING (
---       client_id = auth.uid() OR
---       artisan_id IN (SELECT id FROM artisan_pros WHERE user_id = auth.uid())
---     );
+-- ⚠️ Cette migration a été réécrite le 2026-08-20 après lecture de la base.
+-- La version initiale supposait une policy `missions_participants` en FOR ALL
+-- à découper. Elle n'existait plus : le découpage lecture / écriture avait déjà
+-- été fait, sous d'autres noms (`missions_read`, `missions_update`,
+-- `clients_create_missions`, `chat_read`, `chat_insert`). Rejouer la version
+-- initiale aurait créé un second jeu de policies faisant doublon — sans trou de
+-- sécurité, les policies permissives se cumulant par OR, mais avec deux jeux de
+-- règles à maintenir pour un seul effet.
 --
--- `FOR ALL`, sans `WITH CHECK` différencié, et sans aucune notion de rôle : le
--- client pouvait écrire `status = 'en_route'`, `'en_cours'` ou
--- `'pending_validation'` sur sa propre mission, c'est-à-dire exécuter toutes
--- les actions réservées à l'artisan. Masquer un bouton n'a jamais été une
--- autorisation.
+-- État constaté avant application :
+--   missions      RLS actif · SELECT/UPDATE/INSERT présents · aucune policy DELETE
+--   chat_history  RLS actif · SELECT/INSERT présents        · aucune policy DELETE
+--   triggers      mission_state_machine (006) uniquement
 --
--- Cette migration ajoute la contrepartie serveur du modèle de permissions
--- défini dans src/lib/mission-roles.ts.
+-- Ce qui manquait réellement : les deux gardes de rôle ci-dessous. Les policies
+-- disent QUI touche la ligne ; elles ne disent pas QUEL RÔLE pose QUEL statut.
+-- « negotiation → en_cours » est une transition légale (trigger 006), mais pas
+-- pour le client — et rien ne l'empêchait.
 
 -- ── 1. missions : qui a le droit de poser quel statut ────────────────────────
 --
 -- Le trigger 006 (validate_mission_transition) dit quelles transitions sont
--- possibles. Celui-ci dit QUI peut les déclencher. Les deux sont nécessaires :
--- « negotiation → en_cours » est une transition légale, mais pas pour le
--- client.
+-- possibles. Celui-ci dit QUI peut les déclencher. Les deux sont nécessaires.
 --
 -- auth.uid() IS NULL = contexte service_role (routes API), qui a déjà vérifié
 -- le rôle applicativement via src/lib/mission-auth.ts.
@@ -86,76 +97,14 @@ CREATE TRIGGER mission_actor_guard
   FOR EACH ROW
   EXECUTE FUNCTION enforce_mission_actor();
 
--- ── 2. missions : lecture / écriture explicites ──────────────────────────────
--- La policy `FOR ALL` couvrait aussi DELETE : un client pouvait supprimer une
--- mission payée, et avec elle la trace de la transaction.
+-- ── 2. chat_history : on signe ce qu'on écrit ────────────────────────────────
+-- `sender_id` et `sender_role` étaient déclarés par le navigateur. Le rendu des
+-- devis dépend de `sender_role = 'client'` : un client pouvait donc afficher
+-- chez l'artisan une carte « DEVIS ARTISAN » qu'il avait écrite lui-même.
+--
+-- La policy `chat_insert` vérifie déjà `sender_id = auth.uid()`. Elle ne dit
+-- rien de `sender_role`, qui restait libre.
 
-DROP POLICY IF EXISTS "missions_participants" ON missions;
-
-CREATE POLICY "missions_participants_read" ON missions FOR SELECT USING (
-  client_id = auth.uid() OR
-  artisan_id IN (SELECT id FROM artisan_pros WHERE user_id = auth.uid())
-);
-
-CREATE POLICY "missions_participants_update" ON missions FOR UPDATE
-  USING (
-    client_id = auth.uid() OR
-    artisan_id IN (SELECT id FROM artisan_pros WHERE user_id = auth.uid())
-  )
-  WITH CHECK (
-    -- Le client d'une mission ne change pas, et on ne se l'attribue pas.
-    client_id = auth.uid() OR
-    artisan_id IN (SELECT id FROM artisan_pros WHERE user_id = auth.uid())
-  );
-
-CREATE POLICY "missions_client_insert" ON missions FOR INSERT
-  WITH CHECK (client_id = auth.uid());
-
--- Pas de policy DELETE : une mission ne se supprime pas, elle s'annule.
-
--- ── 3. chat_history : on signe ce qu'on écrit ────────────────────────────────
--- `sender_id` et `sender_role` étaient déclarés par le navigateur. Le rendu
--- des devis dépend de `sender_role === 'client'` : un client pouvait donc
--- afficher chez l'artisan une carte « DEVIS ARTISAN » qu'il avait écrite
--- lui-même.
-
-DROP POLICY IF EXISTS "chat_participants" ON chat_history;
-
-CREATE POLICY "chat_participants_read" ON chat_history FOR SELECT USING (
-  mission_id IN (
-    SELECT id FROM missions WHERE
-    client_id = auth.uid() OR
-    artisan_id IN (SELECT id FROM artisan_pros WHERE user_id = auth.uid())
-  )
-);
-
-CREATE POLICY "chat_participants_insert" ON chat_history FOR INSERT WITH CHECK (
-  sender_id = auth.uid()
-  AND mission_id IN (
-    SELECT id FROM missions WHERE
-    client_id = auth.uid() OR
-    artisan_id IN (SELECT id FROM artisan_pros WHERE user_id = auth.uid())
-  )
-);
-
--- UPDATE limité à l'accusé de lecture : le contenu d'un message est immuable.
-CREATE POLICY "chat_participants_update" ON chat_history FOR UPDATE
-  USING (
-    mission_id IN (
-      SELECT id FROM missions WHERE
-      client_id = auth.uid() OR
-      artisan_id IN (SELECT id FROM artisan_pros WHERE user_id = auth.uid())
-    )
-  )
-  WITH CHECK (
-    mission_id IN (
-      SELECT id FROM missions WHERE
-      client_id = auth.uid() OR
-      artisan_id IN (SELECT id FROM artisan_pros WHERE user_id = auth.uid())
-    )
-  );
-
--- Cohérence sender_role ↔ relation réelle à la mission.
 CREATE OR REPLACE FUNCTION enforce_chat_sender_role()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -192,11 +141,12 @@ CREATE TRIGGER chat_sender_role_guard
   FOR EACH ROW
   EXECUTE FUNCTION enforce_chat_sender_role();
 
--- ── 4. Vérifications ─────────────────────────────────────────────────────────
--- missions : 3 policies (read / update / insert), plus aucune FOR ALL
-SELECT policyname, cmd FROM pg_policies WHERE tablename = 'missions' ORDER BY policyname;
--- chat_history : 3 policies
-SELECT policyname, cmd FROM pg_policies WHERE tablename = 'chat_history' ORDER BY policyname;
--- 2 triggers sur missions (state machine + actor guard), 1 sur chat_history
-SELECT event_object_table, trigger_name FROM information_schema.triggers
-WHERE event_object_table IN ('missions', 'chat_history') ORDER BY 1, 2;
+-- ── Volontairement absent ────────────────────────────────────────────────────
+--
+-- Policy UPDATE sur chat_history : la version initiale en prévoyait une pour
+-- l'accusé de lecture. Aucun UPDATE sur `chat_history` n'existe dans le code
+-- (vérifié le 2026-08-20). L'ajouter ouvrirait une écriture dont rien n'a
+-- besoin — le contenu d'un message reste immuable.
+--
+-- Policy DELETE : aucune, sur les deux tables. RLS étant actif, l'absence de
+-- policy vaut refus. Une mission ne se supprime pas, elle s'annule.
