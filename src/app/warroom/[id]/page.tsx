@@ -177,6 +177,12 @@ export default function WarRoomPage() {
   const [schedDate, setSchedDate]           = useState('')
   const [schedTime, setSchedTime]           = useState('')
 
+  // Annulation de mission (client). `/api/cancel-mission` et la règle
+  // `cancel_mission` existaient tous les deux — sans aucun bouton entre les
+  // deux : le client n'avait aucun moyen d'annuler sa propre demande.
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [cancelling, setCancelling]               = useState(false)
+
   const bottomRef = useRef<HTMLDivElement>(null)
   // L'abonnement Realtime est créé une seule fois (dép. [missionId]) : il ne
   // peut pas lire l'état `user`, qui n'est renseigné qu'après. Ce ref le lui
@@ -805,6 +811,31 @@ export default function WarRoomPage() {
     toast.success('Mission programmée !')
   }
 
+  // Annulation par le client. L'API rembourse l'escrow si un paiement a eu
+  // lieu et pose le message système ; on ne touche pas au statut d'ici.
+  const cancelMission = async () => {
+    if (!guard('cancel_mission')) return
+    setCancelling(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/cancel-mission', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token || ''}`,
+      },
+      body: JSON.stringify({ mission_id: missionId }),
+    })
+    setCancelling(false)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      toast.error(err.error || "L'annulation a échoué.")
+      return
+    }
+    setShowCancelConfirm(false)
+    setMission((prev: any) => ({ ...prev, status: 'cancelled' }))
+    toast.success('Mission annulée.')
+  }
+
   // Artisan accepte la contre-proposition du client → renvoie un devis artisan au même montant
   const acceptCounterProposal = async (amount: number) => {
     if (!guard('answer_counter_offer')) return
@@ -1277,7 +1308,8 @@ export default function WarRoomPage() {
   // Sans cette branche, un utilisateur sans lien avec la mission voyait
   // l'interface client (valeur initiale du state) et devait deviner pourquoi
   // rien ne fonctionnait.
-  if (roleReady && role === 'guest') {
+  // Accès à la page = une permission comme une autre, lue dans la matrice.
+  if (roleReady && !allow('view_mission')) {
     return (
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100dvh',background:'#F5F0E8',padding:'32px',textAlign:'center'}}>
         <div style={{width:'64px',height:'64px',borderRadius:'50%',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.25)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:'18px'}}>
@@ -2868,6 +2900,36 @@ export default function WarRoomPage() {
               </div>
             )}
 
+            {/* Client : reprendre le choix du moment (payment).
+                La modale de programmation n'était ouverte que par
+                `afterPayment()`, dans la foulée du paiement. Son fond se ferme
+                au clic et un simple rafraîchissement la faisait disparaître :
+                le client restait bloqué en `payment`, avec la consigne
+                « choisissez le moment de l'intervention » et rien à cliquer.
+                La mission ne pouvait plus avancer. */}
+            {allow('schedule_mission') && !showScheduling && (
+              <div style={{marginBottom:'8px'}}>
+                <button onClick={() => { setSchedMode(null); setShowScheduling(true) }} className="btn-primary" style={{
+                  width:'100%',padding:'12px',color:'white',
+                  border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',
+                  display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
+                }}>
+                  📅 Choisir le moment de l'intervention →
+                </button>
+              </div>
+            )}
+
+            {/* Artisan : le client n'a pas encore fixé la date (payment) */}
+            {isArtisan && status === 'payment' && (
+              <div style={{marginBottom:'8px',padding:'12px 14px',background:'rgba(43,107,62,0.06)',border:'1px solid rgba(43,107,62,0.25)',borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
+                <span style={{fontSize:'20px'}}>💰</span>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:'13px',color:'#2B6B3E'}}>Paiement reçu en escrow</div>
+                  <div style={{fontSize:'12px',color:'#6B7280',marginTop:'2px'}}>Le client choisit le moment de l'intervention.</div>
+                </div>
+              </div>
+            )}
+
             {/* Les deux : bandeau date programmée (scheduled) */}
             {status === 'scheduled' && (
               <div style={{marginBottom:'8px',padding:'12px 14px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.35)',borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
@@ -2952,7 +3014,38 @@ export default function WarRoomPage() {
               </div>
             )}
 
-            {/* Label résumé pré-rempli (client uniquement) */}
+            {/* Client : annuler la mission. Dernier de la barre, discret —
+                c'est une sortie, pas une action du parcours. */}
+            {allow('cancel_mission') && (
+              showCancelConfirm ? (
+                <div style={{marginBottom:'8px',display:'flex',flexDirection:'column',gap:'8px'}}>
+                  <div style={{padding:'12px 14px',background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px',fontSize:'12.5px',color:'#ef4444',fontWeight:600,textAlign:'center'}}>
+                    ⚠️ La mission sera annulée
+                    {status === 'payment' || status === 'scheduled'
+                      ? ' et votre paiement intégralement remboursé.'
+                      : '.'} Confirmer ?
+                  </div>
+                  <div style={{display:'flex',gap:'8px'}}>
+                    <button onClick={() => setShowCancelConfirm(false)} disabled={cancelling} style={{flex:1,padding:'11px',background:'white',border:'1.5px solid #D8D2C4',borderRadius:'10px',color:'#6B7280',fontWeight:600,fontSize:'13px',cursor:'pointer'}}>
+                      Non, continuer
+                    </button>
+                    <button onClick={cancelMission} disabled={cancelling} style={{flex:1,padding:'11px',background:'#ef4444',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:cancelling?'not-allowed':'pointer',opacity:cancelling?0.6:1}}>
+                      {cancelling ? 'Annulation…' : 'Oui, annuler'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{marginBottom:'8px',textAlign:'center'}}>
+                  <button onClick={() => setShowCancelConfirm(true)} style={{background:'none',border:'none',color:'#6B7280',fontSize:'12px',fontWeight:600,cursor:'pointer',textDecoration:'underline',padding:'4px'}}>
+                    Annuler la mission
+                  </button>
+                </div>
+              )
+            )}
+
+            {/* Label résumé pré-rempli (client uniquement).
+                role-display: étiquette au-dessus du champ de saisie, l'envoi
+                reste gardé par `send_message`. */}
             {role === 'client' && prefillMsg && input === prefillMsg && (
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px',padding:'6px 10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:'8px'}}>
                 <span style={{fontSize:'11px',color:'#C9A84C',fontWeight:600,display:'flex',alignItems:'center',gap:'5px'}}>
@@ -3012,6 +3105,8 @@ export default function WarRoomPage() {
                 ? "Mission annulée — vue administrateur, aucune action disponible."
                 : "Cette mission a été annulée et tu es remboursé intégralement. Tu peux en relancer une quand tu veux."}
             </p>
+            {/* role-display: lien de navigation vers une nouvelle demande,
+                aucune action sur cette mission annulée. */}
             {role === 'client' && (
               <Link href="/mode-select" className="btn-primary" style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',gap:'8px',

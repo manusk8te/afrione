@@ -409,7 +409,8 @@ export default function MissionLivePage() {
 
   // Accès refusé — la position GPS d'un artisan et les photos d'un chantier
   // n'ont pas à s'afficher à qui possède simplement l'URL.
-  if (roleReady && role === 'guest') return (
+  // Accès à la page = une permission comme une autre, lue dans la matrice.
+  if (roleReady && !allow('view_mission')) return (
     <div style={{ height: '100dvh', background: '#FFFFFF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center' }}>
       <AlertCircle size={40} color="#ef4444" style={{ marginBottom: '16px' }} />
       <div style={{ fontWeight: 800, fontSize: '18px', color: '#3D4852', marginBottom: '8px' }}>Accès non autorisé</div>
@@ -659,9 +660,19 @@ export default function MissionLivePage() {
                 </button>
               </div>
             ) : (
+              /* Lecture seule. La branche parlait de « l'artisan » à la
+                 troisième personne quel que soit le lecteur : hors de la
+                 fenêtre d'envoi (scheduled, completed…), `upload_proof` est
+                 faux et l'artisan lisait un texte qui le désignait comme
+                 quelqu'un d'autre. Le libellé suit désormais QUI on est
+                 (`canRole`), pas ce qu'on peut faire à cet instant (`can`). */
               <div>
                 <h3 style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852', marginBottom: '4px' }}>Photos de chantier</h3>
-                <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px' }}>Photos ajoutées par l'artisan en cours de mission.</p>
+                <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px' }}>
+                  {isArtisan
+                    ? "Vos photos de chantier. L'ajout est ouvert pendant l'intervention."
+                    : "Photos ajoutées par l'artisan en cours de mission."}
+                </p>
                 {proofAfterUrls.length > 0 ? (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '8px', marginBottom: '12px' }}>
@@ -676,7 +687,11 @@ export default function MissionLivePage() {
                 ) : (
                   <div style={{ textAlign: 'center', padding: '48px 0' }}>
                     <Camera size={40} color="#E2E8F0" style={{ margin: '0 auto 12px' }} />
-                    <p style={{ fontSize: '14px', color: '#6B7280' }}>L'artisan n'a pas encore ajouté de photos.</p>
+                    <p style={{ fontSize: '14px', color: '#6B7280' }}>
+                      {isArtisan
+                        ? "Aucune photo pour l'instant — vous pourrez en ajouter une fois sur place."
+                        : "L'artisan n'a pas encore ajouté de photos."}
+                    </p>
                   </div>
                 )}
               </div>
@@ -767,7 +782,10 @@ export default function MissionLivePage() {
           )
         )}
 
-        {role === 'client' && status === 'en_route' && (
+        {/* Côté observateur du trajet — client et admin. Le test `role ===
+            'client'` laissait l'admin devant une carte muette : il voyait le
+            GPS (`view_gps` l'autorise) sans aucun texte d'état. */}
+        {allow('view_gps') && !isArtisan && status === 'en_route' && (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
               <span style={{ width: '8px', height: '8px', background: '#E85D26', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(232,93,38,0.15)' }} />
@@ -786,6 +804,7 @@ export default function MissionLivePage() {
           </button>
         )}
 
+        {/* role-display: bandeau d'attente, aucune action ni donnée du client. */}
         {role === 'artisan' && status === 'pending_validation' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(232,93,38,0.06)', padding: '14px 16px', borderRadius: '14px', border: '1px solid rgba(232,93,38,0.2)' }}>
             <Clock size={18} color="#E85D26" style={{ flexShrink: 0 }} />
