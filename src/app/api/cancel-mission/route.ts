@@ -11,7 +11,20 @@ import { refundEscrow } from '@/lib/escrow'
 
 export const dynamic = 'force-dynamic'
 
-const STATUTS_AVEC_ESCROW = ['en_cours', 'payment', 'pending_validation', 'disputed']
+/**
+ * Statuts atteignables APRÈS le paiement : dans chacun, des fonds sont bloqués
+ * en escrow et une annulation doit rembourser.
+ *
+ * `scheduled` et `en_route` manquaient. Or le parcours est
+ * payment → scheduled (« programmer ») ou en_route (« maintenant ») → en_cours.
+ * Un client qui payait, choisissait une date, puis annulait n'était jamais
+ * remboursé : la mission passait à 'cancelled' et sa transaction restait
+ * 'escrow' pour toujours. Constaté le 2026-08-21 sur une mission annulée le
+ * 10 août — 20 966 FCFA immobilisés.
+ */
+const STATUTS_AVEC_ESCROW = [
+  'payment', 'scheduled', 'en_route', 'en_cours', 'pending_validation', 'disputed',
+]
 
 export async function POST(req: NextRequest) {
   const { mission_id } = await req.json()
