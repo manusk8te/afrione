@@ -98,14 +98,21 @@ async function fetchProducts(query) {
       },
       signal: AbortSignal.timeout(15_000),
     })
-    if (!res.ok) { console.log(`  HTTP ${res.status}`); return [] }
+    if (!res.ok) { console.log(`  HTTP ${res.status}`); return { products: [], statut: `HTTP ${res.status}` } }
     const html = await res.text()
     const products = parseJumiaHtml(html)
-    if (!products.length) console.log(`  HTTP 200 mais 0 produits (hasPrc:${html.includes('class="prc"')})`)
-    return products
+    if (!products.length) {
+      // Distinguer « Jumia nous sert une page sans produits » de « le HTML a
+      // changé et la regex ne reconnaît plus les cartes » : les deux donnent
+      // 0 produits, mais ne se corrigent pas de la même façon.
+      const aDesPrix = html.includes('class="prc"')
+      console.log(`  HTTP 200 mais 0 produits (hasPrc:${aDesPrix})`)
+      return { products: [], statut: aDesPrix ? 'HTML changé' : 'page vide' }
+    }
+    return { products, statut: 'OK' }
   } catch (e) {
     console.log(`  Erreur fetch: ${e.message}`)
-    return []
+    return { products: [], statut: 'erreur réseau' }
   }
 }
 
@@ -166,10 +173,12 @@ async function upsertProducts(products, category) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 let totalSaved = 0
 let totalSkipped = 0
+const statuts = new Map()
 
 for (const { query, category } of QUERIES) {
   process.stdout.write(`[${category}] "${query}" → `)
-  const products = await fetchProducts(query)
+  const { products, statut } = await fetchProducts(query)
+  statuts.set(statut, (statuts.get(statut) ?? 0) + 1)
   if (!products.length) {
     console.log('0 produits, skip')
     totalSkipped++
@@ -182,4 +191,25 @@ for (const { query, category } of QUERIES) {
   await new Promise(r => setTimeout(r, 1500))
 }
 
-console.log(`\n✓ Terminé — ${totalSaved} produits indexés, ${totalSkipped} requêtes sans résultat`)
+console.log(`\n${totalSaved} produits indexés, ${totalSkipped} requêtes sans résultat`)
+console.log('Réponses Jumia :', [...statuts].map(([s, n]) => `${s}×${n}`).join(', '))
+
+/*
+ * Sortir en erreur quand RIEN n'a été indexé.
+ *
+ * Le script se contentait d'un `return []` à chaque échec — HTTP non-200, zéro
+ * produit, timeout — sans jamais sortir en code non nul. GitHub Actions
+ * affichait donc un succès vert. Jumia CI a commencé à répondre 403 vers le
+ * 2026-06-05 : le workflow a « réussi » onze dimanches d'affilée sans écrire
+ * une ligne, et le catalogue a vieilli de 77 jours sans que personne le voie.
+ *
+ * Un job qui n'a rien fait doit être rouge.
+ */
+if (totalSaved === 0) {
+  console.error(`\n✗ Aucun produit indexé sur ${QUERIES.length} requêtes.`)
+  console.error('  Jumia bloque probablement le scraper (403) ou son HTML a changé.')
+  console.error('  Les prix en base ne sont plus rafraîchis — voir price_materials.last_scraped_at.')
+  process.exit(1)
+}
+
+console.log('✓ Terminé')

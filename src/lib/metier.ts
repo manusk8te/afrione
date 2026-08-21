@@ -41,13 +41,34 @@ const ALIASES: Record<string, CanonicalMetier> = {
   'carreleur':     'Carrelage',
 }
 
+/**
+ * Repli sans accents ni casse : « Electricite », « ELECTRICITÉ », « maconnerie »
+ * désignent tous « Électricité » / « Maçonnerie ».
+ *
+ * Les accents se perdent partout — saisie clavier, sortie du diagnostic IA,
+ * imports manuels. `price_materials` contenait ainsi 155 articles en
+ * « Électricité » et 6 en « Electricite », deux catégories distinctes pour la
+ * requête `.eq('category', …)` de /api/materials : une mission taguée sans
+ * accent ne voyait que 6 matériaux au lieu de 161.
+ */
+const sansAccent = (s: string) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
 /** Normalise n'importe quelle valeur historique de `metier` vers la catégorie canonique. */
 export function normalizeMetier(raw: string | null | undefined): CanonicalMetier | null {
   if (!raw) return null
   const trimmed = raw.trim()
   const exact = CANONICAL_METIERS.find(m => m.id === trimmed)
   if (exact) return exact.id
-  return ALIASES[trimmed.toLowerCase()] ?? null
+  const alias = ALIASES[trimmed.toLowerCase()]
+  if (alias) return alias
+
+  // Dernier recours : comparaison désaccentuée, sur les canoniques puis les alias.
+  const nu = sansAccent(trimmed)
+  const parCanonique = CANONICAL_METIERS.find(m => sansAccent(m.id) === nu)
+  if (parCanonique) return parCanonique.id
+  const cleAlias = Object.keys(ALIASES).find(k => sansAccent(k) === nu)
+  return cleAlias ? ALIASES[cleAlias] : null
 }
 
 /** Icône + libellé propre pour l'affichage (admin, fiches artisan), quelle que soit la valeur brute stockée. */

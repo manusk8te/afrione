@@ -6,6 +6,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { quartierKm } from '@/lib/pricing'
 import { lookupItemOnJumia } from '@/lib/jumia-lookup'
+import { normalizeMetier } from '@/lib/metier'
+
+/**
+ * La catégorie arrive du diagnostic IA ou de `missions.category`, deux sources
+ * qui ne parlent pas la taxonomie du catalogue : on y trouve « Carreleur »
+ * (métier) là où `price_materials` dit « Carrelage » (catégorie), ou
+ * « Electricite » sans accent. La requête étant une égalité stricte, ces
+ * missions ne recevaient AUCUN matériau — constaté le 2026-08-21 : 6 missions
+ * dans ce cas, dont 2 en « Carreleur ».
+ *
+ * Faute de correspondance, on garde la valeur brute : mieux vaut chercher et
+ * ne rien trouver que chercher la mauvaise chose.
+ */
+const categorieCatalogue = (raw: string | null): string =>
+  normalizeMetier(raw) ?? raw ?? 'Plomberie'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +54,7 @@ function addProximity(
 }
 
 export async function GET(req: NextRequest) {
-  const category       = req.nextUrl.searchParams.get('category')        || 'Plomberie'
+  const category       = categorieCatalogue(req.nextUrl.searchParams.get('category'))
   const items          = req.nextUrl.searchParams.get('items')?.split(',').filter(Boolean) || []
   const clientQ        = req.nextUrl.searchParams.get('client_quartier')  || null
   const artisanQ       = req.nextUrl.searchParams.get('artisan_quartier') || null
@@ -114,7 +129,7 @@ export async function POST(req: NextRequest) {
   const { name, category } = await req.json()
   if (!name) return NextResponse.json({ found: false }, { status: 400 })
 
-  const cat = category || 'Plomberie'
+  const cat = categorieCatalogue(category)
 
   // 1. Cherche dans la DB (ilike sur le premier mot significatif)
   const firstWord = name.split(/\s+/).find((w: string) => w.length >= 3) || name

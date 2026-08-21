@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { enrichItemsWithJumia } from '@/lib/jumia-lookup'
+import { normalizeMetier } from '@/lib/metier'
 
 export const dynamic = 'force-dynamic'
 
@@ -522,7 +523,13 @@ FORMAT JSON EXACT :
       result = {
         summary:           result.summary         || 'Problème artisanal identifié, intervention recommandée.',
         technical_notes:   result.technical_notes || 'Diagnostic complet à réaliser sur place.',
-        category:          result.category        || 'Maçonnerie',
+        // Le schéma du prompt présente la liste des catégories comme valeur
+        // d'exemple (`"category": "Plomberie|Électricité|…"`). Le modèle est
+        // censé en choisir une ; il lui arrive de recopier la chaîne entière,
+        // et une mission s'est retrouvée en base avec les huit métiers collés
+        // pour catégorie — donc zéro matériau, et aucun artisan au matching.
+        // Ce que le code peut garantir n'a rien à faire dans un prompt.
+        category:          normalizeMetier(result.category) || 'Maçonnerie',
         urgency:           result.urgency         || 'medium',
         price_min:         Number(result.price_min) || 5000,
         price_max:         Number(result.price_max) || 20000,
