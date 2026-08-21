@@ -185,17 +185,18 @@ export function computeLabor(hourlyRate: number, hours: number): {
   }
 }
 
+// Taux horaire juste entre plancher SMIG×2 et tarif déclaré artisan.
+// Interne au moteur Monte Carlo — plus exporté, personne d'autre ne s'en sert.
+function effectiveHourlyRate(artisanDeclaredRate: number, alpha: number): number {
+  return Math.round(SMIG_X2_HORAIRE + (artisanDeclaredRate - SMIG_X2_HORAIRE) * alpha)
+}
+
 // α = intensité diagnostic [0,1] → interpole entre SMIG×2 et tarif artisan déclaré
 export function diagnosticAlpha(urgency: string, itemsCount: number, durationHours: number): number {
   const u = { low: 0.10, medium: 0.30, high: 0.65, emergency: 1.00 }[urgency] ?? 0.30
   const c = Math.min(itemsCount / 8, 0.40)                   // complexité matériaux
   const d = Math.min((durationHours - 1) / 9, 0.25)          // durée normalisée [1h→0, 10h→0.25]
   return Math.min(u + c + d, 1.0)
-}
-
-// Taux horaire juste entre plancher SMIG×2 et tarif déclaré artisan
-export function effectiveHourlyRate(artisanDeclaredRate: number, alpha: number): number {
-  return Math.round(SMIG_X2_HORAIRE + (artisanDeclaredRate - SMIG_X2_HORAIRE) * alpha)
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -355,10 +356,6 @@ export function runMonteCarlo(input: PricingInput): PricingResult {
 
 // ── Helpers publics ───────────────────────────────────────────────────────────
 
-export function getQuartierGPS(quartier: string): [number, number] {
-  return QUARTIER_GPS[quartier] ?? QUARTIER_GPS['Cocody']
-}
-
 export function quartierKm(q1: string, q2: string): number {
   const [lat1, lng1] = QUARTIER_GPS[q1] ?? QUARTIER_GPS['Cocody']
   const [lat2, lng2] = QUARTIER_GPS[q2] ?? QUARTIER_GPS['Cocody']
@@ -369,7 +366,7 @@ export function computeDistance(
   artisanGPS: { lat: number; lng: number } | null,
   clientQuartier: string
 ): number {
-  const [lat2, lng2] = getQuartierGPS(clientQuartier)
+  const [lat2, lng2] = QUARTIER_GPS[clientQuartier] ?? QUARTIER_GPS['Cocody']
   if (!artisanGPS) return 5.0
   return haversine(artisanGPS.lat, artisanGPS.lng, lat2, lng2)
 }
