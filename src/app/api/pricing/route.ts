@@ -5,6 +5,7 @@ import {
   diagnosticAlpha,
   type PricingInput, type MaterialInput,
 } from '@/lib/pricing'
+import { parseDuree } from '@/lib/duration'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,23 +38,10 @@ const FALLBACK_MATERIAL: Record<string, [number, number, number]> = {
   'Serrurerie':   [1500, 500,  4000], // barillet, pêne, clé
 }
 
-function parseDuration(s: string): number {
-  if (!s) return 2
-  const lower = s.toLowerCase()
-  // "30 minutes", "45 min", "1h30" → convertir en heures
-  const minMatch = lower.match(/(\d+)\s*min/)
-  if (minMatch && !lower.includes('heure') && !lower.match(/\d+\s*h(?:eure)?s?\s+\d+/)) {
-    return Math.max(0.25, parseInt(minMatch[1]) / 60)
-  }
-  // "1h30", "1h 30min"
-  const hMinMatch = lower.match(/(\d+)\s*h(?:eure)?s?\s*(\d+)/)
-  if (hMinMatch) return parseInt(hMinMatch[1]) + parseInt(hMinMatch[2]) / 60
-  // "1 à 3 heures", "2 à 4 heures" → prendre la borne basse (on veut être pas cher)
-  const rangeMatch = lower.match(/(\d+(?:\.\d+)?)\s*[àa-]\s*(\d+(?:\.\d+)?)/)
-  if (rangeMatch) return parseFloat(rangeMatch[1])
-  const nums = s.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
-  return nums.length ? nums[0] : 2
-}
+// Borne basse : le devis part du bas de la fourchette.
+// Cette copie locale ne gérait ni les jours ni les semaines — « 1 journée »
+// valait 1 heure. Voir src/lib/duration.ts.
+const parseDuration = (s: string): number => parseDuree(s, 'basse')
 
 export async function POST(req: NextRequest) {
   const body = await req.json()

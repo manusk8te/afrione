@@ -10,6 +10,7 @@ import {
   resolveMissionRole, can, denialReason, nextStepHint, ROLE_LABEL,
   type MissionRole, type MissionAction,
 } from '@/lib/mission-roles'
+import { parseDuree } from '@/lib/duration'
 import toast from 'react-hot-toast'
 
 function materialEmoji(name: string): string {
@@ -560,26 +561,10 @@ export default function WarRoomPage() {
     }
   }
 
-  // Ouvrir le formulaire devis + charger suggestion + tiers matériaux
-  // Borne basse d'une durée texte : "1 à 3 heures" → 1, "30 min" → 0.5, "1h30" → 1.5
-  const parseDurLow = (s: string): number => {
-    if (!s) return 2
-    const lower = s.toLowerCase()
-    const isJours = lower.includes('jour')
-    const minMatch = lower.match(/(\d+)\s*min/)
-    if (minMatch && !lower.includes('heure') && !lower.match(/\d+\s*h\S*\s+\d+/))
-      return Math.max(0.25, parseInt(minMatch[1]) / 60)
-    const hMinMatch = lower.match(/(\d+)\s*h\S*\s*(\d+)/)
-    if (hMinMatch) return parseInt(hMinMatch[1]) + parseInt(hMinMatch[2]) / 60
-    const rangeMatch = lower.match(/(\d+(?:\.\d+)?)\s*[àa-]\s*(\d+(?:\.\d+)?)/)
-    if (rangeMatch) {
-      const low = parseFloat(rangeMatch[1])
-      return isJours ? low * 8 : low
-    }
-    const nums = s.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
-    const val = nums.length ? nums[0] : 2
-    return isJours ? val * 8 : val
-  }
+  // Borne basse : le devis part du bas de la fourchette. Cette copie locale
+  // ignorait les semaines — « 2 semaines » valait 2 heures, soit un chantier
+  // chiffré ×40 trop bas. Voir src/lib/duration.ts.
+  const parseDurLow = (s: string): number => parseDuree(s, 'basse')
 
   // Charge la suggestion de prix sans ouvrir le drawer devis.
   // RETOURNE la valeur : tout appelant qui doit calculer un montant doit

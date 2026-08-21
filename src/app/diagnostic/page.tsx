@@ -1,5 +1,6 @@
 'use client'
 import { CATEGORY_TO_METIER } from '@/lib/pricing'
+import { parseDuree } from '@/lib/duration'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -42,25 +43,9 @@ interface PricingData {
   market_reference_fcfa?: number
 }
 
-function parseDuration(str: string): number {
-  if (!str) return 2
-  const lower = str.toLowerCase()
-  const isJours = lower.includes('jour')
-  const minMatch = lower.match(/(\d+)\s*min/)
-  if (minMatch && !lower.includes('heure') && !lower.match(/\d+\s*h(?:eure)?s?\s+\d+/)) {
-    return Math.max(0.25, parseInt(minMatch[1]) / 60)
-  }
-  const hMinMatch = lower.match(/(\d+)\s*h(?:eure)?s?\s*(\d+)/)
-  if (hMinMatch) return parseInt(hMinMatch[1]) + parseInt(hMinMatch[2]) / 60
-  const rangeMatch = lower.match(/(\d+(?:\.\d+)?)\s*[àa-]\s*(\d+(?:\.\d+)?)/)
-  if (rangeMatch) {
-    const avg = (parseFloat(rangeMatch[1]) + parseFloat(rangeMatch[2])) / 2
-    return isJours ? avg * 8 : avg
-  }
-  const nums = str.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? []
-  const val = nums.length ? nums[0] : 2
-  return isJours ? val * 8 : val
-}
+// Moyenne de la fourchette : le diagnostic annonce une estimation, pas un
+// devis. Cette copie locale ignorait les semaines. Voir src/lib/duration.ts.
+const parseDuration = (str: string): number => parseDuree(str, 'moyenne')
 
 function materialEmoji(name: string): string {
   const n = name.toLowerCase()
