@@ -2,7 +2,7 @@ import { Agent, AgentInputItem, Runner, tool, withTrace, getGlobalTraceProvider 
 import { z } from "zod";
 import { supabaseAdmin } from "./supabase";
 import { lookupItemOnJumia } from "./jumia-lookup";
-import { SMIG_X2_HORAIRE, CATEGORY_TO_METIER } from "./pricing";
+import { SMIG_X2_HORAIRE, CATEGORY_TO_METIER, computeLabor } from "./pricing";
 import { getTransport } from "./transport";
 
 // ── Fallbacks ────────────────────────────────────────────────────────────────
@@ -163,9 +163,10 @@ const calculateFinalPrice = tool({
     // Plancher SMIG appliqué en code par défense en profondeur (déjà garanti en amont par resolveHourlyRate)
     const flooredRate = Math.max(hourly_rate, SMIG_X2_HORAIRE);
 
-    const LABOR_CAP   = 30_000;
-    const degressif   = hours <= 2 ? 1.0 : hours <= 4 ? 0.85 : hours <= 8 ? 0.70 : 0.60;
-    const labor_base  = Math.min(Math.round(flooredRate * hours * degressif), LABOR_CAP);
+    // Plus de plafond à 30 000 : voir computeLabor (src/lib/pricing.ts). La
+    // formule était recopiée ici et dans /api/tools/calculate-price — deux
+    // copies d'un même calcul de rémunération, à corriger deux fois.
+    const { labor: labor_base, degressif } = computeLabor(flooredRate, hours);
     const urgency_pct = urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0;
     const labor_final = Math.round(labor_base * (1 + urgency_pct));
     const transport   = getTransport(quartier);

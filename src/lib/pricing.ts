@@ -150,6 +150,41 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number): numb
 export const SMIG_MENSUEL   = 75_000          // FCFA/mois (officiel CI)
 export const SMIG_X2_HORAIRE = Math.round(SMIG_MENSUEL * 2 / 173)  // ≈ 866 FCFA/h
 
+/**
+ * Main-d'œuvre d'une intervention, avant majoration d'urgence.
+ *
+ * La dégressivité récompense les longs chantiers côté client : plus la tâche
+ * dure, moins l'heure est facturée cher. Elle est délibérée.
+ *
+ * Ce qui ne l'était plus, c'est le plafond `LABOR_CAP = 30 000` qui la
+ * doublait. La main-d'œuvre ne pouvait pas dépasser 30 000 FCFA, quelle que
+ * soit la durée : au tarif menuisier (3 200 F/h), 16 h et 80 h rapportaient
+ * la même chose, soit 375 F/h sur deux semaines de travail — moins de la
+ * moitié du plancher SMIG×2 que le code applique pourtant trois lignes plus
+ * haut. Les deux règles se contredisaient.
+ *
+ * Ce plafond servait probablement de garde-fou contre des devis absurdes nés
+ * d'une durée mal lue : `parseDuree` ignorait les semaines, « 2 semaines »
+ * valait 2 heures. La lecture des durées est corrigée (src/lib/duration.ts) ;
+ * le garde-fou n'a plus lieu d'être sous cette forme.
+ *
+ * Reste le plancher, lui bien réel : la dégressivité seule (×0.60) peut
+ * ramener un taux au SMIG sous le SMIG. On garantit donc que l'heure
+ * effective ne descend jamais sous SMIG_X2_HORAIRE.
+ */
+export function computeLabor(hourlyRate: number, hours: number): {
+  labor: number; degressif: number; plancherApplique: boolean
+} {
+  const degressif = hours <= 2 ? 1.0 : hours <= 4 ? 0.85 : hours <= 8 ? 0.70 : 0.60
+  const brut      = Math.round(hourlyRate * hours * degressif)
+  const plancher  = Math.round(SMIG_X2_HORAIRE * hours)
+  return {
+    labor:            Math.max(brut, plancher),
+    degressif,
+    plancherApplique: plancher > brut,
+  }
+}
+
 // α = intensité diagnostic [0,1] → interpole entre SMIG×2 et tarif artisan déclaré
 export function diagnosticAlpha(urgency: string, itemsCount: number, durationHours: number): number {
   const u = { low: 0.10, medium: 0.30, high: 0.65, emergency: 1.00 }[urgency] ?? 0.30

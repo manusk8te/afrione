@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTransport } from '@/lib/transport'
+import { computeLabor } from '@/lib/pricing'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,9 +8,8 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: NextRequest) {
   const { hours, hourly_rate, materials_total, urgency = 'medium', quartier = 'Cocody' } = await req.json()
 
-  const LABOR_CAP   = 30_000
-  const degressif   = hours <= 2 ? 1.0 : hours <= 4 ? 0.85 : hours <= 8 ? 0.70 : 0.60
-  const labor_base  = Math.min(Math.round(hourly_rate * hours * degressif), LABOR_CAP)
+  // Plus de plafond à 30 000 : voir computeLabor (src/lib/pricing.ts).
+  const { labor: labor_base, degressif } = computeLabor(hourly_rate, hours)
   const urgency_pct = urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0
   const labor_final = Math.round(labor_base * (1 + urgency_pct))
   const transport   = getTransport(quartier)
