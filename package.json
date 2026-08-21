@@ -10,7 +10,8 @@
     "check:perms": "node scripts/check-permissions.mjs",
     "purge:dry": "node scripts/qa-purge.mjs",
     "purge:apply": "node scripts/qa-purge.mjs --apply",
-    "verify:006": "node scripts/verify-006.mjs"
+    "verify:006": "node scripts/verify-006.mjs",
+    "check:schema": "node scripts/check-schema.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
