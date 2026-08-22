@@ -42,7 +42,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Impossible de valider — statut actuel : ${mission.status}` }, { status: 409 })
   }
 
-  await releaseEscrow(mission_id, mission.artisan_id)
+  // La mission n'est close que si l'argent a bougé. Sans ce contrôle, un
+  // échec d'écriture de wallet laissait la mission 'completed' et l'artisan
+  // impayé, sans la moindre trace — c'est ce qui a produit 3 missions
+  // terminées dont l'escrow n'a jamais été libéré.
+  const versement = await releaseEscrow(mission_id, mission.artisan_id)
+  if (!versement.ok) {
+    return NextResponse.json(
+      { error: "Le paiement n'a pas pu être libéré. La mission reste ouverte — réessayez.", detail: versement.motif },
+      { status: 500 },
+    )
+  }
 
   if (mission.artisan_id) {
     const { data: artisanPro } = await supabaseAdmin

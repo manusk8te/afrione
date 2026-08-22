@@ -215,10 +215,17 @@ export default function DiagnosticPage() {
   }
 
   // ── Appel moteur de pricing (Agent IA AfriOne) ──
-  const fetchPricing = async (diagResult: DiagResult) => {
+  /**
+   * @param force  ignore le cache et recalcule. Nécessaire après une
+   *   précision apportée au diagnostic : la catégorie, la durée ou les
+   *   matériaux ont changé, mais le prix en cache, lui, ne bougeait pas —
+   *   le client voyait un diagnostic mis à jour sous un prix périmé.
+   */
+  const fetchPricing = async (diagResult: DiagResult, force = false) => {
     // Ne pas recalculer si un prix est déjà en cache pour cette session
     const cacheKey = `afrione_pricing_${diagResult.mission_id || 'draft'}`
-    const cached = sessionStorage.getItem(cacheKey)
+    if (force) sessionStorage.removeItem(cacheKey)
+    const cached = force ? null : sessionStorage.getItem(cacheKey)
     if (cached) {
       try {
         const c = JSON.parse(cached)
@@ -361,8 +368,12 @@ export default function DiagnosticPage() {
         body: JSON.stringify({ mode: 'finalize', text: enrichedText, photos, qa, user_id: userId, quartier }),
       })
       const data = await res.json()
-      setResult(prev => ({ ...prev!, ...data, urgency: safeUrgency(data.urgency) }))
+      const affine = { ...(result as DiagResult), ...data, urgency: safeUrgency(data.urgency) }
+      setResult(affine)
       setRefineText('')
+      // Le prix suit le diagnostic. Sans ce recalcul forcé, une précision qui
+      // changeait la durée ou les matériaux laissait le montant inchangé.
+      await fetchPricing(affine, true)
     } catch {}
     setRefining(false)
   }

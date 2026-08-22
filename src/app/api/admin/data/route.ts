@@ -160,10 +160,20 @@ export async function POST(req: NextRequest) {
       .from('missions').select('artisan_id').eq('id', missionId).single()
     const artisanId = litigeMission?.artisan_id || null
 
-    if (favor === 'artisan') {
-      await releaseEscrow(missionId, artisanId)
-    } else {
-      await refundEscrow(missionId, artisanId)
+    // Résolution de litige : on n'annonce pas la décision dans le chat si
+    // l'argent n'a pas bougé. L'admin doit voir l'échec, pas un faux succès.
+    const mouvement = favor === 'artisan'
+      ? await releaseEscrow(missionId, artisanId)
+      : await refundEscrow(missionId, artisanId)
+
+    if (!mouvement.ok) {
+      return NextResponse.json(
+        { error: "Le mouvement d'escrow a échoué — le litige reste ouvert.", detail: mouvement.motif },
+        { status: 500 },
+      )
+    }
+
+    if (favor !== 'artisan') {
       await supabaseAdmin.from('missions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', missionId)
     }
 

@@ -61,9 +61,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Mission déjà ${mission.status}` }, { status: 409 })
   }
 
-  // Si un paiement a eu lieu, rembourser l'escrow
+  // Si un paiement a eu lieu, rembourser l'escrow AVANT d'annuler. Une mission
+  // annulée dont la transaction reste en 'escrow' immobilise l'argent sans que
+  // rien ne le signale — constaté sur une annulation du 10 août, 20 966 FCFA.
   if (STATUTS_AVEC_ESCROW.includes(mission.status)) {
-    await refundEscrow(mission_id, mission.artisan_id)
+    const remboursement = await refundEscrow(mission_id, mission.artisan_id)
+    if (!remboursement.ok) {
+      return NextResponse.json(
+        { error: "Le remboursement a échoué. La mission n'a pas été annulée — réessayez.", detail: remboursement.motif },
+        { status: 500 },
+      )
+    }
   }
 
   await supabaseAdmin.from('missions').update({

@@ -63,7 +63,16 @@ export default function ArtisanDashboardPage() {
   const [specialties, setSpecialties] = useState<string[]>([])
   const [newSpecialty, setNewSpecialty] = useState('')
   const [quartiers, setQuartiers] = useState<string[]>([])
-  const [tariMin, setTarifMin] = useState(0)
+  // `tariMin` — le « f » manquait. Le setter s'appelait bien `setTarifMin`,
+  // mais la variable qu'il alimentait ne portait pas le nom qu'on lisait
+  // ailleurs : la valeur était en écriture seule, orpheline, et `tarif_min`
+  // n'a jamais atteint la base. Personne ne l'a vu, `tariMin` n'étant
+  // référencé nulle part.
+  //
+  // L'enjeu : `resolveHourlyRate` (src/lib/pricing-agent.ts) lit
+  // `artisan_pros.tarif_min` en PRIORITÉ 1, avant les données terrain et le
+  // repli marché. Aucun artisan ne pouvait donc peser sur son propre prix.
+  const [tarifMin, setTarifMin] = useState(0)
   const [yearsExp, setYearsExp] = useState(0)
   const [certifications, setCertifications] = useState<string[]>([])
   const [newCertif, setNewCertif] = useState('')
@@ -501,6 +510,21 @@ export default function ArtisanDashboardPage() {
   // Sauvegarder le profil
   const saveProfile = async () => {
     if (!artisan) return
+
+    // Plancher légal SMIG×2 ≈ 866 F/h : le moteur de prix l'applique de toute
+    // façon (Math.max dans resolveHourlyRate), autant le dire ici plutôt que
+    // de laisser l'artisan croire qu'il a fixé un tarif que rien n'honore.
+    const tarif = tarifMin > 0 ? tarifMin : null
+    if (tarif !== null && tarif < 866) {
+      setSaveMsg('Le tarif horaire ne peut pas être inférieur à 866 FCFA/h.')
+      return
+    }
+    const annees = yearsExp > 0 ? yearsExp : null
+    if (annees !== null && annees > 60) {
+      setSaveMsg("Années d'expérience invalides.")
+      return
+    }
+
     setSaving(true)
     const { error } = await supabase
       .from('artisan_pros')
@@ -509,6 +533,10 @@ export default function ArtisanDashboardPage() {
         specialties,
         quartiers,
         certifications,
+        // Absents jusqu'ici : le formulaire les affichait sans jamais les
+        // enregistrer, donc le tarif déclaré restait invisible du moteur.
+        tarif_min:        tarif,
+        years_experience: annees,
         updated_at: new Date().toISOString(),
       })
       .eq('id', artisan.id)
@@ -1027,6 +1055,44 @@ export default function ArtisanDashboardPage() {
                 style={{width:'100%',padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',resize:'vertical',fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
               />
               <div style={{fontSize:'12px',color:'#6B7280',marginTop:'4px',textAlign:'right'}}>{bio.length}/500 caractères</div>
+            </div>
+
+            {/* Tarif horaire et expérience — lus en priorité par le moteur de prix */}
+            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'4px'}}>Votre tarif</h3>
+              <p style={{fontSize:'12.5px',color:'#6B7280',marginBottom:'16px',lineHeight:1.5}}>
+                Ce tarif sert de base au calcul des devis proposés sur vos missions. Sans lui, AfriOne applique le tarif moyen du marché pour votre métier.
+              </p>
+              <div style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
+                <div style={{flex:1,minWidth:'150px'}}>
+                  <label style={{fontSize:'11px',fontWeight:700,color:'#6B7280',display:'block',marginBottom:'6px',letterSpacing:'0.06em'}}>TARIF HORAIRE</label>
+                  <div style={{position:'relative'}}>
+                    <input
+                      type="text" inputMode="numeric"
+                      value={tarifMin || ''}
+                      onChange={e => setTarifMin(parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)}
+                      placeholder="3000"
+                      style={{width:'100%',padding:'12px 58px 12px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'15px',fontWeight:600,color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
+                    />
+                    <span style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',fontSize:'12px',color:'#8B95A5',fontWeight:600,pointerEvents:'none'}}>FCFA/h</span>
+                  </div>
+                  <div style={{fontSize:'11px',color:'#8B95A5',marginTop:'5px'}}>Minimum légal : 866 FCFA/h</div>
+                </div>
+                <div style={{flex:1,minWidth:'150px'}}>
+                  <label style={{fontSize:'11px',fontWeight:700,color:'#6B7280',display:'block',marginBottom:'6px',letterSpacing:'0.06em'}}>EXPÉRIENCE</label>
+                  <div style={{position:'relative'}}>
+                    <input
+                      type="text" inputMode="numeric"
+                      value={yearsExp || ''}
+                      onChange={e => setYearsExp(parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)}
+                      placeholder="5"
+                      style={{width:'100%',padding:'12px 44px 12px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'15px',fontWeight:600,color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
+                    />
+                    <span style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',fontSize:'12px',color:'#8B95A5',fontWeight:600,pointerEvents:'none'}}>ans</span>
+                  </div>
+                  <div style={{fontSize:'11px',color:'#8B95A5',marginTop:'5px'}}>Affichée sur votre profil</div>
+                </div>
+              </div>
             </div>
 
             {/* Infos de base */}

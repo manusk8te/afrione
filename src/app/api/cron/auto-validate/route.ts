@@ -44,7 +44,14 @@ export async function GET(req: NextRequest) {
 
   for (const mission of expired) {
     try {
-      await releaseEscrow(mission.id, mission.artisan_id)
+      // Le cron tourne sans témoin : un échec silencieux ici ne serait jamais
+      // vu. On saute la mission plutôt que d'annoncer dans le chat un paiement
+      // qui n'a pas eu lieu — elle repassera au prochain tour.
+      const versement = await releaseEscrow(mission.id, mission.artisan_id)
+      if (!versement.ok) {
+        console.error(`[auto-validate] mission ${mission.id} laissée ouverte : ${versement.motif}`)
+        continue
+      }
 
       // Message système dans le chat
       await supabaseAdmin.from('chat_history').insert({
