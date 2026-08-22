@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
 
   const totalAmount   = Number(amount)
   // Urgent mode platform fee is 15% (standard is 12%)
+  // ⚠️ 15 % ici, 10 % dans /api/payment, 12 % dans wave-webhook.
+  // Quatre taux en dur pour un seul modèle — voir docs/COMMISSIONS.md.
   const platformFee   = Math.round(totalAmount * 0.15)
   const artisanAmount = totalAmount - platformFee
   const simId         = `sim_${Date.now()}`

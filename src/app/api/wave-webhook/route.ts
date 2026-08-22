@@ -75,6 +75,8 @@ export async function POST(request: Request) {
     }
 
     const totalAmount   = Number(amount)
+    // ⚠️ 12 % ici, 10 % dans /api/payment, 15 % dans dispatch/simulate-pay.
+    // Quatre taux en dur pour un seul modèle — voir docs/COMMISSIONS.md.
     const platformFee   = Math.round(totalAmount * 0.12)
     const artisanAmount = totalAmount - platformFee
 

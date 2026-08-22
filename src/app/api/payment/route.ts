@@ -13,6 +13,11 @@ import { createClient } from '@supabase/supabase-js'
 export const dynamic = 'force-dynamic'
 
 
+// ⚠️ Taux en dur, l'un des quatre du projet — voir docs/COMMISSIONS.md.
+// `service_fees` prévoit 10 % de commission + 2 % d'assurance SAV, soit 88 %
+// à l'artisan. Ici il en reçoit 90 % : l'assurance n'est jamais prélevée, et
+// `transactions` n'a pas de colonne pour l'accueillir. Écart constaté et
+// assumé au 2026-08-22 ; ne pas changer ce taux sans lire les trois autres.
 const PLATFORM_FEE_PCT = 0.10  // 10% commission AfriOne
 
 export async function POST(req: NextRequest) {

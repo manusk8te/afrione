@@ -171,6 +171,9 @@ const calculateFinalPrice = tool({
     const labor_final = Math.round(labor_base * (1 + urgency_pct));
     const transport   = getTransport(quartier);
     const subtotal    = labor_final + (materials_total || 0) + transport;
+    // ⚠️ Seul endroit qui décompose commission ET assurance, conformément à
+    // `service_fees` — mais avec les taux recopiés en dur, et les routes de
+    // paiement n'appliquent pas la même chose. Voir docs/COMMISSIONS.md.
     const commission  = Math.round(subtotal * 0.10);
     const assurance   = Math.round(subtotal * 0.02);
     const total       = subtotal + commission + assurance;

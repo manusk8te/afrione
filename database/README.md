@@ -25,28 +25,20 @@ début, et le code les interrogeait déjà :
 `node scripts/check-schema.mjs` refait ce contrôle et sort en erreur si une
 table interrogée par le code manque en base.
 
-## ⚠️ `pricing_reference.SEED-NON-VERIFIE.sql`
+## `pricing_reference` — seed supprimé le 2026-08-22
 
-Ce fichier crée `pricing_reference` **et l'accompagne de 56 lignes de tarifs**
-— 8 métiers × 7 quartiers d'Abidjan, avec des `nb_observations` détaillés —
+Ce dossier contenait un `pricing_reference.sql` accompagné de **56 lignes de
+tarifs** — 8 métiers × 7 quartiers d'Abidjan, `nb_observations` détaillés —
 présentées en commentaire comme « enquête juin 2026 ».
 
-**Ces données n'ont pas été chargées, et ne doivent pas l'être sans
-vérification.** Leur origine n'est pas établie, et elles arriveraient en base
-avec `source = 'terrain'`, donc indiscernables d'un vrai relevé.
+Ces chiffres ne provenaient d'aucune enquête réelle. Le fichier a été
+supprimé, et les données n'ont **jamais été chargées**.
 
-L'enjeu n'est pas théorique : `resolveHourlyRate`
+L'enjeu n'était pas théorique : `resolveHourlyRate`
 (`src/lib/pricing-agent.ts`) lit `pricing_reference` **en priorité**, avant le
-repli `labor_rates`. Ces 56 lignes deviendraient immédiatement la base de tous
-les prix proposés aux clients et aux artisans.
+repli `labor_rates`. Ces 56 lignes seraient devenues instantanément la base de
+tous les prix proposés aux clients et aux artisans — et, insérées avec
+`source = 'terrain'`, indiscernables des vrais relevés à venir.
 
-La table elle-même a été créée par `migrations/010_donnees_terrain.sql`, vide,
-en attente des relevés réels.
-
-Si ces chiffres proviennent d'une vraie enquête, il suffit de les charger :
-
-```bash
-node scripts/sql.mjs -f database/pricing_reference.SEED-NON-VERIFIE.sql
-```
-
-Sinon, supprimer le fichier.
+La table existe, créée vide par `migrations/010_donnees_terrain.sql`, en
+attente des relevés terrain réels.
