@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { quartierKm } from '@/lib/pricing'
 import { lookupItemOnJumia } from '@/lib/jumia-lookup'
 import { normalizeMetier } from '@/lib/metier'
+import { FILTRE_CATALOGUE_VALIDE } from '@/lib/catalogue'
 
 /**
  * La catégorie arrive du diagnostic IA ou de `missions.category`, deux sources
@@ -60,10 +61,13 @@ export async function GET(req: NextRequest) {
   const artisanQ       = req.nextUrl.searchParams.get('artisan_quartier') || null
 
   // Cherche les matériaux avec tiers dans la BDD
+  // Seuls les articles admis — voir src/lib/catalogue.ts. Un article déclaré
+  // par un artisan et non encore validé par un admin ne chiffre aucun devis.
   const { data: dbMaterials } = await supabaseAdmin
     .from('price_materials')
     .select('*')
     .eq('category', category)
+    .or(FILTRE_CATALOGUE_VALIDE)
     .order('tier')
 
   // Prix de référence marché
@@ -105,6 +109,7 @@ export async function GET(req: NextRequest) {
         .eq('category', category)
         .ilike('name', `%${item.split(' ')[0]}%`)
         .eq('tier', 'standard')
+        .or(FILTRE_CATALOGUE_VALIDE)
         .maybeSingle()
 
       const mult = FALLBACK_TIERS[category] || { economique: 0.70, standard: 1.0, premium: 1.6 }
@@ -138,6 +143,7 @@ export async function POST(req: NextRequest) {
     .select('name,brand,price_market,web_price,photo_url,source_url,source,tier')
     .ilike('name', `%${firstWord}%`)
     .eq('tier', 'standard')
+    .or(FILTRE_CATALOGUE_VALIDE)
     .maybeSingle()
 
   if (db && db.price_market > 0) {

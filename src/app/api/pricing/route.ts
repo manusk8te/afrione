@@ -6,6 +6,7 @@ import {
   type PricingInput, type MaterialInput,
 } from '@/lib/pricing'
 import { parseDuree } from '@/lib/duration'
+import { FILTRE_CATALOGUE_VALIDE } from '@/lib/catalogue'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,7 +116,8 @@ export async function POST(req: NextRequest) {
   if (resolvedItems.length > 0) {
     await Promise.all(resolvedItems.slice(0, 10).map(async (item) => {
       const { data } = await supabaseAdmin
-        .from('price_materials').select('*').ilike('name', `%${item.name}%`).limit(1).maybeSingle()
+        // Articles admis seulement — voir src/lib/catalogue.ts
+        .from('price_materials').select('*').ilike('name', `%${item.name}%`).or(FILTRE_CATALOGUE_VALIDE).limit(1).maybeSingle()
       const qty = item.qty || 1
       if (data) {
         materials.push({ price_market: data.price_market, price_min: data.price_min, price_max: data.price_max, qty, category: data.category })

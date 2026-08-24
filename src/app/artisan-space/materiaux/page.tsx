@@ -116,7 +116,10 @@ export default function ArtisanMateriauxPage() {
     if (data.ok) {
       setArtName(''); setArtPrice(''); setArtUnit('unité')
       setAddingTo(null)
-      flash('Article ajouté — merci pour votre contribution !')
+      // Le message laissait croire que le prix était pris en compte
+      // immédiatement. Il ne sert aucun devis tant qu'un admin ne l'a pas
+      // validé — voir src/lib/catalogue.ts.
+      flash('Article envoyé — il sera pris en compte après validation par AfriOne')
     } else {
       flash(`Erreur : ${data.error}`, false)
     }

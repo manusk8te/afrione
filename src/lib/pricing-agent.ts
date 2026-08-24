@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "./supabase";
 import { lookupItemOnJumia } from "./jumia-lookup";
 import { SMIG_X2_HORAIRE, CATEGORY_TO_METIER, computeLabor } from "./pricing";
+import { FILTRE_CATALOGUE_VALIDE } from "./catalogue";
 import { getTransport } from "./transport";
 
 // ── Fallbacks ────────────────────────────────────────────────────────────────
@@ -125,10 +126,14 @@ const searchMaterialPrice = tool({
   execute: async ({ item, category, qty = 1 }) => {
     // 1. Base AfriOne — ORDER BY déterministe : sans lui, deux appels
     // identiques peuvent renvoyer des lignes différentes en Postgres.
+    // Articles admis seulement : un prix déclaré par un artisan et non encore
+    // validé par un admin ne doit pas entrer dans un devis. Voir
+    // src/lib/catalogue.ts.
     const { data: cached } = await supabaseAdmin
       .from('price_materials')
       .select('id, price_market, source, name')
       .ilike('name', `%${item}%`)
+      .or(FILTRE_CATALOGUE_VALIDE)
       .order('id', { ascending: true })
       .limit(1)
       .maybeSingle();

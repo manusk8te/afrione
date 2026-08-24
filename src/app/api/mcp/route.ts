@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { lookupItemOnJumia } from '@/lib/jumia-lookup'
 import { SMIG_X2_HORAIRE } from '@/lib/pricing'
+import { FILTRE_CATALOGUE_VALIDE } from '@/lib/catalogue'
 import { getTransport } from '@/lib/transport'
 
 export const dynamic = 'force-dynamic'
@@ -64,8 +65,9 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
   if (name === 'search_material_price') {
     const { item, category, qty = 1 } = args
     const { data: cached } = await supabaseAdmin
+      // Articles admis seulement — voir src/lib/catalogue.ts
       .from('price_materials').select('price_market, source, name')
-      .ilike('name', `%${item}%`).limit(1).maybeSingle()
+      .ilike('name', `%${item}%`).or(FILTRE_CATALOGUE_VALIDE).limit(1).maybeSingle()
     if (cached) return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne' }
     const jumia = await lookupItemOnJumia(item, category)
     if (jumia.found && jumia.price) return { item, qty, price_unit: jumia.price, total: jumia.price * qty, source: 'Jumia CI' }
