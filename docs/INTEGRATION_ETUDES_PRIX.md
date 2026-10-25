@@ -1,6 +1,6 @@
 # AfriOne — nos études dans l’agent existant
 
-Version de travail du 25 octobre 2026. Copie de l’application issue du commit `411119d`. Aucun déploiement, écriture Supabase ou appel payant OpenAI effectué.
+Version de travail du 25 octobre 2026. Copie de l’application issue du commit `411119d`. Les estimations restent expérimentales ; le déploiement et les vérifications réelles sont consignés séparément dans le bilan de mise en ligne.
 
 ## Reprise validée : comprendre la prestation, contextualiser son prix
 
