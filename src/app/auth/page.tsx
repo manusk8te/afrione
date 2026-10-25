@@ -151,6 +151,26 @@ function AuthContent() {
     }
   }
 
+  async function handlePasswordRecovery() {
+    setAuthError('')
+    if (!email.trim()) {
+      setAuthError('Saisissez votre adresse email avant de demander un lien de récupération.')
+      return
+    }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/reset`,
+      })
+      if (error) throw error
+      toast.success('Si cette adresse correspond à un compte, un lien de récupération a été envoyé. Vérifiez aussi les indésirables.', { duration: 10000 })
+    } catch (error) {
+      showAuthError(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -325,6 +345,12 @@ function AuthContent() {
                   </button>
                 }
               />
+              {tab === 'login' && (
+                <button type="button" disabled={loading} onClick={handlePasswordRecovery}
+                  style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: ORANGE, fontSize: 13, cursor: 'pointer' }}>
+                  Mot de passe oublié ?
+                </button>
+              )}
               {tab === 'signup' && (
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', paddingLeft: 4 }}>
                   Minimum 8 caractères requis.
