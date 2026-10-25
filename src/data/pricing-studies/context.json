@@ -1,0 +1,662 @@
+{
+  "schema_version": 1,
+  "version": "studies-import-2026-10-25",
+  "production_enabled": false,
+  "scope": "mixed_or_unknown",
+  "manifest": [
+    {
+      "file": "local-v2.json",
+      "original": "outputs/afrione_estimateur.json",
+      "sha256": "c1cf27d6997b2c6eadb20d9052cddaa15cc089fe6223bd91f5d9ccee5bc950cb"
+    },
+    {
+      "file": "transfer-v3.json",
+      "original": "outputs/AfriOne_Transfert_Quantile_Modele.json",
+      "sha256": "c2a4ed22616374410d9c2dfb2f2be36bceb1328a7e6b767def775271afe5aeb6"
+    },
+    {
+      "file": "context-v4.json",
+      "original": "outputs/AfriOne_Contextualisation_V4_Modele.json",
+      "sha256": "dc8e72e21043fc04a9bbc5e2920172f5b5f98eb0a20e567f5185c5c719638820"
+    },
+    {
+      "file": "../../lib/pricing-studies/local-v2.mjs",
+      "original": "outputs/afrione_estimateur.mjs",
+      "sha256": "616d78d7d79a72f1c8716435d9caa8b244cee140fd924dd81c44714b3aba240c"
+    }
+  ],
+  "quantile_domain": {
+    "Débouchage évier / canalisation": {
+      "min_hours": 1.0,
+      "max_hours": 1.0,
+      "quantile_20_fcfa": 5000.0,
+      "n": 3
+    },
+    "Remplacement robinet": {
+      "min_hours": 0.2,
+      "max_hours": 1.0,
+      "quantile_20_fcfa": 5200.0,
+      "n": 3
+    },
+    "Installation WC": {
+      "min_hours": 1.0,
+      "max_hours": 12.0,
+      "quantile_20_fcfa": 17000.0,
+      "n": 3
+    },
+    "Réparation fuite d'eau": {
+      "min_hours": 3.0,
+      "max_hours": 8.0,
+      "quantile_20_fcfa": 68000.0,
+      "n": 2
+    },
+    "Pose de porte intérieure": {
+      "min_hours": 24.0,
+      "max_hours": 45.0,
+      "quantile_20_fcfa": 136000.0,
+      "n": 3
+    }
+  },
+  "validation_groups": [
+    {
+      "id": "ci24-v2",
+      "n": 24,
+      "providers": 6,
+      "objective": "MAE FCFA",
+      "scores": [
+        {
+          "methode": "Lasso réglé en interne",
+          "n": 24,
+          "mae_fcfa": 33843.703213009045,
+          "rmse_fcfa": 49377.922454112915,
+          "mediane_erreur_pct": 42.21189276367549,
+          "wape_pct": 40.89873500061517,
+          "r2_fcfa": 0.7590915488517824,
+          "erreur_max_fcfa": 125871.0006655567
+        },
+        {
+          "methode": "Médiane mission",
+          "n": 24,
+          "mae_fcfa": 30166.666666666668,
+          "rmse_fcfa": 44631.82720884279,
+          "mediane_erreur_pct": 31.221719457013574,
+          "wape_pct": 36.4551863041289,
+          "r2_fcfa": 0.803177047202844,
+          "erreur_max_fcfa": 125000.0
+        },
+        {
+          "methode": "OLS réglé en interne",
+          "n": 24,
+          "mae_fcfa": 30467.61827145777,
+          "rmse_fcfa": 45804.70291065169,
+          "mediane_erreur_pct": 34.58699208676151,
+          "wape_pct": 36.81887404405772,
+          "r2_fcfa": 0.7926965402849605,
+          "erreur_max_fcfa": 128245.99180800543
+        },
+        {
+          "methode": "Ridge réglé en interne",
+          "n": 24,
+          "mae_fcfa": 32827.13189695657,
+          "rmse_fcfa": 49270.69459643449,
+          "mediane_erreur_pct": 37.704233826936225,
+          "wape_pct": 39.67025002653361,
+          "r2_fcfa": 0.7601367142886315,
+          "erreur_max_fcfa": 119173.2868590799
+        },
+        {
+          "methode": "Règle de trois durée",
+          "n": 24,
+          "mae_fcfa": 78155.93171296296,
+          "rmse_fcfa": 141570.11006629138,
+          "mediane_erreur_pct": 59.561403508771924,
+          "wape_pct": 94.44825584648092,
+          "r2_fcfa": -0.9802934375484595,
+          "erreur_max_fcfa": 520078.125
+        },
+        {
+          "methode": "Sélection avec repli simple",
+          "n": 24,
+          "mae_fcfa": 35538.26347273272,
+          "rmse_fcfa": 53624.301528433374,
+          "mediane_erreur_pct": 36.15461433107888,
+          "wape_pct": 42.94654196100631,
+          "r2_fcfa": 0.7158748318911141,
+          "erreur_max_fcfa": 128245.99180800543
+        },
+        {
+          "methode": "Sélection régressions imbriquée",
+          "n": 24,
+          "mae_fcfa": 34493.15467196785,
+          "rmse_fcfa": 50601.544083693756,
+          "mediane_erreur_pct": 43.45340662064442,
+          "wape_pct": 41.68357060056538,
+          "r2_fcfa": 0.7470038294691155,
+          "erreur_max_fcfa": 128245.99180800543
+        }
+      ],
+      "final_regression_config": {
+        "family": "OLS",
+        "feature": "log",
+        "target": "log",
+        "alpha": null
+      },
+      "diagnostic_tests": [
+        {
+          "test": "Breusch–Pagan LM",
+          "statistique": 9.482917733791442,
+          "p_value": 0.3939413108610314,
+          "limite": "Exploratoire : résidus estimés, 24 réponses et 6 prestataires"
+        },
+        {
+          "test": "Koenker LM",
+          "statistique": 15.79483638867643,
+          "p_value": 0.07129152891982483,
+          "limite": "Exploratoire : résidus estimés, 24 réponses et 6 prestataires"
+        },
+        {
+          "test": "White LM",
+          "statistique": 22.557622133444504,
+          "p_value": 0.12608169081758103,
+          "limite": "Exploratoire : résidus estimés, 24 réponses et 6 prestataires"
+        },
+        {
+          "test": "Jarque–Bera",
+          "statistique": 0.6788232030116275,
+          "p_value": 0.712189250584893,
+          "limite": "Exploratoire : résidus estimés, 24 réponses et 6 prestataires"
+        },
+        {
+          "test": "Koenker F auxiliaire",
+          "statistique": 2.9944248106873927,
+          "p_value": 0.03235502241065206,
+          "limite": "Peu de degrés de liberté ; désaccord possible avec LM"
+        },
+        {
+          "test": "Shapiro–Wilk",
+          "statistique": 0.9755194418607731,
+          "p_value": 0.801269827031012,
+          "limite": "Diagnostic de normalité, non preuve"
+        },
+        {
+          "test": "Skewness",
+          "statistique": 0.10684929450329171,
+          "p_value": null,
+          "limite": "Descriptif, symétrie si zéro"
+        },
+        {
+          "test": "Test asymétrie",
+          "statistique": 0.24027612832457676,
+          "p_value": 0.8101161998470378,
+          "limite": "Exploratoire sur résidus estimés"
+        },
+        {
+          "test": "Kurtosis Pearson",
+          "statistique": 2.3039783751689633,
+          "p_value": null,
+          "limite": "Normale : 3"
+        },
+        {
+          "test": "RESET HC3",
+          "statistique": 0.14570701154269483,
+          "p_value": 0.865917247944677,
+          "limite": "Powers 2–3 ; petit échantillon"
+        },
+        {
+          "test": "Durbin–Watson / Ljung–Box",
+          "statistique": null,
+          "p_value": null,
+          "limite": "Non appliqués : observations non datées"
+        }
+      ],
+      "note": "Les procédures Ridge et Lasso sont conservées comme comparaisons ; leurs modèles finaux ne sont pas exportés dans cette étude."
+    },
+    {
+      "id": "ci14-v3",
+      "n": 14,
+      "providers": 6,
+      "objective": "Perte quantile normalisée, q=0.2",
+      "scores": [
+        {
+          "quantile": 0.2,
+          "methode": "Médiane locale par mission",
+          "n": 14,
+          "pinball_normalisee": 0.6919956727411629,
+          "pinball_fcfa": 7642.857142857143,
+          "mae_fcfa": 15285.714285714286,
+          "taux_strictement_inferieur_pct": 35.714285714285715,
+          "taux_inferieur_ou_egal_pct": 57.14285714285714,
+          "taux_depassement_pct": 42.857142857142854,
+          "reduction_mediane_pct": 0.0,
+          "depassement_moyen_fcfa": 7642.857142857143,
+          "valeur_min_fcfa": 5000.0
+        },
+        {
+          "quantile": 0.2,
+          "methode": "Quantile local par mission",
+          "n": 14,
+          "pinball_normalisee": 0.6447808156121253,
+          "pinball_fcfa": 5908.571428571428,
+          "mae_fcfa": 13771.42857142857,
+          "taux_strictement_inferieur_pct": 50.0,
+          "taux_inferieur_ou_egal_pct": 71.42857142857143,
+          "taux_depassement_pct": 28.57142857142857,
+          "reduction_mediane_pct": 1.0344827586206897,
+          "depassement_moyen_fcfa": 5257.142857142857,
+          "valeur_min_fcfa": 4600.0
+        },
+        {
+          "quantile": 0.2,
+          "methode": "Règle de trois sur durée",
+          "n": 14,
+          "pinball_normalisee": 0.9063938122723307,
+          "pinball_fcfa": 15349.111111111113,
+          "mae_fcfa": 27482.46031746032,
+          "taux_strictement_inferieur_pct": 28.57142857142857,
+          "taux_inferieur_ou_egal_pct": 50.0,
+          "taux_depassement_pct": 50.0,
+          "reduction_mediane_pct": -0.6666666666666667,
+          "depassement_moyen_fcfa": 16421.03174603175,
+          "valeur_min_fcfa": 1333.3333333333333
+        },
+        {
+          "quantile": 0.2,
+          "methode": "Référence étrangère × PPA",
+          "n": 14,
+          "pinball_normalisee": 0.7864712346690508,
+          "pinball_fcfa": 22729.73934656168,
+          "mae_fcfa": 52000.05278779579,
+          "taux_strictement_inferieur_pct": 42.857142857142854,
+          "taux_inferieur_ou_egal_pct": 42.857142857142854,
+          "taux_depassement_pct": 57.14285714285714,
+          "reduction_mediane_pct": -83.87665285362746,
+          "depassement_moyen_fcfa": 20549.547981670872,
+          "valeur_min_fcfa": 5038.466636647021
+        },
+        {
+          "quantile": 0.2,
+          "methode": "Transfert régularisé BI",
+          "n": 14,
+          "pinball_normalisee": 0.6864796583029612,
+          "pinball_fcfa": 9109.621754022763,
+          "mae_fcfa": 35574.03608798314,
+          "taux_strictement_inferieur_pct": 57.14285714285714,
+          "taux_inferieur_ou_egal_pct": 78.57142857142857,
+          "taux_depassement_pct": 21.428571428571427,
+          "reduction_mediane_pct": 32.50000000000001,
+          "depassement_moyen_fcfa": 3324.6908940435555,
+          "valeur_min_fcfa": 4000.0
+        },
+        {
+          "quantile": 0.2,
+          "methode": "Transfert régularisé BS (sensibilité)",
+          "n": 14,
+          "pinball_normalisee": 0.6887673920273778,
+          "pinball_fcfa": 8879.284643210978,
+          "mae_fcfa": 34103.33061309407,
+          "taux_strictement_inferieur_pct": 57.14285714285714,
+          "taux_inferieur_ou_egal_pct": 78.57142857142857,
+          "taux_depassement_pct": 21.428571428571427,
+          "reduction_mediane_pct": 32.50000000000001,
+          "depassement_moyen_fcfa": 3431.0308676536074,
+          "valeur_min_fcfa": 4000.0
+        },
+        {
+          "quantile": 0.3,
+          "methode": "Médiane locale par mission",
+          "n": 14,
+          "pinball_normalisee": 0.691995672741163,
+          "pinball_fcfa": 7642.857142857143,
+          "mae_fcfa": 15285.714285714286,
+          "taux_strictement_inferieur_pct": 35.714285714285715,
+          "taux_inferieur_ou_egal_pct": 57.14285714285714,
+          "taux_depassement_pct": 42.857142857142854,
+          "reduction_mediane_pct": 0.0,
+          "depassement_moyen_fcfa": 7642.857142857143,
+          "valeur_min_fcfa": 5000.0
+        },
+        {
+          "quantile": 0.3,
+          "methode": "Quantile local par mission",
+          "n": 14,
+          "pinball_normalisee": 0.6605636823254546,
+          "pinball_fcfa": 6522.857142857143,
+          "mae_fcfa": 13914.285714285714,
+          "taux_strictement_inferieur_pct": 35.714285714285715,
+          "taux_inferieur_ou_egal_pct": 57.14285714285714,
+          "taux_depassement_pct": 42.857142857142854,
+          "reduction_mediane_pct": 0.0,
+          "depassement_moyen_fcfa": 5871.428571428572,
+          "valeur_min_fcfa": 4900.0
+        },
+        {
+          "quantile": 0.3,
+          "methode": "Règle de trois sur durée",
+          "n": 14,
+          "pinball_normalisee": 0.9106639564556289,
+          "pinball_fcfa": 19066.789682539682,
+          "mae_fcfa": 33553.84920634921,
+          "taux_strictement_inferieur_pct": 28.57142857142857,
+          "taux_inferieur_ou_egal_pct": 50.0,
+          "taux_depassement_pct": 50.0,
+          "reduction_mediane_pct": -2.666666666666667,
+          "depassement_moyen_fcfa": 22501.587301587304,
+          "valeur_min_fcfa": 1375.0
+        },
+        {
+          "quantile": 0.3,
+          "methode": "Référence étrangère × PPA",
+          "n": 14,
+          "pinball_normalisee": 0.9996160829176943,
+          "pinball_fcfa": 23819.835029007085,
+          "mae_fcfa": 52000.05278779579,
+          "taux_strictement_inferieur_pct": 42.857142857142854,
+          "taux_inferieur_ou_egal_pct": 42.857142857142854,
+          "taux_depassement_pct": 57.14285714285714,
+          "reduction_mediane_pct": -83.87665285362746,
+          "depassement_moyen_fcfa": 20549.547981670872,
+          "valeur_min_fcfa": 5038.466636647021
+        },
+        {
+          "quantile": 0.3,
+          "methode": "Transfert régularisé BI",
+          "n": 14,
+          "pinball_normalisee": 0.6496022598885391,
+          "pinball_fcfa": 6348.669735759257,
+          "mae_fcfa": 15183.892029544255,
+          "taux_strictement_inferieur_pct": 50.0,
+          "taux_inferieur_ou_egal_pct": 71.42857142857143,
+          "taux_depassement_pct": 28.57142857142857,
+          "reduction_mediane_pct": 5.172413793103453,
+          "depassement_moyen_fcfa": 4483.755317239952,
+          "valeur_min_fcfa": 4000.0
+        },
+        {
+          "quantile": 0.3,
+          "methode": "Transfert régularisé BS (sensibilité)",
+          "n": 14,
+          "pinball_normalisee": 0.6500536384031579,
+          "pinball_fcfa": 6350.943991345662,
+          "mae_fcfa": 15187.140966096262,
+          "taux_strictement_inferieur_pct": 50.0,
+          "taux_inferieur_ou_egal_pct": 71.42857142857143,
+          "taux_depassement_pct": 28.57142857142857,
+          "reduction_mediane_pct": 5.172413793103448,
+          "depassement_moyen_fcfa": 4487.004253791961,
+          "valeur_min_fcfa": 4000.0
+        }
+      ],
+      "floor_scenarios": [
+        {
+          "quantile": 0.2,
+          "methode": "Transfert + scénario plancher 1 000 FCFA/h",
+          "n": 14,
+          "pinball_normalisee": 0.6801886297533134,
+          "pinball_fcfa": 8736.393956471391,
+          "mae_fcfa": 33707.897100226284,
+          "taux_strictement_inferieur_pct": 57.14285714285714,
+          "taux_inferieur_ou_egal_pct": 78.57142857142857,
+          "taux_depassement_pct": 21.428571428571427,
+          "reduction_mediane_pct": 32.50000000000001,
+          "depassement_moyen_fcfa": 3324.6908940435555,
+          "valeur_min_fcfa": 4000.0
+        },
+        {
+          "quantile": 0.3,
+          "methode": "Transfert + scénario plancher 1 000 FCFA/h",
+          "n": 14,
+          "pinball_normalisee": 0.6496022598885391,
+          "pinball_fcfa": 6348.669735759257,
+          "mae_fcfa": 15183.892029544255,
+          "taux_strictement_inferieur_pct": 50.0,
+          "taux_inferieur_ou_egal_pct": 71.42857142857143,
+          "taux_depassement_pct": 28.57142857142857,
+          "reduction_mediane_pct": 5.172413793103453,
+          "depassement_moyen_fcfa": 4483.755317239952,
+          "valeur_min_fcfa": 4000.0
+        }
+      ],
+      "note": "Ne pas comparer directement les scores aux 24 réponses de V2."
+    }
+  ],
+  "earlier_econometric_diagnostics": {
+    "models": {
+      "OLS durée + métier": {
+        "n": 24,
+        "parametres": 3,
+        "groupes": 6,
+        "r2_log": 0.7451037004846222,
+        "r2_ajuste_log": 0.7208278624355385,
+        "aic": 56.84989398248646,
+        "bic": 60.3840554735303,
+        "df_resid": 21.0,
+        "condition": 11.913927866134596
+      },
+      "OLS durée + missions": {
+        "n": 24,
+        "parametres": 10,
+        "groupes": 6,
+        "r2_log": 0.9556598105836983,
+        "r2_ajuste_log": 0.9271554031017901,
+        "aic": 28.874726355421203,
+        "bic": 40.65526465890066,
+        "df_resid": 14.0,
+        "condition": 44.69553350574804
+      }
+    },
+    "tests": [
+      {
+        "modele": "OLS durée + métier",
+        "test": "Breusch–Pagan LM original",
+        "statistique": 1.4782713686187146,
+        "p_value": 0.4775264708277728,
+        "limite": "Approximation sous normalité et indépendance ; petit échantillon"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Koenker–Breusch–Pagan LM",
+        "statistique": 3.968227140571871,
+        "p_value": 0.1375024463653289,
+        "limite": "Version studentisée ; petit échantillon et dépendance prestataire"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Koenker F auxiliaire",
+        "statistique": 2.0800148478318023,
+        "p_value": 0.14991169908331275,
+        "limite": "Régression auxiliaire ; interprétation exploratoire"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "White LM",
+        "statistique": 8.189561128979776,
+        "p_value": 0.08487599521322105,
+        "limite": "Rang auxiliaire 5, ddl résiduels 19 ; approximation fragile"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Jarque–Bera",
+        "statistique": 1.6148645693290327,
+        "p_value": 0.4460018028683541,
+        "limite": "Normalité des résidus ; asymptotique, faible puissance"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Shapiro–Wilk",
+        "statistique": 0.9357751708202743,
+        "p_value": 0.1312630626201624,
+        "limite": "Descriptif sur résidus ajustés ; dépendance non prise en compte"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Skewness résidus (descriptif)",
+        "statistique": -0.10676011728588855,
+        "p_value": null,
+        "limite": "Asymétrie : zéro correspond à une distribution symétrique"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Test asymétrie D’Agostino",
+        "statistique": -0.24007605407663105,
+        "p_value": 0.8102712974950561,
+        "limite": "Exploratoire ; résidus estimés, dépendance possible"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Kurtosis résidus (Pearson)",
+        "statistique": 1.736809391551,
+        "p_value": null,
+        "limite": "Référence normale : 3"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Ramsey RESET HC3",
+        "statistique": 0.2349926469468926,
+        "p_value": 0.792840425469616,
+        "limite": "Teste puissances 2 et 3 des valeurs ajustées ; descriptif en petit n"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Durbin–Watson / Ljung–Box",
+        "statistique": null,
+        "p_value": null,
+        "limite": "Non appliqués : aucune chronologie des observations, ordre Excel arbitraire"
+      },
+      {
+        "modele": "OLS durée + métier",
+        "test": "Test conjoint HC3",
+        "statistique": 42.956014496728194,
+        "p_value": 3.788991155300145e-08,
+        "limite": "Hypothèse : tous les coefficients hors constante nuls ; indépendance supposée"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Breusch–Pagan LM original",
+        "statistique": 9.482917733791442,
+        "p_value": 0.3939413108610314,
+        "limite": "Approximation sous normalité et indépendance ; petit échantillon"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Koenker–Breusch–Pagan LM",
+        "statistique": 15.79483638867643,
+        "p_value": 0.07129152891982483,
+        "limite": "Version studentisée ; petit échantillon et dépendance prestataire"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Koenker F auxiliaire",
+        "statistique": 2.9944248106873927,
+        "p_value": 0.03235502241065206,
+        "limite": "Régression auxiliaire ; interprétation exploratoire"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "White LM",
+        "statistique": 22.557622133444504,
+        "p_value": 0.12608169081758103,
+        "limite": "Rang auxiliaire 17, ddl résiduels 7 ; approximation fragile"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Jarque–Bera",
+        "statistique": 0.6788232030116275,
+        "p_value": 0.712189250584893,
+        "limite": "Normalité des résidus ; asymptotique, faible puissance"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Shapiro–Wilk",
+        "statistique": 0.9755194418607731,
+        "p_value": 0.801269827031012,
+        "limite": "Descriptif sur résidus ajustés ; dépendance non prise en compte"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Skewness résidus (descriptif)",
+        "statistique": 0.10684929450329171,
+        "p_value": null,
+        "limite": "Asymétrie : zéro correspond à une distribution symétrique"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Test asymétrie D’Agostino",
+        "statistique": 0.24027612832457676,
+        "p_value": 0.8101161998470378,
+        "limite": "Exploratoire ; résidus estimés, dépendance possible"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Kurtosis résidus (Pearson)",
+        "statistique": 2.3039783751689633,
+        "p_value": null,
+        "limite": "Référence normale : 3"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Ramsey RESET HC3",
+        "statistique": 0.145707011542745,
+        "p_value": 0.8659172479446345,
+        "limite": "Teste puissances 2 et 3 des valeurs ajustées ; descriptif en petit n"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Durbin–Watson / Ljung–Box",
+        "statistique": null,
+        "p_value": null,
+        "limite": "Non appliqués : aucune chronologie des observations, ordre Excel arbitraire"
+      },
+      {
+        "modele": "OLS durée + missions",
+        "test": "Test conjoint HC3",
+        "statistique": 131.34301152454836,
+        "p_value": 5.893359481598408e-12,
+        "limite": "Hypothèse : tous les coefficients hors constante nuls ; indépendance supposée"
+      }
+    ],
+    "scores": [
+      {
+        "modele": "Lasso durée + missions",
+        "mae_fcfa": 36199.19999557868,
+        "rmse_fcfa": 54161.80797617031,
+        "r2_hors_echantillon_fcfa": 0.7101503935267566,
+        "r2_hors_echantillon_log": 0.804139915756447
+      },
+      {
+        "modele": "Médiane locale par mission",
+        "mae_fcfa": 30166.666666666668,
+        "rmse_fcfa": 44631.82720884279,
+        "r2_hors_echantillon_fcfa": 0.803177047202844,
+        "r2_hors_echantillon_log": 0.8490859372329822
+      },
+      {
+        "modele": "OLS durée + missions",
+        "mae_fcfa": 30236.19536289984,
+        "rmse_fcfa": 44995.371430279505,
+        "r2_hors_echantillon_fcfa": 0.799957583914386,
+        "r2_hors_echantillon_log": 0.833803879807041
+      },
+      {
+        "modele": "OLS durée + métier",
+        "mae_fcfa": 40100.42577773602,
+        "rmse_fcfa": 63800.585206928175,
+        "r2_hors_echantillon_fcfa": 0.5978058648121909,
+        "r2_hors_echantillon_log": 0.6663774887107929
+      }
+    ]
+  },
+  "hypotheses": [
+    "PPA consommation 2025, facteur agrégé et non spécifique à chaque métier.",
+    "Rapprochements de contenu non validés : fournitures et modèles CI inconnus.",
+    "Quantile .2 : choix commercial expérimental, pas une donnée observée.",
+    "Plancher 1 000 FCFA/h = scénario 120 000 FCFA / 120 h facturables ; aucun de ces deux paramètres ne provient de l’enquête.",
+    "Aucun plafond utilisant le prix caché n’est appliqué lors des tests.",
+    "Les bornes BI et BS restent deux colonnes du même article, pas deux observations.",
+    "Seules cinq ancres alimentent le transfert, et non les 10 050 articles ni toutes les 76 références sélectionnées."
+  ],
+  "notes": [
+    "Aucun réentraînement pendant un devis.",
+    "Les trois artefacts du manifeste sont copiés octet pour octet.",
+    "Les modèles actuels ne séparent pas proprement main-d’œuvre et fournitures."
+  ]
+}

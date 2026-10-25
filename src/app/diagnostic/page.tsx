@@ -8,6 +8,7 @@ import { ArrowLeft, Camera, Send, RotateCcw, CheckCircle, Zap, AlertCircle, Cloc
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import PriceContextCard, { type PriceContextView } from '@/components/pricing/PriceContextCard'
 
 const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
 const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
@@ -41,6 +42,7 @@ interface PricingData {
   savings_vs_market?: number
   below_market?: boolean
   market_reference_fcfa?: number
+  price_context?: PriceContextView | null
 }
 
 // Moyenne de la fourchette : le diagnostic annonce une estimation, pas un
@@ -102,6 +104,7 @@ export default function DiagnosticPage() {
   const [pricing, setPricing]         = useState<PricingData | null>(null)
   const [basePricing, setBasePricing] = useState<PricingData | null>(null)
   const [pricingLoading, setPricingLoading] = useState(false)
+  const [pricingError, setPricingError] = useState<string | null>(null)
   const [materialTiers, setMaterialTiers]   = useState<any[]>([])
   const [selectedTiers, setSelectedTiers]   = useState<Record<string, 'economique'|'standard'|'premium'>>({})
   const [marketRef, setMarketRef]           = useState<number | null>(null)
@@ -223,7 +226,8 @@ export default function DiagnosticPage() {
    */
   const fetchPricing = async (diagResult: DiagResult, force = false) => {
     // Ne pas recalculer si un prix est déjà en cache pour cette session
-    const cacheKey = `afrione_pricing_${diagResult.mission_id || 'draft'}`
+    const cacheKey = `afrione_pricing_context_v4_${diagResult.mission_id || 'draft'}`
+    setPricingError(null)
     if (force) sessionStorage.removeItem(cacheKey)
     const cached = force ? null : sessionStorage.getItem(cacheKey)
     if (cached) {
@@ -258,6 +262,9 @@ export default function DiagnosticPage() {
       ])
       if (pricingRes.ok) {
         const d = await pricingRes.json()
+        if (typeof d.total !== 'number' || !Number.isFinite(d.total) || d.total <= 0) {
+          throw new Error('Estimation non disponible')
+        }
         const bd = d.breakdown || {}
         const newPricing: PricingData = {
           estimate:        d.total || 0,
@@ -269,6 +276,7 @@ export default function DiagnosticPage() {
             premium:   (bd.commission_afrione || 0) + (bd.assurance_sav || 0),
           },
           artisan_percoit: d.artisan_percoit || 0,
+          price_context: d.price_context ?? null,
         }
         setPricing(newPricing)
         setBasePricing(newPricing)
@@ -280,6 +288,8 @@ export default function DiagnosticPage() {
             body: JSON.stringify({ mission_id: diagResult.mission_id, pricing: newPricing }),
           }).catch(() => {})
         }
+      } else {
+        setPricingError('Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
       }
       if (tiersRes?.ok) {
         const td = await tiersRes.json()
@@ -289,7 +299,9 @@ export default function DiagnosticPage() {
         for (const m of td.materials || []) defaults[m.name] = 'standard'
         setSelectedTiers(defaults)
       }
-    } catch {}
+    } catch {
+      setPricingError('Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
+    }
     setPricingLoading(false)
   }
 
@@ -715,10 +727,12 @@ export default function DiagnosticPage() {
               ))}
             </div>
 
-            {/* Prix — Agent IA AfriOne */}
+            {pricing?.price_context && <PriceContextCard context={pricing.price_context} />}
+
+            {/* Calcul historique, distinct du repère statistique */}
             <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid #E2E8F0', boxShadow: NEU_SHADOW }}>
               <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Tahoma', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>ESTIMATION AFRIONE</span>
+                <span>CALCUL INDICATIF AFRIONE</span>
                 {!pricingLoading && pricing && (
                   <span style={{ fontSize: '9px', color: '#E85D26', fontFamily: 'Tahoma' }}>AGENT IA</span>
                 )}
@@ -731,6 +745,11 @@ export default function DiagnosticPage() {
                   <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'Tahoma' }}>
                     {result.price_min.toLocaleString('fr')} – {result.price_max.toLocaleString('fr')} FCFA
                   </span>
+                </div>
+              ) : pricingError ? (
+                <div role="status" style={{ color: '#6B7280', fontSize: '13px', lineHeight: 1.6 }}>
+                  <p style={{ margin: '0 0 10px' }}>{pricingError}</p>
+                  <button type="button" onClick={() => fetchPricing(result, true)} style={{ color: '#C95024', fontWeight: 600 }}>Réessayer l’estimation</button>
                 </div>
               ) : pricing ? (
                 <>
@@ -775,8 +794,8 @@ export default function DiagnosticPage() {
 
               <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', margin: '12px 0 0' }}>
                 {pricing
-                  ? `Artisan perçoit ~${pricing.artisan_percoit.toLocaleString('fr')} FCFA · Fixé par AfriOne`
-                  : "Indicatif · Prix fixé par AfriOne"}
+                  ? `Calcul horaire indicatif · montant à confirmer par devis`
+                  : "Prix à confirmer par un prestataire"}
               </p>
             </div>
 

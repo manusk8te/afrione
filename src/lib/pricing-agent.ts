@@ -5,6 +5,8 @@ import { lookupItemOnJumia } from "./jumia-lookup";
 import { SMIG_X2_HORAIRE, CATEGORY_TO_METIER, computeLabor } from "./pricing";
 import { FILTRE_CATALOGUE_VALIDE } from "./catalogue";
 import { getTransport } from "./transport";
+import { getStudyEstimate, findPublishedPriceReferences, getPriceContext, type StudyEvaluation, type PriceContext } from './pricing-studies';
+import { lockPricingInputs } from './pricing-studies/engine.mjs';
 
 // ── Fallbacks ────────────────────────────────────────────────────────────────
 
@@ -154,7 +156,15 @@ const searchMaterialPrice = tool({
   },
 });
 
-const calculateFinalPrice = tool({
+interface PricingContext {
+  hours: number;
+  hourly_rate: number;
+  urgency: Urgency;
+  quartier: string;
+}
+
+function createCalculateFinalPrice(context?: PricingContext) {
+  return tool({
   name: "calculate_final_price",
   description: "Calcule le prix final AfriOne avec dégressivité longues tâches + commission. Appeler après avoir tous les prix. Utilise le taux horaire et l'urgence donnés dans le contexte, ne les recalcule jamais.",
   parameters: z.object({
@@ -164,7 +174,8 @@ const calculateFinalPrice = tool({
     urgency:         z.enum(['low', 'medium', 'high', 'emergency']).optional().describe("Urgence déjà résolue, donnée dans le contexte"),
     quartier:        z.string().optional().describe("Quartier client Abidjan"),
   }),
-  execute: async ({ hours, hourly_rate, materials_total, urgency = 'medium', quartier = 'Cocody' }) => {
+  execute: async (args) => {
+    const { hours, hourly_rate, materials_total, urgency = 'medium', quartier = 'Cocody' } = lockPricingInputs(context, args);
     // Plancher SMIG appliqué en code par défense en profondeur (déjà garanti en amont par resolveHourlyRate)
     const flooredRate = Math.max(hourly_rate, SMIG_X2_HORAIRE);
 
@@ -199,6 +210,7 @@ const calculateFinalPrice = tool({
     };
   },
 });
+}
 
 // ── Sortie structurée (C3) ──────────────────────────────────────────────────
 // Remplace le JSON.parse manuel sur output_text par un schéma zod appliqué
@@ -227,30 +239,70 @@ const pricingOutputSchema = z.object({
   ),
 });
 
-export type PricingAgentOutput = z.infer<typeof pricingOutputSchema>;
+export type PricingAgentOutput = z.infer<typeof pricingOutputSchema> & {
+  study: StudyEvaluation | null;
+  price_context: PriceContext | null;
+  applied_estimator: 'legacy_hourly';
+};
 
 // ── Agent ────────────────────────────────────────────────────────────────────
 // Prompt réduit (C4) : la résolution du taux horaire et de l'urgence se fait
 // en amont, en TypeScript. L'agent ne fait plus que chercher les matériaux,
 // calculer le prix final, et rédiger data_note.
 
-const afrione = new Agent({
+function createAfrioneAgent(onStudy: (value: StudyEvaluation) => void, hours?: number, context?: PricingContext, onPriceContext?: (value: PriceContext) => void) {
+  const searchPriceReference = tool({
+    name: 'search_price_reference',
+    description: 'Retrouve des prix publiés en France et au Sénégal, avec unité, périmètre, URL et identifiant. Compare les caractéristiques au besoin client avant de choisir une référence. La recherche ne décide pas du diagnostic.',
+    parameters: z.object({ query: z.string().min(1) }),
+    execute: async ({ query }) => findPublishedPriceReferences(query),
+  });
+  const contextualizeReferencePrice = tool({
+    name: 'contextualize_reference_price',
+    description: 'Applique la fonction statistique de contexte France/Sénégal vers Côte d’Ivoire à une référence publiée. La mission est comprise par l’agent ; le moteur ne contient aucun coefficient par nom de tâche. D est appris sur les erreurs hors apprentissage. Expérimental : ne pas transformer le résultat en tarif de main-d’œuvre seule.',
+    parameters: z.object({
+      reference_id: z.string().describe('Identifiant obtenu dans search_price_reference, jamais un prix inventé'),
+      hours: z.number().positive(),
+    }),
+    execute: async ({ reference_id, hours: requestedHours }) => {
+      const value = getPriceContext(reference_id, hours ?? requestedHours);
+      onPriceContext?.(value);
+      return value;
+    },
+  });
+  const estimateServicePrice = tool({
+    name: 'estimate_service_price',
+    description: 'Exécute les estimateurs déjà calculés dans les études AfriOne (médiane, OLS, transfert quantile). Retourne leurs versions, sources, limites et scores. Comparaison seulement : les montants ne sont pas des tarifs de main-d’œuvre seule et ne remplacent pas le taux horaire.',
+    parameters: z.object({
+      mission: z.string().describe('Intitulé exact de la mission. Si inconnue, ne pas forcer un rapprochement.'),
+      hours: z.number().positive().describe('Durée estimée en heures'),
+    }),
+    execute: async ({ mission, hours: requestedHours }) => {
+      const evaluation = getStudyEstimate(mission, hours ?? requestedHours);
+      onStudy(evaluation);
+      return evaluation;
+    },
+  });
+  return new Agent({
   name: "afrione",
   instructions: `Tu es l'agent de tarification AfriOne pour le marché informel d'Abidjan, Côte d'Ivoire.
 
 Le taux horaire et l'urgence sont déjà résolus et te sont donnés dans le message. Ne les recalcule jamais, ne les déduis pas d'autre chose que ce qui t'est donné.
 
 Processus :
+0. Comprends la prestation et ses caractéristiques. Appelle search_price_reference, vérifie le périmètre, puis contextualize_reference_price pour obtenir le contexte économique ivoirien. Tu comprends et choisis la référence ; la fonction statistique contextualise son prix. Si aucune référence n'est comparable, ne force pas le rapprochement et consulte estimate_service_price pour documenter l'absence de couverture. Ce dernier outil conserve les études antérieures. Ne rapproche pas un mitigeur de cuisine d'une référence de lavabo sans signaler cette différence.
 1. Pour chaque matériau nécessaire, appelle search_material_price.
 2. Appelle calculate_final_price avec le taux horaire donné, hours, materials_total, l'urgence donnée telle quelle, et le quartier.
 3. Rédige data_note : mentionne toujours la source du taux horaire donnée dans le message (et si un plancher a été appliqué), et signale explicitement tout matériau dont le résultat a is_fallback:true — ce n'est pas un prix trouvé, ne le présente jamais comme tel.
+4. Signale que le devis courant reste fondé sur le moteur horaire existant. Les résultats statistiques sont une comparaison expérimentale, pas une main-d’œuvre à additionner aux fournitures. Ne remplace jamais hourly_rate par un montant retourné par estimate_service_price. Ne fabrique pas d'intervalle de confiance à partir d'une MAE.
 
 Règle absolue : les prix viennent toujours des outils, jamais inventés.`,
   model: "gpt-4o-mini",
-  tools: [searchMaterialPrice, calculateFinalPrice],
+  tools: [searchPriceReference, contextualizeReferencePrice, estimateServicePrice, searchMaterialPrice, createCalculateFinalPrice(context)],
   outputType: pricingOutputSchema,
   modelSettings: { store: true },
 });
+}
 
 // ── Runner ───────────────────────────────────────────────────────────────────
 
@@ -276,7 +328,10 @@ function extractSteps(newItems: any[]): AgentStep[] {
   });
 }
 
-export const runWorkflow = async (workflow: WorkflowInput) => {
+export const runWorkflow = async (workflow: WorkflowInput, hours?: number, context?: PricingContext) => {
+  let study: StudyEvaluation | null = null;
+  let priceContext: PriceContext | null = null;
+  const afrione = createAfrioneAgent(value => { study = value; }, hours, context, value => { priceContext = value; });
   try {
     return await withTrace("AfriOne Pricing Agent", async () => {
       const conversationHistory: AgentInputItem[] = [
@@ -290,10 +345,13 @@ export const runWorkflow = async (workflow: WorkflowInput) => {
       if (!result.finalOutput) {
         throw new Error("Agent result is undefined");
       }
+      if (!study && !priceContext) throw new Error('Études non consultées : contextualisation ou estimate_service_price requis');
 
       return {
         output: result.finalOutput,
         steps: extractSteps(result.newItems ?? []),
+        study,
+        price_context: priceContext,
       };
     });
   } finally {
@@ -349,7 +407,9 @@ export async function runPricingAgent(input: AgentPricingInput): Promise<Pricing
   let runError: string | null = null;
 
   try {
-    result = await runWorkflow({ input_as_text: text });
+    result = await runWorkflow({ input_as_text: text }, input.hours_estimate, {
+      hours: input.hours_estimate, hourly_rate: rate.hourly_rate, urgency, quartier: input.quartier,
+    });
   } catch (err: any) {
     runError = err?.message || 'run_failed';
   }
@@ -361,7 +421,7 @@ export async function runPricingAgent(input: AgentPricingInput): Promise<Pricing
     model:       'gpt-4o-mini',
     input:       { category: input.category, metier, quartier: input.quartier, urgency, hours: input.hours_estimate, items: input.items_needed, artisan_id: input.artisan_id ?? null, source_tarif: rate.source_tarif, hourly_rate: rate.hourly_rate, prompt: text },
     steps:       result?.steps ?? [],
-    output:      result?.output ?? null,
+    output:      result ? { ...result.output, study: result.study, price_context: result.price_context, applied_estimator: 'legacy_hourly' } : null,
     total_price: result?.output?.total ?? null,
     parse_ok:    result != null,
     error:       runError,
@@ -382,5 +442,9 @@ export async function runPricingAgent(input: AgentPricingInput): Promise<Pricing
     ...result.output,
     source_tarif: rate.source_tarif,
     version_reference: 'hourly-fallback-v1', // pas de catalogue de tâches tant que C2 n'est pas fait
+    data_note: result.output.data_note + ' Les études sont consultées en comparaison expérimentale ; leurs montants ne sont pas appliqués comme main-d’œuvre seule.',
+    study: result.study,
+    price_context: result.price_context,
+    applied_estimator: 'legacy_hourly',
   };
 }

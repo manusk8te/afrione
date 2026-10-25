@@ -70,8 +70,9 @@ async function saveAllProducts(products: JumiaProduct[], category: string) {
       category,
       unit:            'unité',
       tier:            'standard',
-      price_market:    Math.round(p.price * 0.88), // marché physique ≈ 88% du prix Jumia CI
-      price_min:       Math.round(p.price * 0.75),
+      // Conserver le prix affiché. Aucune remise marché n'a été estimée dans nos études.
+      price_market:    p.price,
+      price_min:       p.price,
       price_max:       p.price,
       source:          'Jumia CI',
       brand:           p.brand,

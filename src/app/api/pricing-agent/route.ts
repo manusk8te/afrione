@@ -1,12 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runPricingAgent } from '@/lib/pricing-agent'
+import { previewStudyQuote, getPriceContext } from '@/lib/pricing-studies'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(req: NextRequest) {
-  const body = await req.json()
+const studyPreviewSchema = z.object({
+  pricing_mode: z.literal('study_preview'),
+  mission: z.string().trim().min(1).max(200),
+  hours: z.number().positive().finite(),
+  materials: z.array(z.object({
+    material_id: z.string().uuid(),
+    name: z.string().trim().min(1).max(200),
+    quantity: z.number().positive().finite(),
+    unit: z.string().trim().min(1).max(50),
+  }).strict()).max(20),
+}).strict()
+const contextPreviewSchema = z.object({
+  pricing_mode: z.literal('context_preview'),
+  reference_id: z.string().trim().min(1).max(50),
+  hours: z.number().positive().finite(),
+}).strict()
 
+export async function POST(req: NextRequest) {
   try {
+    const body = await req.json()
+    if (body.pricing_mode === 'context_preview') {
+      const parsed = contextPreviewSchema.safeParse(body)
+      if (!parsed.success) return NextResponse.json({ error: 'Demande de contexte invalide' }, { status: 400 })
+      return NextResponse.json(getPriceContext(parsed.data.reference_id, parsed.data.hours))
+    }
+    if (body.pricing_mode === 'study_preview') {
+      const parsed = studyPreviewSchema.safeParse(body)
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Demande de simulation invalide', details: parsed.error.issues }, { status: 400 })
+      }
+      const { mission, hours, materials } = parsed.data
+      return NextResponse.json(await previewStudyQuote(mission, hours, materials))
+    }
+    if (body.pricing_mode !== undefined) {
+      return NextResponse.json({ error: 'Mode de tarification inconnu' }, { status: 400 })
+    }
     const result = await runPricingAgent({
       category:       body.category       || 'Plomberie',
       description:    body.description    || '',
@@ -20,6 +54,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result)
   } catch (err: any) {
     console.error('[pricing-agent]', err?.message)
-    return NextResponse.json({ total: 0, fourchette: { min: 0, max: 0 }, artisan_percoit: 0, breakdown: {} }, { status: 500 })
+    return NextResponse.json({ status: 'devis_requis', total: null, error: 'Calcul de prix indisponible' }, { status: 500 })
   }
 }
