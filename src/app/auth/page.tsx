@@ -114,6 +114,7 @@ function AuthContent() {
   const [lastName, setLastName]   = useState('')
   const [showPw, setShowPw]     = useState(false)
   const [loading, setLoading]   = useState(false)
+  const [authError, setAuthError] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -121,17 +122,33 @@ function AuthContent() {
     })
   }, [])
 
+  function showAuthError(error: unknown) {
+    const message = error instanceof Error ? error.message : ''
+    const translated = message === 'Invalid login credentials'
+      ? 'Email ou mot de passe incorrect.'
+      : message === 'Email not confirmed'
+      ? 'Confirmez votre adresse email avec le lien reçu avant de vous connecter.'
+      : /fetch|network/i.test(message)
+      ? 'Le service de connexion est inaccessible. Vérifiez votre connexion et réessayez.'
+      : message || 'La connexion a échoué. Réessayez.'
+    setAuthError(translated)
+    toast.error(translated)
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
+    setAuthError('')
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      toast.error(error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect' : error.message)
-    } else {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      if (error) throw error
       toast.success('Connexion réussie')
       router.replace(redirectTo)
+    } catch (error) {
+      showAuthError(error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -274,6 +291,12 @@ function AuthContent() {
             </span>
             <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
           </div>
+
+          {authError && (
+            <p role="alert" style={{ color: '#fca5a5', fontSize: 14, margin: 0 }}>
+              {authError}
+            </p>
+          )}
 
           {/* Form */}
           <form onSubmit={tab === 'login' ? handleLogin : handleSignup}
