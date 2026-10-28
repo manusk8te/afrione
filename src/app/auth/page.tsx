@@ -1,10 +1,11 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useId, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Circle, Chrome, Github, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Circle, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import { safeAuthRedirect } from '@/lib/auth-recovery'
 
 const ORANGE = '#E85D26'
 const BRAND_GRAY = '#1A1A1A'
@@ -48,36 +49,19 @@ function StepItem({ number, text, active }: { number: number; text: string; acti
   )
 }
 
-function SocialButton({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
-  return (
-    <button style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-      padding: '11px 16px', borderRadius: 12, cursor: 'pointer',
-      background: '#000', border: '1px solid rgba(255,255,255,0.1)',
-      color: '#fff', fontSize: 13, fontWeight: 500,
-      transition: 'background 0.2s',
-      width: '100%',
-    }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-      onMouseLeave={e => (e.currentTarget.style.background = '#000')}
-    >
-      <Icon size={16} />
-      {label}
-    </button>
-  )
-}
-
 function InputGroup({
   label, placeholder, type = 'text', value, onChange, rightEl,
 }: {
   label: string; placeholder: string; type?: string
   value: string; onChange: (v: string) => void; rightEl?: React.ReactNode
 }) {
+  const inputId = useId()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>{label}</label>
+      <label htmlFor={inputId} style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>{label}</label>
       <div style={{ position: 'relative' }}>
         <input
+          id={inputId}
           type={type}
           value={value}
           onChange={e => onChange(e.target.value)}
@@ -105,7 +89,7 @@ function InputGroup({
 function AuthContent() {
   const router = useRouter()
   const params = useSearchParams()
-  const redirectTo = params.get('redirect') || '/'
+  const redirectTo = safeAuthRedirect(params.get('redirect'))
 
   const [tab, setTab]           = useState<'login' | 'signup'>('login')
   const [email, setEmail]       = useState('')
@@ -115,6 +99,7 @@ function AuthContent() {
   const [showPw, setShowPw]     = useState(false)
   const [loading, setLoading]   = useState(false)
   const [authError, setAuthError] = useState('')
+  const [recoverySent, setRecoverySent] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -163,7 +148,8 @@ function AuthContent() {
         redirectTo: `${window.location.origin}/auth/reset`,
       })
       if (error) throw error
-      toast.success('Si cette adresse correspond à un compte, un lien de récupération a été envoyé. Vérifiez aussi les indésirables.', { duration: 10000 })
+      setRecoverySent(true)
+      toast.success('Si cette adresse correspond à un compte, un code de récupération a été envoyé. Vérifiez aussi les indésirables.', { duration: 10000 })
     } catch (error) {
       showAuthError(error)
     } finally {
@@ -293,25 +279,6 @@ function AuthContent() {
             ))}
           </div>
 
-          {/* Social buttons */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <SocialButton icon={Chrome} label="Google" />
-            <SocialButton icon={Github} label="Github" />
-          </div>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
-            <span style={{
-              padding: '0 16px', fontSize: 11, fontWeight: 500,
-              color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', textTransform: 'uppercase',
-              background: '#000',
-            }}>
-              Ou
-            </span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
-          </div>
-
           {authError && (
             <p role="alert" style={{ color: '#fca5a5', fontSize: 14, margin: 0 }}>
               {authError}
@@ -329,6 +296,12 @@ function AuthContent() {
               </div>
             )}
 
+            {recoverySent && (
+              <div role="status" style={{ padding: 14, border: '1px solid #E85D26', borderRadius: 12, color: '#fff', fontSize: 13, lineHeight: 1.6 }}>
+                Si cette adresse correspond à un compte, un email « AfriOne — Code de récupération » a été envoyé. Vérifiez les spams et utilisez uniquement le dernier email reçu.
+                <a href="/auth/reset" style={{ display: 'block', color: '#FFAA80', marginTop: 8 }}>J’ai reçu un code : le saisir ici</a>
+              </div>
+            )}
             <InputGroup label="Adresse email" placeholder="vous@exemple.com" type="email" value={email} onChange={setEmail} />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
