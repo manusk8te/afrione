@@ -163,14 +163,16 @@ interface PricingContext {
   quartier: string;
 }
 
-function createCalculateFinalPrice(context?: PricingContext) {
+type CalculatedQuote = Pick<z.infer<typeof pricingOutputSchema>, 'total' | 'fourchette' | 'artisan_percoit' | 'breakdown'>;
+
+function createCalculateFinalPrice(context?: PricingContext, onCalculated?: (value: CalculatedQuote) => void) {
   return tool({
   name: "calculate_final_price",
   description: "Calcule le prix final AfriOne avec dégressivité longues tâches + commission. Appeler après avoir tous les prix. Utilise le taux horaire et l'urgence donnés dans le contexte, ne les recalcule jamais.",
   parameters: z.object({
-    hours:           z.number().describe("Durée en heures"),
-    hourly_rate:     z.number().describe("Taux horaire FCFA déjà résolu, donné dans le contexte"),
-    materials_total: z.number().describe("Total matériaux FCFA"),
+    hours:           z.number().positive().finite().describe("Durée en heures"),
+    hourly_rate:     z.number().nonnegative().finite().describe("Taux horaire FCFA déjà résolu, donné dans le contexte"),
+    materials_total: z.number().nonnegative().finite().describe("Total matériaux FCFA"),
     urgency:         z.enum(['low', 'medium', 'high', 'emergency']).optional().describe("Urgence déjà résolue, donnée dans le contexte"),
     quartier:        z.string().optional().describe("Quartier client Abidjan"),
   }),
@@ -194,7 +196,7 @@ function createCalculateFinalPrice(context?: PricingContext) {
     const assurance   = Math.round(subtotal * 0.02);
     const total       = subtotal + commission + assurance;
 
-    return {
+    const calculated: CalculatedQuote = {
       breakdown: {
         main_oeuvre: labor_final,
         degressivite: degressif < 1 ? `-${Math.round((1 - degressif) * 100)}% longue tâche` : null,
@@ -208,6 +210,8 @@ function createCalculateFinalPrice(context?: PricingContext) {
       fourchette:      { min: Math.round(total * 0.92), max: Math.round(total * 1.08) },
       artisan_percoit: Math.round(total * 0.88),
     };
+    onCalculated?.(calculated);
+    return calculated;
   },
 });
 }
@@ -243,6 +247,7 @@ export type PricingAgentOutput = z.infer<typeof pricingOutputSchema> & {
   study: StudyEvaluation | null;
   price_context: PriceContext | null;
   applied_estimator: 'legacy_hourly';
+  calculation_source: 'calculate_final_price';
 };
 
 // ── Agent ────────────────────────────────────────────────────────────────────
@@ -250,7 +255,7 @@ export type PricingAgentOutput = z.infer<typeof pricingOutputSchema> & {
 // en amont, en TypeScript. L'agent ne fait plus que chercher les matériaux,
 // calculer le prix final, et rédiger data_note.
 
-function createAfrioneAgent(onStudy: (value: StudyEvaluation) => void, hours?: number, context?: PricingContext, onPriceContext?: (value: PriceContext) => void) {
+function createAfrioneAgent(onStudy: (value: StudyEvaluation) => void, hours?: number, context?: PricingContext, onPriceContext?: (value: PriceContext) => void, onCalculated?: (value: CalculatedQuote) => void) {
   const searchPriceReference = tool({
     name: 'search_price_reference',
     description: 'Retrouve des prix publiés en France et au Sénégal, avec unité, périmètre, URL et identifiant. Compare les caractéristiques au besoin client avant de choisir une référence. La recherche ne décide pas du diagnostic.',
@@ -298,7 +303,7 @@ Processus :
 
 Règle absolue : les prix viennent toujours des outils, jamais inventés.`,
   model: "gpt-4o-mini",
-  tools: [searchPriceReference, contextualizeReferencePrice, estimateServicePrice, searchMaterialPrice, createCalculateFinalPrice(context)],
+  tools: [searchPriceReference, contextualizeReferencePrice, estimateServicePrice, searchMaterialPrice, createCalculateFinalPrice(context, onCalculated)],
   outputType: pricingOutputSchema,
   modelSettings: { store: true },
 });
@@ -331,7 +336,8 @@ function extractSteps(newItems: any[]): AgentStep[] {
 export const runWorkflow = async (workflow: WorkflowInput, hours?: number, context?: PricingContext) => {
   let study: StudyEvaluation | null = null;
   let priceContext: PriceContext | null = null;
-  const afrione = createAfrioneAgent(value => { study = value; }, hours, context, value => { priceContext = value; });
+  let calculatedPrice: CalculatedQuote | null = null;
+  const afrione = createAfrioneAgent(value => { study = value; }, hours, context, value => { priceContext = value; }, value => { calculatedPrice = value; });
   try {
     return await withTrace("AfriOne Pricing Agent", async () => {
       const conversationHistory: AgentInputItem[] = [
@@ -346,9 +352,11 @@ export const runWorkflow = async (workflow: WorkflowInput, hours?: number, conte
         throw new Error("Agent result is undefined");
       }
       if (!study && !priceContext) throw new Error('Études non consultées : contextualisation ou estimate_service_price requis');
+      if (!calculatedPrice) throw new Error('Calcul final non exécuté : calculate_final_price requis');
 
       return {
-        output: result.finalOutput,
+        // L’IA rédige et choisit les outils ; les montants restent ceux du calcul exécuté.
+        output: { ...result.finalOutput, ...(calculatedPrice as CalculatedQuote) },
         steps: extractSteps(result.newItems ?? []),
         study,
         price_context: priceContext,
@@ -421,7 +429,7 @@ export async function runPricingAgent(input: AgentPricingInput): Promise<Pricing
     model:       'gpt-4o-mini',
     input:       { category: input.category, metier, quartier: input.quartier, urgency, hours: input.hours_estimate, items: input.items_needed, artisan_id: input.artisan_id ?? null, source_tarif: rate.source_tarif, hourly_rate: rate.hourly_rate, prompt: text },
     steps:       result?.steps ?? [],
-    output:      result ? { ...result.output, study: result.study, price_context: result.price_context, applied_estimator: 'legacy_hourly' } : null,
+    output:      result ? { ...result.output, study: result.study, price_context: result.price_context, applied_estimator: 'legacy_hourly', calculation_source: 'calculate_final_price' } : null,
     total_price: result?.output?.total ?? null,
     parse_ok:    result != null,
     error:       runError,
@@ -446,5 +454,6 @@ export async function runPricingAgent(input: AgentPricingInput): Promise<Pricing
     study: result.study,
     price_context: result.price_context,
     applied_estimator: 'legacy_hourly',
+    calculation_source: 'calculate_final_price',
   };
 }

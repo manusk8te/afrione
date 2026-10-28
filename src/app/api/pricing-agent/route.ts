@@ -22,6 +22,16 @@ const contextPreviewSchema = z.object({
   hours: z.number().positive().finite(),
 }).strict()
 
+const agentInputSchema = z.object({
+  category: z.string().trim().min(1).max(100),
+  description: z.string().trim().min(1).max(8000),
+  items_needed: z.array(z.string().trim().min(1).max(200)).max(30).default([]),
+  hours_estimate: z.number().positive().finite(),
+  quartier: z.string().trim().min(1).max(100).default('Cocody'),
+  urgency: z.string().trim().min(1).max(100).default('medium'),
+  artisan_id: z.string().uuid().optional(),
+}).strict()
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -41,15 +51,11 @@ export async function POST(req: NextRequest) {
     if (body.pricing_mode !== undefined) {
       return NextResponse.json({ error: 'Mode de tarification inconnu' }, { status: 400 })
     }
-    const result = await runPricingAgent({
-      category:       body.category       || 'Plomberie',
-      description:    body.description    || '',
-      items_needed:   body.items_needed   || [],
-      hours_estimate: body.hours_estimate || 2,
-      quartier:       body.quartier       || 'Cocody',
-      urgency:        body.urgency        || 'medium',
-      artisan_id:     body.artisan_id,
-    })
+    const parsed = agentInputSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ status: 'informations_requises', total: null, error: 'Précisez la prestation et une durée positive.', details: parsed.error.issues }, { status: 400 })
+    }
+    const result = await runPricingAgent(parsed.data)
 
     return NextResponse.json(result)
   } catch (err: any) {

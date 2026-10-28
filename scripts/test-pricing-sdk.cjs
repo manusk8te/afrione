@@ -29,6 +29,12 @@ test.before(async () => {
   ({ runWorkflow } = require('../src/lib/pricing-agent.ts'));
 });
 const context = { hours: .5, hourly_rate: 3000, urgency: 'medium', quartier: 'Cocody' };
+async function executeCalculation(agent) {
+  const response = await agent.tools.find(t => t.name === 'calculate_final_price').invoke(
+    new sdk.RunContext(), JSON.stringify({ hours: 100, hourly_rate: 999999, materials_total: 0, urgency: 'emergency', quartier: 'autre quartier' })
+  );
+  return typeof response === 'string' ? JSON.parse(response) : response;
+}
 const originalRun = sdk.Runner.prototype.run;
 test.after(() => { sdk.Runner.prototype.run = originalRun; Module._resolveFilename = resolve; });
 
@@ -41,6 +47,7 @@ test('le vrai outil SDK retourne les résultats de l’étude et verrouille la d
     const r = typeof response === 'string' ? JSON.parse(response) : response;
     assert.equal(r.hours, .5);
     assert.equal(r.estimates.find(e => e.id === 'local_quantile_v3').estimate_fcfa, 5200);
+    await executeCalculation(agent);
     return { finalOutput: { test_fixture: true }, newItems: [] };
   };
   const result = await runWorkflow({ input_as_text: 'Test logiciel, pas une vraie mission' }, .5, context);
@@ -55,6 +62,7 @@ test('deux exécutions SDK ne mélangent pas leurs missions', async () => {
   sdk.Runner.prototype.run = async function (agent, messages) {
     const mission = messages[0].content[0].text;
     await agent.tools.find(t => t.name === 'estimate_service_price').invoke(new sdk.RunContext(), JSON.stringify({ mission, hours: 1 }));
+    await executeCalculation(agent);
     return { finalOutput: { test_fixture: true }, newItems: [] };
   };
   const [a,b] = await Promise.all([
@@ -74,6 +82,7 @@ test('l’agent choisit une référence puis le vrai outil fournit le contexte V
     assert.ok(rows.some(r=>r.id==='FR002'));
     const contextTool=agent.tools.find(t=>t.name==='contextualize_reference_price');
     await contextTool.invoke(new sdk.RunContext(),JSON.stringify({reference_id:'FR002',hours:10}));
+    await executeCalculation(agent);
     return {finalOutput:{test_fixture:true},newItems:[]};
   };
   const r=await runWorkflow({input_as_text:'Test de branchement hors ligne'},.5,context);
@@ -82,4 +91,27 @@ test('l’agent choisit une référence puis le vrai outil fournit le contexte V
   assert.equal(r.price_context.hours,.5);
   assert.ok(r.price_context.candidate_price_fcfa>0);
   assert.equal(r.price_context.production_allowed,false);
+});
+
+
+test('le serveur impose tous les montants du calcul même si l’IA les réécrit', async () => {
+  let expected;
+  sdk.Runner.prototype.run = async function (agent) {
+    await agent.tools.find(t => t.name === 'estimate_service_price').invoke(new sdk.RunContext(), JSON.stringify({ mission: 'Remplacement robinet', hours: 50 }));
+    expected = await executeCalculation(agent);
+    return { finalOutput: { total: 1, fourchette: { min: 0, max: 2 }, artisan_percoit: 1, breakdown: { main_oeuvre: 1 }, data_note: 'Texte rédigé par le modèle' }, newItems: [] };
+  };
+  const r = await runWorkflow({ input_as_text: 'Test de non-altération des montants' }, .5, context);
+  for (const key of ['total', 'fourchette', 'artisan_percoit', 'breakdown']) assert.deepEqual(r.output[key], expected[key]);
+  assert.notEqual(r.output.total, 1);
+  assert.equal(r.output.data_note, 'Texte rédigé par le modèle');
+  assert.equal(r.output.breakdown.urgence, null);
+});
+
+test('une étude seule ne permet pas de retourner un devis sans outil de calcul', async () => {
+  sdk.Runner.prototype.run = async function (agent) {
+    await agent.tools.find(t => t.name === 'estimate_service_price').invoke(new sdk.RunContext(), JSON.stringify({ mission: 'Remplacement robinet', hours: 1 }));
+    return { finalOutput: { total: 1000 }, newItems: [] };
+  };
+  await assert.rejects(() => runWorkflow({ input_as_text: 'Test sans calcul' }, .5, context), /Calcul final non exécuté/);
 });
