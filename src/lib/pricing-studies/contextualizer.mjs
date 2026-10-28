@@ -52,3 +52,34 @@ export function contextualizeReference(model, referenceId, hours) {
     warning: '14 réponses, 6 prestataires, 5 tâches. Périmètres non harmonisés. D global et non une preuve de réduction économiquement viable.',
   };
 }
+
+/** Application indicative : extrapolation explicitement distincte de la validation scientifique. */
+export function estimateByAnalogy(model, referenceId, hours, quantity, matchReason) {
+  const reference = model.sources.find(r => r.id === referenceId);
+  const strict = contextualizeReference(model, referenceId, hours);
+  const blocked = reason => ({ ...strict, status: 'devis_requis', reason, candidate_price_fcfa: null, central_estimate_fcfa: null });
+  if (!reference) return blocked('Référence publiée inconnue');
+  if (typeof matchReason !== 'string' || matchReason.trim().length < 15) return blocked('Justifier la comparabilité technique');
+  if (!Number.isFinite(hours) || hours < model.domain.min_hours || hours > model.domain.max_hours) return blocked('Durée hors domaine ; devis nécessaire');
+  if (!Number.isFinite(quantity) || quantity <= 0) return blocked('Quantité et unité de la prestation à préciser');
+  // Un tarif horaire est ramené à la durée, sans appliquer une deuxième fois log(1+h).
+  const R = strict.normalized_reference_fcfa;
+  if (!Number.isFinite(R) || R <= 0) return blocked('Référence inexploitable');
+  const hourly = reference.unit === 'heure';
+  if (hourly && Math.abs(quantity - hours) > .001) return blocked('La quantité horaire doit correspondre à la durée');
+  if (reference.unit === 'contrat annuel') return blocked('Contrat annuel : durée et périmètre spécifiques à confirmer par devis');
+  const central = hourly
+    ? R * quantity * (model.coefficients[0] + model.coefficients[1] * Math.log1p(1))
+    : R * quantity * (model.coefficients[0] + model.coefficients[1] * Math.log1p(hours / quantity));
+  const candidate = central * model.calibration_multiplier;
+  return { ...strict, status: 'contextualisation_experimentale', reason: undefined, hours,
+    central_estimate_fcfa: central, candidate_price_fcfa: candidate, D: model.D,
+    quantity, unit: reference.unit, reference_description: reference.description,
+    technical_match: matchReason.trim(), match_type: 'analogy',
+    locally_calibrated: model.training_reference_ids.includes(referenceId),
+    extrapolation: !model.training_reference_ids.includes(referenceId) || quantity !== 1,
+    production_allowed: false, requires_provider_confirmation: true, can_add_materials: false,
+    warning: 'Estimation indicative par analogie. Calibration locale limitée à 5 tâches ; généralisation non validée. Fournitures et frais non ventilés : aucun ajout automatique.',
+    local_market_guarantee: false, cost_viability_verified: false,
+  };
+}

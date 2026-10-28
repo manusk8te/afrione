@@ -4,10 +4,14 @@ export interface PriceContextView {
   central_estimate_fcfa?: number | null;
   candidate_price_fcfa?: number | null;
   reason?: string;
+  technical_match?: string;
+  extrapolation?: boolean;
+  quantity?: number;
+  unit?: string;
   sources?: { id: string; country: string; url: string; source_scope?: string }[];
 }
 
-export default function PriceContextCard({ context }: { context: PriceContextView }) {
+export default function PriceContextCard({ context, applied = false }: { context: PriceContextView; applied?: boolean }) {
   const central = context.central_estimate_fcfa;
   const candidate = context.candidate_price_fcfa;
   const hasEstimate = context.status === 'contextualisation_experimentale'
@@ -32,13 +36,15 @@ export default function PriceContextCard({ context }: { context: PriceContextVie
               <dd style={{ margin: '5px 0 0', color: '#C95024', fontSize: '27px', fontWeight: 700 }}>{amount(candidate!)} FCFA</dd>
             </div>
           </dl>
-          <p style={{ color: '#6B5A4F', fontSize: '12px', lineHeight: 1.65, margin: 0 }}>Ce repère porte sur la prestation. Les fournitures et le contenu exact doivent être confirmés avant un devis ; ce montant n’est pas automatiquement ajouté au calcul ci-dessous.</p>
+          <p style={{ color: '#6B5A4F', fontSize: '12px', lineHeight: 1.65, margin: 0 }}>{applied ? 'Ce résultat constitue le prix indicatif proposé ci-dessous. Fournitures et frais à confirmer ; aucune ventilation ni addition automatique.' : 'Ce repère porte sur la prestation. Les fournitures et le contenu exact doivent être confirmés avant un devis ; ce montant n’est pas automatiquement ajouté au calcul ci-dessous.'}</p>
         </>
       ) : (
         <p style={{ color: '#6B5A4F', fontSize: '13px', lineHeight: 1.65, margin: '16px 0 0' }}>Les références disponibles ne suffisent pas encore à chiffrer cette demande dans le contexte ivoirien. Un prestataire doit confirmer le prix.</p>
       )}
       <details style={{ marginTop: '16px', color: '#6B5A4F', fontSize: '12px' }}>
         <summary style={{ cursor: 'pointer', fontWeight: 600 }}>D’où vient ce repère ?</summary>
+        {context.technical_match && <p>Comparaison : {context.technical_match}</p>}
+        {context.quantity && <p>Périmètre : {context.quantity} {context.unit}. {context.extrapolation ? 'Extrapolation non validée localement.' : 'Calibration locale limitée.'}</p>}
         <p style={{ lineHeight: 1.65 }}>Des tarifs publiés en France et au Sénégal sont rapprochés d’une petite enquête ivoirienne. La correction est calculée à partir de ces données. Elle ne garantit pas un prix inférieur au marché réel ni un devis final.</p>
         {!!context.sources?.length && (
           <ul style={{ paddingLeft: '20px', marginBottom: 0 }}>

@@ -6,7 +6,7 @@ require('ts-node/register/transpile-only');
 const originalLoad = Module._load;
 let calls = [];
 Module._load = function (request, ...args) {
-  if (request === '@/lib/pricing-agent') return { runPricingAgent: async input => { calls.push(input); return { total: 1234, calculation_source: 'calculate_final_price' }; } };
+  if (request === '@/lib/pricing-agent') return { runPricingAgent: async input => { calls.push(input); if (input.description === 'Besoin de surface') throw new Error('informations_requises: Quelle surface en m² ?'); return { total: 1234, calculation_source: 'calculate_final_price' }; } };
   if (request === '@/lib/pricing-studies') return { getPriceContext: () => ({ status: 'fixture' }), previewStudyQuote: async () => ({ status: 'fixture' }) };
   return originalLoad.call(this, request, ...args);
 };
@@ -28,4 +28,13 @@ test('la demande valide transmet uniquement les données normalisées au SDK exi
   assert.equal(response.status, 200);
   assert.equal((await response.json()).calculation_source, 'calculate_final_price');
   assert.deepEqual(calls, [{ ...valid, quartier: 'Cocody', urgency: 'medium' }]);
+});
+
+test('la précision demandée par l’agent revient sans prix ni erreur serveur', async () => {
+ const response=await POST(request({...valid,description:'Besoin de surface'}));
+ assert.equal(response.status,422);
+ const result=await response.json();
+ assert.equal(result.total,null);
+ assert.equal(result.status,'informations_requises');
+ assert.equal(result.error,'Quelle surface en m² ?');
 });

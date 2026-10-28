@@ -2,11 +2,9 @@ import { Agent, AgentInputItem, Runner, tool, withTrace, getGlobalTraceProvider 
 import { z } from "zod";
 import { supabaseAdmin } from "./supabase";
 import { lookupItemOnJumia } from "./jumia-lookup";
-import { SMIG_X2_HORAIRE, CATEGORY_TO_METIER, computeLabor } from "./pricing";
+import { SMIG_X2_HORAIRE, CATEGORY_TO_METIER } from "./pricing";
 import { FILTRE_CATALOGUE_VALIDE } from "./catalogue";
-import { getTransport } from "./transport";
-import { getStudyEstimate, findPublishedPriceReferences, getPriceContext, type StudyEvaluation, type PriceContext } from './pricing-studies';
-import { lockPricingInputs } from './pricing-studies/engine.mjs';
+import { getStudyEstimate, findPublishedPriceReferences, getPriceContext, getIndicativePriceContext, getPublishedReferenceCatalogue, type StudyEvaluation, type PriceContext } from './pricing-studies';
 
 // ── Fallbacks ────────────────────────────────────────────────────────────────
 
@@ -165,10 +163,10 @@ interface PricingContext {
 
 type CalculatedQuote = Pick<z.infer<typeof pricingOutputSchema>, 'total' | 'fourchette' | 'artisan_percoit' | 'breakdown'>;
 
-function createCalculateFinalPrice(context?: PricingContext, onCalculated?: (value: CalculatedQuote) => void) {
+function createCalculateFinalPrice(context?: PricingContext, onCalculated?: (value: CalculatedQuote) => void, getContext?: () => PriceContext | null) {
   return tool({
   name: "calculate_final_price",
-  description: "Calcule le prix final AfriOne avec dégressivité longues tâches + commission. Appeler après avoir tous les prix. Utilise le taux horaire et l'urgence donnés dans le contexte, ne les recalcule jamais.",
+  description: "Applique au prix proposé le résultat V4 de la référence comparable sélectionnée. Aucun frais ni fourniture ajouté automatiquement ; ventilation inconnue.",
   parameters: z.object({
     hours:           z.number().positive().finite().describe("Durée en heures"),
     hourly_rate:     z.number().nonnegative().finite().describe("Taux horaire FCFA déjà résolu, donné dans le contexte"),
@@ -177,38 +175,17 @@ function createCalculateFinalPrice(context?: PricingContext, onCalculated?: (val
     quartier:        z.string().optional().describe("Quartier client Abidjan"),
   }),
   execute: async (args) => {
-    const { hours, hourly_rate, materials_total, urgency = 'medium', quartier = 'Cocody' } = lockPricingInputs(context, args);
-    // Plancher SMIG appliqué en code par défense en profondeur (déjà garanti en amont par resolveHourlyRate)
-    const flooredRate = Math.max(hourly_rate, SMIG_X2_HORAIRE);
-
-    // Plus de plafond à 30 000 : voir computeLabor (src/lib/pricing.ts). La
-    // formule était recopiée ici et dans /api/tools/calculate-price — deux
-    // copies d'un même calcul de rémunération, à corriger deux fois.
-    const { labor: labor_base, degressif } = computeLabor(flooredRate, hours);
-    const urgency_pct = urgency === 'emergency' ? 0.40 : urgency === 'high' ? 0.25 : 0;
-    const labor_final = Math.round(labor_base * (1 + urgency_pct));
-    const transport   = getTransport(quartier);
-    const subtotal    = labor_final + (materials_total || 0) + transport;
-    // ⚠️ Seul endroit qui décompose commission ET assurance, conformément à
-    // `service_fees` — mais avec les taux recopiés en dur, et les routes de
-    // paiement n'appliquent pas la même chose. Voir docs/COMMISSIONS.md.
-    const commission  = Math.round(subtotal * 0.10);
-    const assurance   = Math.round(subtotal * 0.02);
-    const total       = subtotal + commission + assurance;
-
+    const priceContext = getContext?.();
+    const candidate = priceContext && 'candidate_price_fcfa' in priceContext ? priceContext.candidate_price_fcfa : null;
+    if (priceContext?.status !== 'contextualisation_experimentale' || typeof candidate !== 'number' || !Number.isFinite(candidate) || candidate <= 0) {
+      throw new Error('Référence comparable, durée et quantité nécessaires avant de proposer un prix');
+    }
+    // La V4 porte sur la prestation : ne pas fabriquer une ventilation, ni doubler les fournitures/frais.
+    const total = Math.max(1, Math.round(candidate));
     const calculated: CalculatedQuote = {
-      breakdown: {
-        main_oeuvre: labor_final,
-        degressivite: degressif < 1 ? `-${Math.round((1 - degressif) * 100)}% longue tâche` : null,
-        urgence: urgency_pct > 0 ? `+${urgency_pct * 100}%` : null,
-        materiaux: materials_total || 0,
-        transport,
-        commission_afrione: commission,
-        assurance_sav: assurance,
-      },
-      total,
-      fourchette:      { min: Math.round(total * 0.92), max: Math.round(total * 1.08) },
-      artisan_percoit: Math.round(total * 0.88),
+      total, fourchette: { min: total, max: total }, artisan_percoit: null,
+      breakdown: { main_oeuvre: null, materiaux: null, transport: null,
+        commission_afrione: null, assurance_sav: null, degressivite: null, urgence: null },
     };
     onCalculated?.(calculated);
     return calculated;
@@ -224,29 +201,29 @@ function createCalculateFinalPrice(context?: PricingContext, onCalculated?: (val
 const pricingOutputSchema = z.object({
   total:           z.number(),
   fourchette:      z.object({ min: z.number(), max: z.number() }),
-  artisan_percoit: z.number(),
+  artisan_percoit: z.number().nullable(),
   breakdown: z.object({
-    main_oeuvre:        z.number(),
+    main_oeuvre:        z.number().nullable(),
     degressivite:       z.string().nullable(),
     urgence:             z.string().nullable(),
-    materiaux:           z.number(),
-    transport:           z.number(),
-    commission_afrione:  z.number(),
-    assurance_sav:       z.number(),
+    materiaux:           z.number().nullable(),
+    transport:           z.number().nullable(),
+    commission_afrione:  z.number().nullable(),
+    assurance_sav:       z.number().nullable(),
   }),
   // Injecté/écrasé côté TypeScript après le run — voir runPricingAgent.
   // Conservé dans le schéma pour que le modèle le reporte de façon cohérente.
-  source_tarif:      z.enum(['artisan_declare', 'donnees_zone', 'moyenne_nationale', 'fallback_marche']),
+  source_tarif:      z.enum(['artisan_declare', 'donnees_zone', 'moyenne_nationale', 'fallback_marche', 'reference_transferee']),
   version_reference: z.string(),
   data_note:         z.string().min(1).describe(
-    "Toujours renseigné. Explique la source du taux horaire donné. Signale explicitement tout matériau au prix marqué is_fallback:true (jamais présenté comme un prix trouvé)."
+    "Toujours renseigné. Explique la référence transférée, la comparaison et les limites. Tout matériau is_fallback:true est une estimation, jamais un prix trouvé."
   ),
 });
 
 export type PricingAgentOutput = z.infer<typeof pricingOutputSchema> & {
   study: StudyEvaluation | null;
   price_context: PriceContext | null;
-  applied_estimator: 'legacy_hourly';
+  applied_estimator: 'context_v4';
   calculation_source: 'calculate_final_price';
 };
 
@@ -256,11 +233,16 @@ export type PricingAgentOutput = z.infer<typeof pricingOutputSchema> & {
 // calculer le prix final, et rédiger data_note.
 
 function createAfrioneAgent(onStudy: (value: StudyEvaluation) => void, hours?: number, context?: PricingContext, onPriceContext?: (value: PriceContext) => void, onCalculated?: (value: CalculatedQuote) => void) {
+  let selectedContext: PriceContext | null = null;
   const searchPriceReference = tool({
     name: 'search_price_reference',
     description: 'Retrouve des prix publiés en France et au Sénégal, avec unité, périmètre, URL et identifiant. Compare les caractéristiques au besoin client avant de choisir une référence. La recherche ne décide pas du diagnostic.',
     parameters: z.object({ query: z.string().min(1) }),
-    execute: async ({ query }) => findPublishedPriceReferences(query),
+    execute: async ({ query }) => ({
+      matches: findPublishedPriceReferences(query),
+      catalogue: getPublishedReferenceCatalogue(),
+      instruction: 'Choisir une référence réellement comparable dans le catalogue, y compris par synonymes. Ne jamais inventer un identifiant.',
+    }),
   });
   const contextualizeReferencePrice = tool({
     name: 'contextualize_reference_price',
@@ -268,9 +250,12 @@ function createAfrioneAgent(onStudy: (value: StudyEvaluation) => void, hours?: n
     parameters: z.object({
       reference_id: z.string().describe('Identifiant obtenu dans search_price_reference, jamais un prix inventé'),
       hours: z.number().positive(),
+      quantity: z.number().positive().describe('Quantité explicitement fournie pour l’unité publiée : surface en m², convives, unités ; durée pour heure. Ne pas inventer une surface.'),
+      match_reason: z.string().min(15).describe('Comparaison technique, différences, périmètre et provenance de la quantité dans la demande'),
     }),
-    execute: async ({ reference_id, hours: requestedHours }) => {
-      const value = getPriceContext(reference_id, hours ?? requestedHours);
+    execute: async ({ reference_id, hours: requestedHours, quantity, match_reason }) => {
+      const value = getIndicativePriceContext(reference_id, hours ?? requestedHours, quantity, match_reason);
+      selectedContext = value;
       onPriceContext?.(value);
       return value;
     },
@@ -288,22 +273,31 @@ function createAfrioneAgent(onStudy: (value: StudyEvaluation) => void, hours?: n
       return evaluation;
     },
   });
+  const requestPricingDetails = tool({
+    name: 'request_pricing_details',
+    description: 'Demande une précision indispensable pour chiffrer : quantité, dimension ou caractéristique manquante, ou absence de référence comparable. Aucun prix inventé.',
+    parameters: z.object({ question: z.string().min(10).max(500) }),
+    execute: async ({ question }) => {
+      const value = { ...getPriceContext('', hours ?? 1), status: 'devis_requis', reason: question };
+      selectedContext = value;
+      onPriceContext?.(value);
+      return value;
+    },
+  });
   return new Agent({
   name: "afrione",
   instructions: `Tu es l'agent de tarification AfriOne pour le marché informel d'Abidjan, Côte d'Ivoire.
 
-Le taux horaire et l'urgence sont déjà résolus et te sont donnés dans le message. Ne les recalcule jamais, ne les déduis pas d'autre chose que ce qui t'est donné.
-
 Processus :
-0. Comprends la prestation et ses caractéristiques. Appelle search_price_reference, vérifie le périmètre, puis contextualize_reference_price pour obtenir le contexte économique ivoirien. Tu comprends et choisis la référence ; la fonction statistique contextualise son prix. Si aucune référence n'est comparable, ne force pas le rapprochement et consulte estimate_service_price pour documenter l'absence de couverture. Ce dernier outil conserve les études antérieures. Ne rapproche pas un mitigeur de cuisine d'une référence de lavabo sans signaler cette différence.
-1. Pour chaque matériau nécessaire, appelle search_material_price.
-2. Appelle calculate_final_price avec le taux horaire donné, hours, materials_total, l'urgence donnée telle quelle, et le quartier.
-3. Rédige data_note : mentionne toujours la source du taux horaire donnée dans le message (et si un plancher a été appliqué), et signale explicitement tout matériau dont le résultat a is_fallback:true — ce n'est pas un prix trouvé, ne le présente jamais comme tel.
-4. Signale que le devis courant reste fondé sur le moteur horaire existant. Les résultats statistiques sont une comparaison expérimentale, pas une main-d’œuvre à additionner aux fournitures. Ne remplace jamais hourly_rate par un montant retourné par estimate_service_price. Ne fabrique pas d'intervalle de confiance à partir d'une MAE.
+1. Comprends la mission, ses dimensions et ses fournitures. Cherche les références avec search_price_reference : le catalogue complet est disponible, pas seulement les cinq tâches de l’enquête. Choisis une référence techniquement comparable, même si les mots diffèrent, et explique précisément les différences. Une différence de métier seule n’est pas une analogie valable.
+2. Appelle contextualize_reference_price avec l’identifiant publié, la durée fournie, la quantité correspondant à l’unité source et une justification technique. Pour une seule intervention/unité demandée, quantity=1 ; pour heure, quantity=durée ; pour m², mètres linéaires, convives, plusieurs unités, il faut une quantité explicite dans la demande. Sans quantité, référence comparable ou résultat exploitable, appelle request_pricing_details pour poser la question précise, puis retourne sans calculate_final_price. Les contrats annuels nécessitent un devis.
+3. Le résultat V4 est la proposition indicative réellement affichée. Appelle calculate_final_price après une contextualisation réussie. Cet outil applique la V4 en code ; ses anciens paramètres horaires ne modifient plus le montant. Recopie exactement ses montants et ses valeurs nulles.
+4. Les fournitures peuvent être recherchées avec search_material_price à titre informatif, mais ne sont pas additionnées au prix V4 : les données sources ont des périmètres variables. La ventilation main-d’œuvre, transport, fournitures, commissions et rémunération est inconnue, donc nulle. Ne fabrique ni frais ni intervalle de confiance.
+5. Explique dans data_note la référence, la quantité, la comparaison, la nature indicative et la nécessité d’un devis. Sur une tâche sans calibration locale, dis clairement « estimation par analogie, non validée localement ». La réduction V4 ne garantit pas d’être sous le marché ivoirien ni la viabilité économique. Ne prétends pas que le modèle apprend automatiquement : une nouvelle version doit être réentraînée et vérifiée sur les retours réels.
 
 Règle absolue : les prix viennent toujours des outils, jamais inventés.`,
   model: "gpt-4o-mini",
-  tools: [searchPriceReference, contextualizeReferencePrice, estimateServicePrice, searchMaterialPrice, createCalculateFinalPrice(context, onCalculated)],
+  tools: [requestPricingDetails, searchPriceReference, contextualizeReferencePrice, estimateServicePrice, searchMaterialPrice, createCalculateFinalPrice(context, onCalculated, () => selectedContext)],
   outputType: pricingOutputSchema,
   modelSettings: { store: true },
 });
@@ -337,7 +331,7 @@ export const runWorkflow = async (workflow: WorkflowInput, hours?: number, conte
   let study: StudyEvaluation | null = null;
   let priceContext: PriceContext | null = null;
   let calculatedPrice: CalculatedQuote | null = null;
-  const afrione = createAfrioneAgent(value => { study = value; }, hours, context, value => { priceContext = value; }, value => { calculatedPrice = value; });
+  const afrione = createAfrioneAgent(value => { study = value; }, hours, context, value => { priceContext = value; calculatedPrice = null; }, value => { calculatedPrice = value; });
   try {
     return await withTrace("AfriOne Pricing Agent", async () => {
       const conversationHistory: AgentInputItem[] = [
@@ -352,7 +346,10 @@ export const runWorkflow = async (workflow: WorkflowInput, hours?: number, conte
         throw new Error("Agent result is undefined");
       }
       if (!study && !priceContext) throw new Error('Études non consultées : contextualisation ou estimate_service_price requis');
-      if (!calculatedPrice) throw new Error('Calcul final non exécuté : calculate_final_price requis');
+      if (!calculatedPrice) {
+        if (priceContext && 'reason' in priceContext && priceContext.reason) throw new Error(`informations_requises: ${priceContext.reason}`);
+        throw new Error('Calcul final non exécuté : calculate_final_price requis');
+      }
 
       return {
         // L’IA rédige et choisit les outils ; les montants restent ceux du calcul exécuté.
@@ -429,7 +426,7 @@ export async function runPricingAgent(input: AgentPricingInput): Promise<Pricing
     model:       'gpt-4o-mini',
     input:       { category: input.category, metier, quartier: input.quartier, urgency, hours: input.hours_estimate, items: input.items_needed, artisan_id: input.artisan_id ?? null, source_tarif: rate.source_tarif, hourly_rate: rate.hourly_rate, prompt: text },
     steps:       result?.steps ?? [],
-    output:      result ? { ...result.output, study: result.study, price_context: result.price_context, applied_estimator: 'legacy_hourly', calculation_source: 'calculate_final_price' } : null,
+    output:      result ? { ...result.output, study: result.study, price_context: result.price_context, applied_estimator: 'context_v4', calculation_source: 'calculate_final_price' } : null,
     total_price: result?.output?.total ?? null,
     parse_ok:    result != null,
     error:       runError,
@@ -448,12 +445,12 @@ export async function runPricingAgent(input: AgentPricingInput): Promise<Pricing
   // garantir la cohérence même si le modèle a mal recopié le contexte.
   return {
     ...result.output,
-    source_tarif: rate.source_tarif,
-    version_reference: 'hourly-fallback-v1', // pas de catalogue de tâches tant que C2 n'est pas fait
-    data_note: result.output.data_note + ' Les études sont consultées en comparaison expérimentale ; leurs montants ne sont pas appliqués comme main-d’œuvre seule.',
+    source_tarif: 'reference_transferee',
+    version_reference: result.price_context?.version ?? 'context-v4',
+    data_note: result.output.data_note + ' Prix V4 indicatif appliqué à la prestation ; fournitures et frais non ventilés, à confirmer par devis.',
     study: result.study,
     price_context: result.price_context,
-    applied_estimator: 'legacy_hourly',
+    applied_estimator: 'context_v4',
     calculation_source: 'calculate_final_price',
   };
 }

@@ -50,6 +50,7 @@ function ModeSelectContent() {
   // ── Mode Urgent : créer mission → ouvrir modal Wave ─────────────────────
   const handleUrgent = async () => {
     if (!userId) { toast.error('Connecte-toi d\'abord'); return }
+    if (!price || !Number.isFinite(price) || price <= 0) { toast.error('Un devis est nécessaire avant de choisir le paiement urgent'); return }
     setLoading('urgent')
 
     try {
@@ -79,7 +80,7 @@ function ModeSelectContent() {
 
   // ── Confirmation paiement Wave (mock) ────────────────────────────────────
   const confirmWave = async () => {
-    if (!wavePhone.trim() || !currentMission) return
+    if (!wavePhone.trim() || !currentMission || !price || !Number.isFinite(price) || price <= 0) return
     setWaveStep('processing')
 
     await new Promise(r => setTimeout(r, 2000))
@@ -87,7 +88,7 @@ function ModeSelectContent() {
     await fetch('/api/dispatch/simulate-pay', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ mission_id: currentMission, amount: price ?? 8000 }),
+      body:    JSON.stringify({ mission_id: currentMission, amount: price }),
     })
 
     setWaveStep('success')
@@ -100,7 +101,7 @@ function ModeSelectContent() {
 
   const displayPrice = price
     ? `${price.toLocaleString('fr-FR')} FCFA`
-    : 'Prix fixé par l\'IA'
+    : 'Devis nécessaire'
 
   return (
     <div style={{ minHeight: '100vh', background: '#F5F7FA', color: '#3D4852' }}>
@@ -140,7 +141,7 @@ function ModeSelectContent() {
                 <div style={{ textAlign: 'center', padding: '20px 0 16px' }}>
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Montant total</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
-                    <span style={{ color: 'white', fontSize: '52px', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1, fontFamily: 'Tahoma' }}>{(price ?? 8000).toLocaleString()}</span>
+                    <span style={{ color: 'white', fontSize: '52px', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1, fontFamily: 'Tahoma' }}>{price?.toLocaleString() ?? 'À confirmer'}</span>
                     <span style={{ color: '#E85D26', fontSize: '18px', fontWeight: 700 }}>FCFA</span>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '6px' }}>Urgent · {category}</div>
@@ -216,7 +217,7 @@ function ModeSelectContent() {
 
                 <div style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
                   {[
-                    { label: 'Montant simulé', value: `${(price ?? 8000).toLocaleString()} FCFA`, color: 'white' },
+                    { label: 'Montant simulé', value: price ? `${price.toLocaleString()} FCFA` : 'À confirmer', color: 'white' },
                     { label: 'Bénéficiaire', value: 'AfriOne Escrow (démo)', color: 'rgba(255,255,255,0.8)' },
                     { label: 'Numéro saisi', value: `+225 ${wavePhone}`, color: 'rgba(255,255,255,0.8)' },
                     { label: 'Statut', value: '🧪 Démo — non encaissé', color: '#C9A84C' },

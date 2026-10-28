@@ -2,7 +2,7 @@ import local from '@/data/pricing-studies/local-v2.json';
 import transfer from '@/data/pricing-studies/transfer-v3.json';
 import context from '@/data/pricing-studies/context.json';
 import contextualModel from '@/data/pricing-studies/context-v4.json';
-import { contextualizeReference, searchReferences } from './contextualizer.mjs';
+import { contextualizeReference, searchReferences, estimateByAnalogy } from './contextualizer.mjs';
 import { evaluateStudies, priceMaterialObservation, composeStudyQuote } from './engine.mjs';
 import { supabaseAdmin } from '../supabase';
 import { FILTRE_CATALOGUE_VALIDE } from '../catalogue';
@@ -18,7 +18,13 @@ export function findPublishedPriceReferences(query: string) {
 export function getPriceContext(referenceId: string, hours: number) {
   return contextualizeReference(contextualModel, referenceId, hours);
 }
-export type PriceContext = ReturnType<typeof getPriceContext>;
+export function getIndicativePriceContext(referenceId: string, hours: number, quantity: number, reason: string) {
+  return estimateByAnalogy(contextualModel, referenceId, hours, quantity, reason);
+}
+export function getPublishedReferenceCatalogue() {
+  return contextualModel.sources;
+}
+export type PriceContext = ReturnType<typeof getPriceContext> | ReturnType<typeof getIndicativePriceContext>;
 export interface StudyMaterialRequest {
   material_id: string;
   name: string;

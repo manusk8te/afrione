@@ -32,3 +32,11 @@ test('un montant invalide ne devient pas un repère affiché',()=>{
  const text=renderToStaticMarkup(React.createElement(Card,{context}));
  assert.ok(!text.includes('FCFA'));assert.ok(!text.includes('NaN'));
 });
+
+test('le prix actif annonce son application et signale l’analogie',()=>{
+ const context={status:'contextualisation_experimentale',candidate_price_fcfa:5000,central_estimate_fcfa:17000,extrapolation:true,quantity:1,unit:'prestation',technical_match:'Une prestation comparable de coiffure'};
+ const text=renderToStaticMarkup(React.createElement(Card,{context,applied:true}));
+ assert.ok(text.includes('constitue le prix indicatif proposé'));
+ assert.ok(text.includes('Extrapolation non validée localement'));
+ assert.ok(!text.includes('pas automatiquement ajouté'));
+});

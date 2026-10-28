@@ -29,6 +29,9 @@ test.before(async () => {
   ({ runWorkflow } = require('../src/lib/pricing-agent.ts'));
 });
 const context = { hours: .5, hourly_rate: 3000, urgency: 'medium', quartier: 'Cocody' };
+async function selectReference(agent, id = 'FR002') {
+  return agent.tools.find(t => t.name === 'contextualize_reference_price').invoke(new sdk.RunContext(), JSON.stringify({ reference_id: id, hours: 50, quantity: 1, match_reason: 'Une seule intervention demandée ; remplacement de mitigeur comparable, fournitures à confirmer.' }));
+}
 async function executeCalculation(agent) {
   const response = await agent.tools.find(t => t.name === 'calculate_final_price').invoke(
     new sdk.RunContext(), JSON.stringify({ hours: 100, hourly_rate: 999999, materials_total: 0, urgency: 'emergency', quartier: 'autre quartier' })
@@ -47,6 +50,7 @@ test('le vrai outil SDK retourne les résultats de l’étude et verrouille la d
     const r = typeof response === 'string' ? JSON.parse(response) : response;
     assert.equal(r.hours, .5);
     assert.equal(r.estimates.find(e => e.id === 'local_quantile_v3').estimate_fcfa, 5200);
+    await selectReference(agent);
     await executeCalculation(agent);
     return { finalOutput: { test_fixture: true }, newItems: [] };
   };
@@ -62,6 +66,7 @@ test('deux exécutions SDK ne mélangent pas leurs missions', async () => {
   sdk.Runner.prototype.run = async function (agent, messages) {
     const mission = messages[0].content[0].text;
     await agent.tools.find(t => t.name === 'estimate_service_price').invoke(new sdk.RunContext(), JSON.stringify({ mission, hours: 1 }));
+    await selectReference(agent);
     await executeCalculation(agent);
     return { finalOutput: { test_fixture: true }, newItems: [] };
   };
@@ -79,9 +84,10 @@ test('l’agent choisit une référence puis le vrai outil fournit le contexte V
     const finder=agent.tools.find(t=>t.name==='search_price_reference');
     const found=await finder.invoke(new sdk.RunContext(),JSON.stringify({query:'mitigeur'}));
     const rows=typeof found==='string'?JSON.parse(found):found;
-    assert.ok(rows.some(r=>r.id==='FR002'));
+    assert.ok(rows.matches.some(r=>r.id==='FR002'));
     const contextTool=agent.tools.find(t=>t.name==='contextualize_reference_price');
-    await contextTool.invoke(new sdk.RunContext(),JSON.stringify({reference_id:'FR002',hours:10}));
+    await contextTool.invoke(new sdk.RunContext(),JSON.stringify({reference_id:'FR002',hours:10,quantity:1,match_reason:'Une intervention de changement de mitigeur de cuisine, fourniture exclue.'}));
+    await selectReference(agent);
     await executeCalculation(agent);
     return {finalOutput:{test_fixture:true},newItems:[]};
   };
@@ -98,6 +104,7 @@ test('le serveur impose tous les montants du calcul même si l’IA les réécri
   let expected;
   sdk.Runner.prototype.run = async function (agent) {
     await agent.tools.find(t => t.name === 'estimate_service_price').invoke(new sdk.RunContext(), JSON.stringify({ mission: 'Remplacement robinet', hours: 50 }));
+    await selectReference(agent);
     expected = await executeCalculation(agent);
     return { finalOutput: { total: 1, fourchette: { min: 0, max: 2 }, artisan_percoit: 1, breakdown: { main_oeuvre: 1 }, data_note: 'Texte rédigé par le modèle' }, newItems: [] };
   };
@@ -114,4 +121,42 @@ test('une étude seule ne permet pas de retourner un devis sans outil de calcul'
     return { finalOutput: { total: 1000 }, newItems: [] };
   };
   await assert.rejects(() => runWorkflow({ input_as_text: 'Test sans calcul' }, .5, context), /Calcul final non exécuté/);
+});
+
+test('la V4 modifie le total et permet une analogie hors des cinq tâches locales', async () => {
+  sdk.Runner.prototype.run = async function (agent) {
+    await selectReference(agent, 'FR046');
+    await executeCalculation(agent);
+    return { finalOutput: { total: 4200 }, newItems: [] };
+  };
+  const r = await runWorkflow({ input_as_text: 'Une prestation de coiffure comparable' }, .5, context);
+  assert.equal(r.output.total, Math.round(r.price_context.candidate_price_fcfa));
+  assert.equal(r.price_context.extrapolation, true);
+  assert.equal(r.output.breakdown.main_oeuvre, null);
+  assert.equal(r.output.artisan_percoit, null);
+});
+test('aucun ancien calcul horaire sans référence comparable', async () => {
+  sdk.Runner.prototype.run = async function (agent) {
+    const result = await executeCalculation(agent);
+    assert.match(String(result), /Référence comparable/);
+    return { finalOutput: { total: 4200 }, newItems: [] };
+  };
+  await assert.rejects(() => runWorkflow({ input_as_text: 'Test' }, .5, context));
+});
+
+test('la question de précision remonte sans prix', async () => {
+ sdk.Runner.prototype.run = async function(agent) {
+  await agent.tools.find(t=>t.name==='request_pricing_details').invoke(new sdk.RunContext(),JSON.stringify({question:'Quelle surface en m² faut-il peindre ?'}));
+  return {finalOutput:{total:0},newItems:[]};
+ };
+ await assert.rejects(()=>runWorkflow({input_as_text:'Peindre mon salon'},2,context),/informations_requises: Quelle surface/);
+});
+test('changer de référence invalide le calcul précédent', async () => {
+ sdk.Runner.prototype.run = async function(agent) {
+  await selectReference(agent);
+  await executeCalculation(agent);
+  await selectReference(agent,'FR046');
+  return {finalOutput:{total:999},newItems:[]};
+ };
+ await assert.rejects(()=>runWorkflow({input_as_text:'Test changement'},.5,context),/Calcul final non exécuté/);
 });

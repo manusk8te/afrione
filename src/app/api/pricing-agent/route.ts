@@ -59,6 +59,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result)
   } catch (err: any) {
+    if (String(err?.message).startsWith('informations_requises:')) {
+      return NextResponse.json({ status: 'informations_requises', total: null, error: String(err.message).slice('informations_requises:'.length).trim() }, { status: 422 })
+    }
     console.error('[pricing-agent]', err?.message)
     return NextResponse.json({ status: 'devis_requis', total: null, error: 'Calcul de prix indisponible' }, { status: 500 })
   }

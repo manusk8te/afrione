@@ -37,11 +37,12 @@ interface DiagResult {
 interface PricingData {
   estimate: number
   interval: { low: number; high: number }
-  decomp: { labor: number; materials: number; transport: number; premium: number }
-  artisan_percoit: number
+  decomp: { labor: number | null; materials: number | null; transport: number | null; premium: number | null }
+  artisan_percoit: number | null
   savings_vs_market?: number
   below_market?: boolean
   market_reference_fcfa?: number
+  applied_estimator?: string
   price_context?: PriceContextView | null
 }
 
@@ -105,6 +106,7 @@ export default function DiagnosticPage() {
   const [basePricing, setBasePricing] = useState<PricingData | null>(null)
   const [pricingLoading, setPricingLoading] = useState(false)
   const [pricingError, setPricingError] = useState<string | null>(null)
+  const [pricingClarification, setPricingClarification] = useState('')
   const [materialTiers, setMaterialTiers]   = useState<any[]>([])
   const [selectedTiers, setSelectedTiers]   = useState<Record<string, 'economique'|'standard'|'premium'>>({})
   const [marketRef, setMarketRef]           = useState<number | null>(null)
@@ -226,7 +228,7 @@ export default function DiagnosticPage() {
    */
   const fetchPricing = async (diagResult: DiagResult, force = false) => {
     // Ne pas recalculer si un prix est déjà en cache pour cette session
-    const cacheKey = `afrione_pricing_context_v4_${diagResult.mission_id || 'draft'}`
+    const cacheKey = `afrione_context_v4_active_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
     setPricingError(null)
     if (force) sessionStorage.removeItem(cacheKey)
     const cached = force ? null : sessionStorage.getItem(cacheKey)
@@ -249,7 +251,7 @@ export default function DiagnosticPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             category:       diagResult.category,
-            description:    diagResult.summary || diagResult.technical_notes || '',
+            description:    [diagResult.summary, diagResult.technical_notes, pricingClarification ? `Précision du client : ${pricingClarification}` : '', diagResult.surface_m2 ? `Surface confirmée : ${diagResult.surface_m2} m²` : ''].filter(Boolean).join(' — '),
             urgency:        diagResult.urgency,
             hours_estimate: parseDuration(diagResult.duration_estimate),
             quartier:       quartier || 'Cocody',
@@ -270,12 +272,13 @@ export default function DiagnosticPage() {
           estimate:        d.total || 0,
           interval:        { low: d.fourchette?.min || 0, high: d.fourchette?.max || 0 },
           decomp: {
-            labor:     bd.main_oeuvre     || 0,
-            materials: bd.materiaux       || 0,
-            transport: bd.transport       || 0,
-            premium:   (bd.commission_afrione || 0) + (bd.assurance_sav || 0),
+            labor:     bd.main_oeuvre     ?? null,
+            materials: bd.materiaux       ?? null,
+            transport: bd.transport       ?? null,
+            premium:   bd.commission_afrione == null || bd.assurance_sav == null ? null : bd.commission_afrione + bd.assurance_sav,
           },
-          artisan_percoit: d.artisan_percoit || 0,
+          artisan_percoit: d.artisan_percoit ?? null,
+          applied_estimator: d.applied_estimator,
           price_context: d.price_context ?? null,
         }
         setPricing(newPricing)
@@ -289,7 +292,8 @@ export default function DiagnosticPage() {
           }).catch(() => {})
         }
       } else {
-        setPricingError('Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
+        const failure = await pricingRes.json().catch(() => null)
+        setPricingError(failure?.status === 'informations_requises' ? failure.error : 'Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
       }
       if (tiersRes?.ok) {
         const td = await tiersRes.json()
@@ -309,7 +313,7 @@ export default function DiagnosticPage() {
   // On ajoute uniquement le DELTA (tier sélectionné − tier par défaut "standard")
   // sur le prix de base de l'IA — on ne remplace jamais son estimation matériaux.
   const updatePricingForTier = (diagResult: DiagResult, tiers: Record<string, 'economique'|'standard'|'premium'>) => {
-    if (!basePricing) return
+    if (!basePricing || basePricing.applied_estimator === 'context_v4') return
     const delta = materialTiers.reduce((sum: number, mat: any) => {
       const selectedTier = tiers[mat.name] || 'standard'
       const defaultTier  = 'standard'
@@ -320,8 +324,8 @@ export default function DiagnosticPage() {
       }
       return sum + getPrice(selectedTier) - getPrice(defaultTier)
     }, 0)
-    const newMat     = basePricing.decomp.materials + delta
-    const subtotal   = basePricing.decomp.labor + newMat + basePricing.decomp.transport
+    const newMat     = (basePricing.decomp.materials ?? 0) + delta
+    const subtotal   = (basePricing.decomp.labor ?? 0) + newMat + (basePricing.decomp.transport ?? 0)
     const commission = Math.round(subtotal * 0.10)
     const assurance  = Math.round(subtotal * 0.02)
     const total      = subtotal + commission + assurance
@@ -333,7 +337,7 @@ export default function DiagnosticPage() {
       artisan_percoit: Math.round(total * 0.88),
     }
     setPricing(updated)
-    const cacheKey = `afrione_pricing_${diagResult.mission_id || 'draft'}`
+    const cacheKey = `afrione_context_v4_active_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
     try { sessionStorage.setItem(cacheKey, JSON.stringify(updated)) } catch {}
     if (diagResult.mission_id) {
       fetch('/api/pricing-save', {
@@ -727,9 +731,9 @@ export default function DiagnosticPage() {
               ))}
             </div>
 
-            {pricing?.price_context && <PriceContextCard context={pricing.price_context} />}
+            {pricing?.price_context && <PriceContextCard context={pricing.price_context} applied={pricing.applied_estimator === 'context_v4'} />}
 
-            {/* Calcul historique, distinct du repère statistique */}
+            {/* Proposition réellement calculée par le moteur sélectionné */}
             <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid #E2E8F0', boxShadow: NEU_SHADOW }}>
               <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Tahoma', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>CALCUL INDICATIF AFRIONE</span>
@@ -749,6 +753,11 @@ export default function DiagnosticPage() {
               ) : pricingError ? (
                 <div role="status" style={{ color: '#6B7280', fontSize: '13px', lineHeight: 1.6 }}>
                   <p style={{ margin: '0 0 10px' }}>{pricingError}</p>
+                  <label style={{ display: 'block', marginBottom: '10px' }}>
+                    Préciser votre demande
+                    <input value={pricingClarification} onChange={e => setPricingClarification(e.target.value)} maxLength={1000} placeholder="Exemple : la surface est de 25 m²"
+                      style={{ display: 'block', width: '100%', padding: '10px', border: '1px solid #CBD5E1', borderRadius: '10px', marginTop: '5px' }} />
+                  </label>
                   <button type="button" onClick={() => fetchPricing(result, true)} style={{ color: '#C95024', fontWeight: 600 }}>Réessayer l’estimation</button>
                 </div>
               ) : pricing ? (
@@ -758,16 +767,16 @@ export default function DiagnosticPage() {
                     <span style={{ color: '#8B95A5', fontSize: '13px', fontFamily: 'Tahoma' }}>FCFA</span>
                   </div>
                   <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Tahoma', marginBottom: '16px' }}>
-                    [{pricing.interval.low.toLocaleString('fr')} – {pricing.interval.high.toLocaleString('fr')}] ±8%
+                    {pricing.applied_estimator === 'context_v4' ? 'Proposition par analogie · à confirmer par devis' : `[${pricing.interval.low.toLocaleString('fr')} – ${pricing.interval.high.toLocaleString('fr')}] ±8%`}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                    {([
+                    {pricing.applied_estimator !== 'context_v4' && ([
                       { key: 'labor' as const,     label: "Main-d'œuvre", color: '#E85D26' },
                       { key: 'materials' as const, label: 'Matériaux',    color: '#C9A84C' },
                       { key: 'transport' as const, label: 'Transport',    color: '#2B6B3E' },
                       { key: 'premium' as const,   label: 'Com.+Ass.',    color: '#8B95A5' },
                     ]).map(({ key, label, color }) => {
-                      const val = pricing.decomp[key]
+                      const val = pricing.decomp[key] ?? 0
                       const pct = pricing.estimate > 0 ? Math.round(val / pricing.estimate * 100) : 0
                       return (
                         <div key={key}>
@@ -794,13 +803,13 @@ export default function DiagnosticPage() {
 
               <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', margin: '12px 0 0' }}>
                 {pricing
-                  ? `Calcul horaire indicatif · montant à confirmer par devis`
+                  ? (pricing.applied_estimator === 'context_v4' ? 'Fournitures, transport et frais à préciser avec le prestataire ; aucun ajout automatique.' : 'Calcul horaire indicatif · montant à confirmer par devis')
                   : "Prix à confirmer par un prestataire"}
               </p>
             </div>
 
             {/* Sélecteur qualité matériaux */}
-            {materialTiers.length > 0 && (
+            {materialTiers.length > 0 && pricing?.applied_estimator !== 'context_v4' && (
               <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '20px', boxShadow: NEU_SHADOW }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'Tahoma' }}>
                   QUALITÉ DES MATÉRIAUX
