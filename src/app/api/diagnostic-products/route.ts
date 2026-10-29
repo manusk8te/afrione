@@ -10,17 +10,27 @@ const identity=z.object({mission_id:z.string().uuid(),item:z.string().trim().min
 const input=z.discriminatedUnion('action',[
  identity.extend({action:z.literal('select'),query:z.string().trim().min(2).max(120),offer_url:z.string().url(),quantity:z.number().int().min(1).max(100000).default(1)}).strict(),
  identity.extend({action:z.literal('remove')}).strict(),
+ identity.extend({action:z.literal('configure'),quantity:z.number().int().min(1).max(100000),billing_mode:z.enum(['unresolved','included','client_supplied','additional']),unit_confirmed:z.boolean(),exclusion_confirmed:z.boolean()}).strict(),
 ])
 export async function GET(req:NextRequest){
  const id=req.nextUrl.searchParams.get('mission_id');const access=await resolveMissionViewer(req,id);if(!access.ok)return access.res
  const {data,error}=await supabaseAdmin.from('diagnostic_product_selections').select('*').eq('mission_id',id).order('selected_at')
- return NextResponse.json(error?{error:'Choix de fournitures indisponibles'}:{products:data??[]},{status:error?503:200,headers:{'Cache-Control':'private, no-store'}})
+ const {data:receipt}=await supabaseAdmin.from('payment_simulations').select('id').eq('mission_id',id).maybeSingle()
+ return NextResponse.json(error?{error:'Choix de fournitures indisponibles'}:{products:data??[],locked:!!receipt||!['diagnostic','matching','negotiation'].includes(access.viewer.mission.status)},{status:error?503:200,headers:{'Cache-Control':'private, no-store'}})
 }
 export async function POST(req:NextRequest){try{
  const parsed=input.safeParse(await req.json());if(!parsed.success)return NextResponse.json({error:'Sélection invalide'},{status:400})
  const body=parsed.data;const access=await resolveMissionViewer(req,body.mission_id);if(!access.ok)return access.res
  if(access.viewer.userId!==access.viewer.mission.client_id)return NextResponse.json({error:'Seul le client choisit les fournitures de sa demande.'},{status:403})
  if(!['diagnostic','matching','negotiation'].includes(access.viewer.mission.status))return NextResponse.json({error:'Cette mission ne peut plus être modifiée.'},{status:409})
+ const {data:paid}=await supabaseAdmin.from('payment_simulations').select('id').eq('mission_id',body.mission_id).maybeSingle()
+ if(paid)return NextResponse.json({error:'Le reçu simulé est déjà figé. Créez une nouvelle demande pour modifier le devis.'},{status:409})
+ if(body.action==='configure'){
+  const {action,mission_id,item,...values}=body
+  const {data,error}=await supabaseAdmin.from('diagnostic_product_selections').update(values).eq('mission_id',mission_id).eq('item',item).select().maybeSingle()
+  if(error)throw error;if(!data)return NextResponse.json({error:'Produit introuvable'},{status:404})
+  return NextResponse.json({ok:true,product:data})
+ }
  if(body.action==='remove'){
   const {error}=await supabaseAdmin.from('diagnostic_product_selections').delete().eq('mission_id',body.mission_id).eq('item',body.item)
   if(error)throw error;return NextResponse.json({ok:true})

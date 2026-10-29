@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Send, RotateCcw, CheckCircle, Zap, AlertCircle, Clock, Wrench, X, ChevronRight } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import DiagnosticProducts from '@/components/pricing/DiagnosticProducts'
+import ClientQuote from '@/components/pricing/ClientQuote'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import PriceContextCard, { type PriceContextView } from '@/components/pricing/PriceContextCard'
@@ -113,6 +114,7 @@ export default function DiagnosticPage() {
   const [pricingClarification, setPricingClarification] = useState('')
   const [refineText, setRefineText]   = useState('')
   const [refining, setRefining]       = useState(false)
+  const [quoteRevision,setQuoteRevision]=useState(0)
   const [navigating, setNavigating]   = useState(false)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const bottomRef     = useRef<HTMLDivElement>(null)
@@ -157,6 +159,10 @@ export default function DiagnosticPage() {
     }
     setUploading(false)
   }
+
+  useEffect(()=>{const id=new URLSearchParams(window.location.search).get('mission');if(!id)return;let active=true;setLoading(true)
+    clientApi(`/api/diagnostic?mission_id=${encodeURIComponent(id)}`).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);if(active){setResult(d);setText(d.original??'');setQA(d.qa??[]);setPhotos(d.photos??[]);setStep('confirming');setPricingError('Consultez le total actualisé et les fournitures ci-dessous.')}}).catch(e=>{if(active)toast.error(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}
+  },[])
 
   // ── Étape 1 → 2 : lance le diagnostic, reçoit 1ère question ──
   const startDiagnostic = async () => {
@@ -311,6 +317,7 @@ export default function DiagnosticPage() {
       if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
       const safeResult = { ...data, urgency: safeUrgency(data.urgency) }
       setResult(safeResult)
+      router.replace(`/diagnostic?mission=${safeResult.mission_id}`,{scroll:false})
       setStep('confirming')
       fetchPricing(safeResult)
     } catch {
@@ -335,6 +342,7 @@ export default function DiagnosticPage() {
       if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
       const affine = { ...(result as DiagResult), ...data, urgency: safeUrgency(data.urgency) }
       setResult(affine)
+      router.replace(`/diagnostic?mission=${affine.mission_id}`,{scroll:false})
       setRefineText('')
       // Le prix suit le diagnostic. Sans ce recalcul forcé, une précision qui
       // changeait la durée ou les matériaux laissait le montant inchangé.
@@ -409,6 +417,7 @@ export default function DiagnosticPage() {
         </div>
 
         {/* ══ ÉTAPE 1 : Input ══ */}
+        <Link href="/diagnostics" style={{display:'block',marginBottom:16,color:'#B45309'}}>Mes diagnostics enregistrés</Link>
         {step === 'input' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
@@ -758,7 +767,8 @@ export default function DiagnosticPage() {
               </p>
             </div>
 
-            <DiagnosticProducts key={result.mission_id} missionId={result.mission_id} items={result.items_needed} />
+            <DiagnosticProducts key={result.mission_id} missionId={result.mission_id} items={result.items_needed} onChanged={()=>setQuoteRevision(v=>v+1)} />
+            <ClientQuote key={result.mission_id} missionId={result.mission_id} revision={quoteRevision+(pricing?.estimate??0)} />
 
             {/* Matériel probable */}
             {result.items_needed.length > 0 && (
@@ -806,34 +816,7 @@ export default function DiagnosticPage() {
               </div>
             </div>
 
-            {/* CTA principal */}
-            <button
-              onClick={() => {
-                if (navigating || pricingLoading || !pricing || !result.mission_id) return
-                setNavigating(true)
-                const priceParam   = pricing?.estimate ? `&price=${pricing.estimate}` : ''
-                const summaryParam = result.summary   ? `&summary=${encodeURIComponent(result.summary)}` : ''
-                const href = result.mission_id
-                  ? `/mode-select?mission=${result.mission_id}&category=${encodeURIComponent(result.category)}${priceParam}${summaryParam}`
-                  : `/mode-select?category=${encodeURIComponent(result.category)}${priceParam}${summaryParam}`
-                router.push(href)
-              }}
-              disabled={navigating || pricingLoading || !pricing || !result.mission_id}
-              className="btn-primary"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                padding: '18px', color: 'white', border: 'none',
-                borderRadius: '16px', fontWeight: 700, fontSize: '16px', cursor: navigating ? 'not-allowed' : 'pointer',
-                boxShadow: '0 8px 24px rgba(232,93,38,0.25)', width: '100%', opacity: navigating ? 0.8 : 1,
-              }}
-            >
-              {navigating
-                ? <><div style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Chargement…</>
-                : <><CheckCircle size={20} /> Choisir mon mode d'intervention <ChevronRight size={18} /></>
-              }
-            </button>
-
-            <button onClick={() => { setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null);  }} style={{
+            <button onClick={() => { router.replace('/diagnostic',{scroll:false}); setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null);  }} style={{
               padding: '13px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '14px',
               fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#6B7280',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',

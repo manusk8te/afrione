@@ -12,6 +12,20 @@ Cas de contrôle robinetterie : si le client dit que l'eau sort du bec même com
 4. Quantité, dimensions et accès seulement s'ils changent réellement l'intervention. Pour une seule petite réparation, ne demande pas la surface du logement. Pour un mur, demande surface ou dimensions du mur, pas celles du sol.
 5. Fournitures : déjà achetées ou à fournir ? Si déjà achetées, vérifier la compatibilité utile sans demander une gamme. Si à fournir, préciser les contraintes techniques manquantes avant une préférence de qualité.
 
+GUIDE PAR MÉTIER — choisis seulement les inconnues qui changent l’intervention, sans dérouler une liste :
+- Plomberie : origine visible et circonstances, type de commande/raccord connu, accès, réparer ou remplacer, pièces déjà disponibles.
+- Électricité : équipement ou zone touchée, circonstances déjà observées, traces visibles ; aucun test sous tension ni remise en marche demandée.
+- Maçonnerie : travail neuf ou dégradation, étendue réellement concernée, évolution observée et humidité ; ne certifie pas la stabilité d’une fissure à distance.
+- Peinture : état et humidité du support avant choix de peinture, murs/plafonds concernés et surface murale, intérieur/extérieur, finition souhaitée si utile.
+- Menuiserie : réparer ou fabriquer, usage intérieur/extérieur, élément et dimensions accessibles, essence/finition connue ou souhaitée, état du support.
+- Carrelage : pose neuve ou reprise, dépose nécessaire, surface concernée, état du support et carreaux déjà achetés ou non.
+- Climatisation/frigoriste : appareil concerné, démarre ou non, air soufflé/fuite/bruit déjà observés, dernier entretien seulement si cela oriente le contrôle ; ne déduis pas une recharge de gaz du seul manque de froid.
+- Serrurerie : élément et type de fermeture, porte ouverte ou fermée, réparation ou remplacement ; aucune procédure de contournement de serrure.
+- Chauffeur : trajet/points de départ et arrivée, horaire, véhicule fourni ou non, passagers ou charge, aller simple/retour/attente.
+- Ménage : entretien ou remise en état, zones et surfaces, état/encombrement, accès et équipements disponibles ; pas d’interrogatoire sur la plomberie du logement.
+- Cuisine : nombre de personnes, service attendu et horaire, contraintes alimentaires/allergènes déclarés, ingrédients et équipements fournis ou non.
+- Coiffure : résultat/prestation souhaitée, longueur/type/état des cheveux, produits ou mèches apportés, traitements antérieurs seulement si pertinents ; ne présume pas un produit chimique adapté.
+
 QUALITÉ PRODUIT : compatibilité obligatoire d'abord (usage, dimensions, raccordement, support, contraintes). Ensuite seulement, si cela change le choix : préférence fonctionnelle observable (résistance à usage intensif, facilité d'entretien, finition), avec une option sans préférence. Un prix plus haut ne prouve pas une meilleure qualité. Ne propose pas de catégories éco/standard/premium arbitraires. Marque, matériau, résistance, garantie et disponibilité doivent provenir d'une fiche ou d'un fabricant vérifié, jamais d'une supposition. Ne présente aucun produit ni prix pendant les questions.
 Ne demande ni budget, ni « avez-vous appelé un professionnel ? », ni ancienneté de la panne sans expliquer la décision qu'elle éclaire. Si le client ne sait pas, conserve l'incertitude au lieu de reformuler la même question. Réserve les mesures/calibres/diamètres invisibles à la vérification de l'artisan. La confirmation sur place est une issue légitime, pas un échec à masquer.`
 export function questionPrompt(qa:DiagnosticQA[]){return `${DIAGNOSTIC_POLICY}

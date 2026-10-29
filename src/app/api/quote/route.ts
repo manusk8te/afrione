@@ -4,15 +4,12 @@ import {supabaseAdmin} from '@/lib/supabase'
 import {describeSupplies} from '@/lib/supplies'
 export const dynamic='force-dynamic'
 export async function GET(req:NextRequest){
- const id=req.nextUrl.searchParams.get('mission_id');const resolved=await resolveMissionViewer(req,id)
- if(!resolved.ok)return resolved.res
- if(resolved.viewer.mission.client_id!==resolved.viewer.userId)return NextResponse.json({error:'Devis réservé au client de cette mission'},{status:403})
- const [{data:mission,error:mError},{data:diag,error:dError}]=await Promise.all([supabaseAdmin.from('missions').select('total_price').eq('id',id).maybeSingle(),supabaseAdmin.from('diagnostics').select('raw_text').eq('mission_id',id).maybeSingle()])
- if(mError||dError)return NextResponse.json({error:'Devis indisponible'},{status:503})
- if(!mission?.total_price||!diag)return NextResponse.json({error:'Revenez au diagnostic pour confirmer le prix de votre demande.'},{status:409})
- let raw:any={};try{raw=JSON.parse(diag.raw_text||'{}')}catch{}
- const sources=raw.afrione_pricing?.price_context?.sources??[]
- const {data:products,error:productError}=await supabaseAdmin.from('diagnostic_product_selections').select('id,item,quantity,offer,selected_at').eq('mission_id',id)
- if(productError)return NextResponse.json({error:'Choix de fournitures indisponibles'},{status:503})
- return NextResponse.json({selected_products:products??[],total:mission.total_price,sources,supplies:describeSupplies(sources),indicative:true})
+ const id=req.nextUrl.searchParams.get('mission_id');const access=await resolveMissionViewer(req,id);if(!access.ok)return access.res
+ if(access.viewer.userId!==access.viewer.mission.client_id)return NextResponse.json({error:'Devis réservé au client'},{status:403})
+ const {data:quoteRequest}=await supabaseAdmin.from('quote_requests').select('id,status,created_at').eq('mission_id',id).maybeSingle()
+ const {data:receipt}=await supabaseAdmin.from('payment_simulations').select('id,amount,quote_snapshot').eq('mission_id',id).maybeSingle()
+ if(receipt){const saved=receipt.quote_snapshot?.quote;return NextResponse.json({quote_request:quoteRequest??null,...saved,total:receipt.amount,service_total:saved?.service_total??receipt.amount,materials_total:saved?.materials_total??0,selected_products:saved?.selected_products??[],sources:saved?.sources??receipt.quote_snapshot?.price_context?.sources??[],needs_quote:false,payment_simulation_id:receipt.id},{headers:{'Cache-Control':'private, no-store'}})}
+ const {data,error}=await supabaseAdmin.rpc('get_client_quote',{p_mission_id:id,p_client_id:access.viewer.userId})
+ if(error||!data)return NextResponse.json({error:'Devis indisponible'},{status:503})
+ return NextResponse.json({...data,quote_request:quoteRequest??null,supplies:describeSupplies(data.sources)},{headers:{'Cache-Control':'private, no-store'}})
 }

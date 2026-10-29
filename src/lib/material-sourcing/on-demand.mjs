@@ -38,7 +38,7 @@ export function parseLiveProduct(html,url){
   if(!p||new URL(url).pathname!==`/detail/produit/${p.slugProduct}`||typeof p.title!=='string')throw Error('Fiche ProduitBat différente')
   if(p.promotion||(p.variantes?.length??0)>0)throw Error('Promotion ou variante à préciser')
   const price=Number(p.price);if(!Number.isSafeInteger(price)||price<=0)throw Error('Prix ProduitBat absent')
-  return {name:p.title,price,currency:'XOF',unit:/\bla tonne\b/i.test(p.title)?'tonne':'article vendu (conditionnement à confirmer)',stock_status:Number(p.QteStock)>0?'available':'unavailable',url,extraction:'public_storefront_product_data_fcfa'}
+  return {name:p.title,brand:typeof p.marque?.['libélé_marque']==='string'?p.marque['libélé_marque']:null,sku:p.reference??null,warranty:null,price,currency:'XOF',unit:/\bla tonne\b/i.test(p.title)?'tonne':'article vendu (conditionnement à confirmer)',stock_status:Number(p.QteStock)>0?'available':'unavailable',url,extraction:'public_storefront_product_data_fcfa'}
  }
  const after=html.slice(html.search(/<h1\b/i));const name=clean(after.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]??'');if(!name)throw Error('Titre absent')
  if(host==='sogep-africa.com'){

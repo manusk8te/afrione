@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { resolveMissionViewer } from './mission-auth'
 import { supabaseAdmin } from './supabase'
-const input = z.object({ mission_id: z.string().uuid(), amount: z.number().int().positive().max(2147483647).optional() }).strict()
+const input = z.object({ mission_id: z.string().uuid(), amount: z.number().int().positive().max(2147483647).optional(),quote_revision:z.string().regex(/^[a-f0-9]{32}$/).optional() }).strict()
 export async function simulatePayment(req: NextRequest) {
  try {
   const parsed = input.safeParse(await req.json())
@@ -11,7 +11,8 @@ export async function simulatePayment(req: NextRequest) {
   if (!resolved.ok) return resolved.res
   const { viewer } = resolved
   if (viewer.mission.client_id !== viewer.userId) return NextResponse.json({error:'Seul le client de cette mission peut simuler son paiement'},{status:403})
-  const { data, error } = await supabaseAdmin.rpc('simulate_client_payment', {
+  const { data, error } = await supabaseAdmin.rpc(parsed.data.quote_revision?'simulate_client_payment_v2':'simulate_client_payment', {
+   ...(parsed.data.quote_revision?{p_expected_revision:parsed.data.quote_revision}:{}),
    p_mission_id: parsed.data.mission_id, p_client_id: viewer.userId, p_expected_amount: parsed.data.amount ?? null,
   })
   if (error || !data) {

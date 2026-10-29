@@ -218,3 +218,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({error:'Le diagnostic n’a pas abouti. Vos réponses sont conservées ; réessayez sans inventer les informations manquantes.'},{status:503})
   }
 }
+
+export async function GET(req:NextRequest){
+ const {resolveMissionViewer}=await import('@/lib/mission-auth')
+ const access=await resolveMissionViewer(req,req.nextUrl.searchParams.get('mission_id'));if(!access.ok)return access.res
+ if(access.viewer.userId!==access.viewer.mission.client_id)return NextResponse.json({error:'Diagnostic réservé au client'},{status:403})
+ const {data:d,error}=await supabaseAdmin.from('diagnostics').select('*').eq('mission_id',access.viewer.mission.id).maybeSingle()
+ if(error||!d)return NextResponse.json({error:'Diagnostic indisponible'},{status:404})
+ let raw:any={};try{raw=JSON.parse(d.raw_text||'{}')}catch{}
+ const {data:request}=await supabaseAdmin.from('quote_requests').select('id,status,created_at').eq('mission_id',access.viewer.mission.id).maybeSingle()
+ return NextResponse.json({mission_id:access.viewer.mission.id,mission_status:access.viewer.mission.status,summary:d.ai_summary,technical_notes:raw.technical_notes??'',category:d.category_detected,urgency:d.urgency_level,duration_estimate:raw.duration_estimate??null,diagnostic_status:raw.diagnostic_status??'preliminary',product_requirements:raw.product_requirements??[],items_needed:(d.items_needed??[]).map((name:string)=>({name,qty:null,unit:null})),original:raw.original??'',qa:raw.qa??[],photos:raw.photos??[],quote_request:request??null},{headers:{'Cache-Control':'private, no-store'}})
+}

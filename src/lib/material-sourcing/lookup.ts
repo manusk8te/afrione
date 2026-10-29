@@ -2,7 +2,7 @@ import {missingMaterialSpecs} from './needs.mjs'
 import {unstable_cache} from 'next/cache'
 import {normalizeQuery,searchPublicMaterials} from './on-demand.mjs'
 // Next Data Cache, separate from the business database; original observation dates are preserved.
-const cachedSearch=unstable_cache(async(query:string)=>searchPublicMaterials(query),['afrione-material-search-v1'],{revalidate:3600})
+const cachedSearch=unstable_cache(async(query:string)=>searchPublicMaterials(query),['afrione-material-search-v2'],{revalidate:3600})
 export async function lookupMaterialOffers(item:string, purpose:'mission'|'explore'='mission'){
  const query=normalizeQuery(item)
  if(query.length<2)return {query,found:false,offers:[],comparison_references:[],note:'Précisez la fourniture.'}

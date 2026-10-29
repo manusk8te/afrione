@@ -21,11 +21,12 @@ function ModeSelectContent() {
   const router       = useRouter()
   const params       = useSearchParams()
   const missionId    = params.get('mission')
-  const category     = params.get('category') || 'Intervention'
+  const requestedCategory = params.get('category') || 'Intervention'
   const priceParam   = params.get('price')
-  const [quote,setQuote]=useState<{total:number;sources:{id?:string;source_scope?:string;url?:string}[]}|null>(null)
+  const [quote,setQuote]=useState<{quote_revision?:string;category?:string;total:number|null;service_total:number|null;materials_total:number;needs_quote:boolean;sources:{id?:string;source_scope?:string;url?:string}[]}|null>(null)
   const [quoteError,setQuoteError]=useState('')
   const price=quote?.total??null
+  const category=quote?.category??requestedCategory
   const summary      = params.get('summary')
 
   const [loading,       setLoading]       = useState<'urgent' | 'standard' | null>(null)
@@ -94,7 +95,7 @@ function ModeSelectContent() {
 
     try {
       const response = await clientApi('/api/dispatch/simulate-pay', {
-        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:currentMission,amount:price}),
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:currentMission,amount:price,...(quote?.quote_revision?{quote_revision:quote.quote_revision}:{})}),
       })
       const data=await response.json()
       if(!response.ok || !data.ok || !data.receipt)throw Error(data.error || 'Simulation non enregistrée')
@@ -236,6 +237,8 @@ function ModeSelectContent() {
 
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '96px 16px 64px' }}>
         {quoteError && <p role="alert">{quoteError}</p>}
+        {quote&&<section style={{padding:16,border:'1px solid #CBD5E1',borderRadius:12,marginBottom:16}}><p>Prestation : {quote.service_total?.toLocaleString('fr-FR')??'à confirmer'} FCFA · Fournitures supplémentaires confirmées : {quote.materials_total.toLocaleString('fr-FR')} FCFA</p>{quote.needs_quote&&<Link href={`/diagnostic?mission=${missionId}`}>Préciser le devis et les fournitures avant paiement</Link>}</section>}
+
         {quote && <SuppliesNotice sources={quote.sources} />}
 
         {/* Header */}
@@ -273,7 +276,7 @@ function ModeSelectContent() {
           {/* ── Mode URGENT ────────────────────────────────────────────────── */}
           <button
             onClick={handleUrgent}
-            disabled={!!loading}
+            disabled={!!loading||!price}
             style={{
               width: '100%', textAlign: 'left', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
               background: 'white', borderRadius: '24px', padding: '28px',

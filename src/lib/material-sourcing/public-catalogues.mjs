@@ -38,7 +38,7 @@ export function parseProduct(html,url){
   const firstPrice=visibleText.match(/\b(\d[\d\s,\u00a0\u202f]*?)\s*(?:F\s*)?CFA\b/)
   const visiblePrice=firstPrice?Number(firstPrice[1].replace(/[\s,\u00a0\u202f]/g,'')):null
   if(visiblePrice!==price)throw Error('Prix structuré différent du premier prix affiché sur la fiche')
-  return {name:h1,price,currency:'XOF',sku:p.sku??null,stock_status:/OutOfStock/i.test(offer.availability??'')?'unavailable':/InStock/i.test(offer.availability??'')?'available':'unknown',extraction:'jsonld_product_and_visible_price',url}
+  return {name:h1,brand:typeof p.brand==='string'?p.brand:typeof p.brand?.name==='string'?p.brand.name:null,warranty:null,price,currency:'XOF',sku:p.sku??null,stock_status:/OutOfStock/i.test(offer.availability??'')?'unavailable':/InStock/i.test(offer.availability??'')?'available':'unknown',extraction:'jsonld_product_and_visible_price',url}
  }
  // Site-specific fallback, verified against its visible product template.
  if(new URL(url).hostname==='quinkashop.com'){
