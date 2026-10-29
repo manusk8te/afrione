@@ -8,7 +8,7 @@ Cache Next Data Cache : résultat par recherche normalisée, renouvellement 1 he
 
 Prix nuls, devises non établies, variantes et promotions ProduitBat non prises en charge, absence de prix principal ou montants incohérents exclus. Les mots de la recherche doivent correspondre au titre ; ce filtre n’est pas une garantie de compatibilité technique. Aucun prix médian entre articles différents, aucune remise arbitraire. Conditionnement conservé explicitement quand établi, sinon « article vendu (conditionnement à confirmer) ». Pas de multiplication automatique par une quantité dans une unité différente.
 
-Les offres et leurs liens s’affichent séparément de la prestation V4. Elles n’augmentent pas automatiquement un prix dont le périmètre fournitures est variable. La sélection et l’achat de fournitures ne sont pas effectués. La lecture du catalogue interne reste disponible pour les relevés contrôlés.
+Les offres et leurs liens s’affichent séparément de la prestation V4. Elles n’augmentent pas automatiquement un prix dont le périmètre fournitures est variable. La sélection et l’achat de fournitures ne sont pas effectués. Le parcours de recherche ne lit plus le catalogue interne général ; les relevés internes restent consultables séparément en administration.
 
 ## Iroko et comparaison internationale
 
@@ -18,3 +18,7 @@ Contrôle navigateur 29/10/2026 : minimum 20 m³, origine indiquée Cameroun, ve
 Fournisseur local : https://bdci-ci.com/product/iroko/ — fiche espèce et implantation Abidjan, sans prix public constaté. La recherche iroko présente ces pistes à confirmer même sans offre numérique utilisable. Les données de l’annonce ne sont pas actualisées automatiquement par un adaptateur Alibaba.
 
 Avant de comparer : essence, sciage/grume, séchage, qualité, dimensions, volume, unité, quantité minimale, devise/date de change, Incoterm, taxes, transport et prix effectivement négocié. Un prix export ou une mercuriale douanière ne constitue pas un prix de détail ivoirien. Une décote « achat local » ou « négociation » doit être estimée avec des devis locaux comparables ; pas de coefficient inventé.
+
+## Ciblage de mission
+
+La recherche de diagnostic et SDK exige un intitulé technique ; un simple « ciment », « robinet » ou « iroko » renvoie les spécifications à préciser avant tout fetch. Le champ de recherche d’administration applique aussi ces précisions ; il ne propose pas automatiquement des produits génériques. Le cache est indexé par l’intitulé exact normalisé, jamais par catégorie métier. Les caractéristiques inconnues ne doivent pas être inventées par le diagnostic. Les mots et valeurs numériques demandés doivent correspondre au titre de la fiche ; l’absence de précision fiable n’autorise pas un autre type de produit.

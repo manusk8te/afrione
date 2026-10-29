@@ -1,11 +1,9 @@
 import { normalizeMetier } from './metier'
-import { materialObservationUsable } from './supplies'
 import { Agent, AgentInputItem, Runner, tool, withTrace, getGlobalTraceProvider } from "@openai/agents";
 import { z } from "zod";
 import { supabaseAdmin } from "./supabase";
 import { lookupMaterialOffers } from "./material-sourcing/lookup";
 import { SMIG_X2_HORAIRE, CATEGORY_TO_METIER } from "./pricing";
-import { FILTRE_CATALOGUE_VALIDE } from "./catalogue";
 import { getStudyEstimate, findPublishedPriceReferences, getPriceContext, getIndicativePriceContext, getPublishedReferenceCatalogue, type StudyEvaluation, type PriceContext } from './pricing-studies';
 
 // ── Fallbacks ────────────────────────────────────────────────────────────────
@@ -119,39 +117,19 @@ async function resolveHourlyRate(metier: string, zone: string, artisan_id?: stri
 
 const searchMaterialPrice = tool({
   name: "search_material_price",
-  description: "Recherche les offres publiques récentes d'une fourniture avec liens et cache temporaire, ou un relevé interne contrôlé. Aucun enregistrement de produit. Ne pas confondre prix de l'article vendu et prix par unité demandée.",
+  description: "Recherche les offres publiques récentes d'une fourniture avec liens et cache temporaire, à partir des caractéristiques précises de la mission. Aucun enregistrement de produit. Ne pas confondre prix de l'article vendu et prix par unité demandée.",
   parameters: z.object({
-    item:     z.string().describe("Nom du matériau (ex: joint plomberie, câble 2.5mm)"),
+    item:     z.string().trim().min(2).max(120).describe("Nom du matériau (ex: joint plomberie, câble 2.5mm)"),
     category: z.string().describe("Catégorie métier (ex: Plomberie, Électricité, Peinture)"),
     qty:      z.number().positive().finite().max(100000).optional().describe("Quantité nécessaire (défaut: 1)"),
   }),
   execute: async ({ item, category, qty = 1 }) => {
-    // 1. Base AfriOne — ORDER BY déterministe : sans lui, deux appels
-    // identiques peuvent renvoyer des lignes différentes en Postgres.
-    // Articles admis seulement : un prix déclaré par un artisan et non encore
-    // validé par un admin ne doit pas entrer dans un devis. Voir
-    // src/lib/catalogue.ts.
-    const { data: cachedRows } = await supabaseAdmin
-      .from('price_materials')
-      .select('id, price_market, source, name, observed_at, last_scraped_at, source_url, price_provenance, added_by, confirmed_at, unit, stock_status')
-      .ilike('name', `%${item}%`)
-      .eq('category',normalizeMetier(category)??category)
-      .gte('observed_at',new Date(Date.now()-30*86400000).toISOString())
-      .or(FILTRE_CATALOGUE_VALIDE)
-      .order('observed_at', { ascending: false })
-      .limit(50);
-    const cached = cachedRows?.find(row=>materialObservationUsable(row)&&row.stock_status!=='unavailable');
-
-    if (cached && materialObservationUsable(cached) && cached.stock_status !== 'unavailable') {
-      return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne', source_url:cached.source_url, observed_at:cached.observed_at || cached.last_scraped_at, unit:cached.unit, price_provenance:cached.price_provenance, product_name: cached.name, is_fallback: false };
-    }
-
     // Recherche publique en lecture seule, avec cache temporaire ; aucun INSERT catalogue.
     const web = await lookupMaterialOffers(item);
     if(web.found)return {item,qty,found:true,offers:web.offers,price_unit:null,total:null,is_fallback:false,note:web.note,comparison_references:web.comparison_references??[]};
 
-    // 3. Fallback catégorie — marqué explicitement comme tel, jamais présenté comme un prix trouvé
-    return { item, qty, found:false, price_unit:null, total:null, source:null, is_fallback:true, comparison_references:web.comparison_references??[],note:'Aucun prix récent vérifié ; demander un devis au fournisseur. Les références internationales ne prouvent pas le prix ivoirien ; aucune décote de négociation ou de proximité sans observation comparable.' };
+    // Aucun produit de substitution ni prix de remplacement.
+    return { item, qty, found:false, price_unit:null, total:null, source:null, is_fallback:true, comparison_references:web.comparison_references??[],note:web.note };
   },
 });
 
@@ -293,7 +271,7 @@ Processus :
 1. Comprends la mission, ses dimensions et ses fournitures. Cherche les références avec search_price_reference : le catalogue complet est disponible, pas seulement les cinq tâches de l’enquête. Choisis une référence techniquement comparable, même si les mots diffèrent, et explique précisément les différences. Une différence de métier seule n’est pas une analogie valable.
 2. Appelle contextualize_reference_price avec l’identifiant publié, la durée fournie, la quantité correspondant à l’unité source et une justification technique. Pour une seule intervention/unité demandée, quantity=1 ; pour heure, quantity=durée ; pour m², mètres linéaires, convives, plusieurs unités, il faut une quantité explicite dans la demande. Sans quantité, référence comparable ou résultat exploitable, appelle request_pricing_details pour poser la question précise, puis retourne sans calculate_final_price. Les contrats annuels nécessitent un devis.
 3. Le résultat V4 est la proposition indicative réellement affichée. Appelle calculate_final_price après une contextualisation réussie. Cet outil applique la V4 en code ; ses anciens paramètres horaires ne modifient plus le montant. Recopie exactement ses montants et ses valeurs nulles.
-4. Appelle search_material_price pour chaque fourniture à acheter. Présente uniquement les offres renvoyées avec leur lien et leur date ; vérifie dimensions, usage et conditionnement, sinon demande une précision. Aucun prix ne doit être déduit des produits similaires ni du silence d’un site. Les fournitures peuvent être recherchées avec search_material_price à titre informatif, mais ne sont pas additionnées au prix V4 : les données sources ont des périmètres variables. La ventilation main-d’œuvre, transport, fournitures, commissions et rémunération est inconnue, donc nulle. Ne fabrique ni frais ni intervalle de confiance.
+4. Déduis uniquement les fournitures nécessaires à cette mission et non déjà possédées par le client. Ne recherche jamais une catégorie entière : construis un intitulé technique avec usage, type, dimensions et conditionnement connus. N’invente aucune caractéristique manquante. Si l’outil demande des spécifications, pose ces questions sans recommander un autre produit. Appelle search_material_price pour chaque fourniture à acheter. Présente uniquement les offres renvoyées avec leur lien et leur date ; vérifie dimensions, usage et conditionnement, sinon demande une précision. Aucun prix ne doit être déduit des produits similaires ni du silence d’un site. Les fournitures peuvent être recherchées avec search_material_price à titre informatif, mais ne sont pas additionnées au prix V4 : les données sources ont des périmètres variables. La ventilation main-d’œuvre, transport, fournitures, commissions et rémunération est inconnue, donc nulle. Ne fabrique ni frais ni intervalle de confiance.
 5. Explique dans data_note la référence, la quantité, la comparaison, la nature indicative et la nécessité d’un devis. Sur une tâche sans calibration locale, dis clairement « estimation par analogie, non validée localement ». La réduction V4 ne garantit pas d’être sous le marché ivoirien ni la viabilité économique. Ne prétends pas que le modèle apprend automatiquement : une nouvelle version doit être réentraînée et vérifiée sur les retours réels.
 
 Règle absolue : les prix viennent toujours des outils, jamais inventés.`,

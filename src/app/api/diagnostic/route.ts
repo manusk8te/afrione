@@ -492,6 +492,8 @@ DURÉE précise selon le cas réel :
 MATÉRIAUX (items_needed) :
 - Maximum 4 items. Uniquement pièces à remplacer et consommables.
 - JAMAIS les outils de l'artisan (clé, tournevis, perceuse, taloche, multimètre…)
+- Ne pas inventer un diamètre, une classe de ciment, un conditionnement ou un type de robinet non établi par la demande. Si inconnu, le laisser à préciser. Ne pas proposer une fourniture déjà possédée par le client.
+- Inclure dans le nom les caractéristiques établies : usage, type, dimensions, conditionnement.
 - Quantités précises si connues (ex: "Peinture vinylique 10L" pas "de la peinture")
 - Si réparation = réglage pur → items_needed vide []
 

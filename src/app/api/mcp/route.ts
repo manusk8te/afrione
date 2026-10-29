@@ -64,11 +64,6 @@ const TOOLS = [
 async function executeTool(name: string, args: Record<string, any>): Promise<any> {
   if (name === 'search_material_price') {
     const { item, category, qty = 1 } = args
-    const { data: cached } = await supabaseAdmin
-      // Articles admis seulement — voir src/lib/catalogue.ts
-      .from('price_materials').select('price_market, source, name')
-      .ilike('name', `%${item}%`).or(FILTRE_CATALOGUE_VALIDE).limit(1).maybeSingle()
-    if (cached) return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne' }
     const web = await lookupMaterialOffers(item)
     return {item,qty,found:web.found,offers:web.offers,price_unit:null,total:null,note:web.note}
 

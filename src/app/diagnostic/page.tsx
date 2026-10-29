@@ -242,7 +242,7 @@ export default function DiagnosticPage() {
         setPricingLoading(false)
         const names=(diagResult.items_needed||[]).map((i:any)=>typeof i==='string'?i:i.name).filter(Boolean).slice(0,4)
         if(names.length){
-          try{const response=await clientApi(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(names.join(','))}`);if(response.ok){const data=await response.json();setMaterialTiers(data.materials||[])}}catch{setMaterialTiers([])}
+          try{const response=await clientApi(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(JSON.stringify(names))}`);if(response.ok){const data=await response.json();setMaterialTiers(data.materials||[])}}catch{setMaterialTiers([])}
         }
         return
       } catch {}
@@ -267,7 +267,7 @@ export default function DiagnosticPage() {
           }),
         }),
         itemNames.length > 0
-          ? clientApi(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(itemNames.slice(0,4).join(','))}&client_quartier=${encodeURIComponent(quartier || 'Cocody')}`)
+          ? clientApi(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(JSON.stringify(itemNames.slice(0,4)))}&client_quartier=${encodeURIComponent(quartier || 'Cocody')}`)
           : Promise.resolve(null),
       ])
       if (pricingRes.ok) {
@@ -819,7 +819,7 @@ export default function DiagnosticPage() {
                         <div>{offer.price.toLocaleString('fr-FR')} FCFA / {offer.unit}</div>
                         <small>Consulté le {new Date(offer.observed_at).toLocaleString('fr-FR')} · compatibilité à confirmer</small>
                       </div>
-                    )) : <p style={{fontSize:12,color:'#64748B'}}>Aucune offre publique exploitable ; fourniture à confirmer.</p>}
+                    )) : <p style={{fontSize:12,color:'#64748B'}}>{mat.note || 'Aucune offre publique exploitable ; fourniture à confirmer.'}</p>}
                   </div>
                 ))}
               </section>

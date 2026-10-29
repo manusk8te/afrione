@@ -25,7 +25,7 @@ export function discoverProducts(html,source,query){
  for(const m of html.matchAll(/href=["']([^"']+)["']/gi)){
   try{const u=new URL(m[1].replace(/&amp;/g,'&'),`https://${source.host}`);if(u.protocol!=='https:'||u.hostname!==source.host||u.port||u.username||u.password||u.search||u.hash)continue
    if(source.path==='.html'?!/^\/[^?#]*\/\d+-[^/]+\.html$/.test(u.pathname):!u.pathname.startsWith(source.path))continue
-   if(productMatches(query,decodeURIComponent(u.pathname.replace(/-/g,' ')))&&!urls.includes(u.href))urls.push(u.href)
+   if(productMatches(tokens(query).filter(t=>/^[a-z]+$/.test(t)).join(' '),decodeURIComponent(u.pathname.replace(/-/g,' ')))&&!urls.includes(u.href))urls.push(u.href)
   }catch{}
  }
  return urls.slice(0,3)
@@ -57,7 +57,7 @@ export function parseLiveProduct(html,url){
 }
 /** @param {string} query @param {any} options */
 export async function searchPublicMaterials(query,options={}){
- const fetcher=options.fetcher??fetch;const sources=options.sources??LIVE_SOURCES;const signal=AbortSignal.timeout(12000)
+ const fetcher=options.fetcher??fetch;const sources=options.sources??LIVE_SOURCES.filter(s=>!(/\bciment\b/.test(normalizeQuery(query)))||['produitbat.ci','quincaillerie-kf.com'].includes(s.host));const signal=AbortSignal.timeout(12000)
  async function page(url){const r=await fetcher(url,{signal,redirect:'manual',cache:'no-store',headers:{'User-Agent':'AfriOne-PriceLookup/1.0','Accept':'text/html'}});if(!r.ok)throw Error(`HTTP ${r.status}`);if(Number(r.headers.get('content-length')??0)>2000000)throw Error('Page trop volumineuse');const h=await r.text();if(h.length>2000000)throw Error('Page trop volumineuse');return h}
  const reports=await Promise.all(sources.map(async source=>{
   try{const html=await page(source.search(query));const urls=discoverProducts(html,source,query)

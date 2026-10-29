@@ -201,9 +201,9 @@ export default function AdminSourcesPage() {
 
         <section className="mb-6 p-5 bg-white rounded-xl border border-gray-200">
           <h2 className="font-semibold mb-2">Rechercher un prix à la demande</h2>
-          <p className="text-sm text-gray-500 mb-3">Aucun article ajouté au catalogue, aucune validation individuelle. Les résultats sont réutilisés pendant une heure. Fournitures séparées de la prestation ; modèle, conditionnement et livraison à confirmer.</p>
+          <p className="text-sm text-gray-500 mb-3">Décrivez la fourniture précise : usage, type, dimensions et conditionnement. Si une caractéristique manque, elle sera demandée. Aucun article ajouté au catalogue, aucune validation individuelle. Les résultats sont réutilisés pendant une heure. Fournitures séparées de la prestation ; modèle, conditionnement et livraison à confirmer.</p>
           <div className="flex gap-2">
-            <input aria-label="Fourniture à rechercher" maxLength={120} value={lookupQuery} onChange={e=>setLookupQuery(e.target.value)} placeholder="Ex. ciment, tube fluo, robinet lavabo" className="border rounded-lg p-2 flex-1 min-w-0" />
+            <input aria-label="Fourniture à rechercher" maxLength={120} value={lookupQuery} onChange={e=>setLookupQuery(e.target.value)} placeholder="Ex. ciment CPJ 32.5R la tonne, mitigeur cuisine" className="border rounded-lg p-2 flex-1 min-w-0" />
             <button onClick={searchOffers} disabled={lookupBusy||lookupQuery.trim().length<2} className="afrione-gradient text-white rounded-lg px-4 disabled:opacity-50">{lookupBusy?'Recherche…':'Chercher les prix'}</button>
           </div>
           {lookupResult && <div role="status" className="mt-4 text-sm">

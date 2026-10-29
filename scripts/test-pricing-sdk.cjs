@@ -18,7 +18,7 @@ let runWorkflow;
 test.before(async () => {
   // Charger le véritable module ESM avant le pont CommonJS de ts-node.
   const filename = path.join(__dirname, '../src/lib/pricing-studies/engine.mjs');
-  for (const name of [filename, path.join(__dirname, '../src/lib/pricing-studies/contextualizer.mjs'), path.join(__dirname, '../src/lib/material-sourcing/public-catalogues.mjs'), path.join(__dirname, '../src/lib/material-sourcing/on-demand.mjs')]) {
+  for (const name of [filename, path.join(__dirname, '../src/lib/pricing-studies/contextualizer.mjs'), path.join(__dirname, '../src/lib/material-sourcing/public-catalogues.mjs'), path.join(__dirname, '../src/lib/material-sourcing/on-demand.mjs'), path.join(__dirname, '../src/lib/material-sourcing/needs.mjs')]) {
     const exports = await import(require('node:url').pathToFileURL(name).href);
     const cached = new Module(name);
     cached.filename = name;
@@ -161,16 +161,16 @@ test('changer de référence invalide le calcul précédent', async () => {
  await assert.rejects(()=>runWorkflow({input_as_text:'Test changement'},.5,context),/Calcul final non exécuté/);
 });
 
-test('la recherche fournitures ignore une ancienne ligne et utilise le relevé récent contrôlé', async () => {
- const {supabaseAdmin}=require('../src/lib/supabase.ts');const originalFrom=supabaseAdmin.from;let category;
- supabaseAdmin.from=()=>{const chain={select:()=>chain,ilike:()=>chain,eq:(key,value)=>{if(key==='category')category=value;return chain},gte:()=>chain,or:()=>chain,order:()=>chain,limit:async()=>({data:[{name:'Ancienne ligne',price_market:1500},{name:'Produit test contrôlé',price_market:7000,source:'Magasin fixture',source_url:'https://merchant.example/sku',unit:'unité',observed_at:new Date().toISOString(),added_by:'contributor',confirmed_at:new Date().toISOString(),price_provenance:'artisan_declaration',stock_status:'available'}]})};return chain};
+test('fourniture générique : précision requise sans lecture du catalogue général', async () => {
+ const {supabaseAdmin}=require('../src/lib/supabase.ts');const originalFrom=supabaseAdmin.from;
+ supabaseAdmin.from=()=>{throw Error('La recherche ne doit pas consulter une base générale')};
  try{
   sdk.Runner.prototype.run=async function(agent){
    const response=await agent.tools.find(t=>t.name==='search_material_price').invoke(new sdk.RunContext(),JSON.stringify({item:'robinet',category:'Plombier',qty:1}));
    const price=typeof response==='string'?JSON.parse(response):response;
-   assert.equal(price.price_unit,7000);assert.equal(price.is_fallback,false);assert.equal(category,'Plomberie');
+   assert.equal(price.found,false);assert.equal(price.price_unit,null);assert.match(price.note,/usage du robinet/);
    await selectReference(agent);await executeCalculation(agent);return {finalOutput:{test_fixture:true},newItems:[]};
   };
-  await runWorkflow({input_as_text:'Test hors ligne de la base fournitures'},.5,context);
+  await runWorkflow({input_as_text:'Test fournitures à préciser'},.5,context);
  }finally{supabaseAdmin.from=originalFrom}
 });
