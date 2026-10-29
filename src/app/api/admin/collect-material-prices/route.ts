@@ -13,7 +13,7 @@ export async function POST(req:NextRequest){
  try{
  const parsed=z.object({source_id:z.string().uuid()}).strict().safeParse(await req.json())
  if(!parsed.success)return NextResponse.json({error:'Source invalide'},{status:400})
- const {data:source,error}=await supabaseAdmin.from('price_sources').select('id,name,url').eq('id',parsed.data.source_id).maybeSingle()
+ const {data:source,error}=await supabaseAdmin.from('price_sources').select('id,name,url').eq('id',parsed.data.source_id).is('archived_at',null).maybeSingle()
  if(error||!source)return NextResponse.json({error:'Source introuvable'},{status:404})
  const host=new URL(source.url??'').hostname
  if(!Object.hasOwn(CATALOGUES,host))return NextResponse.json({error:'Cette source nécessite un relevé manuel.'},{status:400})

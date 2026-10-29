@@ -16,7 +16,7 @@ export async function GET(req:NextRequest){
   const {data,error}=await supabaseAdmin.from('price_materials').select(fields).eq('source_id',id).order('observed_at',{ascending:false,nullsFirst:false})
   return NextResponse.json(error?{error:'Catalogue indisponible'}:data??[],{status:error?500:200})
  }
- let query=supabaseAdmin.from('price_sources').select('id,name,type,url,quartier,verified,scraper_type,notes,created_at,is_partner,access_status,access_checked_at').order('verified',{ascending:false}).order('created_at',{ascending:false})
+ let query=supabaseAdmin.from('price_sources').select('id,name,type,url,quartier,verified,scraper_type,notes,created_at,is_partner,access_status,access_checked_at').is('archived_at',null).order('verified',{ascending:false}).order('created_at',{ascending:false})
  const type=req.nextUrl.searchParams.get('type');if(type && ['website','magasin'].includes(type))query=query.eq('type',type)
  const {data,error}=await query;return NextResponse.json(error?{error:'Sources indisponibles'}:data??[],{status:error?500:200})
 }

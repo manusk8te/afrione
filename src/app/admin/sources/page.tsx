@@ -138,8 +138,8 @@ export default function AdminSourcesPage() {
       const res2 = await clientApi(`/api/sources?source_id=${source.id}`)
       const mats = await res2.json()
       setMaterials(m => ({ ...m, [source.id]: Array.isArray(mats) ? mats : [] }))
-    } catch {
-      flash('Erreur scraping')
+    } catch (error) {
+      flash(error instanceof Error ? error.message : 'Collecte impossible')
     }
     setScraping(null)
   }
@@ -170,7 +170,6 @@ export default function AdminSourcesPage() {
 
   const flash = (text: string) => {
     setMsg(text)
-    setTimeout(() => setMsg(null), 3500)
   }
 
   const websites = sources.filter(s => s.type === 'website')
@@ -366,7 +365,7 @@ function SourceCard({
             <button onClick={onScrape} disabled={scraping}
               style={{ padding: '5px 10px', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '6px', color: '#C9A84C', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', opacity: scraping ? 0.6 : 1 }}>
               <RefreshCw size={11} style={{ animation: scraping ? 'spin 1s linear infinite' : 'none' }} />
-              {scraping ? 'Scraping…' : 'Scraper'}
+              {scraping ? 'Collecte…' : 'Actualiser les prix'}
             </button>
           )}
           {!source.verified && (
