@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import Brand from '@/components/brand/Brand'
 import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2, Bell } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -107,10 +107,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-            <Image src="/afrione-logo-v2.png" alt="AfriOne" width={60} height={40} style={{ objectFit: 'contain' }} />
-            <span className="font-display font-bold" style={{ fontSize: '20px', color: onOrange ? 'white' : '#3D4852', transition: 'color 0.3s' }}>
-              AFRI<span className="afrione-gradient-text">ONE</span>
-            </span>
+            <Brand inverse={onOrange} />
           </Link>
 
           {/* Nav links */}
