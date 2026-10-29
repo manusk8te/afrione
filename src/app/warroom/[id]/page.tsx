@@ -1310,7 +1310,7 @@ export default function WarRoomPage() {
   }
 
   return (
-    <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'#F5F0E8'}}>
+    <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'var(--ui-canvas)'}}>
 
       {/* ─── MODAL WAVE PAIEMENT (couleurs officielles Wave CI) ──── */}
       {showPayment && (
@@ -2082,7 +2082,7 @@ export default function WarRoomPage() {
       )}
 
       {/* Zone messages */}
-      <div style={{flex:1,overflowY:'auto',padding:'16px'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'16px',width:'100%',maxWidth:704,margin:'0 auto',minHeight:0}}>
             <DiscussionAgreement missionId={missionId as string} role={role} initialScope={diagData?.ai_summary || ''} onDiscussion={setDiscussionEnabled}/>
         <div style={{maxWidth:'672px',margin:'0 auto',display:'flex',flexDirection:'column',gap:'10px'}}>
           {loading ? (
