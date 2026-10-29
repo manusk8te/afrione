@@ -2167,6 +2167,9 @@ export default function WarRoomPage() {
               </div>
             </div>
           ) : messages.map((msg: any) => {
+            // The structured brief is already rendered in the technical panel.
+            // Never expose its raw JSON as a conversational message.
+            if (msg.type === 'brief') return null
             const isMe = msg.sender_id === user?.id
 
             // material_response — affiché comme message système court
