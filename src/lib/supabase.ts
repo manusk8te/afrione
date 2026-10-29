@@ -14,5 +14,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 export const supabaseAdmin = createClient(
   supabaseUrl,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey
+  process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey,
+  {
+    auth: {persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+    global: {fetch:(input,init)=>fetch(input,{...init,cache:'no-store'})},
+  }
 )
