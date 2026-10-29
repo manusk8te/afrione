@@ -1,5 +1,6 @@
 'use client'
 import { clientApi } from '@/lib/client-api'
+import { DiscussionAgreement } from '@/components/warroom/DiscussionAgreement'
 export const dynamic = 'force-dynamic'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -512,25 +513,63 @@ export default function WarRoomPage() {
     return () => { supabase.removeChannel(channel) }
   }, [missionId])
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  // Reconcile after reconnect/focus and periodically: WebSocket events can be lost.
+  useEffect(() => {
+    let disposed = false
+    let pending = false
+    const reload = async () => {
+      if (pending || document.visibilityState === 'hidden') return
+      pending = true
+      try {
+        const response = await clientApi(`/api/warroom/messages?mission_id=${missionId}`, { cache: 'no-store' })
+        if (!response.ok) return
+        const result = await response.json()
+        if (!disposed && Array.isArray(result.messages)) setMessages(previous => {
+          const merged = new Map(previous.map(message => [message.id, message]))
+          result.messages.forEach((message: any) => merged.set(message.id, message))
+          return Array.from(merged.values()).sort((a: any, b: any) =>
+            a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+        })
+      } catch { /* Keep the last readable conversation during network loss. */ }
+      finally { pending = false }
+    }
+    const timer = window.setInterval(reload, 10000)
+    window.addEventListener('online', reload)
+    window.addEventListener('focus', reload)
+    document.addEventListener('visibilitychange', reload)
+    return () => {
+      disposed = true; window.clearInterval(timer)
+      window.removeEventListener('online', reload); window.removeEventListener('focus', reload)
+      document.removeEventListener('visibilitychange', reload)
+    }
+  }, [missionId])
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages.length])
+
+  const [discussionEnabled, setDiscussionEnabled] = useState(true)
 
   // Envoyer message texte
   const send = async () => {
     if (loading) { toast.error('Chargement en cours — attendez.'); return }
     if (!input.trim() || !user || sendStatus !== 'idle') return
+    if (!discussionEnabled) { toast.error('Cette mission est en mode sans discussion libre.'); return }
     if (!guard('send_message')) return
     const text = input.trim()
     setInput('')
     setSendStatus('sending')
-    const { data: inserted, error } = await supabase.from('chat_history').insert({
-      mission_id:  missionId,
-      sender_id:   user.id,
-      sender_role: role,
-      sender_type: role === 'artisan' ? 'artisan' : 'client',
-      text,
-      type: 'text',
-    }).select().single()
-    if (error) { toast.error('Message non envoyé.'); setInput(text); setSendStatus('idle'); return }
+    let inserted: any
+    try {
+      const response = await clientApi('/api/warroom/messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mission_id: missionId, text }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Message non envoyé')
+      inserted = result.message
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Message non envoyé')
+      setInput(previous => previous || text); setSendStatus('idle'); return
+    }
     // Affichage optimiste — ne pas dépendre uniquement du Realtime pour voir
     // son propre message (déco WS, onglet en arrière-plan, latence de
     // réplication) : le message était bien enregistré mais jamais rendu, ce
@@ -542,7 +581,7 @@ export default function WarRoomPage() {
     if (rid) notifyOther(text, rid)
 
     // Modération IA — uniquement en mode libre (pas urgent / standard)
-    const isLibre = !['urgent', 'standard'].includes(mission?.mode ?? '')
+    const isLibre = true
     if (isLibre) {
       const { data: { session } } = await supabase.auth.getSession()
       fetch('/api/warroom/moderate', {
@@ -675,7 +714,7 @@ export default function WarRoomPage() {
   const sendDevis = async () => {
     if (!guard('send_quote')) return
     const matMessages = messages
-      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client')
+      .filter(m => m.type === 'material_suggest' && m.sender_role === 'artisan' && messages.some(r => { try { const v = JSON.parse(r.text); return r.type === 'material_response' && r.sender_role === 'client' && v.ref_id === m.id && v.action === 'approved' } catch { return false } }))
       .map(m => { try { return JSON.parse(m.text) } catch { return null } })
       .filter(Boolean)
     const extraMat = matMessages.reduce((s: number, m: any) => s + (m.total || 0), 0)
@@ -699,6 +738,7 @@ export default function WarRoomPage() {
   // Client accepte le devis → paiement Wave d'abord
   const acceptDevis = (amount: number) => {
     if (!guard('pay_mission')) return
+    if (!window.confirm(`Confirmer le périmètre décrit dans ce devis et le montant de ${amount.toLocaleString('fr')} FCFA ? Le paiement reste une simulation.`)) return
     setPendingAmount(amount)
     setPayStep('form')
     setShowPayment(true)
@@ -1127,15 +1167,15 @@ export default function WarRoomPage() {
     const pricing = await requirePricing()
     if (!pricing) return
 
-    const rejectedIds = new Set(
+    const approvedIds = new Set(
       messages
         .filter(m => m.type === 'material_response')
         .map(m => { try { return JSON.parse(m.text) } catch { return null } })
-        .filter(m => m?.action === 'rejected')
+        .filter(m => m?.action === 'approved')
         .map(m => m.ref_id)
     )
     const matSuggests = messages
-      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client' && !rejectedIds.has(m.id))
+      .filter(m => m.type === 'material_suggest' && m.sender_role !== 'client' && approvedIds.has(m.id))
       .map(m => { try { return JSON.parse(m.text) } catch { return null } })
       .filter(Boolean)
     const timeAdjs = messages
@@ -2043,6 +2083,7 @@ export default function WarRoomPage() {
 
       {/* Zone messages */}
       <div style={{flex:1,overflowY:'auto',padding:'16px'}}>
+            <DiscussionAgreement missionId={missionId as string} role={role} initialScope={diagData?.ai_summary || ''} onDiscussion={setDiscussionEnabled}/>
         <div style={{maxWidth:'672px',margin:'0 auto',display:'flex',flexDirection:'column',gap:'10px'}}>
           {loading ? (
             <div style={{textAlign:'center',padding:'40px'}}>
@@ -2221,7 +2262,7 @@ export default function WarRoomPage() {
               // « qui peut répondre à ce type de proposition, et dans quel
               // état ». Une liste à maintenir à la main oubliait 'dispatching'
               // et laissait le bouton « Accepter & Payer » actif.
-              const canAct = !isMe && (isClientProposal
+              const canAct = !isMe && !messages.some(m => m.sender_role === msg.sender_role && ['devis', 'quotation', 'price_proposal'].includes(m.type) && m.created_at > msg.created_at) && (isClientProposal
                 ? allow('answer_counter_offer')
                 : allow('answer_quote'))
               return (
@@ -2538,7 +2579,7 @@ export default function WarRoomPage() {
             if (msg.type === 'price_proposal') {
               let d: any = {}
               try { d = JSON.parse(msg.text) } catch {}
-              const canValidate = !isMe && !acting && !['completed', 'cancelled', 'en_cours', 'payment', 'scheduled', 'en_route', 'pending_validation', 'disputed'].includes(status)
+              const canValidate = msg.sender_role === 'artisan' && allow('answer_quote') && !acting && !messages.some(m => m.sender_role === 'artisan' && ['devis', 'quotation', 'price_proposal'].includes(m.type) && m.created_at > msg.created_at)
               return (
                 <div key={msg.id} style={{padding:'4px 0'}}>
                   <div style={{background:'white',border:'2px solid #E2E8F0',borderRadius:'18px',overflow:'hidden',maxWidth:'94%',boxShadow:'0 4px 20px rgba(0,0,0,0.1)'}}>
@@ -3008,17 +3049,17 @@ export default function WarRoomPage() {
                 Il s'affichait pour tout le monde : l'admin (rangé avec
                 l'artisan) pouvait écrire dans la conversation, et ses messages
                 étaient enregistrés comme venant du prestataire. */}
-            {!allow('send_message') ? (
+            {!allow('send_message') || !discussionEnabled ? (
               <div style={{padding:'11px 14px',background:'#F5F0E8',border:'1px solid #D8D2C4',borderRadius:'12px',fontSize:'12.5px',color:'#6B7280',textAlign:'center'}}>
                 {role === 'admin'
                   ? '🛡️ Mode administrateur — conversation en lecture seule.'
-                  : "La conversation est close pour cette mission."}
+                  : !discussionEnabled ? "Sans discussion libre : utilisez les devis et rectificatifs ci-dessus." : "La conversation est close pour cette mission."}
               </div>
             ) : (
             <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
               <input type="text" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
-                placeholder="Votre message…" className="input" style={{flex:1}} />
+                maxLength={4000} placeholder="Votre message…" className="input" style={{flex:1}} />
               <button onClick={send} disabled={loading || !input.trim() || sendStatus !== 'idle'} className="btn-primary"
                 style={{
                   width:'44px',height:'44px',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',flexShrink:0,

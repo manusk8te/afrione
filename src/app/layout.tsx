@@ -6,6 +6,7 @@ import DevPanel from '@/components/dev/DevPanel'
 
 export const metadata: Metadata = {
   title: 'AfriOne — Trouver le bon artisan, au bon prix',
+  icons: { icon: '/afrione-logo-v2.png', apple: '/afrione-logo-v2.png' },
   description: 'Plateforme de mise en relation entre artisans qualifiés et clients à Abidjan.',
 }
 

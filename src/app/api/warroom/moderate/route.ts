@@ -1,210 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { chatCompletion } from '@/lib/openai-client'
-import { resolveMissionViewer } from '@/lib/mission-auth'
-import { can } from '@/lib/mission-roles'
+import { resolveMissionViewer, authorize } from '@/lib/mission-auth'
 
 export const dynamic = 'force-dynamic'
 
-const PROMPT_MODE_LIBRE_MODERATION = `Tu es l'IA AfriOne dans la War Room. Tu observes une conversation entre un client et un artisan à Abidjan. Tu interviens UNIQUEMENT dans ces cas précis :
-
-1. PRIX ANORMAL : Si l'artisan propose un prix > 20% du marché estimé pour cette catégorie
-   → Message : "⚠️ Info transparence : prix proposé X FCFA, fourchette marché Y-Z FCFA. C'est au-dessus du prix du marché estimé."
-
-2. CONTOURNEMENT DÉTECTÉ : Si quelqu'un mentionne numéro téléphone, WhatsApp, Telegram, "appel direct"
-   → Message : "Le partage de numéros directs n'est pas autorisé sur AfriOne pour ta protection."
-
-3. PAIEMENT HORS PLATEFORME : Si mention de "cash", "espèces", "en main propre"
-   → Message : "Le paiement doit passer par AfriOne pour activer la garantie travaux."
-
-4. LANGAGE ABUSIF : Si insulte détectée
-   → Message : "Restons respectueux. Les insultes peuvent entraîner une suspension."
-
-5. PRIX VALIDÉ : Quand le client confirme explicitement un prix
-   → Message : "✅ Prix final validé : [montant] FCFA"
-
-Tu réponds TOUJOURS en JSON strict :
-{
-  "should_intervene": true|false,
-  "trigger_type": "price_alert_20" | "contact_share" | "off_platform_payment" | "abusive_language" | "price_validated" | null,
-  "message": "...",
-  "severity": "info" | "warning" | "critical"
-}
-
-Règles :
-- Toujours FACTUEL, jamais accusatoire
-- Donner des chiffres précis quand disponibles
-- Tutoyer
-- Présumer la bonne foi
-- Ne JAMAIS dire "tu arnaques" → dire "c'est au-dessus du marché estimé"
-- Intervenir une fois max par déclencheur (pas de spam)
-- Si rien de suspect → should_intervene: false`
-
-// Fourchettes marché Abidjan par catégorie (référence interne)
-const MARKET_RANGES: Record<string, { low: number; high: number }> = {
-  plomberie:     { low: 4000,  high: 15000 },
-  electricite:   { low: 4000,  high: 12000 },
-  climatisation: { low: 6000,  high: 30000 },
-  serrurerie:    { low: 8000,  high: 15000 },
-  peinture:      { low: 5000,  high: 20000 },
-  maconnerie:    { low: 10000, high: 50000 },
-  menuiserie:    { low: 8000,  high: 30000 },
-  carrelage:     { low: 8000,  high: 40000 },
-}
-
+// No invented market ranges, automatic contractual acceptance, or AI call per message.
 export async function POST(req: NextRequest) {
-  const { mission_id, messages, last_message } = await req.json()
-
-  if (!mission_id || !last_message) {
-    return NextResponse.json({ should_intervene: false })
-  }
-
-  // La route écrivait dans chat_history via supabaseAdmin, avec
-  // `sender_id: mission.client_id`, sans exiger le moindre token : un UUID de
-  // mission suffisait à injecter un message signé « AfriOne » dans n'importe
-  // quelle conversation, et à consommer du quota OpenAI à volonté.
-  // Seul un participant de la mission peut désormais déclencher l'analyse.
-  const resolved = await resolveMissionViewer(req, mission_id)
+  const body = await req.json().catch(() => null)
+  const resolved = await resolveMissionViewer(req, body?.mission_id)
   if (!resolved.ok) return resolved.res
   const { viewer } = resolved
-
-  if (!can('send_message', { role: viewer.role, status: viewer.mission.status })) {
-    return NextResponse.json({ should_intervene: false, skipped: 'not_a_participant' })
-  }
-
-  // Vérifier que c'est bien une mission en mode libre (ou sans mode)
-  const { data: mission } = await supabaseAdmin
-    .from('missions')
-    .select('mode, category, client_id')
-    .eq('id', mission_id)
-    .single()
-
-  if (!mission) return NextResponse.json({ should_intervene: false })
-  if (['urgent', 'standard'].includes(mission.mode ?? '')) {
-    return NextResponse.json({ should_intervene: false, skipped: 'mode_not_libre' })
-  }
-
-  // Le rôle de l'émetteur vient du serveur, pas du corps de la requête :
-  // `last_message.sender_role` était pris au mot, et sert à décider si
-  // l'alerte « prix anormal » vise l'artisan.
-  const senderRoleTrusted = viewer.role
-
-  // Vérifier si ce trigger a déjà été utilisé récemment (anti-spam)
-  const recentMessages = messages?.slice(-20) ?? []
-  const triggerHistory = recentMessages
-    .filter((m: any) => m.sender_type === 'afrione_system')
-    .map((m: any) => m.trigger_type)
-    .filter(Boolean)
-
-  // Contexte pour l'IA
-  const category = (mission.category || '').toLowerCase().replace(/é/g, 'e').replace(/è/g, 'e')
-  const marketRef = MARKET_RANGES[category] ?? MARKET_RANGES.maconnerie
-  const recentConversation = recentMessages
-    .filter((m: any) => m.type === 'text' || m.type === 'devis')
-    .slice(-6)
-    .map((m: any) => `[${m.sender_role ?? 'inconnu'}] : ${m.text}`)
-    .join('\n')
-
-  const systemPrompt = PROMPT_MODE_LIBRE_MODERATION +
-    `\n\nContexte: catégorie "${mission.category}", fourchette marché estimée: ${marketRef.low.toLocaleString('fr')}–${marketRef.high.toLocaleString('fr')} FCFA.` +
-    (triggerHistory.length ? `\nDéjà intervenu pour : ${Array.from(new Set(triggerHistory)).join(', ')} — ne pas répéter ces triggers.` : '')
-
-  const userPrompt = `Conversation récente :\n${recentConversation}\n\nDernier message à analyser :\n[${senderRoleTrusted}] : ${last_message.text}`
-
-  let result: { should_intervene: boolean; trigger_type: string | null; message: string; severity: string }
-
-  try {
-    const raw = await chatCompletion(
-      [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-      { model: 'gpt-4o-mini', json: true, temperature: 0.1, max_tokens: 300 },
-    )
-    result = JSON.parse(raw)
-  } catch {
-    result = heuristicModeration(last_message.text, senderRoleTrusted, marketRef, triggerHistory)
-  }
-
-  if (!result.should_intervene) {
-    return NextResponse.json({ should_intervene: false })
-  }
-
-  // Insérer le message de modération dans le chat
-  const { data: inserted } = await supabaseAdmin.from('chat_history').insert({
-    mission_id,
-    sender_id:   mission.client_id,
-    sender_role: 'system',
-    sender_type: 'afrione_system',
-    trigger_type: result.trigger_type,
-    text:        result.message,
-    type:        'system',
-    metadata:    { severity: result.severity, auto_moderated: true },
+  const denied = authorize(viewer, 'send_message')
+  if (denied) return denied
+  const { data: recent, error } = await supabaseAdmin.from('chat_history')
+    .select('text, type, sender_id, trigger_type').eq('mission_id', viewer.mission.id)
+    .order('created_at', { ascending: false }).limit(30)
+  if (error) return NextResponse.json({ error: 'Modération indisponible' }, { status: 503 })
+  const last = recent?.find(m => m.type === 'text' && m.sender_id === viewer.userId)
+  if (!last) return NextResponse.json({ should_intervene: false })
+  const rules = [
+    { type: 'abusive_language', pattern: /\b(connard|connasse|salope|enculé|encule|imbécile|imbecile)\b/i,
+      message: 'Les échanges doivent rester respectueux, côté client comme prestataire. En cas de désaccord, décrivez les faits et utilisez le signalement.' },
+    { type: 'off_platform_payment', pattern: /pai(?:e|ement).*hors plateforme|payer en (?:liquide|espèces)|verse.*(?:whatsapp|direct)/i,
+      message: 'Gardez les accords et justificatifs dans AfriOne. Le paiement actuellement présenté est une simulation : aucun débit ni garantie financière ne doit être supposé.' },
+  ]
+  const rule = rules.find(r => r.pattern.test(last.text) && !recent?.some(m => m.trigger_type === r.type))
+  if (!rule) return NextResponse.json({ should_intervene: false })
+  const { data: message, error: writeError } = await supabaseAdmin.from('chat_history').insert({
+    mission_id: viewer.mission.id, sender_id: viewer.userId, sender_role: 'system',
+    sender_type: 'afrione_system', trigger_type: rule.type, text: rule.message, type: 'system',
+    metadata: { severity: 'warning', auto_moderated: true },
   }).select().single()
-
-  // Enregistrer l'alerte si c'est un prix anormal
-  if (result.trigger_type === 'price_alert_20') {
-    const priceMatch = last_message.text.match(/(\d[\d\s]*)\s*(f|fcfa|xof)/i)
-    const proposed = priceMatch ? parseInt(priceMatch[1].replace(/\s/g, '')) : null
-    if (proposed) {
-      await supabaseAdmin.from('pricing_alerts').insert({
-        mission_id,
-        proposed_price: proposed,
-        market_low:     marketRef.low,
-        market_high:    marketRef.high,
-        alert_level:    result.severity as 'info' | 'warning' | 'critical',
-      })
-    }
-  }
-
-  return NextResponse.json({ should_intervene: true, message: inserted })
-}
-
-// ── Modération heuristique (fallback sans OpenAI) ─────────────────────────────
-
-function heuristicModeration(
-  text: string,
-  senderRole: string,
-  marketRef: { low: number; high: number },
-  triggerHistory: string[]
-): { should_intervene: boolean; trigger_type: string | null; message: string; severity: string } {
-
-  const t = text.toLowerCase()
-
-  // Contournement contact
-  if (!triggerHistory.includes('contact_share') &&
-      /whatsapp|wa\.me|0[0-9]{9}|\+225|telegram|appel direct/.test(t)) {
-    return {
-      should_intervene: true,
-      trigger_type: 'contact_share',
-      message: 'Le partage de numéros directs n\'est pas autorisé sur AfriOne pour ta protection.',
-      severity: 'warning',
-    }
-  }
-
-  // Paiement hors-plateforme
-  if (!triggerHistory.includes('off_platform_payment') &&
-      /cash|espèce|en main propre|en liquide/.test(t)) {
-    return {
-      should_intervene: true,
-      trigger_type: 'off_platform_payment',
-      message: 'Le paiement doit passer par AfriOne pour activer la garantie travaux.',
-      severity: 'warning',
-    }
-  }
-
-  // Prix trop élevé (artisan uniquement)
-  if (!triggerHistory.includes('price_alert_20') && senderRole === 'artisan') {
-    const priceMatch = text.match(/(\d[\d\s]*)\s*(f|fcfa|xof)/i)
-    if (priceMatch) {
-      const proposed = parseInt(priceMatch[1].replace(/\s/g, ''))
-      if (proposed > marketRef.high * 1.2) {
-        return {
-          should_intervene: true,
-          trigger_type: 'price_alert_20',
-          message: `⚠️ Info transparence : prix proposé ${proposed.toLocaleString('fr')} FCFA, fourchette marché estimée ${marketRef.low.toLocaleString('fr')}–${marketRef.high.toLocaleString('fr')} FCFA. C'est au-dessus du marché estimé.`,
-          severity: 'warning',
-        }
-      }
-    }
-  }
-
-  return { should_intervene: false, trigger_type: null, message: '', severity: 'info' }
+  if (writeError) return NextResponse.json({ error: 'Rappel non enregistré' }, { status: 503 })
+  return NextResponse.json({ should_intervene: true, message })
 }

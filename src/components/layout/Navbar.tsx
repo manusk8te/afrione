@@ -107,7 +107,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-            <Image src="/logo.png" alt="AfriOne logo" width={32} height={40} style={{ objectFit: 'contain' }} />
+            <Image src="/afrione-logo-v2.png" alt="AfriOne" width={60} height={40} style={{ objectFit: 'contain' }} />
             <span className="font-display font-bold" style={{ fontSize: '20px', color: onOrange ? 'white' : '#3D4852', transition: 'color 0.3s' }}>
               AFRI<span className="afrione-gradient-text">ONE</span>
             </span>

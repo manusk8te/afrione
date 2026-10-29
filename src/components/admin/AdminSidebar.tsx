@@ -165,9 +165,7 @@ export default function AdminSidebar({
       }} className="hidden lg:flex">
         {/* Logo */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '36px', textDecoration: 'none', padding: '0 4px' }}>
-          <div style={{ width: '30px', height: '30px', background: '#E85D26', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Zap size={14} color="white" />
-          </div>
+          <img src="/afrione-logo-v2.png" alt="AfriOne" width={48} height={32} style={{objectFit:'contain',flexShrink:0}} />
           <span style={{ fontWeight: 700, fontSize: '16px', color: '#FAFAF5' }}>
             AFRI<span style={{ color: '#E85D26' }}>ONE</span>
           </span>

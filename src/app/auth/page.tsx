@@ -244,7 +244,7 @@ function AuthContent() {
         >
           {/* Mobile logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="mobile-logo">
-            <Circle size={18} fill={ORANGE} color={ORANGE} />
+            <img src="/afrione-logo-v2.png" alt="AfriOne" width={60} height={40} style={{objectFit:"contain"}} />
             <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>AfriOne</span>
           </div>
 
