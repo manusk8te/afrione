@@ -161,7 +161,7 @@ export default function DiagnosticPage() {
   }
 
   useEffect(()=>{const id=new URLSearchParams(window.location.search).get('mission');if(!id)return;let active=true;setLoading(true)
-    clientApi(`/api/diagnostic?mission_id=${encodeURIComponent(id)}`).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);if(active){setResult(d);setText(d.original??'');setQA(d.qa??[]);setPhotos(d.photos??[]);setStep('confirming');setPricingError('Consultez le total actualisé et les fournitures ci-dessous.')}}).catch(e=>{if(active)toast.error(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}
+    clientApi(`/api/diagnostic?mission_id=${encodeURIComponent(id)}`).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);if(active){setResult(d);setText(d.original??'');setQA(d.qa??[]);setPhotos(d.photos??[]);setStep('confirming');setPricingError('');if(d.saved_service_total>0){const t=d.saved_service_total;setPricing({estimate:t,interval:{low:t,high:t},decomp:{labor:null,materials:null,transport:null,premium:null},artisan_percoit:null,applied_estimator:'context_v4',price_context:d.price_context??null})}}}).catch(e=>{if(active)toast.error(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}
   },[])
 
   // ── Étape 1 → 2 : lance le diagnostic, reçoit 1ère question ──
@@ -767,8 +767,8 @@ export default function DiagnosticPage() {
               </p>
             </div>
 
-            <DiagnosticProducts key={result.mission_id} missionId={result.mission_id} items={result.items_needed} onChanged={()=>setQuoteRevision(v=>v+1)} />
-            <ClientQuote key={result.mission_id} missionId={result.mission_id} revision={quoteRevision+(pricing?.estimate??0)} />
+            <DiagnosticProducts key={`products:${result.mission_id}`} missionId={result.mission_id} items={result.items_needed} onChanged={()=>setQuoteRevision(v=>v+1)} />
+            <ClientQuote key={`quote:${result.mission_id}`} missionId={result.mission_id} revision={quoteRevision+(pricing?.estimate??0)} />
 
             {/* Matériel probable */}
             {result.items_needed.length > 0 && (
