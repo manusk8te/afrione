@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
         price_min:         null,
         price_max:         null,
         items_needed:      normalizedItems,
-        duration_estimate: result.duration_estimate || null,
+        duration_estimate: typeof result.duration_estimate==='string' && result.duration_estimate.trim() && !/^(null|undefined|n\/a|inconnue?)$/i.test(result.duration_estimate.trim()) ? result.duration_estimate.trim() : null,
         diagnostic_status: ['preliminary','onsite_required','urgent'].includes(result.diagnostic_status)?result.diagnostic_status:'onsite_required',
         product_requirements: Array.isArray(result.product_requirements)?result.product_requirements.filter((r:any)=>r&&typeof r.item==='string').slice(0,4).map((r:any)=>({item:r.item.slice(0,150),confirmed_specs:strings(r.confirmed_specs),unknown_specs:strings(r.unknown_specs),selection_criteria:strings(r.selection_criteria)})):[],
         surface_m2:        result.surface_m2 != null ? Number(result.surface_m2) : null,
