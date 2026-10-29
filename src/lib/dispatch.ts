@@ -92,7 +92,7 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
 
   const matched = (allCandidates ?? []).filter(a => normalizeMetier(a.metier) === missionMetier)
 
-  return sortByScore(matched.length ? matched : (allCandidates ?? []))
+  return sortByScore(matched)
 }
 
 // ── Clore les tentatives encore ouvertes d'une mission ───────────────────────

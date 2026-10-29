@@ -6,6 +6,9 @@ require('ts-node/register/transpile-only');
 const originalLoad = Module._load;
 let calls = [];
 Module._load = function (request, ...args) {
+  if (request === '@/lib/supplies') return require('../src/lib/supplies.ts');
+  if (request === '@/lib/mission-auth') return {authenticate:async()=>({userId:'fixture-user'})};
+  if (request === '@/lib/supabase') return {};
   if (request === '@/lib/pricing-agent') return { runPricingAgent: async input => { calls.push(input); if (input.description === 'Besoin de surface') throw new Error('informations_requises: Quelle surface en m² ?'); return { total: 1234, calculation_source: 'calculate_final_price' }; } };
   if (request === '@/lib/pricing-studies') return { getPriceContext: () => ({ status: 'fixture' }), previewStudyQuote: async () => ({ status: 'fixture' }) };
   return originalLoad.call(this, request, ...args);

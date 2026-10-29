@@ -3,9 +3,11 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Zap, Clock, Users, ArrowRight, Shield, ChevronRight, CheckCircle } from 'lucide-react'
+import SuppliesNotice from '@/components/pricing/SuppliesNotice'
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import { clientApi } from '@/lib/client-api'
 
 const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
 const NEU_HOVER  = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
@@ -21,7 +23,9 @@ function ModeSelectContent() {
   const missionId    = params.get('mission')
   const category     = params.get('category') || 'Intervention'
   const priceParam   = params.get('price')
-  const price        = priceParam ? parseInt(priceParam) : null
+  const [quote,setQuote]=useState<{total:number;sources:{id?:string;source_scope?:string;url?:string}[]}|null>(null)
+  const [quoteError,setQuoteError]=useState('')
+  const price=quote?.total??null
   const summary      = params.get('summary')
 
   const [loading,       setLoading]       = useState<'urgent' | 'standard' | null>(null)
@@ -33,10 +37,14 @@ function ModeSelectContent() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { router.push('/auth?redirect=/mode-select'); return }
+      if (!session) { router.push('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)); return }
       setUserId(session.user.id)
     })
   }, [])
+
+  useEffect(()=>{if(!missionId){setQuoteError('Commencez par un diagnostic pour obtenir un devis.');return}
+    let active=true;clientApi(`/api/quote?mission_id=${encodeURIComponent(missionId)}`).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.error);if(active)setQuote(result)}).catch(e=>{if(active)setQuoteError(e.message)});return()=>{active=false}
+  },[missionId])
 
   // ── Mode Standard : comportement existant → matching ─────────────────────
   const handleStandard = () => {
@@ -65,7 +73,8 @@ function ModeSelectContent() {
         if (error || !mission) { toast.error('Erreur création mission'); setLoading(null); return }
         resolvedMissionId = mission.id
       } else {
-        await supabase.from('missions').update({ mode: 'urgent' }).eq('id', resolvedMissionId)
+        const { error } = await supabase.from('missions').update({ mode: 'urgent' }).eq('id', resolvedMissionId)
+        if(error) throw error
       }
 
       setCurrentMission(resolvedMissionId)
@@ -80,24 +89,19 @@ function ModeSelectContent() {
 
   // ── Confirmation paiement Wave (mock) ────────────────────────────────────
   const confirmWave = async () => {
-    if (!wavePhone.trim() || !currentMission || !price || !Number.isFinite(price) || price <= 0) return
+    if (!currentMission || !price || !Number.isFinite(price) || price <= 0) return
     setWaveStep('processing')
 
-    await new Promise(r => setTimeout(r, 2000))
-
-    await fetch('/api/dispatch/simulate-pay', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ mission_id: currentMission, amount: price }),
-    })
-
-    setWaveStep('success')
+    try {
+      const response = await clientApi('/api/dispatch/simulate-pay', {
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:currentMission,amount:price}),
+      })
+      const data=await response.json()
+      if(!response.ok || !data.ok || !data.receipt)throw Error(data.error || 'Simulation non enregistrée')
+      setWaveStep('success')
+    } catch(error) { toast.error(error instanceof Error ? error.message : 'Simulation indisponible');setWaveStep('form') }
   }
-
-  const afterWave = () => {
-    setShowWave(false)
-    router.push(`/dispatch/${currentMission}`)
-  }
+  const afterWave=()=>{setShowWave(false);router.push(`/payment/success?mission=${currentMission}`)}
 
   const displayPrice = price
     ? `${price.toLocaleString('fr-FR')} FCFA`
@@ -123,6 +127,7 @@ function ModeSelectContent() {
               </div>
             </div>
 
+            <SuppliesNotice sources={quote?.sources} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -149,32 +154,18 @@ function ModeSelectContent() {
 
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 0 20px' }} />
 
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Votre numéro mobile money</div>
-                  <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', border: `1.5px solid ${wavePhone.trim() ? '#E85D26' : 'rgba(255,255,255,0.08)'}`, borderRadius: '14px', overflow: 'hidden', transition: 'border-color 0.2s' }}>
-                    <div style={{ padding: '15px 16px', borderRight: '1px solid rgba(255,255,255,0.08)', fontSize: '14px', color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap', flexShrink: 0 }}>🇨🇮 +225</div>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      placeholder="07 00 00 00 00"
-                      value={wavePhone}
-                      onChange={e => setWavePhone(e.target.value)}
-                      style={{ flex: 1, padding: '15px 16px', background: 'transparent', border: 'none', outline: 'none', fontSize: '17px', color: 'white', fontFamily: 'Tahoma', letterSpacing: '0.06em' }}
-                    />
-                  </div>
-                </div>
-
+                <p style={{color:'#CBD5E1',fontSize:13}}>Ce test ne nécessite aucun numéro mobile money et n’envoie aucun SMS.</p>
                 <div style={{ padding: '12px 14px', background: 'rgba(248,121,0,0.08)', border: '1px solid rgba(248,121,0,0.2)', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '24px' }}>
                   <span style={{ fontSize: '14px', flexShrink: 0 }}>🔒</span>
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
-                    Fonds sécurisés par AfriOne · Transférés à l'artisan après validation
+                    Démonstration : aucun fonds bloqué, aucun versement à un artisan.
                   </div>
                 </div>
 
                 <button
                   onClick={confirmWave}
-                  disabled={!wavePhone.trim()}
-                  style={{ width: '100%', padding: '18px', background: wavePhone.trim() ? 'linear-gradient(135deg,#E85D26,#ff7043)' : 'rgba(255,255,255,0.08)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.2px', cursor: wavePhone.trim() ? 'pointer' : 'default', boxShadow: wavePhone.trim() ? '0 8px 28px rgba(232,93,38,0.45)' : 'none', transition: 'all 0.2s' }}
+
+                  style={{ width: '100%', padding: '18px', background: true ? 'linear-gradient(135deg,#E85D26,#ff7043)' : 'rgba(255,255,255,0.08)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.2px', cursor: true ? 'pointer' : 'default', boxShadow: true ? '0 8px 28px rgba(232,93,38,0.45)' : 'none', transition: 'all 0.2s' }}
                 >
                   Simuler le paiement
                 </button>
@@ -218,8 +209,7 @@ function ModeSelectContent() {
                 <div style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
                   {[
                     { label: 'Montant simulé', value: price ? `${price.toLocaleString()} FCFA` : 'À confirmer', color: 'white' },
-                    { label: 'Bénéficiaire', value: 'AfriOne Escrow (démo)', color: 'rgba(255,255,255,0.8)' },
-                    { label: 'Numéro saisi', value: `+225 ${wavePhone}`, color: 'rgba(255,255,255,0.8)' },
+                    { label: 'Type', value: 'Simulation AfriOne', color: 'rgba(255,255,255,0.8)' },
                     { label: 'Statut', value: '🧪 Démo — non encaissé', color: '#C9A84C' },
                   ].map((row, i, arr) => (
                     <div key={row.label} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
@@ -233,7 +223,7 @@ function ModeSelectContent() {
                   onClick={afterWave}
                   style={{ width: '100%', padding: '18px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 28px rgba(232,93,38,0.4)', letterSpacing: '-0.2px' }}
                 >
-                  Trouver un artisan →
+                  Voir mon reçu de simulation →
                 </button>
               </div>
             )}
@@ -245,6 +235,8 @@ function ModeSelectContent() {
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}`}</style>
 
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '96px 16px 64px' }}>
+        {quoteError && <p role="alert">{quoteError}</p>}
+        {quote && <SuppliesNotice sources={quote.sources} />}
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
@@ -305,17 +297,17 @@ function ModeSelectContent() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                   <span style={{ ...syne, fontWeight: 800, fontSize: '20px', color: '#3D4852' }}>Mode Urgent</span>
-                  <span style={{ ...mono, fontSize: '9px', color: '#E85D26', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '20px', padding: '2px 8px', letterSpacing: '0.08em' }}>RECOMMANDÉ</span>
+                  <span style={{ ...mono, fontSize: '9px', color: '#E85D26', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '20px', padding: '2px 8px', letterSpacing: '0.08em' }}>DÉMONSTRATION</span>
                 </div>
                 <p style={{ ...body, fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 16px' }}>
-                  Tu paies maintenant, on envoie le meilleur artisan disponible directement chez toi. Comme Uber.
+                  Teste la confirmation du devis et le paiement. Aucun artisan ne sera envoyé pendant cette démonstration.
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                   {[
-                    { icon: '⚡', text: 'Artisan dispatché en moins de 2 minutes' },
-                    { icon: '🔒', text: 'Prix fixé — aucune négociation' },
-                    { icon: '💳', text: 'Paiement à la commande — escrow AfriOne' },
+                    { icon: '⚡', text: 'Aucune intervention réelle déclenchée' },
+                    { icon: '🔒', text: 'Montant indicatif à confirmer avant une intervention réelle' },
+                    { icon: '💳', text: 'Paiement de démonstration — aucun fonds bloqué' },
                   ].map(({ icon, text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '14px' }}>{icon}</span>
@@ -329,7 +321,7 @@ function ModeSelectContent() {
                     <div style={{ ...mono, fontSize: '22px', fontWeight: 700, color: '#E85D26' }}>
                       {displayPrice}
                     </div>
-                    <div style={{ ...mono, fontSize: '10px', color: '#8B95A5', marginTop: '2px' }}>Tout inclus · Fonds sécurisés</div>
+                    <div style={{ ...mono, fontSize: '10px', color: '#8B95A5', marginTop: '2px' }}>Estimation · paiement simulé</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #E85D26, #ff7043)', borderRadius: '12px', padding: '10px 16px' }}>
                     <span style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white' }}>Payer maintenant</span>
@@ -368,12 +360,12 @@ function ModeSelectContent() {
                   <span style={{ ...syne, fontWeight: 800, fontSize: '20px', color: '#3D4852' }}>Mode Standard</span>
                 </div>
                 <p style={{ ...body, fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 16px' }}>
-                  On te propose 3 artisans qualifiés. Tu discutes, tu choisis, tu paies quand tu es prêt.
+                  Consulte les artisans disponibles du métier demandé et échange sur ton besoin avant de convenir d’un devis.
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                   {[
-                    { icon: '👥', text: '3 artisans proposés selon ton quartier' },
+                    { icon: '👥', text: 'Profils du métier, selon les disponibilités' },
                     { icon: '💬', text: 'Discussion avant confirmation' },
                     { icon: '🕐', text: 'Intervention planifiée à ta convenance' },
                   ].map(({ icon, text }) => (
@@ -417,7 +409,7 @@ function ModeSelectContent() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', paddingTop: '8px' }}>
             {[
               { Icon: Shield, text: 'KYC vérifié' },
-              { Icon: Clock,  text: 'Remboursé si personne' },
+              { Icon: Clock,  text: 'Aucun débit réel' },
               { Icon: Zap,    text: 'Paiement sécurisé' },
             ].map(({ Icon, text }) => (
               <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

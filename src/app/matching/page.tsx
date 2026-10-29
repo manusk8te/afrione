@@ -7,6 +7,7 @@ import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight,
 import { supabase } from '@/lib/supabase'
 import { scoreArtisan } from '@/lib/scoring'
 import { normalizeMetier } from '@/lib/metier'
+import toast from 'react-hot-toast'
 
 function MatchingContent() {
   const searchParams = useSearchParams()
@@ -25,7 +26,8 @@ function MatchingContent() {
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (session) setUserId(session.user.id)
+      if (!session) { router.replace('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)); return }
+      setUserId(session.user.id)
 
       const missionMetier = normalizeMetier(category)
 
@@ -77,7 +79,7 @@ function MatchingContent() {
 
       const allArtisans = artisanRes.data || []
       const matched = allArtisans.filter(a => normalizeMetier(a.metier) === missionMetier)
-      rankAndSet(matched.length ? matched : allArtisans)
+      rankAndSet(matched.filter(a => a.user_id !== session?.user.id))
       setLoading(false)
     }
     load()
@@ -92,12 +94,13 @@ function MatchingContent() {
       let targetMissionId = missionId
 
       if (missionId) {
-        await supabase
+        const { data: saved, error } = await supabase
           .from('missions')
           .update({ artisan_id: selected, status: 'negotiation' })
-          .eq('id', missionId)
+          .eq('id', missionId).eq('client_id',userId).select('id').maybeSingle()
+        if(error || !saved)throw Error('Sélection non enregistrée')
       } else {
-        const { data: mission } = await supabase
+        const { data: mission, error } = await supabase
           .from('missions')
           .insert({
             client_id: userId,
@@ -108,7 +111,8 @@ function MatchingContent() {
           })
           .select()
           .single()
-        if (mission) targetMissionId = mission.id
+        if (error || !mission) throw Error('La mission n’a pas pu être enregistrée')
+        targetMissionId = mission.id
       }
 
       // Notifier l'artisan par push
@@ -127,6 +131,7 @@ function MatchingContent() {
 
       if (targetMissionId) router.push(`/warroom/${targetMissionId}`)
     } catch {
+      toast.error('La sélection n’a pas pu être enregistrée. Réessayez.')
       setConfirming(false)
     }
   }

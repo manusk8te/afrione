@@ -1,5 +1,8 @@
 'use client'
+import { observationLabel } from '@/lib/supplies'
+import { clientApi } from '@/lib/client-api'
 import { useState, useEffect } from 'react'
+import MaterialObservationForm, {PartnerRegistration} from '@/components/admin/MaterialObservationForm'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { Globe, Store, Plus, CheckCircle, Trash2, RefreshCw, Package, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
 
@@ -14,6 +17,8 @@ type Source = {
   quartier: string | null
   scraper_type: string | null
   verified: boolean
+  is_partner?: boolean
+  access_status?: string
   notes: string | null
   created_at: string
 }
@@ -28,6 +33,11 @@ type Material = {
   price_max: number
   web_price: number | null
   brand: string | null
+  observed_at?: string | null
+  evidence_url?: string | null
+  source_url?: string | null
+  price_provenance?: string
+  observed_quantity?: number
   confirmed_at: string | null
 }
 
@@ -55,7 +65,7 @@ export default function AdminSourcesPage() {
 
   const load = async () => {
     setLoading(true)
-    const res = await fetch('/api/sources')
+    const res = await clientApi('/api/sources')
     const data = await res.json()
     setSources(Array.isArray(data) ? data : [])
     setLoading(false)
@@ -66,7 +76,7 @@ export default function AdminSourcesPage() {
     setExpanded(id)
     if (!materials[id]) {
       setMatLoading(id)
-      const res = await fetch(`/api/sources?source_id=${id}`)
+      const res = await clientApi(`/api/sources?source_id=${id}`)
       const data = await res.json()
       setMaterials(m => ({ ...m, [id]: Array.isArray(data) ? data : [] }))
       setMatLoading(null)
@@ -74,11 +84,12 @@ export default function AdminSourcesPage() {
   }
 
   const verify = async (id: string) => {
-    await fetch('/api/sources', {
+    const response = await clientApi('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'verify_source', id }),
     })
+    if(!response.ok){const failure=await response.json();flash(failure.error || 'Validation impossible');return}
     setSources(s => s.map(x => x.id === id ? { ...x, verified: true } : x))
     flash('Magasin vérifié ✓')
   }
@@ -86,21 +97,23 @@ export default function AdminSourcesPage() {
   const remove = async (id: string) => {
     if (confirmDelete !== id) { setConfirmDelete(id); return }
     setConfirmDelete(null)
-    await fetch('/api/sources', {
+    const response = await clientApi('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete_source', id }),
     })
+    if(!response.ok){const failure=await response.json();flash(failure.error || 'Validation impossible');return}
     setSources(s => s.filter(x => x.id !== id))
     flash('Source supprimée')
   }
 
   const confirmMaterial = async (materialId: string, sourceId: string) => {
-    await fetch('/api/sources', {
+    const response = await clientApi('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'confirm_material', id: materialId }),
     })
+    if(!response.ok){const failure=await response.json();flash(failure.error || 'Validation impossible');return}
     setMaterials(m => ({
       ...m,
       [sourceId]: m[sourceId].map(x => x.id === materialId
@@ -114,14 +127,14 @@ export default function AdminSourcesPage() {
     setScraping(source.id)
     setMsg(null)
     try {
-      const res = await fetch('/api/admin/scrape-prices', {
+      const res = await clientApi('/api/admin/scrape-prices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
       const data = await res.json()
       flash(data.summary || `Scraping terminé`)
-      const res2 = await fetch(`/api/sources?source_id=${source.id}`)
+      const res2 = await clientApi(`/api/sources?source_id=${source.id}`)
       const mats = await res2.json()
       setMaterials(m => ({ ...m, [source.id]: Array.isArray(mats) ? mats : [] }))
     } catch {
@@ -133,7 +146,7 @@ export default function AdminSourcesPage() {
   const addWebsite = async () => {
     if (!webName.trim() || !webUrl.trim()) return
     setSaving(true)
-    const res = await fetch('/api/sources', {
+    const res = await clientApi('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -179,6 +192,8 @@ export default function AdminSourcesPage() {
           )}
         </div>
 
+        <MaterialObservationForm sources={sources} onSaved={()=>{setMaterials({});load()}} />
+        <PartnerRegistration sources={sources} onSaved={load} />
         {/* ── SITES WEB ───────────────────────────────────────────────────────── */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
@@ -255,7 +270,7 @@ export default function AdminSourcesPage() {
                   onToggle={() => toggleExpand(src.id)}
                   onVerify={() => verify(src.id)}
                   onDelete={() => remove(src.id)}
-                  onScrape={() => triggerScrape(src)}
+                  onScrape={src.scraper_type === 'jumia' && src.access_status !== 'blocked' ? () => triggerScrape(src) : undefined}
                   onConfirmMaterial={(mid) => confirmMaterial(mid, src.id)}
                 />
               ))}
@@ -334,6 +349,8 @@ function SourceCard({
               ? <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(43,107,62,0.1)', color: '#2B6B3E', fontWeight: 600 }}>Vérifié</span>
               : <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: '#F5F7FA', color: '#6B7280', fontWeight: 600, border: '1px solid #E2E8F0' }}>En attente</span>
             }
+            {source.is_partner && <span>Partenaire AfriOne confirmé</span>}
+            {source.access_status && <span style={{fontSize:11}}>Accès : {source.access_status === 'blocked' ? 'automatisation bloquée' : source.access_status === 'unreachable' ? 'site non accessible au dernier contrôle' : 'à contrôler'}</span>}
             {source.scraper_type && isWeb && (
               <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.2)' }}>{source.scraper_type}</span>
             )}
@@ -399,7 +416,7 @@ function SourceCard({
               <tbody>
                 {materials.map(mat => (
                   <tr key={mat.id} style={{ borderTop: '1px solid #E2E8F0' }}>
-                    <td style={{ padding: '8px 10px', color: '#3D4852' }}>{mat.name}</td>
+                    <td style={{ padding: '8px 10px', color: '#3D4852' }}>{mat.name}<small style={{display:'block'}}>Unité : {mat.unit} · {observationLabel(mat.price_provenance)} · {mat.observed_at ? new Date(mat.observed_at).toLocaleDateString('fr-FR') : 'date manquante'}</small>{(mat.evidence_url || mat.source_url) && <a href={mat.evidence_url || mat.source_url || ''} target="_blank" rel="noopener noreferrer">Voir le justificatif / produit</a>}</td>
                     <td style={{ padding: '8px 10px', color: '#6B7280' }}>{mat.category}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right', color: '#C9A84C', fontWeight: 600 }}>
                       {mat.price_market?.toLocaleString('fr')} F

@@ -1,3 +1,4 @@
+import { materialObservationUsable } from './supplies'
 import { Agent, AgentInputItem, Runner, tool, withTrace, getGlobalTraceProvider } from "@openai/agents";
 import { z } from "zod";
 import { supabaseAdmin } from "./supabase";
@@ -131,15 +132,15 @@ const searchMaterialPrice = tool({
     // src/lib/catalogue.ts.
     const { data: cached } = await supabaseAdmin
       .from('price_materials')
-      .select('id, price_market, source, name')
+      .select('id, price_market, source, name, observed_at, last_scraped_at, source_url, price_provenance, added_by, confirmed_at, unit, stock_status')
       .ilike('name', `%${item}%`)
       .or(FILTRE_CATALOGUE_VALIDE)
       .order('id', { ascending: true })
       .limit(1)
       .maybeSingle();
 
-    if (cached) {
-      return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne', product_name: cached.name, is_fallback: false };
+    if (cached && materialObservationUsable(cached) && cached.stock_status !== 'unavailable') {
+      return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne', source_url:cached.source_url, observed_at:cached.observed_at || cached.last_scraped_at, unit:cached.unit, price_provenance:cached.price_provenance, product_name: cached.name, is_fallback: false };
     }
 
     // 2. Jumia CI live
@@ -149,8 +150,7 @@ const searchMaterialPrice = tool({
     }
 
     // 3. Fallback catégorie — marqué explicitement comme tel, jamais présenté comme un prix trouvé
-    const fallback = FALLBACK_MAT[category] || 1500;
-    return { item, qty, price_unit: fallback, total: fallback * qty, source: 'Estimation marché Abidjan', is_fallback: true };
+    return { item, qty, found:false, price_unit:null, total:null, source:null, is_fallback:true, note:'Aucun prix récent vérifié ; demander un relevé au magasin.' };
   },
 });
 

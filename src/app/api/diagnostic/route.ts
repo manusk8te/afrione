@@ -1,3 +1,4 @@
+import { authenticate } from '@/lib/mission-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { enrichItemsWithJumia } from '@/lib/jumia-lookup'
@@ -6,7 +7,7 @@ import { normalizeMetier } from '@/lib/metier'
 export const dynamic = 'force-dynamic'
 
 
-const CATEGORIES = `Plomberie|Électricité|Maçonnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage`
+const CATEGORIES = `Plomberie|Électricité|Maçonnerie|Peinture|Menuiserie|Climatisation|Serrurerie|Carrelage|Chauffeur|Ménage|Cuisine|Coiffure`
 
 // ─── Connaissance terrain Abidjan ─────────────────────────────────────────────
 // Structure : pour chaque domaine, les vraies causes fréquentes + ce qui permet
@@ -319,8 +320,11 @@ async function ensureFrench(text: string): Promise<string> {
 
 // ─── Handler principal ────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const identity = await authenticate(req)
+  if(!identity)return NextResponse.json({error:'Reconnectez-vous pour enregistrer votre demande'},{status:401})
   const body = await req.json()
-  let { mode, text, photos = [], qa = [], index = 0, user_id, quartier } = body
+  let { mode, text, photos = [], qa = [], index = 0, quartier } = body
+  const user_id = identity.userId
 
   // Traduire la description en français si détectée en anglais
   if (mode === 'start' && text && process.env.OPENAI_API_KEY) {
@@ -342,7 +346,7 @@ export async function POST(req: NextRequest) {
 Le client décrit son problème pour la première fois. Tu as accès à ta connaissance terrain d'Abidjan.
 
 PROCESSUS OBLIGATOIRE avant de formuler ta question :
-① Identifie le domaine (plomberie, électricité, maçonnerie, peinture, menuiserie, clim, serrurerie, carrelage)
+① Identifie le domaine (plomberie, électricité, maçonnerie, peinture, menuiserie, clim, serrurerie, carrelage, chauffeur, ménage, cuisine, coiffure)
 ② Liste mentalement les 2-4 causes les plus probables pour CE problème précis dans le contexte d'Abidjan
 ③ Détermine ce que TU NE SAIS PAS ENCORE et qui est critique pour établir la cause exacte
 ④ Formule une question qui cible cette ambiguïté précise — et qui MONTRE que tu as compris le problème
@@ -520,6 +524,7 @@ FORMAT JSON EXACT :
         .filter((it: any) => it.name && !TOOLS_RE.test(it.name))
         .slice(0, 4)
 
+      if(!normalizeMetier(result.category))throw Error('Métier non reconnu : précisez votre prestation')
       result = {
         summary:           result.summary         || 'Problème artisanal identifié, intervention recommandée.',
         technical_notes:   result.technical_notes || 'Diagnostic complet à réaliser sur place.',
@@ -544,7 +549,7 @@ FORMAT JSON EXACT :
         : Promise.resolve([])
 
       if (user_id) {
-        const { data: mission } = await supabaseAdmin
+        const { data: mission, error: missionError } = await supabaseAdmin
           .from('missions')
           .insert({
             client_id: user_id,
@@ -555,10 +560,11 @@ FORMAT JSON EXACT :
           .select()
           .single()
 
+        if (missionError || !mission) throw Error('Enregistrement de la mission impossible')
         if (mission) {
           const rawContext = JSON.stringify({ original: text, qa, photos, technical_notes: result.technical_notes, duration_estimate: result.duration_estimate })
 
-          const [, jumiaItems] = await Promise.all([
+          const [diagnosticWrite, jumiaItems] = await Promise.all([
             supabaseAdmin.from('diagnostics').insert({
               mission_id:          mission.id,
               raw_text:            rawContext,
@@ -566,12 +572,13 @@ FORMAT JSON EXACT :
               category_detected:   result.category,
               estimated_price_min: result.price_min,
               estimated_price_max: result.price_max,
-              items_needed:        result.items_needed,
+              items_needed:        result.items_needed.map((item: any) => item.name),
               urgency_level:       result.urgency,
             }),
             jumiaPromise,
           ])
 
+          if(diagnosticWrite.error)throw Error('Enregistrement du diagnostic impossible')
           return NextResponse.json({ ...result, mission_id: mission.id, jumia_items: jumiaItems })
         }
       }

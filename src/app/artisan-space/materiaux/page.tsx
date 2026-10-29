@@ -1,5 +1,6 @@
 'use client'
 export const dynamic = 'force-dynamic'
+import { clientApi } from '@/lib/client-api'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -18,6 +19,8 @@ type Source = {
   name: string
   quartier: string | null
   verified: boolean
+  is_partner?: boolean
+  access_status?: string
   type: string
 }
 
@@ -56,7 +59,7 @@ export default function ArtisanMateriauxPage() {
 
   const loadSources = async () => {
     setLoading(true)
-    const res = await fetch('/api/sources?type=magasin')
+    const res = await clientApi('/api/sources?type=magasin')
     const data = await res.json()
     setSources(Array.isArray(data) ? data : [])
     setLoading(false)
@@ -71,7 +74,7 @@ export default function ArtisanMateriauxPage() {
   const submitStore = async () => {
     if (!storeName.trim() || !storeQuartier) return
     setSavingStore(true)
-    const res = await fetch('/api/sources', {
+    const res = await clientApi('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -96,13 +99,14 @@ export default function ArtisanMateriauxPage() {
   }
 
   // Ajouter un article à un magasin
-  const submitArticle = async (sourceId: string) => {
+  const submitArticle = async (sourceId: string, observation: {observed_at:string;observed_quantity:number;evidence_url?:string;stock_status:string}) => {
     if (!artName.trim() || !artPrice) return
     setSavingArt(true)
-    const res = await fetch('/api/sources', {
+    const res = await clientApi('/api/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        ...observation,
         action: 'add_material',
         source_id: sourceId,
         name: artName.trim(),
@@ -246,7 +250,7 @@ export default function ArtisanMateriauxPage() {
                   setArtCategory={setArtCategory}
                   setArtUnit={setArtUnit}
                   setArtPrice={setArtPrice}
-                  onSubmitArticle={() => submitArticle(src.id)}
+                  onSubmitArticle={(observation) => submitArticle(src.id,observation)}
                 />
               ))}
             </div>
@@ -279,8 +283,12 @@ function MagasinCard({
   setArtCategory: (v: string) => void
   setArtUnit: (v: string) => void
   setArtPrice: (v: string) => void
-  onSubmitArticle: () => void
+  onSubmitArticle: (observation:{observed_at:string;observed_quantity:number;evidence_url?:string;stock_status:string}) => void
 }) {
+  const [observedDate,setObservedDate]=useState(new Date().toISOString().slice(0,10))
+  const [observedQuantity,setObservedQuantity]=useState('1')
+  const [evidence,setEvidence]=useState('')
+  const [stock,setStock]=useState('unknown')
   return (
     <div style={{ background: '#FFFFFF', border: `1px solid ${source.verified ? 'rgba(43,107,62,0.25)' : '#E2E8F0'}`, borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SHADOW_CARD }}>
       {/* Store header */}
@@ -352,8 +360,15 @@ function MagasinCard({
                 <p style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>C'est le prix que vous avez vu sur l'étiquette ou que le vendeur vous a donné.</p>
               </div>
 
+              <div style={{display:'grid',gap:10,marginBottom:14}}>
+                <label>Date du prix observé <input type="date" required value={observedDate} onChange={e=>setObservedDate(e.target.value)}/></label>
+                <label>Nombre d’unités couvertes par ce prix <input type="number" min="0.001" step="0.001" required value={observedQuantity} onChange={e=>setObservedQuantity(e.target.value)}/></label>
+                <label>Justificatif ou lien produit <input type="url" placeholder="https://…" value={evidence} onChange={e=>setEvidence(e.target.value)}/></label>
+                <label>Disponibilité <select value={stock} onChange={e=>setStock(e.target.value)}><option value="unknown">À confirmer</option><option value="available">En stock au moment du relevé</option><option value="unavailable">Indisponible</option></select></label>
+                <p>Le montant ci-dessus correspond à cette quantité. Le prix unitaire sera calculé et le relevé restera en attente de contrôle AfriOne.</p>
+              </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={onSubmitArticle} disabled={savingArt || !artName.trim() || !artPrice}
+                <button onClick={()=>onSubmitArticle({observed_at:observedDate,observed_quantity:Number(observedQuantity),evidence_url:evidence||undefined,stock_status:stock})} disabled={savingArt || !artName.trim() || !artPrice}
                   className="afrione-gradient"
                   style={{ flex: 1, padding: '9px', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: savingArt || !artName.trim() || !artPrice ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                   {savingArt ? 'Enregistrement…' : <><Check size={13} /> Enregistrer</>}

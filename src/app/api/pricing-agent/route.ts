@@ -1,3 +1,6 @@
+import { describeSupplies } from '@/lib/supplies'
+import { authenticate, resolveMissionViewer } from '@/lib/mission-auth'
+import { supabaseAdmin } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { runPricingAgent } from '@/lib/pricing-agent'
 import { previewStudyQuote, getPriceContext } from '@/lib/pricing-studies'
@@ -23,6 +26,7 @@ const contextPreviewSchema = z.object({
 }).strict()
 
 const agentInputSchema = z.object({
+  mission_id: z.string().uuid().optional(),
   category: z.string().trim().min(1).max(100),
   description: z.string().trim().min(1).max(8000),
   items_needed: z.array(z.string().trim().min(1).max(200)).max(30).default([]),
@@ -55,9 +59,29 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ status: 'informations_requises', total: null, error: 'Précisez la prestation et une durée positive.', details: parsed.error.issues }, { status: 400 })
     }
+    const identity=await authenticate(req)
+    if(!identity)return NextResponse.json({error:'Reconnectez-vous pour calculer votre prix'},{status:401})
+    const missionId=parsed.data.mission_id
+    if(missionId){
+      const viewer=await resolveMissionViewer(req,missionId)
+      if(!viewer.ok)return viewer.res
+      if(viewer.viewer.mission.client_id!==identity.userId)return NextResponse.json({error:'Mission non autorisée'},{status:403})
+      if(!['diagnostic','matching','negotiation'].includes(viewer.viewer.mission.status))return NextResponse.json({error:'Cette mission ne peut plus être recalculée'},{status:409})
+    }
     const result = await runPricingAgent(parsed.data)
+    const supplies = describeSupplies(result.price_context && 'sources' in result.price_context ? result.price_context.sources : [])
+    if(missionId){
+      const {data:diag,error:readError}=await supabaseAdmin.from('diagnostics').select('id,raw_text').eq('mission_id',missionId).maybeSingle()
+      if(readError || !diag)throw Error('Diagnostic introuvable pour enregistrer le devis')
+      let context:any={};try{context=JSON.parse(diag.raw_text || '{}')}catch{}
+      context.afrione_pricing={estimate:result.total,applied_estimator:result.applied_estimator,price_context:result.price_context,server_generated:true,supplies}
+      const {error:saveError}=await supabaseAdmin.from('diagnostics').update({raw_text:JSON.stringify(context),estimated_price_min:result.total,estimated_price_max:result.total}).eq('id',diag.id)
+      if(saveError)throw Error('Le devis n’a pas été enregistré')
+      const {data:saved,error:missionError}=await supabaseAdmin.from('missions').update({total_price:result.total}).eq('id',missionId).in('status',['diagnostic','matching','negotiation']).select('id').maybeSingle()
+      if(missionError || !saved)throw Error('Le prix de la mission n’a pas été enregistré')
+    }
 
-    return NextResponse.json(result)
+    return NextResponse.json({...result,supplies})
   } catch (err: any) {
     if (String(err?.message).startsWith('informations_requises:')) {
       return NextResponse.json({ status: 'informations_requises', total: null, error: String(err.message).slice('informations_requises:'.length).trim() }, { status: 422 })

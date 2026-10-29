@@ -1,3 +1,4 @@
+import SuppliesNotice from './SuppliesNotice'
 export interface PriceContextView {
   status: string;
   version?: string;
@@ -41,6 +42,7 @@ export default function PriceContextCard({ context, applied = false }: { context
       ) : (
         <p style={{ color: '#6B5A4F', fontSize: '13px', lineHeight: 1.65, margin: '16px 0 0' }}>Les références disponibles ne suffisent pas encore à chiffrer cette demande dans le contexte ivoirien. Un prestataire doit confirmer le prix.</p>
       )}
+      <SuppliesNotice sources={context.sources} />
       <details style={{ marginTop: '16px', color: '#6B5A4F', fontSize: '12px' }}>
         <summary style={{ cursor: 'pointer', fontWeight: 600 }}>D’où vient ce repère ?</summary>
         {context.technical_match && <p>Comparaison : {context.technical_match}</p>}

@@ -13,6 +13,7 @@
 export type CanonicalMetier =
   | 'Plomberie' | 'Électricité' | 'Peinture' | 'Maçonnerie'
   | 'Menuiserie' | 'Climatisation' | 'Serrurerie' | 'Carrelage'
+  | 'Chauffeur' | 'Ménage' | 'Cuisine' | 'Coiffure'
 
 export const CANONICAL_METIERS: { id: CanonicalMetier; label: string; icon: string }[] = [
   { id: 'Plomberie',     label: 'Plomberie',     icon: '🔧' },
@@ -23,11 +24,20 @@ export const CANONICAL_METIERS: { id: CanonicalMetier; label: string; icon: stri
   { id: 'Climatisation', label: 'Climatisation', icon: '❄️' },
   { id: 'Serrurerie',    label: 'Serrurerie',    icon: '🔑' },
   { id: 'Carrelage',     label: 'Carrelage',     icon: '🪟' },
+  { id: 'Chauffeur', label: 'Chauffeur', icon: '🚗' },
+  { id: 'Ménage', label: 'Aide ménagère', icon: '🧹' },
+  { id: 'Cuisine', label: 'Cuisinier', icon: '🍳' },
+  { id: 'Coiffure', label: 'Coiffure', icon: '✂️' },
 ]
 
 // Variantes connues (nom du métier, fautes de frappe passées) → catégorie canonique.
 // Alimenté par les valeurs trouvées en base le 2026-07-28 (seeds historiques).
 const ALIASES: Record<string, CanonicalMetier> = {
+  'frigoriste': 'Climatisation',
+  'aide ménagère': 'Ménage',
+  'cuisinier': 'Cuisine',
+  'coiffeuse': 'Coiffure',
+  'coiffeur': 'Coiffure',
   'plombier':      'Plomberie',
   'électricien':   'Électricité',
   'electricien':   'Électricité',

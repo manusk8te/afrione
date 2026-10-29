@@ -1,4 +1,5 @@
 'use client'
+import { clientApi } from '@/lib/client-api'
 export const dynamic = 'force-dynamic'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -614,7 +615,7 @@ export default function WarRoomPage() {
     }
 
     try {
-      const res = await fetch('/api/pricing-agent', {
+      const res = await clientApi('/api/pricing-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -705,60 +706,17 @@ export default function WarRoomPage() {
 
   // Paiement Wave confirmé → escrow + scheduling
   const confirmPayment = async () => {
-    if (!wavePhone.trim()) { toast.error('Entrez votre numéro mobile money'); return }
     if (!guard('pay_mission')) return
     setPayStep('processing')
-    // Simulation délai traitement Wave (2s)
-    await new Promise(r => setTimeout(r, 2000))
-
-    // API server-side — crée le wallet artisan si absent + enregistre la transaction
-    const { data: { session } } = await supabase.auth.getSession()
-    const payRes = await fetch('/api/payment', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token || ''}`,
-      },
-      body: JSON.stringify({ mission_id: missionId, amount: pendingAmount }),
-    })
-    if (!payRes.ok) {
-      const err = await payRes.json().catch(() => ({}))
-      console.error('[payment]', err)
-      toast.error(err.error || 'Erreur paiement')
-      setPayStep('form')
-      return
-    }
-    setMission((prev: any) => ({ ...prev, total_price: pendingAmount, status: 'payment' }))
-
-    // Enregistrer le prix accepté pour améliorer les futures estimations IA
-    if (diagData && pendingAmount > 0) {
-      fetch('/api/accepted-price', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mission_id:       missionId,
-          category:         diagData.category     || 'Plomberie',
-          quartier:         mission?.quartier      || 'Cocody',
-          urgency:          diagData.urgency       || 'medium',
-          hours:            parseDurLow(diagData.duration_estimate || '2'),
-          materials_count:  (diagData.items_needed || []).length,
-          description_short: (diagData.ai_summary  || '').slice(0, 120),
-          final_price:      pendingAmount,
-          artisan_percoit:  Math.round(pendingAmount * 0.88),
-        }),
-      }).catch(() => {})
-    }
-
-    // Message système dans le chat
-    await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: role,
-      text: `🧪 MODE DÉMO — paiement de ${pendingAmount.toLocaleString()} FCFA simulé, aucun montant n'a été débité. En production, les fonds seraient placés en escrow et transférés à l'artisan à la fin de la mission.`,
-      type: 'system',
-    })
-    const rid = getRecipientId(mission, user.id)
-    if (rid) notifyOther(`Paiement reçu : ${pendingAmount.toLocaleString()} FCFA en escrow.`, rid)
-
-    setPayStep('success')
+    try {
+      const response=await clientApi('/api/payment', {
+        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:missionId,amount:pendingAmount}),
+      })
+      const payment=await response.json()
+      if(!response.ok || !payment.simulation || !payment.receipt)throw Error(payment.error || 'Simulation non confirmée')
+      setShowPayment(false)
+      router.push(`/payment/success?mission=${missionId}`)
+    } catch(error) {toast.error(error instanceof Error ? error.message : 'Simulation indisponible');setPayStep('form')}
   }
 
   // Après succès paiement → ouvrir scheduling
@@ -1426,7 +1384,7 @@ export default function WarRoomPage() {
                 {/* Bouton — gradient bleu officiel Wave */}
                 <button
                   onClick={confirmPayment}
-                  disabled={!wavePhone.trim()}
+                  disabled={false}
                   style={{
                     width:'100%',padding:'18px',
                     background: wavePhone.trim()

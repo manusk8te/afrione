@@ -66,6 +66,9 @@ async function fetchJumiaProducts(query: string): Promise<JumiaProduct[]> {
 async function saveAllProducts(products: JumiaProduct[], category: string) {
   await Promise.all(products.map(async p => {
     const payload = {
+      price_provenance: 'web_observation',
+      observed_at: new Date().toISOString(),
+      stock_status: 'unknown',
       name:            p.name,
       category,
       unit:            'unité',
@@ -82,9 +85,9 @@ async function saveAllProducts(products: JumiaProduct[], category: string) {
       last_scraped_at: new Date().toISOString(),
     }
     const { data: existing } = await supabaseAdmin
-      .from('price_materials').select('id').eq('name', p.name).maybeSingle()
+      .from('price_materials').select('id').eq('source_url', p.url).eq('price_provenance','web_observation').eq('price_market',p.price).gte('observed_at',new Date(Date.now()-86400000).toISOString()).limit(1).maybeSingle()
     if (existing) {
-      await supabaseAdmin.from('price_materials').update(payload).eq('id', existing.id)
+      return // Même observation déjà enregistrée aujourd’hui.
     } else {
       await supabaseAdmin.from('price_materials').insert(payload)
     }

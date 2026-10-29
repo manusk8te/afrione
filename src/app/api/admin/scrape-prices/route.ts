@@ -1,3 +1,4 @@
+import { requireAdmin } from '@/lib/admin-auth'
 /**
  * Scraper réel Jumia CI — POST /api/admin/scrape-prices
  *
@@ -195,6 +196,7 @@ async function scrapeJumia(query: string): Promise<{ products: JumiaHit[]; debug
 // Pour chaque requête de la liste : scrape Jumia, sauvegarde TOUS les résultats.
 // Pas de filtre keyword — Jumia gère la pertinence. On filtre à l'affichage.
 export async function POST(req: NextRequest) {
+  const allowed=await requireAdmin(req);if(!allowed.ok)return allowed.res
   const body = await req.json().catch(() => ({}))
   const { category } = body
   const materials = category ? MATERIALS.filter(m => m.category === category) : MATERIALS
@@ -218,8 +220,10 @@ export async function POST(req: NextRequest) {
         category:        mat.category,
         unit:            mat.unit,
         tier:            'standard',
-        price_market:    Math.round(product.price * 0.88),
-        price_min:       Math.round(product.price * 0.75),
+        price_provenance: 'web_observation',
+        observed_at: new Date().toISOString(),
+        price_market:    product.price,
+        price_min:       product.price,
         price_max:       product.price,
         source:          'Jumia CI',
         brand:           product.brand,
@@ -230,7 +234,7 @@ export async function POST(req: NextRequest) {
       }
 
       const { data: existing } = await supabaseAdmin
-        .from('price_materials').select('id').eq('name', product.name).maybeSingle()
+        .from('price_materials').select('id').eq('source_url',product.url).eq('price_provenance','web_observation').limit(1).maybeSingle()
 
       const { error } = existing
         ? await supabaseAdmin.from('price_materials').update(payload).eq('id', existing.id)
@@ -255,6 +259,7 @@ export async function POST(req: NextRequest) {
 
 // ─── Handler GET — liste les prix actuels OU debug du scraper ─────────────────
 export async function GET(req: NextRequest) {
+  const allowed=await requireAdmin(req);if(!allowed.ok)return allowed.res
   const q = req.nextUrl.searchParams.get('debug')
 
   // ?debug=robinet → teste le scraping d'un terme et retourne le diagnostic brut

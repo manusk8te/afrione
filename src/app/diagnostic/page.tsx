@@ -1,4 +1,5 @@
 'use client'
+import { clientApi } from '@/lib/client-api'
 import { CATEGORY_TO_METIER } from '@/lib/pricing'
 import { parseDuree } from '@/lib/duration'
 import { useState, useRef, useEffect } from 'react'
@@ -162,12 +163,13 @@ export default function DiagnosticPage() {
     if (text.trim().length < 10) return
     setLoading(true)
     try {
-      const res = await fetch('/api/diagnostic', {
+      const res = await clientApi('/api/diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'start', text, photos }),
       })
       const data = await res.json()
+      if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
       if (data.done || !data.question) {
         await finalizeWithQA([])
       } else {
@@ -175,8 +177,7 @@ export default function DiagnosticPage() {
         setStep('questioning')
       }
     } catch {
-      setCurrentQ({ question: "Depuis combien de temps avez-vous ce problème ?", type: 'text' })
-      setStep('questioning')
+      toast.error('Le diagnostic est indisponible. Réessayez sans quitter la page.')
     }
     setLoading(false)
   }
@@ -201,12 +202,13 @@ export default function DiagnosticPage() {
         await finalizeWithQA(newQA)
         return
       }
-      const res = await fetch('/api/diagnostic', {
+      const res = await clientApi('/api/diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'next', text, photos, qa: newQA, index: newQA.length }),
       })
       const data = await res.json()
+      if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
       const isEmpty = !data.question || (data.type === 'choice' && (!data.options || data.options.length < 2))
       if (data.done || isEmpty) {
         await finalizeWithQA(newQA)
@@ -228,7 +230,7 @@ export default function DiagnosticPage() {
    */
   const fetchPricing = async (diagResult: DiagResult, force = false) => {
     // Ne pas recalculer si un prix est déjà en cache pour cette session
-    const cacheKey = `afrione_context_v4_active_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
+    const cacheKey = `afrione_context_v4_saved_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
     setPricingError(null)
     if (force) sessionStorage.removeItem(cacheKey)
     const cached = force ? null : sessionStorage.getItem(cacheKey)
@@ -246,10 +248,11 @@ export default function DiagnosticPage() {
     try {
       const itemNames = (diagResult.items_needed || []).map((i: any) => typeof i === 'string' ? i : i.name).filter(Boolean)
       const [pricingRes, tiersRes] = await Promise.all([
-        fetch('/api/pricing-agent', {
+        clientApi('/api/pricing-agent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            mission_id:     diagResult.mission_id,
             category:       diagResult.category,
             description:    [diagResult.summary, diagResult.technical_notes, pricingClarification ? `Précision du client : ${pricingClarification}` : '', diagResult.surface_m2 ? `Surface confirmée : ${diagResult.surface_m2} m²` : ''].filter(Boolean).join(' — '),
             urgency:        diagResult.urgency,
@@ -284,13 +287,7 @@ export default function DiagnosticPage() {
         setPricing(newPricing)
         setBasePricing(newPricing)
         try { sessionStorage.setItem(cacheKey, JSON.stringify(newPricing)) } catch {}
-        if (diagResult.mission_id) {
-          fetch('/api/pricing-save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mission_id: diagResult.mission_id, pricing: newPricing }),
-          }).catch(() => {})
-        }
+
       } else {
         const failure = await pricingRes.json().catch(() => null)
         setPricingError(failure?.status === 'informations_requises' ? failure.error : 'Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
@@ -337,7 +334,7 @@ export default function DiagnosticPage() {
       artisan_percoit: Math.round(total * 0.88),
     }
     setPricing(updated)
-    const cacheKey = `afrione_context_v4_active_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
+    const cacheKey = `afrione_context_v4_saved_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
     try { sessionStorage.setItem(cacheKey, JSON.stringify(updated)) } catch {}
     if (diagResult.mission_id) {
       fetch('/api/pricing-save', {
@@ -353,21 +350,20 @@ export default function DiagnosticPage() {
     setStep('summarizing')
     setLoading(true)
     try {
-      const res = await fetch('/api/diagnostic', {
+      const res = await clientApi('/api/diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'finalize', text, photos, qa: finalQA, user_id: userId, quartier }),
       })
       const data = await res.json()
+      if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
       const safeResult = { ...data, urgency: safeUrgency(data.urgency) }
       setResult(safeResult)
       setStep('confirming')
       fetchPricing(safeResult)
     } catch {
-      const fallback: DiagResult = { summary: 'Problème artisanal détecté, intervention professionnelle recommandée.', technical_notes: 'Diagnostic à affiner sur place.', category: 'Plomberie', urgency: 'medium', price_min: 5000, price_max: 20000, items_needed: [{ name: 'Matériaux selon diagnostic', qty: 1, unit: 'unité' }], duration_estimate: '1 heure' }
-      setResult(fallback)
-      setStep('confirming')
-      fetchPricing(fallback)
+      toast.error('Le diagnostic n’a pas pu être enregistré. Réessayez.')
+      setStep('input')
     }
     setLoading(false)
   }
@@ -378,12 +374,13 @@ export default function DiagnosticPage() {
     setRefining(true)
     const enrichedText = text + '\n\nPrécision : ' + refineText.trim()
     try {
-      const res = await fetch('/api/diagnostic', {
+      const res = await clientApi('/api/diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode: 'finalize', text: enrichedText, photos, qa, user_id: userId, quartier }),
       })
       const data = await res.json()
+      if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
       const affine = { ...(result as DiagResult), ...data, urgency: safeUrgency(data.urgency) }
       setResult(affine)
       setRefineText('')
@@ -747,7 +744,7 @@ export default function DiagnosticPage() {
                   <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
                   <span style={{ color: '#8B95A5', fontSize: '13px' }}>Agent IA en cours…</span>
                   <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'Tahoma' }}>
-                    {result.price_min.toLocaleString('fr')} – {result.price_max.toLocaleString('fr')} FCFA
+                    Prix en cours de calcul
                   </span>
                 </div>
               ) : pricingError ? (
@@ -793,12 +790,7 @@ export default function DiagnosticPage() {
                   </div>
                 </>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                  <span className="afrione-gradient-text" style={{ fontFamily: 'Tahoma', fontSize: '34px', fontWeight: 700, lineHeight: 1 }}>{result.price_min.toLocaleString('fr')}</span>
-                  <span style={{ color: '#8B95A5', fontSize: '20px' }}>—</span>
-                  <span style={{ fontFamily: 'Tahoma', fontSize: '34px', fontWeight: 700, color: '#3D4852', lineHeight: 1 }}>{result.price_max.toLocaleString('fr')}</span>
-                  <span style={{ color: '#8B95A5', fontSize: '12px', fontFamily: 'Tahoma' }}>FCFA</span>
-                </div>
+                <p>Le prix sera calculé à partir des références de prestations.</p>
               )}
 
               <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', margin: '12px 0 0' }}>
@@ -829,6 +821,7 @@ export default function DiagnosticPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                           {(['economique', 'standard', 'premium'] as const).map(tier => {
                             const t = mat.tiers[tier]
+                            if(!t)return null
                             const active = activeTierKey === tier
                             const color = TIER_COLORS[tier]
                             return (
@@ -970,7 +963,7 @@ export default function DiagnosticPage() {
             {/* CTA principal */}
             <button
               onClick={() => {
-                if (navigating) return
+                if (navigating || pricingLoading || !pricing || !result.mission_id) return
                 setNavigating(true)
                 const priceParam   = pricing?.estimate ? `&price=${pricing.estimate}` : ''
                 const summaryParam = result.summary   ? `&summary=${encodeURIComponent(result.summary)}` : ''
@@ -979,7 +972,7 @@ export default function DiagnosticPage() {
                   : `/mode-select?category=${encodeURIComponent(result.category)}${priceParam}${summaryParam}`
                 router.push(href)
               }}
-              disabled={navigating}
+              disabled={navigating || pricingLoading || !pricing || !result.mission_id}
               className="btn-primary"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
