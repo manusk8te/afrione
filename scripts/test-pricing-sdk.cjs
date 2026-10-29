@@ -18,7 +18,7 @@ let runWorkflow;
 test.before(async () => {
   // Charger le véritable module ESM avant le pont CommonJS de ts-node.
   const filename = path.join(__dirname, '../src/lib/pricing-studies/engine.mjs');
-  for (const name of [filename, path.join(__dirname, '../src/lib/pricing-studies/contextualizer.mjs')]) {
+  for (const name of [filename, path.join(__dirname, '../src/lib/pricing-studies/contextualizer.mjs'), path.join(__dirname, '../src/lib/material-sourcing/public-catalogues.mjs'), path.join(__dirname, '../src/lib/material-sourcing/on-demand.mjs')]) {
     const exports = await import(require('node:url').pathToFileURL(name).href);
     const cached = new Module(name);
     cached.filename = name;

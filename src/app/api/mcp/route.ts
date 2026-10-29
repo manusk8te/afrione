@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { lookupItemOnJumia } from '@/lib/jumia-lookup'
+import { lookupMaterialOffers } from '@/lib/material-sourcing/lookup'
 import { SMIG_X2_HORAIRE } from '@/lib/pricing'
 import { FILTRE_CATALOGUE_VALIDE } from '@/lib/catalogue'
 import { getTransport } from '@/lib/transport'
@@ -21,7 +21,7 @@ const FALLBACK_MAT: Record<string, number> = {
 const TOOLS = [
   {
     name: 'search_material_price',
-    description: 'Cherche le prix réel d\'un matériau sur Jumia CI et dans la base AfriOne.',
+    description: 'Cherche le prix réel d\'un matériau sur les sites publics de fournisseurs, avec liens et cache temporaire.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -69,10 +69,9 @@ async function executeTool(name: string, args: Record<string, any>): Promise<any
       .from('price_materials').select('price_market, source, name')
       .ilike('name', `%${item}%`).or(FILTRE_CATALOGUE_VALIDE).limit(1).maybeSingle()
     if (cached) return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne' }
-    const jumia = await lookupItemOnJumia(item, category)
-    if (jumia.found && jumia.price) return { item, qty, price_unit: jumia.price, total: jumia.price * qty, source: 'Jumia CI' }
-    const fallback = FALLBACK_MAT[category] || 1500
-    return { item, qty, price_unit: fallback, total: fallback * qty, source: 'Estimation marché Abidjan' }
+    const web = await lookupMaterialOffers(item)
+    return {item,qty,found:web.found,offers:web.offers,price_unit:null,total:null,note:web.note}
+
   }
 
   if (name === 'get_artisan_rate') {

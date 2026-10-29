@@ -240,10 +240,15 @@ export default function DiagnosticPage() {
         setPricing(c)
         setBasePricing(c)
         setPricingLoading(false)
+        const names=(diagResult.items_needed||[]).map((i:any)=>typeof i==='string'?i:i.name).filter(Boolean).slice(0,4)
+        if(names.length){
+          try{const response=await clientApi(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(names.join(','))}`);if(response.ok){const data=await response.json();setMaterialTiers(data.materials||[])}}catch{setMaterialTiers([])}
+        }
         return
       } catch {}
     }
     setPricing(null)
+    setMaterialTiers([])
     setPricingLoading(true)
     try {
       const itemNames = (diagResult.items_needed || []).map((i: any) => typeof i === 'string' ? i : i.name).filter(Boolean)
@@ -262,7 +267,7 @@ export default function DiagnosticPage() {
           }),
         }),
         itemNames.length > 0
-          ? fetch(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(itemNames.join(','))}&client_quartier=${encodeURIComponent(quartier || 'Cocody')}`)
+          ? clientApi(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(itemNames.slice(0,4).join(','))}&client_quartier=${encodeURIComponent(quartier || 'Cocody')}`)
           : Promise.resolve(null),
       ])
       if (pricingRes.ok) {
@@ -799,6 +804,26 @@ export default function DiagnosticPage() {
                   : "Prix à confirmer par un prestataire"}
               </p>
             </div>
+
+            {materialTiers.length > 0 && (
+              <section style={{background:'#FFF',border:'1px solid #E2E8F0',borderRadius:20,padding:20}}>
+                <h3 style={{fontWeight:700,marginBottom:8}}>Fournitures : prix trouvés sur les sites</h3>
+                <p style={{fontSize:12,color:'#64748B',marginBottom:12}}>Prix indicatifs séparés de la prestation. Vérifiez le modèle et le conditionnement ; livraison à confirmer. Recherche réutilisée pendant une heure, sans ajout au catalogue.</p>
+                {materialTiers.slice(0,4).map((mat:any)=>(
+                  <div key={mat.name} style={{marginTop:12}}>
+                    <strong>{mat.name}</strong>
+                    {mat.comparison_references?.map((ref:any)=><p key={ref.url} style={{fontSize:12,marginTop:6}}><a href={ref.url} target="_blank" rel="noopener noreferrer" style={{textDecoration:'underline'}}>{ref.source}</a> — {ref.note}</p>)}
+                    {mat.offers?.length ? mat.offers.slice(0,3).map((offer:any)=>(
+                      <div key={offer.source_url} style={{padding:'8px 0',fontSize:13}}>
+                        <a href={offer.source_url} target="_blank" rel="noopener noreferrer" style={{color:'#B45309'}}>{offer.name} — {offer.source}</a>
+                        <div>{offer.price.toLocaleString('fr-FR')} FCFA / {offer.unit}</div>
+                        <small>Consulté le {new Date(offer.observed_at).toLocaleString('fr-FR')} · compatibilité à confirmer</small>
+                      </div>
+                    )) : <p style={{fontSize:12,color:'#64748B'}}>Aucune offre publique exploitable ; fourniture à confirmer.</p>}
+                  </div>
+                ))}
+              </section>
+            )}
 
             {/* Sélecteur qualité matériaux */}
             {materialTiers.length > 0 && pricing?.applied_estimator !== 'context_v4' && (

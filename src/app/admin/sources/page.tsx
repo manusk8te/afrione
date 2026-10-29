@@ -53,6 +53,13 @@ export default function AdminSourcesPage() {
   const [msg, setMsg]                 = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
+  const [lookupQuery,setLookupQuery]=useState('')
+  const [lookupResult,setLookupResult]=useState<any>(null)
+  const [lookupBusy,setLookupBusy]=useState(false)
+  const searchOffers=async()=>{
+    setLookupBusy(true);setLookupResult(null)
+    try{const r=await clientApi('/api/materials',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:lookupQuery})});const data=await r.json();if(!r.ok)throw Error(data.error||'Recherche impossible');setLookupResult(data)}catch(error){setLookupResult({offers:[],note:error instanceof Error?error.message:'Recherche impossible'})}finally{setLookupBusy(false)}
+  }
   // Form — ajouter un site web
   const [showWebForm, setShowWebForm] = useState(false)
   const [webName, setWebName]         = useState('')
@@ -191,6 +198,25 @@ export default function AdminSourcesPage() {
             </div>
           )}
         </div>
+
+        <section className="mb-6 p-5 bg-white rounded-xl border border-gray-200">
+          <h2 className="font-semibold mb-2">Rechercher un prix à la demande</h2>
+          <p className="text-sm text-gray-500 mb-3">Aucun article ajouté au catalogue, aucune validation individuelle. Les résultats sont réutilisés pendant une heure. Fournitures séparées de la prestation ; modèle, conditionnement et livraison à confirmer.</p>
+          <div className="flex gap-2">
+            <input aria-label="Fourniture à rechercher" maxLength={120} value={lookupQuery} onChange={e=>setLookupQuery(e.target.value)} placeholder="Ex. ciment, tube fluo, robinet lavabo" className="border rounded-lg p-2 flex-1 min-w-0" />
+            <button onClick={searchOffers} disabled={lookupBusy||lookupQuery.trim().length<2} className="afrione-gradient text-white rounded-lg px-4 disabled:opacity-50">{lookupBusy?'Recherche…':'Chercher les prix'}</button>
+          </div>
+          {lookupResult && <div role="status" className="mt-4 text-sm">
+            <p>{lookupResult.note}</p>
+            {!lookupResult.offers?.length && <p>Aucun prix exploitable trouvé.</p>}
+            {lookupResult.comparison_references?.map((ref:any)=><p key={ref.url} className="mt-3"><a href={ref.url} target="_blank" rel="noopener noreferrer" className="underline">{ref.source}</a> — {ref.note}</p>)}
+            {lookupResult.offers?.map((offer:any)=><div key={offer.source_url} className="border-t mt-3 pt-3">
+              <a href={offer.source_url} target="_blank" rel="noopener noreferrer" className="underline">{offer.name} — {offer.source}</a>
+              <p>{offer.price.toLocaleString('fr-FR')} FCFA / {offer.unit}</p>
+              <p className="text-gray-500">Consulté le {new Date(offer.observed_at).toLocaleString('fr-FR')}</p>
+            </div>)}
+          </div>}
+        </section>
 
         <MaterialObservationForm sources={sources} onSaved={()=>{setMaterials({});load()}} />
         <PartnerRegistration sources={sources} onSaved={load} />
