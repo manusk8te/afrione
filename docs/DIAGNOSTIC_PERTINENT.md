@@ -1,0 +1,11 @@
+# Diagnostic et choix des fournitures — 29 octobre 2026
+
+Constats : minimum de quatre questions côté serveur, arrêt à quatre réponses côté navigateur, questions et rapports prédéfinis en cas d’erreur modèle, statistiques et coefficients locaux non sourcés dans le prompt. Ces mécanismes sont supprimés.
+
+Nouveau contrat : un fait manquant identifié, une question unique et une courte explication de la décision qu’elle éclaire. La fact_key accompagne la réponse ; les répétitions exactes et les faits déjà demandés sont rejetés, avec une tentative de régénération. Cette vérification ne garantit pas la détection de toutes les répétitions sémantiques. Aucun minimum ; maximum huit réponses, puis vérification sur place si nécessaire. Une absence de réponse modèle ne devient pas une conclusion de diagnostic. Le navigateur conserve la réponse en cas d’erreur et permet de réessayer.
+
+Le guide de questions demande d’adapter l’enquête aux observations et à la mission : localisation/déclencheur, réparation ou remplacement déjà décidé, étendue et accès pertinents, fournitures déjà possédées. Les observations risquées et les calibrages invisibles ne sont pas demandés au client. Le rapport est un pré-diagnostic, avec faits, incertitudes et contrôles pour le professionnel. Les prix ne sont pas générés par ce prompt ; le moteur existant les calcule séparément. Un statut urgent ou de vérification indispensable bloque le chiffrage automatique dans l’interface et la route de pricing.
+
+Choix produit : compatibilité avant préférence de qualité. Les critères confirmés, inconnus et souhaités sont affichés, enregistrés avec le diagnostic et transmis au SDK de tarification pour les recherches de fournitures. Le prix seul ne crée pas une gamme. Les caractéristiques fabricant, la garantie et la disponibilité doivent être vérifiées sur la fiche ; ce changement ne prétend pas disposer d’une classification automatique certifiée de tous les produits.
+
+Validation : tests du contrat de question, répétitions, absence de quota, types, limite et panne du modèle. Vérification de compilation et test navigateur d’une fuite de robinet. Les scénarios simulés n’établissent pas une validation technique de diagnostic sur chantier ; une revue terrain reste nécessaire pour améliorer les formulations par métier.

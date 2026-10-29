@@ -68,12 +68,19 @@ export async function POST(req: NextRequest) {
       if(viewer.viewer.mission.client_id!==identity.userId)return NextResponse.json({error:'Mission non autorisée'},{status:403})
       if(!['diagnostic','matching','negotiation'].includes(viewer.viewer.mission.status))return NextResponse.json({error:'Cette mission ne peut plus être recalculée'},{status:409})
     }
-    const result = await runPricingAgent(parsed.data)
+    let diag:any=null
+    let context:any={}
+    let agentInput=parsed.data
+    if(missionId){
+      const {data,error}=await supabaseAdmin.from('diagnostics').select('id,raw_text').eq('mission_id',missionId).maybeSingle()
+      if(error||!data)throw Error('Diagnostic introuvable pour préparer le devis')
+      diag=data;try{context=JSON.parse(diag.raw_text||'{}')}catch{}
+      if(['onsite_required','urgent'].includes(context.diagnostic_status))return NextResponse.json({status:'informations_requises',total:null,error:'Le pré-diagnostic nécessite une vérification par le prestataire avant de chiffrer.'},{status:422})
+      if(Array.isArray(context.product_requirements)&&context.product_requirements.length)agentInput={...parsed.data,description:parsed.data.description+'\nCritères de fournitures issus du diagnostic (inconnues à confirmer, aucune gamme déduite du prix) : '+JSON.stringify(context.product_requirements).slice(0,3000)}
+    }
+    const result = await runPricingAgent(agentInput)
     const supplies = describeSupplies(result.price_context && 'sources' in result.price_context ? result.price_context.sources : [])
     if(missionId){
-      const {data:diag,error:readError}=await supabaseAdmin.from('diagnostics').select('id,raw_text').eq('mission_id',missionId).maybeSingle()
-      if(readError || !diag)throw Error('Diagnostic introuvable pour enregistrer le devis')
-      let context:any={};try{context=JSON.parse(diag.raw_text || '{}')}catch{}
       context.afrione_pricing={estimate:result.total,applied_estimator:result.applied_estimator,price_context:result.price_context,server_generated:true,supplies}
       const {error:saveError}=await supabaseAdmin.from('diagnostics').update({raw_text:JSON.stringify(context),estimated_price_min:result.total,estimated_price_max:result.total}).eq('id',diag.id)
       if(saveError)throw Error('Le devis n’a pas été enregistré')

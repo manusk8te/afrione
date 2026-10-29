@@ -18,7 +18,7 @@ const NEU_INSET  = 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8
 type Step = 'input' | 'questioning' | 'summarizing' | 'confirming'
 
 type QAType = 'yesno' | 'choice' | 'text'
-interface QA { question: string; type: QAType; options?: string[]; answer: string }
+interface QA { question: string; type: QAType; options?: string[]; answer: string; fact_key?:string }
 
 
 interface DiagResult {
@@ -29,7 +29,9 @@ interface DiagResult {
   price_min: number
   price_max: number
   items_needed: { name: string; qty: number; unit: string }[]
-  duration_estimate: string
+  duration_estimate: string | null
+  diagnostic_status?: 'preliminary'|'onsite_required'|'urgent'
+  product_requirements?: {item:string;confirmed_specs:string[];unknown_specs:string[];selection_criteria:string[]}[]
   surface_m2?: number | null
   budget_client?: string | null
   mission_id?: string
@@ -95,7 +97,7 @@ export default function DiagnosticPage() {
   const [photos, setPhotos]           = useState<string[]>([])
   const [uploading, setUploading]     = useState(false)
   const [qa, setQA]                   = useState<QA[]>([])
-  const [currentQ, setCurrentQ]       = useState<{ question: string; type: QAType; options?: string[] } | null>(null)
+  const [currentQ, setCurrentQ]       = useState<{ question: string; type: QAType; options?: string[]; rationale?:string; fact_key?:string } | null>(null)
   const [currentAnswer, setCurrentAnswer] = useState('')
   const [showPrecise, setShowPrecise] = useState(false)
   const [preciseText, setPreciseText] = useState('')
@@ -173,7 +175,7 @@ export default function DiagnosticPage() {
       if (data.done || !data.question) {
         await finalizeWithQA([])
       } else {
-        setCurrentQ({ question: data.question, type: data.type, options: data.options })
+        setCurrentQ({ question: data.question, type: data.type, options: data.options, rationale:data.rationale, fact_key:data.fact_key })
         setStep('questioning')
       }
     } catch {
@@ -189,7 +191,7 @@ export default function DiagnosticPage() {
       : currentAnswer
     if (!finalAnswer.trim()) return
 
-    const newQA: QA[] = [...qa, { question: currentQ!.question, type: currentQ!.type, answer: finalAnswer }]
+    const newQA: QA[] = [...qa, { question: currentQ!.question, type: currentQ!.type, answer: finalAnswer, fact_key:currentQ!.fact_key }]
     setQA(newQA)
     setCurrentAnswer('')
     setPreciseText('')
@@ -198,10 +200,6 @@ export default function DiagnosticPage() {
     setLoading(true)
 
     try {
-      if (newQA.length >= 4) {
-        await finalizeWithQA(newQA)
-        return
-      }
       const res = await clientApi('/api/diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -213,11 +211,15 @@ export default function DiagnosticPage() {
       if (data.done || isEmpty) {
         await finalizeWithQA(newQA)
       } else {
-        setCurrentQ({ question: data.question, type: data.type, options: data.options })
+        setCurrentQ({ question: data.question, type: data.type, options: data.options, rationale:data.rationale, fact_key:data.fact_key })
         setLoading(false)
       }
     } catch {
-      await finalizeWithQA(newQA)
+      setQA(qa)
+      setCurrentQ(currentQ)
+      setCurrentAnswer(finalAnswer)
+      toast.error('La question suivante est indisponible. Votre réponse est conservée ; réessayez.')
+      setLoading(false)
     }
   }
 
@@ -229,6 +231,10 @@ export default function DiagnosticPage() {
    *   le client voyait un diagnostic mis à jour sous un prix périmé.
    */
   const fetchPricing = async (diagResult: DiagResult, force = false) => {
+    if(!diagResult.duration_estimate || (diagResult.diagnostic_status && diagResult.diagnostic_status!=='preliminary')){
+      setPricing(null);setBasePricing(null);setMaterialTiers([]);setPricingLoading(false)
+      setPricingError('Une vérification par le prestataire est nécessaire avant de chiffrer cette intervention.');return
+    }
     // Ne pas recalculer si un prix est déjà en cache pour cette session
     const cacheKey = `afrione_context_v4_saved_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
     setPricingError(null)
@@ -440,7 +446,7 @@ export default function DiagnosticPage() {
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '13px', margin: 0 }}>
             {step === 'input'       ? "L'IA analyse et pose des questions — envoyez aussi des photos" :
-             step === 'questioning' ? `Répondez pour un diagnostic précis · ${qa.length}/4 questions` :
+             step === 'questioning' ? `Une précision utile à la fois · ${qa.length} réponse(s)` :
              step === 'summarizing' ? "L'IA synthétise toutes vos réponses" :
                                      "Résumé · Estimation de prix · Fiche technique"}
           </p>
@@ -582,6 +588,7 @@ export default function DiagnosticPage() {
                 <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '14px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
                   <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '5px', fontFamily: 'Tahoma' }}>IA · Question {qa.length + 1}</div>
                   <p style={{ fontSize: '15px', color: '#3D4852', margin: 0, lineHeight: '1.5' }}>{currentQ.question}</p>
+                  {currentQ.rationale && <p style={{fontSize:12,color:'#64748B',marginTop:8}}>{currentQ.rationale}</p>}
                 </div>
 
                 {/* Choix multiple */}
@@ -672,13 +679,7 @@ export default function DiagnosticPage() {
               </div>
             )}
 
-            {/* Progress bar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '4px' }}>
-              <div style={{ flex: 1, height: '3px', background: '#E2E8F0', borderRadius: '2px', overflow: 'hidden' }}>
-                <div className="afrione-gradient" style={{ height: '100%', borderRadius: '2px', width: `${(qa.length / 4) * 100}%`, transition: 'width 0.4s ease' }} />
-              </div>
-              <span style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'Tahoma', whiteSpace: 'nowrap' }}>{qa.length} / 4</span>
-            </div>
+            <p style={{fontSize:12,color:'#64748B'}}>L’échange s’arrête dès que l’intervention est suffisamment précisée. Les points impossibles à vérifier ici seront confiés au prestataire.</p>
 
             <div ref={bottomRef} />
           </div>
@@ -718,12 +719,23 @@ export default function DiagnosticPage() {
               <p style={{ fontSize: '15px', color: '#3D4852', lineHeight: '1.7', margin: 0 }}>{result.summary}</p>
             </div>
 
+            {result.product_requirements?.length ? <section style={{background:'#FFF',padding:20,borderRadius:16,border:'1px solid #E2E8F0'}}>
+              <h3 style={{fontWeight:700}}>Choisir les fournitures adaptées</h3>
+              <p style={{fontSize:12,color:'#64748B'}}>On vérifie d’abord la compatibilité, puis les caractéristiques utiles et votre préférence. Le prix seul ne définit pas la qualité ; garantie et caractéristiques devront être vérifiées sur la fiche produit.</p>
+              {result.product_requirements.map((r,i)=><div key={i} style={{marginTop:12,fontSize:13}}>
+                <strong>{r.item}</strong>
+                {!!r.confirmed_specs.length && <p>Établi : {r.confirmed_specs.join(' · ')}</p>}
+                {!!r.unknown_specs.length && <p>À confirmer : {r.unknown_specs.join(' · ')}</p>}
+                {!!r.selection_criteria.length && <p>Critères de choix : {r.selection_criteria.join(' · ')}</p>}
+              </div>)}
+            </section> : null}
+
             {/* Infos clés */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {[
                 { icon: <Wrench size={18} color="#E85D26" />, label: 'Catégorie',  value: result.category,          color: '#3D4852' },
                 { icon: <span style={{ fontSize: '18px', lineHeight: 1 }}>{urgConf.icon}</span>, label: 'Urgence', value: urgConf.label, color: urgConf.color },
-                { icon: <Clock size={18} color="#C9A84C" />, label: 'Durée',       value: result.duration_estimate, color: '#3D4852' },
+                { icon: <Clock size={18} color="#C9A84C" />, label: 'Durée',       value: result.duration_estimate || 'À confirmer', color: '#3D4852' },
               ].map(k => (
                 <div key={k.label} style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
                   <div style={{ marginBottom: '8px' }}>{k.icon}</div>
