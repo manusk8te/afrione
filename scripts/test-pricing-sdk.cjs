@@ -160,3 +160,17 @@ test('changer de référence invalide le calcul précédent', async () => {
  };
  await assert.rejects(()=>runWorkflow({input_as_text:'Test changement'},.5,context),/Calcul final non exécuté/);
 });
+
+test('la recherche fournitures ignore une ancienne ligne et utilise le relevé récent contrôlé', async () => {
+ const {supabaseAdmin}=require('../src/lib/supabase.ts');const originalFrom=supabaseAdmin.from;let category;
+ supabaseAdmin.from=()=>{const chain={select:()=>chain,ilike:()=>chain,eq:(key,value)=>{if(key==='category')category=value;return chain},gte:()=>chain,or:()=>chain,order:()=>chain,limit:async()=>({data:[{name:'Ancienne ligne',price_market:1500},{name:'Produit test contrôlé',price_market:7000,source:'Magasin fixture',source_url:'https://merchant.example/sku',unit:'unité',observed_at:new Date().toISOString(),added_by:'contributor',confirmed_at:new Date().toISOString(),price_provenance:'artisan_declaration',stock_status:'available'}]})};return chain};
+ try{
+  sdk.Runner.prototype.run=async function(agent){
+   const response=await agent.tools.find(t=>t.name==='search_material_price').invoke(new sdk.RunContext(),JSON.stringify({item:'robinet',category:'Plombier',qty:1}));
+   const price=typeof response==='string'?JSON.parse(response):response;
+   assert.equal(price.price_unit,7000);assert.equal(price.is_fallback,false);assert.equal(category,'Plomberie');
+   await selectReference(agent);await executeCalculation(agent);return {finalOutput:{test_fixture:true},newItems:[]};
+  };
+  await runWorkflow({input_as_text:'Test hors ligne de la base fournitures'},.5,context);
+ }finally{supabaseAdmin.from=originalFrom}
+});

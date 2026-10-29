@@ -127,13 +127,14 @@ export default function AdminSourcesPage() {
     setScraping(source.id)
     setMsg(null)
     try {
-      const res = await clientApi('/api/admin/scrape-prices', {
+      const res = await clientApi(source.scraper_type === 'public_catalogue' ? '/api/admin/collect-material-prices' : '/api/admin/scrape-prices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(source.scraper_type === 'public_catalogue' ? {source_id:source.id} : {}),
       })
       const data = await res.json()
-      flash(data.summary || `Scraping terminé`)
+      if(!res.ok)throw Error(data.error || 'Collecte impossible')
+      flash(data.summary || `Collecte terminée`)
       const res2 = await clientApi(`/api/sources?source_id=${source.id}`)
       const mats = await res2.json()
       setMaterials(m => ({ ...m, [source.id]: Array.isArray(mats) ? mats : [] }))
@@ -183,7 +184,7 @@ export default function AdminSourcesPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#3D4852' }}>Sources de prix</h1>
-            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '2px' }}>Sites web scrappables + magasins physiques ajoutés par les artisans</p>
+            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '2px' }}>Fiches publiques collectables + relevés de magasins, avec contrôle des prix</p>
           </div>
           {msg && (
             <div style={{ background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', color: '#2B6B3E' }}>
@@ -270,7 +271,7 @@ export default function AdminSourcesPage() {
                   onToggle={() => toggleExpand(src.id)}
                   onVerify={() => verify(src.id)}
                   onDelete={() => remove(src.id)}
-                  onScrape={src.scraper_type === 'jumia' && src.access_status !== 'blocked' ? () => triggerScrape(src) : undefined}
+                  onScrape={(src.scraper_type === 'public_catalogue' || src.scraper_type === 'jumia') && src.access_status !== 'blocked' ? () => triggerScrape(src) : undefined}
                   onConfirmMaterial={(mid) => confirmMaterial(mid, src.id)}
                 />
               ))}
@@ -350,9 +351,9 @@ function SourceCard({
               : <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: '#F5F7FA', color: '#6B7280', fontWeight: 600, border: '1px solid #E2E8F0' }}>En attente</span>
             }
             {source.is_partner && <span>Partenaire AfriOne confirmé</span>}
-            {source.access_status && <span style={{fontSize:11}}>Accès : {source.access_status === 'blocked' ? 'automatisation bloquée' : source.access_status === 'unreachable' ? 'site non accessible au dernier contrôle' : 'à contrôler'}</span>}
+            {source.access_status && <span style={{fontSize:11}}>Accès : {source.access_status === 'blocked' ? 'automatisation bloquée' : source.access_status === 'unreachable' ? 'site non accessible au dernier contrôle' : source.access_status === 'available' ? 'site accessible au dernier contrôle' : 'à contrôler'}</span>}
             {source.scraper_type && isWeb && (
-              <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.2)' }}>{source.scraper_type}</span>
+              <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.2)' }}>{source.scraper_type === 'public_catalogue' ? 'Fiches publiques' : source.scraper_type === 'manual' ? 'Relevé manuel' : source.scraper_type}</span>
             )}
           </div>
           <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>

@@ -1,3 +1,4 @@
+import { normalizeMetier } from './metier'
 import { materialObservationUsable } from './supplies'
 import { Agent, AgentInputItem, Runner, tool, withTrace, getGlobalTraceProvider } from "@openai/agents";
 import { z } from "zod";
@@ -130,14 +131,16 @@ const searchMaterialPrice = tool({
     // Articles admis seulement : un prix déclaré par un artisan et non encore
     // validé par un admin ne doit pas entrer dans un devis. Voir
     // src/lib/catalogue.ts.
-    const { data: cached } = await supabaseAdmin
+    const { data: cachedRows } = await supabaseAdmin
       .from('price_materials')
       .select('id, price_market, source, name, observed_at, last_scraped_at, source_url, price_provenance, added_by, confirmed_at, unit, stock_status')
       .ilike('name', `%${item}%`)
+      .eq('category',normalizeMetier(category)??category)
+      .gte('observed_at',new Date(Date.now()-30*86400000).toISOString())
       .or(FILTRE_CATALOGUE_VALIDE)
-      .order('id', { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .order('observed_at', { ascending: false })
+      .limit(50);
+    const cached = cachedRows?.find(row=>materialObservationUsable(row)&&row.stock_status!=='unavailable');
 
     if (cached && materialObservationUsable(cached) && cached.stock_status !== 'unavailable') {
       return { item, qty, price_unit: cached.price_market, total: cached.price_market * qty, source: cached.source || 'Base AfriOne', source_url:cached.source_url, observed_at:cached.observed_at || cached.last_scraped_at, unit:cached.unit, price_provenance:cached.price_provenance, product_name: cached.name, is_fallback: false };
