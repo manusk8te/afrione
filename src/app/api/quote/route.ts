@@ -12,5 +12,7 @@ export async function GET(req:NextRequest){
  if(!mission?.total_price||!diag)return NextResponse.json({error:'Revenez au diagnostic pour confirmer le prix de votre demande.'},{status:409})
  let raw:any={};try{raw=JSON.parse(diag.raw_text||'{}')}catch{}
  const sources=raw.afrione_pricing?.price_context?.sources??[]
- return NextResponse.json({total:mission.total_price,sources,supplies:describeSupplies(sources),indicative:true})
+ const {data:products,error:productError}=await supabaseAdmin.from('diagnostic_product_selections').select('id,item,quantity,offer,selected_at').eq('mission_id',id)
+ if(productError)return NextResponse.json({error:'Choix de fournitures indisponibles'},{status:503})
+ return NextResponse.json({selected_products:products??[],total:mission.total_price,sources,supplies:describeSupplies(sources),indicative:true})
 }

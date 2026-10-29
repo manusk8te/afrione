@@ -1945,6 +1945,10 @@ export default function WarRoomPage() {
             </div>
 
             {/* Infos clés */}
+            {diagData.selected_products?.length>0 && <section style={{padding:10,border:'1px solid #E2E8F0',borderRadius:10,marginBottom:8,fontSize:12}}>
+              <strong>Produits choisis dans le diagnostic</strong>
+              {diagData.selected_products.map((p:any)=><p key={p.id}><a href={p.offer.source_url} target="_blank" rel="noopener noreferrer" style={{textDecoration:'underline'}}>{p.offer.name} — {p.offer.source}</a> · {p.offer.price.toLocaleString('fr-FR')} FCFA / {p.offer.unit} · compatibilité à confirmer</p>)}
+            </section>}
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'5px',marginBottom:'8px'}}>
               <div style={{background:'#F5F7FA',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'11px',fontWeight:700,color:'#3D4852',marginBottom:'1px'}}>{diagData.category || '—'}</div>

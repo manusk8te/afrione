@@ -60,6 +60,9 @@ export async function GET(req: NextRequest) {
 
   if (!diag) return NextResponse.json({ diag: null, participants, ...viewerPayload })
 
+  const {data:products,error:productError}=await supabaseAdmin.from('diagnostic_product_selections').select('id,item,quantity,offer,selected_at').eq('mission_id',viewer.mission.id)
+  if(productError)return NextResponse.json({error:'Fournitures du diagnostic indisponibles'},{status:503})
+
   let rawCtx: any = {}
   try { rawCtx = JSON.parse(diag.raw_text || '{}') } catch {}
 
@@ -72,6 +75,7 @@ export async function GET(req: NextRequest) {
       price_min:         diag.estimated_price_min,
       price_max:         diag.estimated_price_max,
       items_needed:      diag.items_needed || [],
+      selected_products: products || [],
       duration_estimate: rawCtx.duration_estimate || '',
       photos:            rawCtx.photos || [],
       afrione_pricing:   rawCtx.afrione_pricing || null,

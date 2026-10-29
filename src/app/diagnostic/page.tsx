@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Camera, Send, RotateCcw, CheckCircle, Zap, AlertCircle, Clock, Wrench, X, ChevronRight } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
+import DiagnosticProducts from '@/components/pricing/DiagnosticProducts'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import PriceContextCard, { type PriceContextView } from '@/components/pricing/PriceContextCard'
@@ -110,9 +111,6 @@ export default function DiagnosticPage() {
   const [pricingLoading, setPricingLoading] = useState(false)
   const [pricingError, setPricingError] = useState<string | null>(null)
   const [pricingClarification, setPricingClarification] = useState('')
-  const [materialTiers, setMaterialTiers]   = useState<any[]>([])
-  const [selectedTiers, setSelectedTiers]   = useState<Record<string, 'economique'|'standard'|'premium'>>({})
-  const [marketRef, setMarketRef]           = useState<number | null>(null)
   const [refineText, setRefineText]   = useState('')
   const [refining, setRefining]       = useState(false)
   const [navigating, setNavigating]   = useState(false)
@@ -232,7 +230,7 @@ export default function DiagnosticPage() {
    */
   const fetchPricing = async (diagResult: DiagResult, force = false) => {
     if(!diagResult.duration_estimate || (diagResult.diagnostic_status && diagResult.diagnostic_status!=='preliminary')){
-      setPricing(null);setBasePricing(null);setMaterialTiers([]);setPricingLoading(false)
+      setPricing(null);setBasePricing(null);setPricingLoading(false)
       setPricingError('Une vérification par le prestataire est nécessaire avant de chiffrer cette intervention.');return
     }
     // Ne pas recalculer si un prix est déjà en cache pour cette session
@@ -246,20 +244,14 @@ export default function DiagnosticPage() {
         setPricing(c)
         setBasePricing(c)
         setPricingLoading(false)
-        const names=(diagResult.items_needed||[]).map((i:any)=>typeof i==='string'?i:i.name).filter(Boolean).slice(0,4)
-        if(names.length){
-          try{const response=await clientApi(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(JSON.stringify(names))}`);if(response.ok){const data=await response.json();setMaterialTiers(data.materials||[])}}catch{setMaterialTiers([])}
-        }
         return
       } catch {}
     }
     setPricing(null)
-    setMaterialTiers([])
     setPricingLoading(true)
     try {
       const itemNames = (diagResult.items_needed || []).map((i: any) => typeof i === 'string' ? i : i.name).filter(Boolean)
-      const [pricingRes, tiersRes] = await Promise.all([
-        clientApi('/api/pricing-agent', {
+      const pricingRes = await clientApi('/api/pricing-agent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -271,11 +263,7 @@ export default function DiagnosticPage() {
             quartier:       quartier || 'Cocody',
             items_needed:   itemNames,
           }),
-        }),
-        itemNames.length > 0
-          ? clientApi(`/api/materials?category=${encodeURIComponent(diagResult.category)}&items=${encodeURIComponent(JSON.stringify(itemNames.slice(0,4)))}&client_quartier=${encodeURIComponent(quartier || 'Cocody')}`)
-          : Promise.resolve(null),
-      ])
+        })
       if (pricingRes.ok) {
         const d = await pricingRes.json()
         if (typeof d.total !== 'number' || !Number.isFinite(d.total) || d.total <= 0) {
@@ -303,57 +291,10 @@ export default function DiagnosticPage() {
         const failure = await pricingRes.json().catch(() => null)
         setPricingError(failure?.status === 'informations_requises' ? failure.error : 'Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
       }
-      if (tiersRes?.ok) {
-        const td = await tiersRes.json()
-        setMaterialTiers(td.materials || [])
-        if (td.market_reference_fcfa) setMarketRef(td.market_reference_fcfa)
-        const defaults: Record<string, 'economique'|'standard'|'premium'> = {}
-        for (const m of td.materials || []) defaults[m.name] = 'standard'
-        setSelectedTiers(defaults)
-      }
     } catch {
       setPricingError('Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
     }
     setPricingLoading(false)
-  }
-
-  // Recalcule localement quand le client change un tier matériau.
-  // On ajoute uniquement le DELTA (tier sélectionné − tier par défaut "standard")
-  // sur le prix de base de l'IA — on ne remplace jamais son estimation matériaux.
-  const updatePricingForTier = (diagResult: DiagResult, tiers: Record<string, 'economique'|'standard'|'premium'>) => {
-    if (!basePricing || basePricing.applied_estimator === 'context_v4') return
-    const delta = materialTiers.reduce((sum: number, mat: any) => {
-      const selectedTier = tiers[mat.name] || 'standard'
-      const defaultTier  = 'standard'
-      if (selectedTier === defaultTier) return sum
-      const getPrice = (t: string) => {
-        const d = mat.tiers?.[t]
-        return (d?.price_unit ?? d?.price_market ?? 0) * (mat.qty || 1)
-      }
-      return sum + getPrice(selectedTier) - getPrice(defaultTier)
-    }, 0)
-    const newMat     = (basePricing.decomp.materials ?? 0) + delta
-    const subtotal   = (basePricing.decomp.labor ?? 0) + newMat + (basePricing.decomp.transport ?? 0)
-    const commission = Math.round(subtotal * 0.10)
-    const assurance  = Math.round(subtotal * 0.02)
-    const total      = subtotal + commission + assurance
-    const updated: PricingData = {
-      ...basePricing,
-      estimate:        total,
-      interval:        { low: Math.round(total * 0.92), high: Math.round(total * 1.08) },
-      decomp:          { ...basePricing.decomp, materials: newMat, premium: commission + assurance },
-      artisan_percoit: Math.round(total * 0.88),
-    }
-    setPricing(updated)
-    const cacheKey = `afrione_context_v4_saved_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
-    try { sessionStorage.setItem(cacheKey, JSON.stringify(updated)) } catch {}
-    if (diagResult.mission_id) {
-      fetch('/api/pricing-save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mission_id: diagResult.mission_id, pricing: updated }),
-      }).catch(() => {})
-    }
   }
 
   // ── Génère le résumé final ──
@@ -817,139 +758,7 @@ export default function DiagnosticPage() {
               </p>
             </div>
 
-            {materialTiers.length > 0 && (
-              <section style={{background:'#FFF',border:'1px solid #E2E8F0',borderRadius:20,padding:20}}>
-                <h3 style={{fontWeight:700,marginBottom:8}}>Fournitures : prix trouvés sur les sites</h3>
-                <p style={{fontSize:12,color:'#64748B',marginBottom:12}}>Prix indicatifs séparés de la prestation. Vérifiez le modèle et le conditionnement ; livraison à confirmer. Recherche réutilisée pendant une heure, sans ajout au catalogue.</p>
-                {materialTiers.slice(0,4).map((mat:any)=>(
-                  <div key={mat.name} style={{marginTop:12}}>
-                    <strong>{mat.name}</strong>
-                    {mat.comparison_references?.map((ref:any)=><p key={ref.url} style={{fontSize:12,marginTop:6}}><a href={ref.url} target="_blank" rel="noopener noreferrer" style={{textDecoration:'underline'}}>{ref.source}</a> — {ref.note}</p>)}
-                    {mat.offers?.length ? mat.offers.slice(0,3).map((offer:any)=>(
-                      <div key={offer.source_url} style={{padding:'8px 0',fontSize:13}}>
-                        <a href={offer.source_url} target="_blank" rel="noopener noreferrer" style={{color:'#B45309'}}>{offer.name} — {offer.source}</a>
-                        <div>{offer.price.toLocaleString('fr-FR')} FCFA / {offer.unit}</div>
-                        <small>Consulté le {new Date(offer.observed_at).toLocaleString('fr-FR')} · compatibilité à confirmer</small>
-                      </div>
-                    )) : <p style={{fontSize:12,color:'#64748B'}}>{mat.note || 'Aucune offre publique exploitable ; fourniture à confirmer.'}</p>}
-                  </div>
-                ))}
-              </section>
-            )}
-
-            {/* Sélecteur qualité matériaux */}
-            {materialTiers.length > 0 && pricing?.applied_estimator !== 'context_v4' && (
-              <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '20px', boxShadow: NEU_SHADOW }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'Tahoma' }}>
-                  QUALITÉ DES MATÉRIAUX
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {materialTiers.slice(0, 4).map((mat: any) => {
-                    const TIER_COLORS = { economique: '#2B6B3E', standard: '#C9A84C', premium: '#E85D26' } as const
-                    const TIER_LABELS = { economique: 'Éco', standard: 'Standard', premium: 'Premium' } as const
-                    const activeTierKey = selectedTiers[mat.name] || 'standard'
-                    const activeTierData = mat.tiers[activeTierKey]
-                    const isJumia = activeTierData?.source === 'Jumia CI'
-                    const hasPhoto = !!activeTierData?.photo_url
-                    const hasVendorQuartier = !isJumia && !!activeTierData?.vendor_quartier
-                    return (
-                      <div key={mat.name}>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#3D4852', marginBottom: '7px' }}>{mat.name}</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                          {(['economique', 'standard', 'premium'] as const).map(tier => {
-                            const t = mat.tiers[tier]
-                            if(!t)return null
-                            const active = activeTierKey === tier
-                            const color = TIER_COLORS[tier]
-                            return (
-                              <button key={tier} onClick={() => {
-                                if (activeTierKey === tier) return
-                                const next = { ...selectedTiers, [mat.name]: tier }
-                                setSelectedTiers(next)
-                                updatePricingForTier(result!, next)
-                              }} style={{
-                                padding: '9px 4px', borderRadius: '12px', cursor: 'pointer', textAlign: 'center',
-                                border: `1.5px solid ${active ? color : '#E2E8F0'}`,
-                                background: active ? `${color}12` : '#FFFFFF',
-                                transition: 'all 0.14s',
-                                boxShadow: active ? 'none' : NEU_SMALL,
-                              }}>
-                                <div style={{ fontSize: '9px', fontWeight: 700, color: active ? color : '#8B95A5', letterSpacing: '0.06em' }}>{TIER_LABELS[tier]}</div>
-                                <div style={{ fontSize: '12px', fontWeight: 700, color: active ? color : '#3D4852', marginTop: '3px', fontFamily: 'Tahoma' }}>
-                                  {t?.price_market?.toLocaleString('fr') ?? '—'}
-                                </div>
-                                {t?.brand && (
-                                  <div style={{ fontSize: '8px', color: '#8B95A5', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.brand}</div>
-                                )}
-                              </button>
-                            )
-                          })}
-                        </div>
-
-                        {/* Carte produit */}
-                        {(hasPhoto || hasVendorQuartier) && (() => {
-                          const proximityColor = hasVendorQuartier && activeTierData.km_to_client <= 3 ? '#2B6B3E' : '#C9A84C'
-                          const proximityBg    = hasVendorQuartier && activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.06)' : 'rgba(201,168,76,0.06)'
-                          const proximityBd    = hasVendorQuartier && activeTierData.km_to_client <= 3 ? 'rgba(43,107,62,0.15)' : 'rgba(201,168,76,0.15)'
-                          return (
-                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: hasPhoto ? '#F5F7FA' : proximityBg, borderRadius: '10px', border: `1px solid ${hasPhoto ? '#E2E8F0' : proximityBd}` }}>
-
-                              {hasPhoto ? (
-                                <a href={activeTierData.source_url || '#'} target="_blank" rel="noreferrer" style={{ flexShrink: 0, display: 'block', lineHeight: 0 }}>
-                                  <img
-                                    src={activeTierData.photo_url}
-                                    alt={mat.name}
-                                    style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', background: '#E2E8F0', display: 'block' }}
-                                    onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                  />
-                                </a>
-                              ) : (
-                                <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: proximityBg, border: `1px solid ${proximityBd}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
-                                  {materialEmoji(mat.name)}
-                                </div>
-                              )}
-
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '11px', fontWeight: 600, color: '#3D4852', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {activeTierData.brand || mat.name}
-                                </div>
-                                {hasPhoto && activeTierData.source_url && (
-                                  <a href={activeTierData.source_url} target="_blank" rel="noreferrer" className="afrione-gradient-text" style={{ fontSize: '11px', fontWeight: 600, textDecoration: 'none' }}>
-                                    Voir sur Jumia CI →
-                                  </a>
-                                )}
-                                {hasVendorQuartier && (
-                                  <div style={{ fontSize: '10px', color: proximityColor, fontWeight: 500 }}>
-                                    📍 {activeTierData.vendor_quartier}
-                                    {activeTierData.km_to_client != null && <span style={{ color: '#6B7280', fontWeight: 400 }}> · {activeTierData.km_to_client} km de vous</span>}
-                                  </div>
-                                )}
-                              </div>
-
-                              <span className={hasPhoto ? 'afrione-gradient-text' : ''} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '20px', flexShrink: 0, whiteSpace: 'nowrap', background: hasPhoto ? 'rgba(232,93,38,0.07)' : proximityBg, color: hasPhoto ? undefined : proximityColor, border: `1px solid ${hasPhoto ? 'rgba(232,93,38,0.15)' : proximityBd}` }}>
-                                {hasPhoto ? 'Jumia CI' : activeTierData.vendor_quartier}
-                              </span>
-                            </div>
-                          )
-                        })()}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Badge économies */}
-                {pricing?.below_market && pricing.savings_vs_market != null && pricing.savings_vs_market > 0 && (
-                  <div style={{ marginTop: '14px', background: 'rgba(43,107,62,0.06)', border: '1px solid rgba(43,107,62,0.15)', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>💰</span>
-                    <div style={{ fontSize: '12px', color: '#2B6B3E', fontWeight: 600 }}>
-                      Vous économisez{' '}
-                      <span style={{ fontFamily: 'Tahoma' }}>{pricing.savings_vs_market.toLocaleString('fr')} FCFA</span>
-                      {' '}vs le marché traditionnel
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            <DiagnosticProducts key={result.mission_id} missionId={result.mission_id} items={result.items_needed} />
 
             {/* Matériel probable */}
             {result.items_needed.length > 0 && (
@@ -1024,7 +833,7 @@ export default function DiagnosticPage() {
               }
             </button>
 
-            <button onClick={() => { setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null); setMaterialTiers([]) }} style={{
+            <button onClick={() => { setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null);  }} style={{
               padding: '13px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '14px',
               fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#6B7280',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
