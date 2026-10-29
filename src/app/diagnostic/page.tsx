@@ -768,7 +768,7 @@ export default function DiagnosticPage() {
             </div>
 
             <DiagnosticProducts key={`products:${result.mission_id}`} missionId={result.mission_id} items={result.items_needed} onChanged={()=>setQuoteRevision(v=>v+1)} />
-            <ClientQuote key={`quote:${result.mission_id}`} missionId={result.mission_id} revision={quoteRevision+(pricing?.estimate??0)} />
+            <ClientQuote key={`quote:${result.mission_id}:${quoteRevision}`} missionId={result.mission_id} revision={quoteRevision+(pricing?.estimate??0)} />
 
             {/* Matériel probable */}
             {result.items_needed.length > 0 && (
