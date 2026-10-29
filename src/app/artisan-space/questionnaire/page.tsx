@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { ArrowLeft, Plus, Trash2, Check, ChevronRight, ChevronLeft, ClipboardList } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const QUARTIERS = [
   'Adjamé','Koumassi','Yopougon','Cocody','Plateau','Marcory',
@@ -46,11 +46,11 @@ const emptyMaterial = (): Material => ({
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: '#F5F7FA',
-  border: '1px solid #E2E8F0',
+  background: 'var(--ui-canvas)',
+  border: '1px solid var(--ui-border)',
   borderRadius: '8px',
   fontSize: '14px',
-  color: '#3D4852',
+  color: 'var(--ui-ink)',
   outline: 'none',
   boxSizing: 'border-box',
 }
@@ -58,7 +58,7 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '11px',
-  color: '#6B7280',
+  color: 'var(--ui-muted)',
   marginBottom: '5px',
   textTransform: 'uppercase' as const,
   letterSpacing: '0.05em',
@@ -241,7 +241,7 @@ export default function ArtisanQuestionnairePage() {
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F7FA' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ui-canvas)' }}>
         <div style={{ width: '40px', height: '40px', border: '4px solid rgba(232,93,38,0.2)', borderTop: '4px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </div>
     )
@@ -250,16 +250,16 @@ export default function ArtisanQuestionnairePage() {
   // ── Success screen ────────────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }}>
         <div style={{ background: '#fff', borderRadius: '20px', padding: '40px', maxWidth: '480px', width: '100%', textAlign: 'center', boxShadow: NEU_SHADOW }}>
           <div style={{ width: '64px', height: '64px', background: 'rgba(43,107,62,0.12)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
             <Check size={32} color="#2B6B3E" />
           </div>
-          <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>Questionnaire soumis</h2>
-          <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: 1.7, marginBottom: '28px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '12px' }}>Questionnaire soumis</h2>
+          <p style={{ fontSize: '14px', color: 'var(--ui-muted)', lineHeight: 1.7, marginBottom: '28px' }}>
             Votre questionnaire est en attente de validation AfriOne. Nous examinerons vos informations et mettrons à jour votre profil sous 24–48h.
           </p>
-          <Link href="/artisan-space/dashboard"
+          <Link className="afrione-action" href="/artisan-space/dashboard"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: '#E85D26', color: 'white', borderRadius: '10px', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
             Retour au tableau de bord
           </Link>
@@ -278,7 +278,7 @@ export default function ArtisanQuestionnairePage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA', padding: '24px 16px', maxWidth: '680px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', padding: '24px 16px', maxWidth: '680px', margin: '0 auto' }}>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
@@ -286,8 +286,8 @@ export default function ArtisanQuestionnairePage() {
           <ArrowLeft size={20} />
         </Link>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', margin: 0 }}>Questionnaire artisan</h1>
-          <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>Renseignez vos informations pour optimiser votre profil</p>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', margin: 0 }}>Questionnaire artisan</h1>
+          <p style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '2px' }}>Renseignez vos informations pour optimiser votre profil</p>
         </div>
         <ClipboardList size={22} color="#E85D26" />
       </div>
@@ -316,11 +316,11 @@ export default function ArtisanQuestionnairePage() {
             <div style={{ fontSize: '13px', fontWeight: 700, color: statusBadge(existing.status).color }}>
               Questionnaire déjà soumis — {statusBadge(existing.status).label}
             </div>
-            <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '2px' }}>
               Soumis le {new Date(existing.submitted_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
             </div>
             {existing.admin_notes && (
-              <div style={{ fontSize: '12px', color: '#3D4852', marginTop: '6px', fontStyle: 'italic' }}>
+              <div style={{ fontSize: '12px', color: 'var(--ui-ink)', marginTop: '6px', fontStyle: 'italic' }}>
                 Note admin : {existing.admin_notes}
               </div>
             )}
@@ -338,7 +338,7 @@ export default function ArtisanQuestionnairePage() {
             <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
               <div style={{
                 width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: step > i + 1 ? '#2B6B3E' : step === i + 1 ? '#E85D26' : '#E2E8F0',
+                background: step > i + 1 ? '#2B6B3E' : step === i + 1 ? '#E85D26' : 'var(--ui-border)',
                 color: step >= i + 1 ? 'white' : '#8B95A5',
                 fontSize: '12px', fontWeight: 700, marginBottom: '4px',
                 transition: 'all 0.2s',
@@ -351,7 +351,7 @@ export default function ArtisanQuestionnairePage() {
             </div>
           ))}
         </div>
-        <div style={{ height: '4px', background: '#E2E8F0', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ height: '4px', background: 'var(--ui-border)', borderRadius: '2px', overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${((step - 1) / 3) * 100}%`, background: '#E85D26', borderRadius: '2px', transition: 'width 0.3s ease' }} />
         </div>
       </div>
@@ -363,9 +363,9 @@ export default function ArtisanQuestionnairePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
           {/* Années d'expérience */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Années d'expérience dans le métier</label>
-            <input
+            <input className="afrione-field"
               type="number" min={1} max={40}
               value={experienceYears}
               onChange={e => setExperienceYears(e.target.value === '' ? '' : Number(e.target.value))}
@@ -375,15 +375,15 @@ export default function ArtisanQuestionnairePage() {
           </div>
 
           {/* CNI */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Avez-vous une CNI (Carte Nationale d'Identité) ?</label>
             <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
               {[true, false].map(val => (
-                <button key={String(val)} onClick={() => setHasIdCard(val)}
+                <button className="afrione-action" key={String(val)} onClick={() => setHasIdCard(val)}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '14px',
-                    background: hasIdCard === val ? (val ? '#2B6B3E' : '#ef4444') : '#F5F7FA',
-                    color: hasIdCard === val ? 'white' : '#6B7280',
+                    background: hasIdCard === val ? (val ? '#2B6B3E' : '#ef4444') : 'var(--ui-canvas)',
+                    color: hasIdCard === val ? 'white' : 'var(--ui-muted)',
                     boxShadow: hasIdCard === val ? 'none' : NEU_SMALL,
                     transition: 'all 0.15s',
                   }}>
@@ -394,15 +394,15 @@ export default function ArtisanQuestionnairePage() {
           </div>
 
           {/* Attestation formation */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Avez-vous une attestation de formation professionnelle ?</label>
             <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
               {[true, false].map(val => (
-                <button key={String(val)} onClick={() => setHasTrainingCert(val)}
+                <button className="afrione-action" key={String(val)} onClick={() => setHasTrainingCert(val)}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '14px',
-                    background: hasTrainingCert === val ? (val ? '#2B6B3E' : '#ef4444') : '#F5F7FA',
-                    color: hasTrainingCert === val ? 'white' : '#6B7280',
+                    background: hasTrainingCert === val ? (val ? '#2B6B3E' : '#ef4444') : 'var(--ui-canvas)',
+                    color: hasTrainingCert === val ? 'white' : 'var(--ui-muted)',
                     boxShadow: hasTrainingCert === val ? 'none' : NEU_SMALL,
                     transition: 'all 0.15s',
                   }}>
@@ -413,7 +413,7 @@ export default function ArtisanQuestionnairePage() {
           </div>
 
           {/* Moyen de transport */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Moyen de transport pour vos déplacements</label>
             <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
               {[
@@ -421,11 +421,11 @@ export default function ArtisanQuestionnairePage() {
                 { id: 'moto',    label: '🏍️ Moto'     },
                 { id: 'voiture', label: '🚗 Voiture'  },
               ].map(({ id, label }) => (
-                <button key={id} onClick={() => setTransportMoyen(id)}
+                <button className="afrione-action" key={id} onClick={() => setTransportMoyen(id)}
                   style={{
                     flex: 1, minWidth: '90px', padding: '10px 8px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '13px',
-                    background: transportMoyen === id ? '#E85D26' : '#F5F7FA',
-                    color: transportMoyen === id ? 'white' : '#6B7280',
+                    background: transportMoyen === id ? '#E85D26' : 'var(--ui-canvas)',
+                    color: transportMoyen === id ? 'white' : 'var(--ui-muted)',
                     boxShadow: transportMoyen === id ? 'none' : NEU_SMALL,
                     transition: 'all 0.15s',
                   }}>
@@ -436,15 +436,15 @@ export default function ArtisanQuestionnairePage() {
           </div>
 
           {/* Zones d'intervention */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Zones d'intervention à Abidjan (sélectionnez toutes vos zones)</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
               {QUARTIERS.map(q => (
-                <button key={q} onClick={() => toggleZone(q)}
+                <button className="afrione-action" key={q} onClick={() => toggleZone(q)}
                   style={{
                     padding: '7px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
-                    background: zonesTravail.includes(q) ? '#E85D26' : '#F5F7FA',
-                    color: zonesTravail.includes(q) ? 'white' : '#6B7280',
+                    background: zonesTravail.includes(q) ? '#E85D26' : 'var(--ui-canvas)',
+                    color: zonesTravail.includes(q) ? 'white' : 'var(--ui-muted)',
                     boxShadow: zonesTravail.includes(q) ? 'none' : NEU_SMALL,
                     transition: 'all 0.15s',
                   }}>
@@ -468,7 +468,7 @@ export default function ArtisanQuestionnairePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
           {/* Heures par jour */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Combien d'heures travaillez-vous par jour en moyenne ?</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px' }}>
               <input
@@ -489,10 +489,10 @@ export default function ArtisanQuestionnairePage() {
           </div>
 
           {/* Revenus journaliers */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Pour une journée de travail typique, combien gagnez-vous ?</label>
             <div style={{ position: 'relative', marginTop: '4px' }}>
-              <input
+              <input className="afrione-field"
                 type="number" min={0}
                 value={dailyEarnings}
                 onChange={e => setDailyEarnings(e.target.value === '' ? '' : Number(e.target.value))}
@@ -501,7 +501,7 @@ export default function ArtisanQuestionnairePage() {
               />
               <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#8B95A5', fontWeight: 600 }}>FCFA</span>
             </div>
-            <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '6px' }}>
+            <p style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '6px' }}>
               Inclure le coût des matériaux si vous les fournissez, ou la main d'œuvre seule.
             </p>
           </div>
@@ -514,11 +514,11 @@ export default function ArtisanQuestionnairePage() {
             <div style={{ fontSize: '11px', color: '#E85D26', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '8px' }}>
               Taux horaire estimé (calculé automatiquement)
             </div>
-            <div style={{ fontSize: '32px', fontWeight: 700, color: '#3D4852' }}>
+            <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--ui-ink)' }}>
               {hourlyRate > 0 ? hourlyRate.toLocaleString('fr-FR') : '—'}
-              <span style={{ fontSize: '14px', fontWeight: 400, color: '#6B7280', marginLeft: '6px' }}>FCFA/h</span>
+              <span style={{ fontSize: '14px', fontWeight: 400, color: 'var(--ui-muted)', marginLeft: '6px' }}>FCFA/h</span>
             </div>
-            <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '6px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '6px' }}>
               Référence SMIG×2 : 866 FCFA/h (seuil minimum recommandé AfriOne)
             </div>
             {hourlyRate > 0 && hourlyRate < 866 && (
@@ -536,18 +536,18 @@ export default function ArtisanQuestionnairePage() {
       {step === 3 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '16px 20px', boxShadow: NEU_SMALL }}>
-            <p style={{ fontSize: '13px', color: '#6B7280', margin: 0, lineHeight: 1.6 }}>
-              Listez les <strong style={{ color: '#3D4852' }}>matériaux que vous utilisez le plus souvent</strong> avec leur prix habituel à Abidjan. Ces données nous aident à améliorer les devis pour tous.
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '16px 20px', boxShadow: NEU_SMALL }}>
+            <p style={{ fontSize: '13px', color: 'var(--ui-muted)', margin: 0, lineHeight: 1.6 }}>
+              Listez les <strong style={{ color: 'var(--ui-ink)' }}>matériaux que vous utilisez le plus souvent</strong> avec leur prix habituel à Abidjan. Ces données nous aident à améliorer les devis pour tous.
             </p>
           </div>
 
           {materials.map((mat, idx) => (
-            <div key={idx} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '16px 20px', boxShadow: NEU_SHADOW }}>
+            <div key={idx} style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '16px 20px', boxShadow: NEU_SHADOW }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <span style={{ fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>Matériau {idx + 1}</span>
                 {materials.length > 1 && (
-                  <button onClick={() => removeMaterial(idx)}
+                  <button className="afrione-action" onClick={() => removeMaterial(idx)}
                     style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#ef4444' }}>
                     <Trash2 size={13} />
                   </button>
@@ -556,7 +556,7 @@ export default function ArtisanQuestionnairePage() {
 
               <div style={{ marginBottom: '10px' }}>
                 <label style={labelStyle}>Nom du matériau *</label>
-                <input
+                <input className="afrione-field"
                   value={mat.name}
                   onChange={e => updateMaterial(idx, 'name', e.target.value)}
                   placeholder="Ex: Joint plomberie, Câble 2.5mm…"
@@ -567,14 +567,14 @@ export default function ArtisanQuestionnairePage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                 <div>
                   <label style={labelStyle}>Catégorie</label>
-                  <select value={mat.category} onChange={e => updateMaterial(idx, 'category', e.target.value)}
+                  <select className="afrione-field" value={mat.category} onChange={e => updateMaterial(idx, 'category', e.target.value)}
                     style={{ ...inputStyle }}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={labelStyle}>Unité</label>
-                  <select value={mat.unit} onChange={e => updateMaterial(idx, 'unit', e.target.value)}
+                  <select className="afrione-field" value={mat.unit} onChange={e => updateMaterial(idx, 'unit', e.target.value)}
                     style={{ ...inputStyle }}>
                     {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
@@ -584,7 +584,7 @@ export default function ArtisanQuestionnairePage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={labelStyle}>Prix unitaire (FCFA) *</label>
-                  <input
+                  <input className="afrione-field"
                     type="number" min={0}
                     value={mat.price_fcfa}
                     onChange={e => updateMaterial(idx, 'price_fcfa', e.target.value === '' ? '' : Number(e.target.value))}
@@ -594,7 +594,7 @@ export default function ArtisanQuestionnairePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>Qté par intervention</label>
-                  <input
+                  <input className="afrione-field"
                     type="number" min={1}
                     value={mat.qty_per_intervention}
                     onChange={e => updateMaterial(idx, 'qty_per_intervention', e.target.value === '' ? '' : Number(e.target.value))}
@@ -607,7 +607,7 @@ export default function ArtisanQuestionnairePage() {
           ))}
 
           {materials.length < 5 && (
-            <button onClick={addMaterial}
+            <button className="afrione-action" onClick={addMaterial}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 width: '100%', padding: '12px', borderRadius: '12px', cursor: 'pointer',
@@ -631,15 +631,15 @@ export default function ArtisanQuestionnairePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
           {/* Outillage propre */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Avez-vous votre propre outillage professionnel ?</label>
             <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
               {[true, false].map(val => (
-                <button key={String(val)} onClick={() => setHasOwnTools(val)}
+                <button className="afrione-action" key={String(val)} onClick={() => setHasOwnTools(val)}
                   style={{
                     flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '14px',
-                    background: hasOwnTools === val ? (val ? '#2B6B3E' : '#ef4444') : '#F5F7FA',
-                    color: hasOwnTools === val ? 'white' : '#6B7280',
+                    background: hasOwnTools === val ? (val ? '#2B6B3E' : '#ef4444') : 'var(--ui-canvas)',
+                    color: hasOwnTools === val ? 'white' : 'var(--ui-muted)',
                     boxShadow: hasOwnTools === val ? 'none' : NEU_SMALL,
                     transition: 'all 0.15s',
                   }}>
@@ -650,9 +650,9 @@ export default function ArtisanQuestionnairePage() {
           </div>
 
           {/* Description des outils */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Décrivez vos principaux outils de travail</label>
-            <textarea
+            <textarea className="afrione-field"
               value={toolsDescription}
               onChange={e => setToolsDescription(e.target.value)}
               placeholder="Ex: Clé à molette, pince multiprise, perceuse, multimètre…"
@@ -662,15 +662,15 @@ export default function ArtisanQuestionnairePage() {
           </div>
 
           {/* Types d'interventions */}
-          <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SHADOW }}>
             <label style={labelStyle}>Types d'interventions les plus fréquentes (sélectionnez-en au moins 1)</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
               {availableInterventions.map(i => (
-                <button key={i} onClick={() => toggleIntervention(i)}
+                <button className="afrione-action" key={i} onClick={() => toggleIntervention(i)}
                   style={{
                     padding: '7px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500,
-                    background: interventionTypes.includes(i) ? '#E85D26' : '#F5F7FA',
-                    color: interventionTypes.includes(i) ? 'white' : '#6B7280',
+                    background: interventionTypes.includes(i) ? '#E85D26' : 'var(--ui-canvas)',
+                    color: interventionTypes.includes(i) ? 'white' : 'var(--ui-muted)',
                     boxShadow: interventionTypes.includes(i) ? 'none' : NEU_SMALL,
                     transition: 'all 0.15s',
                   }}>
@@ -681,12 +681,12 @@ export default function ArtisanQuestionnairePage() {
           </div>
 
           {/* Submit */}
-          <button
+          <button className="afrione-action"
             onClick={handleSubmit}
             disabled={submitting || !canSubmit}
             style={{
               width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: canSubmit && !submitting ? 'pointer' : 'not-allowed',
-              background: canSubmit && !submitting ? '#E85D26' : '#E2E8F0',
+              background: canSubmit && !submitting ? '#E85D26' : 'var(--ui-border)',
               color: canSubmit && !submitting ? 'white' : '#8B95A5',
               fontSize: '15px', fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -710,10 +710,10 @@ export default function ArtisanQuestionnairePage() {
       {/* ── Navigation ── */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '28px' }}>
         {step > 1 && (
-          <button onClick={() => setStep(s => s - 1)}
+          <button className="afrione-action" onClick={() => setStep(s => s - 1)}
             style={{
-              flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #E2E8F0',
-              background: '#fff', color: '#6B7280', fontWeight: 600, fontSize: '14px',
+              flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid var(--ui-border)',
+              background: '#fff', color: 'var(--ui-muted)', fontWeight: 600, fontSize: '14px',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
               boxShadow: NEU_SMALL,
             }}>
@@ -721,7 +721,7 @@ export default function ArtisanQuestionnairePage() {
           </button>
         )}
         {step < 4 && (
-          <button
+          <button className="afrione-action"
             onClick={() => setStep(s => s + 1)}
             disabled={
               (step === 1 && !canNextStep1) ||
@@ -734,7 +734,7 @@ export default function ArtisanQuestionnairePage() {
                 (step === 1 && !canNextStep1) ||
                 (step === 2 && !canNextStep2) ||
                 (step === 3 && !canNextStep3)
-              ) ? '#E2E8F0' : '#E85D26',
+              ) ? 'var(--ui-border)' : '#E85D26',
               color: (
                 (step === 1 && !canNextStep1) ||
                 (step === 2 && !canNextStep2) ||

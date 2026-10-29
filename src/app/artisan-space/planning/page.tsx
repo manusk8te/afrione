@@ -3,8 +3,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ChevronLeft, ChevronRight, Check, X } from 'lucide-react'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const HOURS = ['08h', '09h', '10h', '11h', '12h', '13h', '14h', '15h', '16h', '17h', '18h']
@@ -27,14 +27,14 @@ export default function PlanningPage() {
     MISSIONS.find(m => m.day === dayIdx && m.hour === hour)
 
   return (
-    <div className="min-h-screen" style={{background:'#F5F7FA'}}>
+    <div className="min-h-screen" style={{background:'var(--ui-canvas)'}}>
       {/* Header bar */}
-      <div style={{background:'#FFFFFF',borderBottom:'1px solid #E2E8F0',boxShadow:NEU_SMALL}}>
+      <div style={{background:'#FFFFFF',borderBottom:'1px solid var(--ui-border)',boxShadow:NEU_SMALL}}>
         <div className="page-container py-4 flex items-center gap-3 max-w-3xl">
-          <Link href="/artisan-space/dashboard" style={{padding:'4px',borderRadius:'8px',display:'flex',alignItems:'center',color:'#6B7280',textDecoration:'none'}}>
+          <Link href="/artisan-space/dashboard" style={{padding:'4px',borderRadius:'8px',display:'flex',alignItems:'center',color:'var(--ui-muted)',textDecoration:'none'}}>
             <ArrowLeft size={18} />
           </Link>
-          <div className="font-display font-bold" style={{color:'#3D4852'}}>Mon Planning</div>
+          <div className="font-display font-bold" style={{color:'var(--ui-ink)'}}>Mon Planning</div>
         </div>
       </div>
 
@@ -43,25 +43,25 @@ export default function PlanningPage() {
 
           {/* Availability toggles */}
           <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',marginBottom:'24px'}}>
-            <h2 className="font-display font-bold" style={{color:'#3D4852',marginBottom:'16px'}}>Jours disponibles</h2>
+            <h2 className="font-display font-bold" style={{color:'var(--ui-ink)',marginBottom:'16px'}}>Jours disponibles</h2>
             <div className="flex gap-2 flex-wrap">
               {DAYS.map((d, i) => {
                 const key = d.toLowerCase().slice(0, 3)
                 const isAvail = available[key] ?? true
                 return (
-                  <button
+                  <button className="afrione-action"
                     key={d}
                     onClick={() => toggle(key)}
                     style={{
                       display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',
                       padding:'12px 16px',borderRadius:'12px',cursor:'pointer',transition:'all 0.2s',
-                      border: isAvail ? '2px solid #E85D26' : '2px solid #E2E8F0',
+                      border: isAvail ? '2px solid #E85D26' : '2px solid var(--ui-border)',
                       background: isAvail ? 'rgba(232,93,38,0.05)' : '#FFFFFF',
                       boxShadow: NEU_SMALL,
                       color: isAvail ? '#E85D26' : '#8B95A5',
                     }}
                   >
-                    <span style={{fontSize:'12px',fontFamily:'Tahoma',fontWeight:700}}>{d}</span>
+                    <span style={{fontSize:'12px',fontFamily: 'var(--font-body)',fontWeight:700}}>{d}</span>
                     {isAvail ? <Check size={14} /> : <X size={14} />}
                   </button>
                 )
@@ -72,18 +72,18 @@ export default function PlanningPage() {
           {/* Calendar week */}
           <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',overflowX:'auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
-              <h2 className="font-display font-bold" style={{color:'#3D4852'}}>Semaine en cours</h2>
+              <h2 className="font-display font-bold" style={{color:'var(--ui-ink)'}}>Semaine en cours</h2>
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                <button
+                <button className="afrione-action afrione-action--icon"
                   onClick={() => setWeek(w => w - 1)}
-                  style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px',border:'1px solid #E2E8F0',background:'#FFFFFF',boxShadow:NEU_SMALL,cursor:'pointer',color:'#6B7280'}}
+                  style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px',border:'1px solid var(--ui-border)',background:'#FFFFFF',boxShadow:NEU_SMALL,cursor:'pointer',color:'var(--ui-muted)'}}
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <span style={{fontFamily:'Tahoma',fontSize:'12px',color:'#8B95A5'}}>10 – 16 Mar 2025</span>
-                <button
+                <span style={{fontFamily: 'var(--font-body)',fontSize:'12px',color:'#8B95A5'}}>10 – 16 Mar 2025</span>
+                <button className="afrione-action afrione-action--icon"
                   onClick={() => setWeek(w => w + 1)}
-                  style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px',border:'1px solid #E2E8F0',background:'#FFFFFF',boxShadow:NEU_SMALL,cursor:'pointer',color:'#6B7280'}}
+                  style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'8px',border:'1px solid var(--ui-border)',background:'#FFFFFF',boxShadow:NEU_SMALL,cursor:'pointer',color:'var(--ui-muted)'}}
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -96,10 +96,10 @@ export default function PlanningPage() {
                 <div className="text-xs text-muted font-mono" />
                 {DAYS.map((d, i) => (
                   <div key={d} className="text-center">
-                    <div style={{fontSize:'12px',fontFamily:'Tahoma',color:'#8B95A5'}}>{d}</div>
+                    <div style={{fontSize:'12px',fontFamily: 'var(--font-body)',color:'#8B95A5'}}>{d}</div>
                     <div className={`text-sm font-bold mt-0.5 w-8 h-8 rounded-full flex items-center justify-center mx-auto ${
                       i === 0 ? 'afrione-gradient text-white' : ''
-                    }`} style={{color: i === 0 ? undefined : '#3D4852'}}>{10 + i}</div>
+                    }`} style={{color: i === 0 ? undefined : 'var(--ui-ink)'}}>{10 + i}</div>
                   </div>
                 ))}
               </div>
@@ -107,7 +107,7 @@ export default function PlanningPage() {
               {/* Hour rows */}
               {HOURS.map(h => (
                 <div key={h} className="grid grid-cols-8 gap-1 mb-1">
-                  <div style={{fontSize:'12px',fontFamily:'Tahoma',color:'#8B95A5',display:'flex',alignItems:'center',paddingRight:'8px'}}>{h}</div>
+                  <div style={{fontSize:'12px',fontFamily: 'var(--font-body)',color:'#8B95A5',display:'flex',alignItems:'center',paddingRight:'8px'}}>{h}</div>
                   {DAYS.map((d, i) => {
                     const mission = getMission(i, h)
                     const dayKey = d.toLowerCase().slice(0, 3)
@@ -119,7 +119,7 @@ export default function PlanningPage() {
                           mission ? mission.color + ' font-semibold text-center px-1 truncate' : ''
                         }`}
                         style={{
-                          background: !mission && !avail ? '#F5F7FA' : !mission && avail ? undefined : undefined,
+                          background: !mission && !avail ? 'var(--ui-canvas)' : !mission && avail ? undefined : undefined,
                           opacity: !mission && !avail ? 0.4 : 1,
                         }}
                         onMouseEnter={e => {
@@ -144,11 +144,11 @@ export default function PlanningPage() {
               { color: 'afrione-gradient', label: 'Mission confirmée' },
               { color: 'bg-accent2/20', label: 'Mission en cours' },
               { color: 'bg-gold/20', label: 'RDV' },
-              { colorStyle: '#F5F7FA', label: 'Non disponible' },
+              { colorStyle: 'var(--ui-canvas)', label: 'Non disponible' },
             ].map(item => (
               <div key={item.label} style={{display:'flex',alignItems:'center',gap:'6px'}}>
                 {'colorStyle' in item
-                  ? <div style={{width:'12px',height:'12px',borderRadius:'4px',background:item.colorStyle,border:'1px solid #E2E8F0'}} />
+                  ? <div style={{width:'12px',height:'12px',borderRadius:'4px',background:item.colorStyle,border:'1px solid var(--ui-border)'}} />
                   : <div className={`w-3 h-3 rounded ${item.color}`} />
                 }
                 {item.label}

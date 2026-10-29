@@ -4,8 +4,8 @@ import { RefreshCw, ChevronDown, ChevronRight, CheckCircle, XCircle, ExternalLin
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { supabase } from '@/lib/supabase'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 type AgentRun = {
   id: string
@@ -70,29 +70,29 @@ export default function AdminAgentPage() {
   const avgTools = runs.length ? (runs.reduce((s, r) => s + (r.steps || []).filter(x => x.type === 'tool_call').length, 0) / runs.length).toFixed(1) : '0'
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F5F7FA' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--ui-canvas)' }}>
       <AdminSidebar activeId="agent" />
 
-      <main className="flex-1 p-6" style={{ maxWidth: '1100px', minWidth: 0 }}>
+      <main className="afrione-admin-content flex-1 p-6" style={{ maxWidth: '1100px', minWidth: 0 }}>
 
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#3D4852' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)' }}>
               Agent IA — Journal des exécutions
             </h1>
-            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '2px' }}>
+            <p style={{ color: 'var(--ui-muted)', fontSize: '14px', marginTop: '2px' }}>
               Chaque run du pricing agent : prompt, appels d'outils, résultat, durée · conservé dans Supabase (table agent_runs)
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <a href="https://platform.openai.com/traces" target="_blank" rel="noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#FFF', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '12px', fontWeight: 600, color: '#3D4852', textDecoration: 'none', boxShadow: NEU_SMALL }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#FFF', borderRadius: '12px', border: '1.5px solid var(--ui-border)', fontSize: '12px', fontWeight: 600, color: 'var(--ui-ink)', textDecoration: 'none', boxShadow: NEU_SMALL }}>
               <ExternalLink size={13} /> Traces OpenAI
             </a>
-            <button onClick={load}
-              style={{ padding: '8px', background: '#FFF', borderRadius: '12px', border: '1.5px solid #E2E8F0', cursor: 'pointer', boxShadow: NEU_SMALL }}>
-              <RefreshCw size={14} style={{ color: '#6B7280' }} />
+            <button className="afrione-action" onClick={load}
+              style={{ padding: '8px', background: '#FFF', borderRadius: '12px', border: '1.5px solid var(--ui-border)', cursor: 'pointer', boxShadow: NEU_SMALL }}>
+              <RefreshCw size={14} style={{ color: 'var(--ui-muted)' }} />
             </button>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function AdminAgentPage() {
             { label: 'Outils / run', value: avgTools },
           ].map(s => (
             <div key={s.label} style={{ background: '#FFF', borderRadius: '14px', padding: '14px', textAlign: 'center', boxShadow: NEU_SMALL }}>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', fontFamily: 'Tahoma' }}>{s.value}</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-body)' }}>{s.value}</div>
               <div style={{ fontSize: '10px', color: '#8B95A5', marginTop: '2px', letterSpacing: '0.05em' }}>{s.label}</div>
             </div>
           ))}
@@ -139,27 +139,27 @@ export default function AdminAgentPage() {
                 <div key={run.id} style={{ background: '#FFF', borderRadius: '16px', boxShadow: NEU_SMALL, overflow: 'hidden', border: failed ? '1.5px solid rgba(220,38,38,0.3)' : '1.5px solid transparent' }}>
 
                   {/* Ligne résumé */}
-                  <button onClick={() => setExpanded(isOpen ? null : run.id)}
+                  <button className="afrione-action" onClick={() => setExpanded(isOpen ? null : run.id)}
                     style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                     {isOpen ? <ChevronDown size={15} color="#8B95A5" /> : <ChevronRight size={15} color="#8B95A5" />}
                     {failed
                       ? <XCircle size={15} color="#dc2626" />
                       : <CheckCircle size={15} color="#16a34a" />}
-                    <span style={{ fontWeight: 700, fontSize: '13px', color: '#3D4852', flexShrink: 0 }}>
+                    <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ui-ink)', flexShrink: 0 }}>
                       {run.input?.category || run.agent_name}
                     </span>
                     <span style={{ fontSize: '12px', color: '#8B95A5', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                       {run.input?.quartier} · {run.input?.urgency} · {run.input?.hours}h
                     </span>
                     {run.total_price != null && (
-                      <span style={{ fontFamily: 'Tahoma', fontSize: '13px', fontWeight: 700, color: '#E85D26', flexShrink: 0 }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: '#E85D26', flexShrink: 0 }}>
                         {Number(run.total_price).toLocaleString('fr')} F
                       </span>
                     )}
                     <span style={{ fontSize: '11px', color: '#8B95A5', display: 'inline-flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
                       <Clock size={11} /> {run.duration_ms ? `${(run.duration_ms / 1000).toFixed(1)}s` : '—'}
                     </span>
-                    <span style={{ fontSize: '10px', color: '#A0AEC0', fontFamily: 'Tahoma', flexShrink: 0 }}>
+                    <span style={{ fontSize: '10px', color: '#A0AEC0', fontFamily: 'var(--font-body)', flexShrink: 0 }}>
                       {new Date(run.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </button>
@@ -177,7 +177,7 @@ export default function AdminAgentPage() {
                       {/* Prompt */}
                       <div>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.08em', marginBottom: '6px' }}>PROMPT ENVOYÉ</div>
-                        <pre style={{ margin: 0, padding: '10px 12px', background: '#F5F7FA', borderRadius: '10px', fontSize: '11px', lineHeight: 1.6, whiteSpace: 'pre-wrap', color: '#3D4852', maxHeight: '180px', overflowY: 'auto' }}>
+                        <pre style={{ margin: 0, padding: '10px 12px', background: 'var(--ui-canvas)', borderRadius: '10px', fontSize: '11px', lineHeight: 1.6, whiteSpace: 'pre-wrap', color: 'var(--ui-ink)', maxHeight: '180px', overflowY: 'auto' }}>
                           {run.input?.prompt || JSON.stringify(run.input)}
                         </pre>
                       </div>
@@ -194,7 +194,7 @@ export default function AdminAgentPage() {
                                 {s.type === 'tool_call' ? (TOOL_ICONS[s.name || ''] || '🛠') : '↩️'}
                               </span>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '11px', fontWeight: 600, color: s.type === 'tool_call' ? '#3D4852' : '#6B7280', marginBottom: '3px' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 600, color: s.type === 'tool_call' ? 'var(--ui-ink)' : 'var(--ui-muted)', marginBottom: '3px' }}>
                                   {s.type === 'tool_call' ? `${s.name}(…)` : `résultat ${s.name || ''}`}
                                 </div>
                                 <JsonBlock data={s.type === 'tool_call' ? s.arguments : s.output} />

@@ -22,7 +22,7 @@ export default function PriceContextCard({ context, applied = false }: { context
   return (
     <section aria-label="Repère tarifaire contextualisé" style={{ background: '#FFF9F3', border: '1px solid #F0C8AE', borderRadius: '20px', padding: '22px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        <h2 style={{ fontSize: '15px', color: '#3D4852', fontWeight: 700, margin: 0 }}>Repère de prix pour votre demande</h2>
+        <h2 style={{ fontSize: '15px', color: 'var(--ui-ink)', fontWeight: 700, margin: 0 }}>Repère de prix pour votre demande</h2>
         <span style={{ color: '#975326', background: '#FFF0DF', borderRadius: '20px', padding: '4px 9px', fontSize: '11px' }}>À confirmer par un prestataire</span>
       </div>
       {hasEstimate ? (
@@ -30,7 +30,7 @@ export default function PriceContextCard({ context, applied = false }: { context
           <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', margin: '20px 0 12px' }}>
             <div>
               <dt style={{ color: '#697586', fontSize: '12px' }}>Référence adaptée à la Côte d’Ivoire</dt>
-              <dd style={{ margin: '5px 0 0', color: '#3D4852', fontSize: '21px', fontWeight: 600 }}>{amount(central!)} FCFA</dd>
+              <dd style={{ margin: '5px 0 0', color: 'var(--ui-ink)', fontSize: '21px', fontWeight: 600 }}>{amount(central!)} FCFA</dd>
             </div>
             <div>
               <dt style={{ color: '#697586', fontSize: '12px' }}>Proposition indicative issue de l’étude</dt>

@@ -7,8 +7,8 @@ import { supabase } from '@/lib/supabase'
 import { Store, Plus, Package, ChevronDown, ChevronUp, MapPin, Check, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const CATEGORIES = ['Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Carrelage', 'Serrurerie']
 const QUARTIERS  = ['Adjamé','Koumassi','Yopougon','Cocody','Plateau','Marcory','Treichville','Abobo','Port-Bouët','Attécoubé','Bingerville','Anyama']
@@ -133,15 +133,15 @@ export default function ArtisanMateriauxPage() {
   const magasins = sources.filter(s => s.type === 'magasin')
 
   return (
-    <div className="min-h-screen" style={{ background: '#F5F7FA', maxWidth: '700px', margin: '0 auto', padding: '24px 16px' }}>
+    <div className="min-h-screen" style={{ background: 'var(--ui-canvas)', maxWidth: '700px', margin: '0 auto', padding: '24px 16px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <Link href="/artisan-space/dashboard" style={{ color: '#8B95A5', display: 'flex', alignItems: 'center' }}>
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852' }}>Prix matériaux</h1>
-          <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>Partagez les prix que vous observez dans les magasins d'Abidjan</p>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)' }}>Prix matériaux</h1>
+          <p style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '2px' }}>Partagez les prix que vous observez dans les magasins d'Abidjan</p>
         </div>
       </div>
 
@@ -161,12 +161,12 @@ export default function ArtisanMateriauxPage() {
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
         {(['browse', 'new-store'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={tab === t ? 'afrione-gradient' : ''}
+            className={(tab === t ? 'afrione-gradient' : '') + ' afrione-action'}
             style={{
               padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none',
               background: tab === t ? undefined : '#FFFFFF',
               boxShadow: tab === t ? 'none' : NEU_SMALL,
-              color: tab === t ? 'white' : '#6B7280',
+              color: tab === t ? 'white' : 'var(--ui-muted)',
             }}>
             {t === 'browse' ? <><Package size={13} style={{ display: 'inline', marginRight: '6px' }} />Magasins</> : <><Plus size={13} style={{ display: 'inline', marginRight: '6px' }} />Ajouter un magasin</>}
           </button>
@@ -175,25 +175,25 @@ export default function ArtisanMateriauxPage() {
 
       {/* ── TAB : NOUVEAU MAGASIN ─────────────────────────────────────────────── */}
       {tab === 'new-store' && (
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '20px', boxShadow: NEU_SHADOW }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '16px', color: '#3D4852' }}>Nouveau magasin</h2>
-          <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px', lineHeight: 1.6 }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '20px', padding: '20px', boxShadow: NEU_SHADOW }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '16px', color: 'var(--ui-ink)' }}>Nouveau magasin</h2>
+          <p style={{ fontSize: '12px', color: 'var(--ui-muted)', marginBottom: '16px', lineHeight: 1.6 }}>
             Vous connaissez un magasin de matériaux à Abidjan ? Ajoutez-le ici. Une fois validé par l'équipe AfriOne, n'importe quel artisan pourra y ajouter des articles avec leurs prix.
           </p>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nom du magasin *</label>
-            <input value={storeName} onChange={e => setStoreName(e.target.value)} placeholder="ex: Quincaillerie Centrale Adjamé"
-              style={{ width: '100%', padding: '10px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+            <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nom du magasin *</label>
+            <input className="afrione-field" value={storeName} onChange={e => setStoreName(e.target.value)} placeholder="ex: Quincaillerie Centrale Adjamé"
+              style={{ width: '100%', padding: '10px 12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '8px', color: 'var(--ui-ink)', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
           </div>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quartier *</label>
+            <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quartier *</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {QUARTIERS.map(q => (
                 <button key={q} onClick={() => setStoreQuartier(q)}
-                  className={storeQuartier === q ? 'afrione-gradient' : ''}
-                  style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', border: 'none', fontWeight: storeQuartier === q ? 600 : 400, background: storeQuartier === q ? undefined : '#F5F7FA', boxShadow: storeQuartier === q ? 'none' : NEU_SMALL, color: storeQuartier === q ? 'white' : '#6B7280' }}>
+                  className={(storeQuartier === q ? 'afrione-gradient' : '') + ' afrione-action'}
+                  style={{ padding: '5px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', border: 'none', fontWeight: storeQuartier === q ? 600 : 400, background: storeQuartier === q ? undefined : 'var(--ui-canvas)', boxShadow: storeQuartier === q ? 'none' : NEU_SMALL, color: storeQuartier === q ? 'white' : 'var(--ui-muted)' }}>
                   {q}
                 </button>
               ))}
@@ -201,13 +201,13 @@ export default function ArtisanMateriauxPage() {
           </div>
 
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Précisions (adresse, spécialité…)</label>
-            <input value={storeNotes} onChange={e => setStoreNotes(e.target.value)} placeholder="ex: En face du marché, spécialisé plomberie et sanitaire"
-              style={{ width: '100%', padding: '10px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+            <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Précisions (adresse, spécialité…)</label>
+            <input className="afrione-field" value={storeNotes} onChange={e => setStoreNotes(e.target.value)} placeholder="ex: En face du marché, spécialisé plomberie et sanitaire"
+              style={{ width: '100%', padding: '10px 12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '8px', color: 'var(--ui-ink)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
           </div>
 
           <button onClick={submitStore} disabled={savingStore || !storeName.trim() || !storeQuartier}
-            className="afrione-gradient"
+            className="afrione-gradient afrione-action"
             style={{ width: '100%', padding: '12px', color: 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', opacity: savingStore || !storeName.trim() || !storeQuartier ? 0.5 : 1 }}>
             {savingStore ? 'Envoi…' : 'Soumettre le magasin'}
           </button>
@@ -220,12 +220,12 @@ export default function ArtisanMateriauxPage() {
           {loading ? (
             <div style={{ color: '#8B95A5', fontSize: '13px', textAlign: 'center', padding: '40px 0' }}>Chargement…</div>
           ) : magasins.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 16px', color: '#6B7280' }}>
+            <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--ui-muted)' }}>
               <Store size={36} style={{ margin: '0 auto 12px', opacity: 0.4, color: '#8B95A5' }} />
               <p style={{ fontSize: '14px', marginBottom: '8px' }}>Aucun magasin encore enregistré.</p>
               <p style={{ fontSize: '12px' }}>Soyez le premier à ajouter un magasin que vous connaissez !</p>
               <button onClick={() => setTab('new-store')}
-                className="afrione-gradient"
+                className="afrione-gradient afrione-action"
                 style={{ marginTop: '16px', padding: '10px 20px', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}>
                 Ajouter un magasin
               </button>
@@ -262,8 +262,8 @@ export default function ArtisanMateriauxPage() {
 }
 
 // ── MagasinCard ───────────────────────────────────────────────────────────────
-const NEU_SHADOW_CARD = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL_CARD  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW_CARD = 'var(--ui-shadow-card)'
+const NEU_SMALL_CARD  = 'var(--ui-shadow-soft)'
 
 function MagasinCard({
   source, expanded, onToggle,
@@ -290,7 +290,7 @@ function MagasinCard({
   const [evidence,setEvidence]=useState('')
   const [stock,setStock]=useState('unknown')
   return (
-    <div style={{ background: '#FFFFFF', border: `1px solid ${source.verified ? 'rgba(43,107,62,0.25)' : '#E2E8F0'}`, borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SHADOW_CARD }}>
+    <div style={{ background: '#FFFFFF', border: `1px solid ${source.verified ? 'rgba(43,107,62,0.25)' : 'var(--ui-border)'}`, borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SHADOW_CARD }}>
       {/* Store header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer' }} onClick={onToggle}>
         <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(232,93,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: NEU_SMALL_CARD }}>
@@ -299,14 +299,14 @@ function MagasinCard({
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 600, fontSize: '14px', color: '#3D4852' }}>{source.name}</span>
+            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ui-ink)' }}>{source.name}</span>
             {source.verified
               ? <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(43,107,62,0.1)', color: '#2B6B3E' }}>Vérifié</span>
               : <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(201,168,76,0.1)', color: '#C9A84C' }}>En validation</span>
             }
           </div>
           {source.quartier && (
-            <div style={{ fontSize: '12px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--ui-muted)', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
               <MapPin size={10} /> {source.quartier}
             </div>
           )}
@@ -317,64 +317,64 @@ function MagasinCard({
 
       {/* Expanded */}
       {expanded && (
-        <div style={{ borderTop: '1px solid #E2E8F0', padding: '14px 16px' }}>
+        <div style={{ borderTop: '1px solid var(--ui-border)', padding: '14px 16px' }}>
           {!addingArticle ? (
             <button onClick={onStartAdd}
-              className="afrione-gradient-text"
+              className="afrione-gradient-text afrione-action"
               style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600, width: '100%', justifyContent: 'center' }}>
               <Plus size={14} /> Ajouter un article avec son prix
             </button>
           ) : (
-            <div style={{ background: '#F5F7FA', borderRadius: '10px', padding: '14px', border: '1px solid #E2E8F0' }}>
-              <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: '#3D4852' }}>Nouvel article</h3>
+            <div style={{ background: 'var(--ui-canvas)', borderRadius: '10px', padding: '14px', border: '1px solid var(--ui-border)' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: 'var(--ui-ink)' }}>Nouvel article</h3>
 
               <div style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '3px' }}>Nom de l'article *</label>
-                <input value={artName} onChange={e => setArtName(e.target.value)} placeholder="ex: Robinet chromé simple"
-                  style={{ width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '7px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '3px' }}>Nom de l'article *</label>
+                <input className="afrione-field" value={artName} onChange={e => setArtName(e.target.value)} placeholder="ex: Robinet chromé simple"
+                  style={{ width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '7px', color: 'var(--ui-ink)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '3px' }}>Catégorie</label>
-                  <select value={artCategory} onChange={e => setArtCategory(e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '7px', color: '#3D4852', fontSize: '13px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '3px' }}>Catégorie</label>
+                  <select className="afrione-field" value={artCategory} onChange={e => setArtCategory(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '7px', color: 'var(--ui-ink)', fontSize: '13px' }}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '3px' }}>Unité</label>
-                  <select value={artUnit} onChange={e => setArtUnit(e.target.value)}
-                    style={{ width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '7px', color: '#3D4852', fontSize: '13px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '3px' }}>Unité</label>
+                  <select className="afrione-field" value={artUnit} onChange={e => setArtUnit(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '7px', color: 'var(--ui-ink)', fontSize: '13px' }}>
                     {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
                 </div>
               </div>
 
               <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '3px' }}>Prix observé en magasin (FCFA) *</label>
-                <input
+                <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '3px' }}>Prix observé en magasin (FCFA) *</label>
+                <input className="afrione-field"
                   type="number" value={artPrice} onChange={e => setArtPrice(e.target.value)}
                   placeholder="ex: 3500"
-                  style={{ width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '7px', color: '#3D4852', fontSize: '14px', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
-                <p style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>C'est le prix que vous avez vu sur l'étiquette ou que le vendeur vous a donné.</p>
+                  style={{ width: '100%', padding: '8px 10px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '7px', color: 'var(--ui-ink)', fontSize: '14px', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} />
+                <p style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px' }}>C'est le prix que vous avez vu sur l'étiquette ou que le vendeur vous a donné.</p>
               </div>
 
               <div style={{display:'grid',gap:10,marginBottom:14}}>
-                <label>Date du prix observé <input type="date" required value={observedDate} onChange={e=>setObservedDate(e.target.value)}/></label>
-                <label>Nombre d’unités couvertes par ce prix <input type="number" min="0.001" step="0.001" required value={observedQuantity} onChange={e=>setObservedQuantity(e.target.value)}/></label>
-                <label>Justificatif ou lien produit <input type="url" placeholder="https://…" value={evidence} onChange={e=>setEvidence(e.target.value)}/></label>
-                <label>Disponibilité <select value={stock} onChange={e=>setStock(e.target.value)}><option value="unknown">À confirmer</option><option value="available">En stock au moment du relevé</option><option value="unavailable">Indisponible</option></select></label>
+                <label>Date du prix observé <input className="afrione-field" type="date" required value={observedDate} onChange={e=>setObservedDate(e.target.value)}/></label>
+                <label>Nombre d’unités couvertes par ce prix <input className="afrione-field" type="number" min="0.001" step="0.001" required value={observedQuantity} onChange={e=>setObservedQuantity(e.target.value)}/></label>
+                <label>Justificatif ou lien produit <input className="afrione-field" type="url" placeholder="https://…" value={evidence} onChange={e=>setEvidence(e.target.value)}/></label>
+                <label>Disponibilité <select className="afrione-field" value={stock} onChange={e=>setStock(e.target.value)}><option value="unknown">À confirmer</option><option value="available">En stock au moment du relevé</option><option value="unavailable">Indisponible</option></select></label>
                 <p>Le montant ci-dessus correspond à cette quantité. Le prix unitaire sera calculé et le relevé restera en attente de contrôle AfriOne.</p>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={()=>onSubmitArticle({observed_at:observedDate,observed_quantity:Number(observedQuantity),evidence_url:evidence||undefined,stock_status:stock})} disabled={savingArt || !artName.trim() || !artPrice}
-                  className="afrione-gradient"
+                  className="afrione-gradient afrione-action"
                   style={{ flex: 1, padding: '9px', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: savingArt || !artName.trim() || !artPrice ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                   {savingArt ? 'Enregistrement…' : <><Check size={13} /> Enregistrer</>}
                 </button>
-                <button onClick={onCancelAdd}
-                  style={{ padding: '9px 14px', background: '#FFFFFF', color: '#6B7280', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', boxShadow: NEU_SMALL_CARD }}>
+                <button className="afrione-action" onClick={onCancelAdd}
+                  style={{ padding: '9px 14px', background: '#FFFFFF', color: 'var(--ui-muted)', border: '1px solid var(--ui-border)', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', boxShadow: NEU_SMALL_CARD }}>
                   Annuler
                 </button>
               </div>

@@ -9,9 +9,9 @@ import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { clientApi } from '@/lib/client-api'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_HOVER  = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_HOVER  = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const syne = { fontFamily: "'Satoshi', sans-serif" }  as const
 const body = { fontFamily: "'Inter', sans-serif" }    as const
@@ -109,7 +109,7 @@ function ModeSelectContent() {
     : 'Devis nécessaire'
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA', color: '#3D4852' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', color: 'var(--ui-ink)' }}>
       <Navbar />
 
       {/* ── Modal Wave ─────────────────────────────────────────────────────── */}
@@ -137,7 +137,7 @@ function ModeSelectContent() {
                 <span style={{ color: 'white', fontWeight: 700, fontSize: '15px' }}>AfriOne — Paiement</span>
               </div>
               {waveStep === 'form' && (
-                <button onClick={() => setShowWave(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>✕</button>
+                <button className="afrione-action" onClick={() => setShowWave(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>✕</button>
               )}
             </div>
 
@@ -147,7 +147,7 @@ function ModeSelectContent() {
                 <div style={{ textAlign: 'center', padding: '20px 0 16px' }}>
                   <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Montant total</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
-                    <span style={{ color: 'white', fontSize: '52px', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1, fontFamily: 'Tahoma' }}>{price?.toLocaleString() ?? 'À confirmer'}</span>
+                    <span style={{ color: 'white', fontSize: '52px', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1, fontFamily: 'var(--font-body)' }}>{price?.toLocaleString() ?? 'À confirmer'}</span>
                     <span style={{ color: '#E85D26', fontSize: '18px', fontWeight: 700 }}>FCFA</span>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '6px' }}>Urgent · {category}</div>
@@ -163,7 +163,7 @@ function ModeSelectContent() {
                   </div>
                 </div>
 
-                <button
+                <button className="afrione-action"
                   onClick={confirmWave}
 
                   style={{ width: '100%', padding: '18px', background: true ? 'linear-gradient(135deg,#E85D26,#ff7043)' : 'rgba(255,255,255,0.08)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.2px', cursor: true ? 'pointer' : 'default', boxShadow: true ? '0 8px 28px rgba(232,93,38,0.45)' : 'none', transition: 'all 0.2s' }}
@@ -220,7 +220,7 @@ function ModeSelectContent() {
                   ))}
                 </div>
 
-                <button
+                <button className="afrione-action"
                   onClick={afterWave}
                   style={{ width: '100%', padding: '18px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 28px rgba(232,93,38,0.4)', letterSpacing: '-0.2px' }}
                 >
@@ -247,10 +247,10 @@ function ModeSelectContent() {
             <Zap size={11} color="#E85D26" />
             <span style={{ ...mono, fontSize: '10px', color: '#E85D26', letterSpacing: '0.1em' }}>CHOISIR MON MODE</span>
           </div>
-          <h1 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 5vw, 38px)', color: '#3D4852', marginBottom: '8px', lineHeight: 1.1 }}>
+          <h1 style={{ ...syne, fontWeight: 700, fontSize: 'clamp(26px, 5vw, 38px)', color: 'var(--ui-ink)', marginBottom: '8px', lineHeight: 1.1 }}>
             Comment tu veux procéder ?
           </h1>
-          <p style={{ ...body, fontSize: '15px', color: '#6B7280', lineHeight: 1.6 }}>
+          <p style={{ ...body, fontSize: '15px', color: 'var(--ui-muted)', lineHeight: 1.6 }}>
             {category} · {displayPrice}
           </p>
         </div>
@@ -265,16 +265,16 @@ function ModeSelectContent() {
                   <Zap size={13} color="white" />
                 </div>
                 <div>
-                  <div style={{ fontSize: '9px', fontWeight: 700, color: '#E85D26', letterSpacing: '0.1em', fontFamily: 'Tahoma' }}>ANALYSE IA</div>
+                  <div style={{ fontSize: '9px', fontWeight: 700, color: '#E85D26', letterSpacing: '0.1em', fontFamily: 'var(--font-body)' }}>ANALYSE IA</div>
                   <div style={{ fontSize: '10px', color: '#8B95A5' }}>Résumé de votre situation</div>
                 </div>
               </div>
-              <p style={{ fontSize: '14px', color: '#3D4852', lineHeight: 1.65, margin: 0 }}>{summary}</p>
+              <p style={{ fontSize: '14px', color: 'var(--ui-ink)', lineHeight: 1.65, margin: 0 }}>{summary}</p>
             </div>
           )}
 
           {/* ── Mode URGENT ────────────────────────────────────────────────── */}
-          <button
+          <button className="afrione-action"
             onClick={handleUrgent}
             disabled={!!loading||!price}
             style={{
@@ -299,10 +299,10 @@ function ModeSelectContent() {
 
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <span style={{ ...syne, fontWeight: 800, fontSize: '20px', color: '#3D4852' }}>Mode Urgent</span>
+                  <span style={{ ...syne, fontWeight: 800, fontSize: '20px', color: 'var(--ui-ink)' }}>Mode Urgent</span>
                   <span style={{ ...mono, fontSize: '9px', color: '#E85D26', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '20px', padding: '2px 8px', letterSpacing: '0.08em' }}>DÉMONSTRATION</span>
                 </div>
-                <p style={{ ...body, fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 16px' }}>
+                <p style={{ ...body, fontSize: '14px', color: 'var(--ui-muted)', lineHeight: 1.6, margin: '0 0 16px' }}>
                   Teste la confirmation du devis et le paiement. Aucun artisan ne sera envoyé pendant cette démonstration.
                 </p>
 
@@ -314,12 +314,12 @@ function ModeSelectContent() {
                   ].map(({ icon, text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '14px' }}>{icon}</span>
-                      <span style={{ ...body, fontSize: '13px', color: '#3D4852' }}>{text}</span>
+                      <span style={{ ...body, fontSize: '13px', color: 'var(--ui-ink)' }}>{text}</span>
                     </div>
                   ))}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid var(--ui-border)' }}>
                   <div>
                     <div style={{ ...mono, fontSize: '22px', fontWeight: 700, color: '#E85D26' }}>
                       {displayPrice}
@@ -336,7 +336,7 @@ function ModeSelectContent() {
           </button>
 
           {/* ── Mode STANDARD ──────────────────────────────────────────────── */}
-          <button
+          <button className="afrione-action"
             onClick={handleStandard}
             disabled={!!loading}
             style={{
@@ -360,9 +360,9 @@ function ModeSelectContent() {
 
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <span style={{ ...syne, fontWeight: 800, fontSize: '20px', color: '#3D4852' }}>Mode Standard</span>
+                  <span style={{ ...syne, fontWeight: 800, fontSize: '20px', color: 'var(--ui-ink)' }}>Mode Standard</span>
                 </div>
-                <p style={{ ...body, fontSize: '14px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 16px' }}>
+                <p style={{ ...body, fontSize: '14px', color: 'var(--ui-muted)', lineHeight: 1.6, margin: '0 0 16px' }}>
                   Consulte les artisans disponibles du métier demandé et échange sur ton besoin avant de convenir d’un devis.
                 </p>
 
@@ -374,12 +374,12 @@ function ModeSelectContent() {
                   ].map(({ icon, text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '14px' }}>{icon}</span>
-                      <span style={{ ...body, fontSize: '13px', color: '#3D4852' }}>{text}</span>
+                      <span style={{ ...body, fontSize: '13px', color: 'var(--ui-ink)' }}>{text}</span>
                     </div>
                   ))}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid var(--ui-border)' }}>
                   <div style={{ ...body, fontSize: '13px', color: '#8B95A5' }}>
                     Prix négocié avec l'artisan
                   </div>
@@ -394,9 +394,9 @@ function ModeSelectContent() {
 
           {/* ── Séparateur ──────────────────────────────────────────────────── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--ui-border)' }} />
             <span style={{ ...mono, fontSize: '10px', color: '#8B95A5', letterSpacing: '0.08em' }}>OU</span>
-            <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--ui-border)' }} />
           </div>
 
           {/* ── Mode Libre ─────────────────────────────────────────────────── */}
@@ -404,7 +404,7 @@ function ModeSelectContent() {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '14px', background: 'white', borderRadius: '16px', textDecoration: 'none', boxShadow: NEU_SMALL, transition: 'box-shadow 0.2s' }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SHADOW}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SMALL}>
-            <span style={{ ...body, fontSize: '14px', color: '#6B7280' }}>Pas urgent ? Parcourir les artisans librement</span>
+            <span style={{ ...body, fontSize: '14px', color: 'var(--ui-muted)' }}>Pas urgent ? Parcourir les artisans librement</span>
             <ChevronRight size={14} color="#8B95A5" />
           </Link>
 

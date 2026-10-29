@@ -20,18 +20,18 @@ const FAQS = {
   ],
 }
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 function Accordion({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <button
+    <button className="afrione-action"
       onClick={() => setOpen(o => !o)}
       style={{
         width: '100%', textAlign: 'left',
         background: '#FFFFFF',
-        border: '1.5px solid #E2E8F0',
+        border: '1.5px solid var(--ui-border)',
         borderRadius: '16px', overflow: 'hidden',
         transition: 'all 0.2s',
         boxShadow: NEU_SMALL,
@@ -39,11 +39,11 @@ function Accordion({ q, a }: { q: string; a: string }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px' }}>
-        <span style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '14px', paddingRight: '16px' }}>{q}</span>
+        <span style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 700, color: 'var(--ui-ink)', fontSize: '14px', paddingRight: '16px' }}>{q}</span>
         <ChevronDown size={16} style={{ color: '#8B95A5', flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </div>
       {open && (
-        <div style={{ padding: '0 20px 20px', background: '#F5F7FA', fontSize: '14px', color: '#6B7280', lineHeight: '1.7' }}>
+        <div style={{ padding: '0 20px 20px', background: 'var(--ui-canvas)', fontSize: '14px', color: 'var(--ui-muted)', lineHeight: '1.7' }}>
           {a}
         </div>
       )}
@@ -55,7 +55,7 @@ export default function AidePage() {
   const [tab, setTab] = useState<'client' | 'artisan'>('client')
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)' }}>
       <Navbar />
       <div style={{ paddingTop: '96px', paddingBottom: '64px', paddingLeft: '16px', paddingRight: '16px' }}>
         <div className="page-container" style={{ maxWidth: '768px' }}>
@@ -63,10 +63,10 @@ export default function AidePage() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <span className="section-label" style={{ display: 'block', marginBottom: '8px' }}>CENTRE D'AIDE</span>
-            <h1 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '36px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>
+            <h1 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '36px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '12px' }}>
               Comment pouvons-nous<br />vous aider ?
             </h1>
-            <p style={{ color: '#6B7280' }}>Trouvez des réponses à vos questions ci-dessous</p>
+            <p style={{ color: 'var(--ui-muted)' }}>Trouvez des réponses à vos questions ci-dessous</p>
           </div>
 
           {/* Quick links */}
@@ -80,14 +80,14 @@ export default function AidePage() {
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '12px',
                   padding: '24px 16px', background: '#FFFFFF', borderRadius: '16px',
-                  border: '1.5px solid #E2E8F0',
+                  border: '1.5px solid var(--ui-border)',
                   boxShadow: NEU_SHADOW,
                   textDecoration: 'none',
                   transition: 'transform 0.2s, box-shadow 0.2s',
                 }}
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'
-                  ;(e.currentTarget as HTMLElement).style.boxShadow = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
+                  ;(e.currentTarget as HTMLElement).style.boxShadow = 'var(--ui-shadow-card)'
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
@@ -95,23 +95,23 @@ export default function AidePage() {
                 }}
               >
                 <item.icon size={24} style={{ color: item.color }} />
-                <span style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 700, color: '#3D4852', fontSize: '14px' }}>{item.title}</span>
+                <span style={{ fontFamily: "'Satoshi', sans-serif", fontWeight: 700, color: 'var(--ui-ink)', fontSize: '14px' }}>{item.title}</span>
               </Link>
             ))}
           </div>
 
           {/* Tab */}
-          <div style={{ display: 'flex', background: '#F5F7FA', border: '1.5px solid #E2E8F0', borderRadius: '16px', padding: '4px', marginBottom: '32px', boxShadow: 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8px rgba(255,255,255,0.9)' }}>
+          <div style={{ display: 'flex', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', borderRadius: '16px', padding: '4px', marginBottom: '32px', boxShadow: 'var(--ui-shadow-inset)' }}>
             {[
               { id: 'client' as const, label: '🏠 Questions clients' },
               { id: 'artisan' as const, label: '🔧 Questions artisans' },
             ].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
+              <button className="afrione-action" key={t.id} onClick={() => setTab(t.id)}
                 style={{
                   flex: 1, padding: '10px', fontSize: '14px', fontWeight: 600, borderRadius: '12px', border: 'none', cursor: 'pointer',
                   transition: 'all 0.2s',
                   background: tab === t.id ? '#FFFFFF' : 'transparent',
-                  color: tab === t.id ? '#3D4852' : '#6B7280',
+                  color: tab === t.id ? 'var(--ui-ink)' : 'var(--ui-muted)',
                   boxShadow: tab === t.id ? NEU_SMALL : 'none',
                 }}>
                 {t.label}
@@ -127,23 +127,23 @@ export default function AidePage() {
           {/* Contact CTA */}
           <div style={{
             marginTop: '48px', background: '#FFFFFF', borderRadius: '20px', padding: '32px', textAlign: 'center',
-            boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0',
+            boxShadow: NEU_SHADOW, border: '1.5px solid var(--ui-border)',
           }}>
-            <h2 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '22px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
+            <h2 style={{ fontFamily: "'Satoshi', sans-serif", fontSize: '22px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '8px' }}>
               Vous n'avez pas trouvé votre réponse ?
             </h2>
-            <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>Notre équipe répond en moins de 2h en heures ouvrées</p>
+            <p style={{ color: 'var(--ui-muted)', fontSize: '14px', marginBottom: '24px' }}>Notre équipe répond en moins de 2h en heures ouvrées</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
               <Link href="mailto:support@afrione.ci"
                 className="afrione-gradient"
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'white', padding: '12px 24px', borderRadius: '12px', fontWeight: 600, textDecoration: 'none', fontSize: '14px' }}>
                 <Mail size={16} /> Envoyer un email
               </Link>
-              <Link href="https://wa.me/225XXXXXXXX" target="_blank"
+              <Link className="afrione-action" href="https://wa.me/225XXXXXXXX" target="_blank"
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
-                  background: '#FFFFFF', border: '1.5px solid #E2E8F0',
-                  color: '#3D4852', padding: '12px 24px', borderRadius: '12px', fontWeight: 600,
+                  background: '#FFFFFF', border: '1.5px solid var(--ui-border)',
+                  color: 'var(--ui-ink)', padding: '12px 24px', borderRadius: '12px', fontWeight: 600,
                   textDecoration: 'none', fontSize: '14px',
                   boxShadow: NEU_SMALL, transition: 'box-shadow 0.15s',
                 }}>

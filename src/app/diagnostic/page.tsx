@@ -13,9 +13,9 @@ import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import PriceContextCard, { type PriceContextView } from '@/components/pricing/PriceContextCard'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
-const NEU_INSET  = 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
+const NEU_INSET  = 'var(--ui-shadow-inset)'
 
 type Step = 'input' | 'questioning' | 'summarizing' | 'confirming'
 
@@ -362,7 +362,7 @@ export default function DiagnosticPage() {
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA', position: 'relative', color: '#3D4852' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', position: 'relative', color: 'var(--ui-ink)' }}>
       <Navbar />
 
       {/* ── VIDEO BANNER ───────────────────────────────────────────── */}
@@ -385,7 +385,7 @@ export default function DiagnosticPage() {
         <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 20px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '12px' }}>
             <Zap size={12} color="white" />
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Tahoma' }}>DIAGNOSTIC IA</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>DIAGNOSTIC IA</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, color: 'white', margin: '0 0 8px', textShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
             {step === 'input'       ? 'Décrivez votre problème'  :
@@ -422,24 +422,24 @@ export default function DiagnosticPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
             {/* Description */}
-            <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #E2E8F0', overflow: 'hidden', boxShadow: NEU_SHADOW }}>
-              <textarea
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1.5px solid var(--ui-border)', overflow: 'hidden', boxShadow: NEU_SHADOW }}>
+              <textarea className="afrione-field"
                 value={text}
                 onChange={e => setText(e.target.value)}
                 placeholder="Décrivez votre problème : lieu précis, symptômes, depuis quand..."
-                style={{ width: '100%', minHeight: '130px', border: 'none', outline: 'none', resize: 'none', fontSize: '15px', lineHeight: '1.6', color: '#3D4852', fontFamily: 'inherit', background: 'transparent', boxSizing: 'border-box', padding: '18px 20px' }}
+                style={{ width: '100%', minHeight: '130px', border: 'none', outline: 'none', resize: 'none', fontSize: '15px', lineHeight: '1.6', color: 'var(--ui-ink)', fontFamily: 'inherit', background: 'transparent', boxSizing: 'border-box', padding: '18px 20px' }}
                 maxLength={1000}
               />
-              <div style={{ padding: '0 20px 12px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #E2E8F0' }}>
-                <span style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Tahoma' }}>{text.length}/1000</span>
+              <div style={{ padding: '0 20px 12px', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--ui-border)' }}>
+                <span style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'var(--font-body)' }}>{text.length}/1000</span>
               </div>
             </div>
 
             {/* Photos */}
             <input ref={photoInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotoUpload} />
             {photos.length === 0 ? (
-              <button onClick={() => photoInputRef.current?.click()} disabled={uploading} style={{
-                width: '100%', padding: '18px', border: '2px dashed #E2E8F0', borderRadius: '16px',
+              <button className="afrione-action" onClick={() => photoInputRef.current?.click()} disabled={uploading} style={{
+                width: '100%', padding: '18px', border: '2px dashed var(--ui-border)', borderRadius: '16px',
                 background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#8B95A5',
                 boxShadow: NEU_SMALL,
               }}>
@@ -448,25 +448,25 @@ export default function DiagnosticPage() {
                   : <Camera size={18} color="#8B95A5" />
                 }
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#6B7280' }}>{uploading ? 'Upload en cours…' : 'Ajouter des photos'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ui-muted)' }}>{uploading ? 'Upload en cours…' : 'Ajouter des photos'}</div>
                   <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>L'IA peut analyser les photos du problème</div>
                 </div>
               </button>
             ) : (
-              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '14px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Tahoma' }}>
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '14px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>
                   📸 {photos.length} PHOTO{photos.length > 1 ? 'S' : ''} AJOUTÉE{photos.length > 1 ? 'S' : ''}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                   {photos.map((url, i) => (
-                    <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: '#F5F7FA' }}>
+                    <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: 'var(--ui-canvas)' }}>
                       <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <button onClick={() => setPhotos(p => p.filter((_, j) => j !== i))} style={{ position: 'absolute', top: '3px', right: '3px', width: '20px', height: '20px', background: 'rgba(61,72,82,0.7)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <button className="afrione-action afrione-action--icon" onClick={() => setPhotos(p => p.filter((_, j) => j !== i))} style={{ position: 'absolute', top: '3px', right: '3px', width: '20px', height: '20px', background: 'rgba(61,72,82,0.7)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <X size={10} />
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => photoInputRef.current?.click()} style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed #E2E8F0', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', color: '#8B95A5', fontSize: '10px' }}>
+                  <button className="afrione-action" onClick={() => photoInputRef.current?.click()} style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed var(--ui-border)', background: 'transparent', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', color: '#8B95A5', fontSize: '10px' }}>
                     <Camera size={14} /> <span>Ajouter</span>
                   </button>
                 </div>
@@ -475,18 +475,18 @@ export default function DiagnosticPage() {
 
             {/* Exemples */}
             <div>
-              <p style={{ fontSize: '10px', fontFamily: 'Tahoma', color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '8px' }}>EXEMPLES</p>
+              <p style={{ fontSize: '10px', fontFamily: 'var(--font-body)', color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '8px' }}>EXEMPLES</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {EXAMPLES.map(ex => (
-                  <button key={ex} onClick={() => setText(ex)} style={{ textAlign: 'left', padding: '11px 14px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', color: '#6B7280', boxShadow: NEU_SMALL }}>
+                  <button className="afrione-action" key={ex} onClick={() => setText(ex)} style={{ textAlign: 'left', padding: '11px 14px', background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', color: 'var(--ui-muted)', boxShadow: NEU_SMALL }}>
                     "{ex}"
                   </button>
                 ))}
               </div>
             </div>
 
-            <button onClick={startDiagnostic} disabled={text.length < 10 || loading} className={text.length >= 10 ? 'btn-primary' : ''} style={{
-              width: '100%', padding: '16px', background: text.length >= 10 ? undefined : '#E2E8F0', color: text.length >= 10 ? 'white' : '#8B95A5',
+            <button onClick={startDiagnostic} disabled={text.length < 10 || loading} className={(text.length >= 10 ? 'btn-primary' : '') + ' afrione-action'} style={{
+              width: '100%', padding: '16px', background: text.length >= 10 ? undefined : 'var(--ui-border)', color: text.length >= 10 ? 'white' : '#8B95A5',
               border: 'none', borderRadius: '16px', fontWeight: 700, fontSize: '15px', cursor: text.length >= 10 ? 'pointer' : 'default',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.7 : 1,
             }}>
@@ -503,9 +503,9 @@ export default function DiagnosticPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
             {/* Résumé du problème initial */}
-            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '6px', fontFamily: 'Tahoma' }}>VOTRE PROBLÈME</div>
-              <p style={{ fontSize: '13px', color: '#3D4852', lineHeight: '1.5', margin: 0 }}>{text}</p>
+            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '6px', fontFamily: 'var(--font-body)' }}>VOTRE PROBLÈME</div>
+              <p style={{ fontSize: '13px', color: 'var(--ui-ink)', lineHeight: '1.5', margin: 0 }}>{text}</p>
               {photos.length > 0 && (
                 <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
                   {photos.map((url, i) => (
@@ -520,12 +520,12 @@ export default function DiagnosticPage() {
               <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {/* Question */}
                 <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '12px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px', fontFamily: 'Tahoma' }}>IA · Question {i + 1}</div>
-                  <p style={{ fontSize: '14px', color: '#3D4852', margin: 0, lineHeight: '1.4' }}>{item.question}</p>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px', fontFamily: 'var(--font-body)' }}>IA · Question {i + 1}</div>
+                  <p style={{ fontSize: '14px', color: 'var(--ui-ink)', margin: 0, lineHeight: '1.4' }}>{item.question}</p>
                 </div>
                 {/* Réponse */}
-                <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px 14px 4px 14px', padding: '10px 14px', alignSelf: 'flex-end', maxWidth: '80%', boxShadow: NEU_SMALL }}>
-                  <p style={{ fontSize: '14px', color: '#3D4852', margin: 0 }}>
+                <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '14px 14px 4px 14px', padding: '10px 14px', alignSelf: 'flex-end', maxWidth: '80%', boxShadow: NEU_SMALL }}>
+                  <p style={{ fontSize: '14px', color: 'var(--ui-ink)', margin: 0 }}>
                     {item.answer === 'Oui' ? '✓ Oui' : item.answer === 'Non' ? '✗ Non' : item.answer}
                   </p>
                 </div>
@@ -536,8 +536,8 @@ export default function DiagnosticPage() {
             {currentQ && !loading && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '14px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '5px', fontFamily: 'Tahoma' }}>IA · Question {qa.length + 1}</div>
-                  <p style={{ fontSize: '15px', color: '#3D4852', margin: 0, lineHeight: '1.5' }}>{currentQ.question}</p>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '5px', fontFamily: 'var(--font-body)' }}>IA · Question {qa.length + 1}</div>
+                  <p style={{ fontSize: '15px', color: 'var(--ui-ink)', margin: 0, lineHeight: '1.5' }}>{currentQ.question}</p>
                   {currentQ.rationale && <p style={{fontSize:12,color:'#64748B',marginTop:8}}>{currentQ.rationale}</p>}
                 </div>
 
@@ -545,26 +545,26 @@ export default function DiagnosticPage() {
                 {currentQ.type === 'choice' && currentQ.options && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {currentQ.options.map(opt => (
-                      <button key={opt} onClick={() => setCurrentAnswer(opt)} className={currentAnswer === opt ? 'afrione-gradient' : ''} style={{
+                      <button key={opt} onClick={() => setCurrentAnswer(opt)} className={(currentAnswer === opt ? 'afrione-gradient' : '') + ' afrione-action'} style={{
                         padding: '14px 16px', borderRadius: '14px', fontWeight: 600, fontSize: '14px',
                         cursor: 'pointer', transition: 'all 0.12s', textAlign: 'left',
                         background: currentAnswer === opt ? undefined : '#FFFFFF',
-                        color: currentAnswer === opt ? 'white' : '#3D4852',
-                        border: `1.5px solid ${currentAnswer === opt ? '#E85D26' : '#E2E8F0'}`,
+                        color: currentAnswer === opt ? 'white' : 'var(--ui-ink)',
+                        border: `1.5px solid ${currentAnswer === opt ? '#E85D26' : 'var(--ui-border)'}`,
                         boxShadow: currentAnswer === opt ? 'none' : NEU_SMALL,
                       }}>
                         {currentAnswer === opt ? '✓ ' : ''}{opt}
                       </button>
                     ))}
-                    <button onClick={() => setShowPrecise(p => !p)} style={{
-                      padding: '10px', background: '#FFFFFF', border: '1.5px dashed #E2E8F0', borderRadius: '12px',
+                    <button className="afrione-action" onClick={() => setShowPrecise(p => !p)} style={{
+                      padding: '10px', background: '#FFFFFF', border: '1.5px dashed var(--ui-border)', borderRadius: '12px',
                       cursor: 'pointer', fontSize: '13px', color: '#8B95A5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     }}>
                       ✏️ {showPrecise ? 'Masquer' : 'Autre réponse…'}
                     </button>
                     {showPrecise && (
-                      <input type="text" value={preciseText} onChange={e => { setPreciseText(e.target.value); setCurrentAnswer(e.target.value) }} placeholder="Décrivez en quelques mots…"
-                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: '#3D4852', background: '#FFFFFF' }}
+                      <input className="afrione-field" type="text" value={preciseText} onChange={e => { setPreciseText(e.target.value); setCurrentAnswer(e.target.value) }} placeholder="Décrivez en quelques mots…"
+                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid var(--ui-border)', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: 'var(--ui-ink)', background: '#FFFFFF' }}
                       />
                     )}
                   </div>
@@ -575,26 +575,26 @@ export default function DiagnosticPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       {['Oui', 'Non'].map(opt => (
-                        <button key={opt} onClick={() => { setCurrentAnswer(opt); setShowPrecise(false) }} className={currentAnswer === opt ? 'afrione-gradient' : ''} style={{
+                        <button key={opt} onClick={() => { setCurrentAnswer(opt); setShowPrecise(false) }} className={(currentAnswer === opt ? 'afrione-gradient' : '') + ' afrione-action'} style={{
                           padding: '14px', borderRadius: '14px', fontWeight: 700, fontSize: '15px', cursor: 'pointer', transition: 'all 0.12s',
                           background: currentAnswer === opt ? undefined : '#FFFFFF',
-                          color: currentAnswer === opt ? 'white' : '#3D4852',
-                          border: `1.5px solid ${currentAnswer === opt ? '#E85D26' : '#E2E8F0'}`,
+                          color: currentAnswer === opt ? 'white' : 'var(--ui-ink)',
+                          border: `1.5px solid ${currentAnswer === opt ? '#E85D26' : 'var(--ui-border)'}`,
                           boxShadow: currentAnswer === opt ? 'none' : NEU_SMALL,
                         }}>
                           {opt === 'Oui' ? '✓  Oui' : '✗  Non'}
                         </button>
                       ))}
                     </div>
-                    <button onClick={() => setShowPrecise(p => !p)} style={{
-                      padding: '10px', background: '#FFFFFF', border: '1.5px dashed #E2E8F0', borderRadius: '12px',
+                    <button className="afrione-action" onClick={() => setShowPrecise(p => !p)} style={{
+                      padding: '10px', background: '#FFFFFF', border: '1.5px dashed var(--ui-border)', borderRadius: '12px',
                       cursor: 'pointer', fontSize: '13px', color: '#8B95A5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     }}>
                       ✏️ {showPrecise ? 'Masquer' : 'Préciser ma réponse'}
                     </button>
                     {showPrecise && (
-                      <input type="text" value={preciseText} onChange={e => setPreciseText(e.target.value)} placeholder="Précisez en quelques mots…"
-                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: '#3D4852', background: '#FFFFFF' }}
+                      <input className="afrione-field" type="text" value={preciseText} onChange={e => setPreciseText(e.target.value)} placeholder="Précisez en quelques mots…"
+                        style={{ padding: '12px 16px', borderRadius: '12px', border: '1.5px solid var(--ui-border)', fontSize: '14px', outline: 'none', fontFamily: 'inherit', color: 'var(--ui-ink)', background: '#FFFFFF' }}
                       />
                     )}
                   </div>
@@ -602,14 +602,14 @@ export default function DiagnosticPage() {
 
                 {/* Réponse texte */}
                 {currentQ.type === 'text' && (
-                  <textarea value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)}
+                  <textarea className="afrione-field" value={currentAnswer} onChange={e => setCurrentAnswer(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && currentAnswer.trim()) { e.preventDefault(); answerQuestion() } }}
                     placeholder="Votre réponse…" rows={3}
-                    style={{ width: '100%', padding: '13px 16px', borderRadius: '14px', border: '1.5px solid #E2E8F0', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', color: '#3D4852', background: '#FFFFFF', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '13px 16px', borderRadius: '14px', border: '1.5px solid var(--ui-border)', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', color: 'var(--ui-ink)', background: '#FFFFFF', boxSizing: 'border-box' }}
                   />
                 )}
 
-                <button onClick={answerQuestion} disabled={!currentAnswer.trim()}
+                <button className="afrione-action" onClick={answerQuestion} disabled={!currentAnswer.trim()}
                   style={{
                     padding: '13px 20px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '14px',
                     fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -641,11 +641,11 @@ export default function DiagnosticPage() {
             <div className="afrione-gradient" style={{ width: '72px', height: '72px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 0 40px rgba(232,93,38,0.3)' }}>
               <Zap size={32} color="white" style={{ animation: 'pulse 1.5s ease-in-out infinite' }} />
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>Génération du diagnostic…</h2>
-            <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>L'IA synthétise toutes vos réponses</p>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '8px' }}>Génération du diagnostic…</h2>
+            <p style={{ color: 'var(--ui-muted)', fontSize: '14px', marginBottom: '24px' }}>L'IA synthétise toutes vos réponses</p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
               {['Analyse', 'Estimation prix', 'Fiche technique'].map((l) => (
-                <div key={l} style={{ fontSize: '11px', color: '#6B7280', background: '#FFFFFF', padding: '6px 12px', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>{l}</div>
+                <div key={l} style={{ fontSize: '11px', color: 'var(--ui-muted)', background: '#FFFFFF', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>{l}</div>
               ))}
             </div>
           </div>
@@ -662,14 +662,14 @@ export default function DiagnosticPage() {
                   <Zap size={16} color="white" />
                 </div>
                 <div>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'Tahoma' }}>ANALYSE IA</div>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'var(--font-body)' }}>ANALYSE IA</div>
                   <div style={{ fontSize: '11px', color: '#8B95A5' }}>Résumé de votre situation</div>
                 </div>
               </div>
-              <p style={{ fontSize: '15px', color: '#3D4852', lineHeight: '1.7', margin: 0 }}>{result.summary}</p>
+              <p style={{ fontSize: '15px', color: 'var(--ui-ink)', lineHeight: '1.7', margin: 0 }}>{result.summary}</p>
             </div>
 
-            {result.product_requirements?.length ? <section style={{background:'#FFF',padding:20,borderRadius:16,border:'1px solid #E2E8F0'}}>
+            {result.product_requirements?.length ? <section style={{background:'#FFF',padding:20,borderRadius:16,border:'1px solid var(--ui-border)'}}>
               <h3 style={{fontWeight:700}}>Choisir les fournitures adaptées</h3>
               <p style={{fontSize:12,color:'#64748B'}}>On vérifie d’abord la compatibilité, puis les caractéristiques utiles et votre préférence. Le prix seul ne définit pas la qualité ; garantie et caractéristiques devront être vérifiées sur la fiche produit.</p>
               {result.product_requirements.map((r,i)=><div key={i} style={{marginTop:12,fontSize:13}}>
@@ -683,14 +683,14 @@ export default function DiagnosticPage() {
             {/* Infos clés */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {[
-                { icon: <Wrench size={18} color="#E85D26" />, label: 'Catégorie',  value: result.category,          color: '#3D4852' },
+                { icon: <Wrench size={18} color="#E85D26" />, label: 'Catégorie',  value: result.category,          color: 'var(--ui-ink)' },
                 { icon: <span style={{ fontSize: '18px', lineHeight: 1 }}>{urgConf.icon}</span>, label: 'Urgence', value: urgConf.label, color: urgConf.color },
-                { icon: <Clock size={18} color="#C9A84C" />, label: 'Durée',       value: result.duration_estimate || 'À confirmer', color: '#3D4852' },
+                { icon: <Clock size={18} color="#C9A84C" />, label: 'Durée',       value: result.duration_estimate || 'À confirmer', color: 'var(--ui-ink)' },
               ].map(k => (
-                <div key={k.label} style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
+                <div key={k.label} style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
                   <div style={{ marginBottom: '8px' }}>{k.icon}</div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: k.color, lineHeight: '1.2' }}>{k.value}</div>
-                  <div style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'Tahoma', marginTop: '3px' }}>{k.label}</div>
+                  <div style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'var(--font-body)', marginTop: '3px' }}>{k.label}</div>
                 </div>
               ))}
             </div>
@@ -698,11 +698,11 @@ export default function DiagnosticPage() {
             {pricing?.price_context && <PriceContextCard context={pricing.price_context} applied={pricing.applied_estimator === 'context_v4'} />}
 
             {/* Proposition réellement calculée par le moteur sélectionné */}
-            <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid #E2E8F0', boxShadow: NEU_SHADOW }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'Tahoma', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid var(--ui-border)', boxShadow: NEU_SHADOW }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'var(--font-body)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>CALCUL INDICATIF AFRIONE</span>
                 {!pricingLoading && pricing && (
-                  <span style={{ fontSize: '9px', color: '#E85D26', fontFamily: 'Tahoma' }}>AGENT IA</span>
+                  <span style={{ fontSize: '9px', color: '#E85D26', fontFamily: 'var(--font-body)' }}>AGENT IA</span>
                 )}
               </div>
 
@@ -710,27 +710,27 @@ export default function DiagnosticPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
                   <span style={{ color: '#8B95A5', fontSize: '13px' }}>Agent IA en cours…</span>
-                  <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'Tahoma' }}>
+                  <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'var(--font-body)' }}>
                     Prix en cours de calcul
                   </span>
                 </div>
               ) : pricingError ? (
-                <div role="status" style={{ color: '#6B7280', fontSize: '13px', lineHeight: 1.6 }}>
+                <div role="status" style={{ color: 'var(--ui-muted)', fontSize: '13px', lineHeight: 1.6 }}>
                   <p style={{ margin: '0 0 10px' }}>{pricingError}</p>
                   <label style={{ display: 'block', marginBottom: '10px' }}>
                     Préciser votre demande
-                    <input value={pricingClarification} onChange={e => setPricingClarification(e.target.value)} maxLength={1000} placeholder="Exemple : la surface est de 25 m²"
+                    <input className="afrione-field" value={pricingClarification} onChange={e => setPricingClarification(e.target.value)} maxLength={1000} placeholder="Exemple : la surface est de 25 m²"
                       style={{ display: 'block', width: '100%', padding: '10px', border: '1px solid #CBD5E1', borderRadius: '10px', marginTop: '5px' }} />
                   </label>
-                  <button type="button" onClick={() => fetchPricing(result, true)} style={{ color: '#C95024', fontWeight: 600 }}>Réessayer l’estimation</button>
+                  <button className="afrione-action" type="button" onClick={() => fetchPricing(result, true)} style={{ color: '#C95024', fontWeight: 600 }}>Réessayer l’estimation</button>
                 </div>
               ) : pricing ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                    <span className="afrione-gradient-text" style={{ fontFamily: 'Tahoma', fontSize: '36px', fontWeight: 700, lineHeight: 1 }}>{pricing.estimate.toLocaleString('fr')}</span>
-                    <span style={{ color: '#8B95A5', fontSize: '13px', fontFamily: 'Tahoma' }}>FCFA</span>
+                    <span className="afrione-gradient-text" style={{ fontFamily: 'var(--font-body)', fontSize: '36px', fontWeight: 700, lineHeight: 1 }}>{pricing.estimate.toLocaleString('fr')}</span>
+                    <span style={{ color: '#8B95A5', fontSize: '13px', fontFamily: 'var(--font-body)' }}>FCFA</span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Tahoma', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'var(--font-body)', marginBottom: '16px' }}>
                     {pricing.applied_estimator === 'context_v4' ? 'Proposition par analogie · à confirmer par devis' : `[${pricing.interval.low.toLocaleString('fr')} – ${pricing.interval.high.toLocaleString('fr')}] ±8%`}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
@@ -745,10 +745,10 @@ export default function DiagnosticPage() {
                       return (
                         <div key={key}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                            <span style={{ fontSize: '10px', color: '#6B7280' }}>{label}</span>
-                            <span style={{ fontSize: '10px', color: '#6B7280', fontFamily: 'Tahoma' }}>{pct}% · {val.toLocaleString('fr')} FCFA</span>
+                            <span style={{ fontSize: '10px', color: 'var(--ui-muted)' }}>{label}</span>
+                            <span style={{ fontSize: '10px', color: 'var(--ui-muted)', fontFamily: 'var(--font-body)' }}>{pct}% · {val.toLocaleString('fr')} FCFA</span>
                           </div>
-                          <div style={{ height: '3px', background: '#F5F7FA', borderRadius: '2px', overflow: 'hidden' }}>
+                          <div style={{ height: '3px', background: 'var(--ui-canvas)', borderRadius: '2px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '2px' }} />
                           </div>
                         </div>
@@ -772,8 +772,8 @@ export default function DiagnosticPage() {
 
             {/* Matériel probable */}
             {result.items_needed.length > 0 && (
-              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Tahoma' }}>MATÉRIEL PROBABLE</div>
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>MATÉRIEL PROBABLE</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {result.items_needed.map(item => (
                     <span key={item.name} className="afrione-gradient-text" style={{ fontSize: '12px', background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.15)', padding: '4px 12px', borderRadius: '20px', fontWeight: 500 }}>
@@ -786,8 +786,8 @@ export default function DiagnosticPage() {
 
             {/* Photos jointes */}
             {photos.length > 0 && (
-              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'Tahoma' }}>📸 VOS PHOTOS JOINTES</div>
+              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>📸 VOS PHOTOS JOINTES</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                   {photos.map((url, i) => (
                     <img key={i} src={url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px' }} />
@@ -797,17 +797,17 @@ export default function DiagnosticPage() {
             )}
 
             {/* Affiner */}
-            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1.5px dashed #E2E8F0', boxShadow: NEU_SMALL }}>
+            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1.5px dashed var(--ui-border)', boxShadow: NEU_SMALL }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: '#8B95A5', marginBottom: '10px' }}>
                 ✏️ Ce résumé n'est pas exact ? Précisez :
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="text" value={refineText} onChange={e => setRefineText(e.target.value)}
+                <input className="afrione-field" type="text" value={refineText} onChange={e => setRefineText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && refineResult()}
                   placeholder="Ex : c'est en fait le robinet de la salle de bain…"
-                  style={{ flex: 1, padding: '11px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#3D4852', background: '#FFFFFF' }}
+                  style={{ flex: 1, padding: '11px 14px', borderRadius: '12px', border: '1.5px solid var(--ui-border)', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: 'var(--ui-ink)', background: '#FFFFFF' }}
                 />
-                <button onClick={refineResult} disabled={!refineText.trim() || refining} style={{
+                <button className="afrione-action" onClick={refineResult} disabled={!refineText.trim() || refining} style={{
                   padding: '11px 16px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '12px',
                   cursor: 'pointer', fontWeight: 600, fontSize: '13px', opacity: (!refineText.trim() || refining) ? 0.4 : 1, whiteSpace: 'nowrap',
                 }}>
@@ -816,9 +816,9 @@ export default function DiagnosticPage() {
               </div>
             </div>
 
-            <button onClick={() => { router.replace('/diagnostic',{scroll:false}); setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null);  }} style={{
-              padding: '13px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '14px',
-              fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#6B7280',
+            <button className="afrione-action" onClick={() => { router.replace('/diagnostic',{scroll:false}); setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null);  }} style={{
+              padding: '13px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '14px',
+              fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: 'var(--ui-muted)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
               boxShadow: NEU_SMALL,
             }}>
@@ -827,7 +827,7 @@ export default function DiagnosticPage() {
 
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '14px', padding: '14px' }}>
               <AlertCircle size={14} color="#C9A84C" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: '1.6' }}>
+              <p style={{ fontSize: '12px', color: 'var(--ui-muted)', margin: 0, lineHeight: '1.6' }}>
                 Ce résumé et la fiche technique seront envoyés automatiquement à l'artisan pour qu'il arrive préparé.
               </p>
             </div>

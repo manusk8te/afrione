@@ -7,9 +7,9 @@ import { Zap, X, Shield, Clock } from 'lucide-react'
 import { SENSITIVITY_COEFS, TEMPORAL_COEFS, INSURANCE_AMOUNT } from '@/types/business'
 import toast from 'react-hot-toast'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_HOVER  = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_HOVER  = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const syne = { fontFamily: "'Satoshi', sans-serif" }  as const
 const body = { fontFamily: "'Inter', sans-serif" }    as const
@@ -128,7 +128,7 @@ export default function UrgencePage() {
   const price = selected ? computePrice(selected) : 0
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA', color: '#3D4852' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', color: 'var(--ui-ink)' }}>
       <Navbar />
 
       {/* Hero */}
@@ -159,7 +159,7 @@ export default function UrgencePage() {
               const isSelected = selected?.code === p.code
               const sensCfg    = SENSITIVITY_COEFS[p.default_sensitivity as SensitivityKey] ?? SENSITIVITY_COEFS.normal
               return (
-                <button
+                <button className="afrione-action"
                   key={p.code}
                   onClick={() => { setSelected(isSelected ? null : p); setInsurance(false) }}
                   style={{
@@ -175,7 +175,7 @@ export default function UrgencePage() {
                   <div style={{ fontSize: '28px', marginBottom: '10px' }}>
                     {CATEGORY_ICONS[p.category] ?? '🔧'}
                   </div>
-                  <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: '#3D4852', marginBottom: '4px', lineHeight: 1.3 }}>
+                  <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)', marginBottom: '4px', lineHeight: 1.3 }}>
                     {p.label}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
@@ -199,15 +199,15 @@ export default function UrgencePage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div>
                 <div style={{ ...mono, fontSize: '10px', color: '#E85D26', letterSpacing: '0.1em', marginBottom: '4px' }}>PRESTATION SÉLECTIONNÉE</div>
-                <div style={{ ...syne, fontWeight: 700, fontSize: '18px', color: '#3D4852' }}>{selected.label}</div>
+                <div style={{ ...syne, fontWeight: 700, fontSize: '18px', color: 'var(--ui-ink)' }}>{selected.label}</div>
               </div>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B95A5' }}>
+              <button className="afrione-action" onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B95A5' }}>
                 <X size={18} />
               </button>
             </div>
 
             {/* Décomposition prix */}
-            <div style={{ background: '#F5F7FA', borderRadius: '14px', padding: '14px', marginBottom: '16px' }}>
+            <div style={{ background: 'var(--ui-canvas)', borderRadius: '14px', padding: '14px', marginBottom: '16px' }}>
               {(() => {
                 const sens = SENSITIVITY_COEFS[selected.default_sensitivity as SensitivityKey] ?? SENSITIVITY_COEFS.normal
                 const temp = TEMPORAL_COEFS[temporal]
@@ -226,10 +226,10 @@ export default function UrgencePage() {
                     ].map(({ label, value, note, color }) => (
                       <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <span style={{ ...body, fontSize: '13px', color: '#6B7280' }}>{label}</span>
+                          <span style={{ ...body, fontSize: '13px', color: 'var(--ui-muted)' }}>{label}</span>
                           {note && <span style={{ ...mono, fontSize: '10px', color: color ?? '#8B95A5', marginLeft: '6px' }}>{note}</span>}
                         </div>
-                        <span style={{ ...mono, fontSize: '13px', color: value > 0 ? '#3D4852' : '#8B95A5', fontWeight: 600 }}>
+                        <span style={{ ...mono, fontSize: '13px', color: value > 0 ? 'var(--ui-ink)' : '#8B95A5', fontWeight: 600 }}>
                           {value > 0 ? `+${value.toLocaleString('fr')}` : '—'} F
                         </span>
                       </div>
@@ -247,10 +247,10 @@ export default function UrgencePage() {
                   const t = TEMPORAL_COEFS[key]
                   const active = temporal === key
                   return (
-                    <button key={key} onClick={() => setTemporal(key)} style={{
+                    <button className="afrione-action" key={key} onClick={() => setTemporal(key)} style={{
                       padding: '10px', borderRadius: '12px', border: 'none', cursor: 'pointer',
                       background: active ? '#E85D26' : 'white',
-                      color:      active ? 'white'   : '#6B7280',
+                      color:      active ? 'white'   : 'var(--ui-muted)',
                       boxShadow:  active ? 'none'    : NEU_SMALL,
                       ...syne, fontWeight: 600, fontSize: '12px',
                       transition: 'all 0.15s',
@@ -263,7 +263,7 @@ export default function UrgencePage() {
             </div>
 
             {/* Assurance */}
-            <button
+            <button className="afrione-action"
               onClick={() => setInsurance(v => !v)}
               style={{
                 width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
@@ -276,18 +276,18 @@ export default function UrgencePage() {
               }}>
               <Shield size={18} color={insurance ? '#2B6B3E' : '#8B95A5'} />
               <div style={{ flex: 1 }}>
-                <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: insurance ? '#2B6B3E' : '#3D4852' }}>
+                <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: insurance ? '#2B6B3E' : 'var(--ui-ink)' }}>
                   Assurance travaux +{INSURANCE_AMOUNT} F
                 </div>
                 <div style={{ ...body, fontSize: '12px', color: '#8B95A5' }}>Garantie 30 jours sur la prestation</div>
               </div>
-              <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `2px solid ${insurance ? '#2B6B3E' : '#E2E8F0'}`, background: insurance ? '#2B6B3E' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `2px solid ${insurance ? '#2B6B3E' : 'var(--ui-border)'}`, background: insurance ? '#2B6B3E' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {insurance && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'white' }} />}
               </div>
             </button>
 
             {/* Total + CTA */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid #E2E8F0', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid var(--ui-border)', marginBottom: '16px' }}>
               <div>
                 <div style={{ ...mono, fontSize: '10px', color: '#8B95A5', marginBottom: '2px' }}>TOTAL</div>
                 <div style={{ ...mono, fontSize: '28px', fontWeight: 700, color: '#E85D26' }}>
@@ -300,7 +300,7 @@ export default function UrgencePage() {
               </div>
             </div>
 
-            <button
+            <button className="afrione-action"
               onClick={handleCommander}
               disabled={loading}
               style={{

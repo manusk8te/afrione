@@ -12,8 +12,8 @@ import {
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const TABS = [
   { id: 'overview',  label: "Vue d'ensemble", icon: TrendingUp },
@@ -41,7 +41,7 @@ const QUARTIERS_ABJ = [
 
 export default function EntrepriseDashboardPage() {
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B95A5', fontSize: '14px' }}>Chargement…</div>}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B95A5', fontSize: '14px' }}>Chargement…</div>}>
       <EntrepriseDashboard />
     </Suspense>
   )
@@ -232,7 +232,7 @@ function EntrepriseDashboard() {
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: '#8B95A5', fontSize: '14px' }}>Chargement…</div>
     </div>
   )
@@ -242,10 +242,10 @@ function EntrepriseDashboard() {
   const kyb = KYC_BADGE[entreprise.kyc_status] ?? KYC_BADGE.pending
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA', color: '#3D4852', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', color: 'var(--ui-ink)', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* ── BANNIÈRE ───────────────────────────────────────────────────── */}
-      <div style={{ position: 'relative', width: '100%', height: '200px', background: entreprise.banner_url ? '#E2E8F0' : 'linear-gradient(135deg, #E2E8F0 0%, #F5F7FA 60%, #EEF2F7 100%)', overflow: 'hidden', cursor: 'pointer' }}
+      <div style={{ position: 'relative', width: '100%', height: '200px', background: entreprise.banner_url ? 'var(--ui-border)' : 'linear-gradient(135deg, var(--ui-border) 0%, var(--ui-canvas) 60%, #EEF2F7 100%)', overflow: 'hidden', cursor: 'pointer' }}
         onClick={() => bannerInputRef.current?.click()}>
         {entreprise.banner_url
           ? <img src={entreprise.banner_url} alt="Bannière" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
@@ -257,11 +257,11 @@ function EntrepriseDashboard() {
           )}
         {/* Overlay bouton upload */}
         <div style={{ position: 'absolute', bottom: '12px', right: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', background: 'rgba(255,255,255,0.85)', borderRadius: '8px', backdropFilter: 'blur(8px)', border: '1px solid #E2E8F0', boxShadow: NEU_SMALL }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', background: 'rgba(255,255,255,0.85)', borderRadius: '8px', backdropFilter: 'blur(8px)', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
             {uploadingBanner
               ? <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-              : <Camera size={14} color="#3D4852" />}
-            <span style={{ fontSize: '12px', color: '#3D4852', fontWeight: 500 }}>{uploadingBanner ? 'Upload…' : 'Modifier la bannière'}</span>
+              : <Camera size={14} color="var(--ui-ink)" />}
+            <span style={{ fontSize: '12px', color: 'var(--ui-ink)', fontWeight: 500 }}>{uploadingBanner ? 'Upload…' : 'Modifier la bannière'}</span>
           </div>
         </div>
         <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBannerUpload} />
@@ -271,16 +271,16 @@ function EntrepriseDashboard() {
       <header style={{
         display: 'flex', alignItems: 'center', gap: '12px',
         padding: '14px 20px', background: '#FFFFFF',
-        borderBottom: '1px solid #E2E8F0',
+        borderBottom: '1px solid var(--ui-border)',
         position: 'sticky', top: 0, zIndex: 50,
-        boxShadow: '0 2px 8px rgba(163,177,198,0.2)',
+        boxShadow: 'var(--ui-shadow-soft)',
       }}>
         <Link href="/" className="afrione-gradient" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', flexShrink: 0 }}>
           <Zap size={14} color="white" />
         </Link>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--ui-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {entreprise.name}
             </span>
             <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '10px', background: kyb.bg, color: kyb.color, flexShrink: 0 }}>
@@ -289,15 +289,15 @@ function EntrepriseDashboard() {
           </div>
           <div style={{ fontSize: '11px', color: '#8B95A5' }}>Espace entreprise</div>
         </div>
-        <Link href="/artisan-space/dashboard" style={{ fontSize: '12px', color: '#6B7280', textDecoration: 'none', border: '1px solid #E2E8F0', padding: '6px 12px', borderRadius: '8px', background: '#FFFFFF', boxShadow: NEU_SMALL }}>
+        <Link className="afrione-action" href="/artisan-space/dashboard" style={{ fontSize: '12px', color: 'var(--ui-muted)', textDecoration: 'none', border: '1px solid var(--ui-border)', padding: '6px 12px', borderRadius: '8px', background: '#FFFFFF', boxShadow: NEU_SMALL }}>
           Mon compte
         </Link>
       </header>
 
       {/* ── TAB BAR ────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '4px', padding: '12px 16px 0', borderBottom: '1px solid #E2E8F0', overflowX: 'auto', background: '#FFFFFF' }}>
+      <div style={{ display: 'flex', gap: '4px', padding: '12px 16px 0', borderBottom: '1px solid var(--ui-border)', overflowX: 'auto', background: '#FFFFFF' }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
+          <button className="afrione-action" key={t.id} onClick={() => setTab(t.id)} style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             padding: '8px 14px', borderRadius: '8px 8px 0 0', border: 'none', cursor: 'pointer',
             fontSize: '13px', fontWeight: tab === t.id ? 600 : 400,
@@ -331,7 +331,7 @@ function EntrepriseDashboard() {
                   <div style={{ fontSize: '13px', fontWeight: 600, color: entreprise.kyc_status === 'rejected' ? '#ef4444' : '#C9A84C', marginBottom: '4px' }}>
                     {entreprise.kyc_status === 'rejected' ? 'Validation rejetée' : 'En attente de validation'}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.5 }}>
+                  <div style={{ fontSize: '12px', color: 'var(--ui-muted)', lineHeight: 1.5 }}>
                     {entreprise.kyc_status === 'rejected'
                       ? "Votre dossier a été rejeté. Contactez-nous pour plus d'informations."
                       : "Votre espace entreprise est en cours d'examen par l'équipe AfriOne. Vous serez notifié par email."}
@@ -354,7 +354,7 @@ function EntrepriseDashboard() {
                     <span style={{ fontSize: '11px', color: '#8B95A5' }}>{k.label}</span>
                     <k.icon size={14} color={k.color} />
                   </div>
-                  <div style={{ fontSize: '22px', fontWeight: 700, color: '#3D4852' }}>{k.value}</div>
+                  <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--ui-ink)' }}>{k.value}</div>
                   <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>{k.sub}</div>
                 </div>
               ))}
@@ -362,14 +362,14 @@ function EntrepriseDashboard() {
 
             {/* Missions récentes */}
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852', marginBottom: '12px' }}>Missions récentes</div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ui-ink)', marginBottom: '12px' }}>Missions récentes</div>
               {missions.slice(0, 5).length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#8B95A5', fontSize: '13px', padding: '32px' }}>Aucune mission pour l'instant</div>
               ) : missions.slice(0, 5).map(m => (
                 <MissionRow key={m.id} m={m} />
               ))}
               {missions.length > 5 && (
-                <button onClick={() => setTab('missions')} style={{ width: '100%', marginTop: '8px', padding: '10px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', color: '#6B7280', fontSize: '12px', cursor: 'pointer', boxShadow: NEU_SMALL }}>
+                <button className="afrione-action" onClick={() => setTab('missions')} style={{ width: '100%', marginTop: '8px', padding: '10px', background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '8px', color: 'var(--ui-muted)', fontSize: '12px', cursor: 'pointer', boxShadow: NEU_SMALL }}>
                   Voir toutes les missions ({missions.length})
                 </button>
               )}
@@ -382,7 +382,7 @@ function EntrepriseDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852' }}>Équipe</div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ui-ink)' }}>Équipe</div>
                 <div style={{ fontSize: '12px', color: '#8B95A5', marginTop: '2px' }}>{team.length} artisan{team.length !== 1 ? 's' : ''} dans cet espace</div>
               </div>
               <InviteInfo />
@@ -406,14 +406,14 @@ function EntrepriseDashboard() {
                             : aName[0]?.toUpperCase()}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852' }}>{aName}</div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ui-ink)' }}>{aName}</div>
                           <div style={{ fontSize: '11px', color: '#8B95A5' }}>{a?.metier} · {a?.users?.phone || a?.users?.email || ''}</div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                          <button onClick={() => rejectRequest(req)} style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                          <button className="afrione-action" onClick={() => rejectRequest(req)} style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                             Refuser
                           </button>
-                          <button onClick={() => approveRequest(req)} style={{ padding: '6px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: '8px', color: '#16a34a', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                          <button className="afrione-action" onClick={() => approveRequest(req)} style={{ padding: '6px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: '8px', color: '#16a34a', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                             Accepter
                           </button>
                         </div>
@@ -434,7 +434,7 @@ function EntrepriseDashboard() {
 
               return (
                 <div key={a.id} style={{ background: '#FFFFFF', boxShadow: NEU_SHADOW, borderRadius: '16px', overflow: 'hidden' }}>
-                  <button onClick={() => setExpandedArtisan(expanded ? null : a.id)} style={{
+                  <button className="afrione-action" onClick={() => setExpandedArtisan(expanded ? null : a.id)} style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
                   }}>
@@ -445,7 +445,7 @@ function EntrepriseDashboard() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#3D4852' }}>{aName}</span>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ui-ink)' }}>{aName}</span>
                         <span style={{ fontSize: '11px', color: '#8B95A5' }}>{a.metier}</span>
                         <span style={{ fontSize: '10px', fontWeight: 600, padding: '1px 7px', borderRadius: '8px', background: badge.bg, color: badge.color }}>{badge.label}</span>
                         {a.is_available && (
@@ -460,15 +460,15 @@ function EntrepriseDashboard() {
                   </button>
 
                   {expanded && (
-                    <div style={{ padding: '0 16px 16px', borderTop: '1px solid #E2E8F0' }}>
+                    <div style={{ padding: '0 16px 16px', borderTop: '1px solid var(--ui-border)' }}>
                       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', padding: '12px 0' }}>
                         {a.users?.phone && (
-                          <a href={`tel:${a.users.phone}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6B7280', textDecoration: 'none' }}>
+                          <a href={`tel:${a.users.phone}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--ui-muted)', textDecoration: 'none' }}>
                             <Phone size={13} /> {a.users.phone}
                           </a>
                         )}
                         {a.users?.email && (
-                          <a href={`mailto:${a.users.email}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6B7280', textDecoration: 'none' }}>
+                          <a href={`mailto:${a.users.email}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--ui-muted)', textDecoration: 'none' }}>
                             <Mail size={13} /> {a.users.email}
                           </a>
                         )}
@@ -493,7 +493,7 @@ function EntrepriseDashboard() {
         {/* ── MISSIONS ───────────────────────────────────────────────── */}
         {tab === 'missions' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852', marginBottom: '8px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '8px' }}>
               Missions ({missions.length})
             </div>
             {missions.length === 0 ? (
@@ -506,17 +506,17 @@ function EntrepriseDashboard() {
         {tab === 'profil' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852' }}>Profil entreprise</div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ui-ink)' }}>Profil entreprise</div>
               {!editing ? (
-                <button onClick={() => setEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#FFFFFF', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '8px', color: '#E85D26', fontSize: '12px', cursor: 'pointer', boxShadow: NEU_SMALL }}>
+                <button className="afrione-action" onClick={() => setEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#FFFFFF', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '8px', color: '#E85D26', fontSize: '12px', cursor: 'pointer', boxShadow: NEU_SMALL }}>
                   <Edit3 size={13} /> Modifier
                 </button>
               ) : (
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setEditing(false)} style={{ padding: '8px 14px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '8px', color: '#6B7280', fontSize: '12px', cursor: 'pointer', boxShadow: NEU_SMALL }}>
+                  <button className="afrione-action" onClick={() => setEditing(false)} style={{ padding: '8px 14px', background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '8px', color: 'var(--ui-muted)', fontSize: '12px', cursor: 'pointer', boxShadow: NEU_SMALL }}>
                     Annuler
                   </button>
-                  <button onClick={saveProfil} disabled={saving} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', border: 'none', borderRadius: '8px', color: 'white', fontSize: '12px', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                  <button onClick={saveProfil} disabled={saving} className="btn-primary afrione-action" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', border: 'none', borderRadius: '8px', color: 'white', fontSize: '12px', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
                     {saving ? 'Enregistrement…' : 'Enregistrer'}
                   </button>
                 </div>
@@ -531,7 +531,7 @@ function EntrepriseDashboard() {
 
             <FieldGroup label="Description">
               {editing
-                ? <textarea value={eDesc} onChange={e => setEDesc(e.target.value)} placeholder="Décrivez votre entreprise…" rows={4} style={{ width: '100%', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '10px 12px', color: '#3D4852', fontSize: '13px', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
+                ? <textarea className="afrione-field" value={eDesc} onChange={e => setEDesc(e.target.value)} placeholder="Décrivez votre entreprise…" rows={4} style={{ width: '100%', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '8px', padding: '10px 12px', color: 'var(--ui-ink)', fontSize: '13px', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
                 : <FieldValue>{entreprise.description || '—'}</FieldValue>}
             </FieldGroup>
 
@@ -559,11 +559,11 @@ function EntrepriseDashboard() {
               {editing ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {SECTEURS_OPTS.map(s => (
-                    <button key={s} onClick={() => setESecteurs(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])} style={{
+                    <button className="afrione-action" key={s} onClick={() => setESecteurs(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])} style={{
                       padding: '5px 12px', borderRadius: '20px', border: '1px solid', cursor: 'pointer', fontSize: '12px',
                       background: eSecteurs.includes(s) ? 'rgba(232,93,38,0.08)' : '#FFFFFF',
-                      borderColor: eSecteurs.includes(s) ? 'rgba(232,93,38,0.4)' : '#E2E8F0',
-                      color: eSecteurs.includes(s) ? '#E85D26' : '#6B7280',
+                      borderColor: eSecteurs.includes(s) ? 'rgba(232,93,38,0.4)' : 'var(--ui-border)',
+                      color: eSecteurs.includes(s) ? '#E85D26' : 'var(--ui-muted)',
                       boxShadow: eSecteurs.includes(s) ? 'none' : NEU_SMALL,
                     }}>{s}</button>
                   ))}
@@ -584,11 +584,11 @@ function EntrepriseDashboard() {
               {editing ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {QUARTIERS_ABJ.map(q => (
-                    <button key={q} onClick={() => setEQuartiers(prev => prev.includes(q) ? prev.filter(x => x !== q) : [...prev, q])} style={{
+                    <button className="afrione-action" key={q} onClick={() => setEQuartiers(prev => prev.includes(q) ? prev.filter(x => x !== q) : [...prev, q])} style={{
                       padding: '5px 12px', borderRadius: '20px', border: '1px solid', cursor: 'pointer', fontSize: '12px',
                       background: eQuartiers.includes(q) ? 'rgba(96,165,250,0.08)' : '#FFFFFF',
-                      borderColor: eQuartiers.includes(q) ? 'rgba(96,165,250,0.35)' : '#E2E8F0',
-                      color: eQuartiers.includes(q) ? '#60a5fa' : '#6B7280',
+                      borderColor: eQuartiers.includes(q) ? 'rgba(96,165,250,0.35)' : 'var(--ui-border)',
+                      color: eQuartiers.includes(q) ? '#60a5fa' : 'var(--ui-muted)',
                       boxShadow: eQuartiers.includes(q) ? 'none' : NEU_SMALL,
                     }}>{q}</button>
                   ))}
@@ -605,14 +605,14 @@ function EntrepriseDashboard() {
             </FieldGroup>
 
             {/* Owner info */}
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px', boxShadow: NEU_SMALL }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '12px', padding: '14px 16px', boxShadow: NEU_SMALL }}>
               <div style={{ fontSize: '11px', fontWeight: 600, color: '#8B95A5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Administrateur</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div className="afrione-gradient" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '13px', color: 'white' }}>
                   {entreprise.users?.name?.[0]?.toUpperCase() || 'A'}
                 </div>
                 <div>
-                  <div style={{ fontSize: '13px', color: '#3D4852', fontWeight: 500 }}>{entreprise.users?.name || '—'}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--ui-ink)', fontWeight: 500 }}>{entreprise.users?.name || '—'}</div>
                   <div style={{ fontSize: '11px', color: '#8B95A5' }}>{entreprise.users?.email || '—'}</div>
                 </div>
               </div>
@@ -627,8 +627,8 @@ function EntrepriseDashboard() {
 
 // ── Sous-composants ─────────────────────────────────────────────────────────
 
-const NEU_SHADOW_SUB = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL_SUB  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW_SUB = 'var(--ui-shadow-card)'
+const NEU_SMALL_SUB  = 'var(--ui-shadow-soft)'
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   en_cours:   { label: 'En cours',   color: '#22c55e' },
@@ -648,14 +648,14 @@ function MissionRow({ m, compact = false }: { m: any; compact?: boolean }) {
         display: 'flex', alignItems: 'center', gap: '12px',
         padding: compact ? '8px 12px' : '12px 16px',
         background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
+        border: '1px solid var(--ui-border)',
         borderRadius: '10px', marginBottom: '6px',
         cursor: 'pointer', transition: 'box-shadow 0.15s',
         boxShadow: NEU_SMALL_SUB,
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: compact ? '12px' : '13px', fontWeight: 600, color: '#3D4852', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: compact ? '12px' : '13px', fontWeight: 600, color: 'var(--ui-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {m.category || 'Mission'}
             </span>
             {m.quartier && <span style={{ fontSize: '11px', color: '#8B95A5' }}>{m.quartier}</span>}
@@ -678,16 +678,16 @@ function InviteInfo() {
   const [open, setOpen] = useState(false)
   return (
     <div style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#FFFFFF', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '8px', color: '#E85D26', fontSize: '12px', cursor: 'pointer', boxShadow: NEU_SMALL_SUB }}>
+      <button className="afrione-action" onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#FFFFFF', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '8px', color: '#E85D26', fontSize: '12px', cursor: 'pointer', boxShadow: NEU_SMALL_SUB }}>
         <Plus size={13} /> Ajouter un artisan
       </button>
       {open && (
-        <div style={{ position: 'absolute', right: 0, top: '110%', width: '280px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '16px', zIndex: 100, boxShadow: NEU_SHADOW_SUB }}>
+        <div style={{ position: 'absolute', right: 0, top: '110%', width: '280px', background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '12px', padding: '16px', zIndex: 100, boxShadow: NEU_SHADOW_SUB }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852' }}>Inviter un artisan</span>
-            <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B95A5' }}><X size={14} /></button>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ui-ink)' }}>Inviter un artisan</span>
+            <button className="afrione-action" onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8B95A5' }}><X size={14} /></button>
           </div>
-          <p style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.6, margin: 0 }}>
+          <p style={{ fontSize: '12px', color: 'var(--ui-muted)', lineHeight: 1.6, margin: 0 }}>
             Pour ajouter un artisan à votre espace, demandez-lui de rejoindre AfriOne et de mentionner votre entreprise lors de son inscription.
             <br /><br />
             Notre équipe effectuera la liaison dans les 24h.
@@ -703,10 +703,10 @@ function InviteInfo() {
 
 function EmptyTeam() {
   return (
-    <div style={{ textAlign: 'center', padding: '48px 24px', background: '#FFFFFF', border: '1.5px dashed #E2E8F0', borderRadius: '16px', boxShadow: NEU_SHADOW_SUB }}>
+    <div style={{ textAlign: 'center', padding: '48px 24px', background: '#FFFFFF', border: '1.5px dashed var(--ui-border)', borderRadius: '16px', boxShadow: NEU_SHADOW_SUB }}>
       <Users size={32} color="#8B95A5" style={{ marginBottom: '12px' }} />
-      <p style={{ color: '#3D4852', fontWeight: 600, fontSize: '14px', margin: '0 0 6px' }}>Aucun artisan dans votre équipe</p>
-      <p style={{ color: '#6B7280', fontSize: '12px', margin: 0, lineHeight: 1.6 }}>
+      <p style={{ color: 'var(--ui-ink)', fontWeight: 600, fontSize: '14px', margin: '0 0 6px' }}>Aucun artisan dans votre équipe</p>
+      <p style={{ color: 'var(--ui-muted)', fontSize: '12px', margin: 0, lineHeight: 1.6 }}>
         Contactez le support AfriOne pour rattacher vos artisans à cet espace.
       </p>
     </div>
@@ -723,16 +723,16 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
 }
 
 function FieldValue({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: '13px', color: '#3D4852', padding: '4px 0' }}>{children}</div>
+  return <div style={{ fontSize: '13px', color: 'var(--ui-ink)', padding: '4px 0' }}>{children}</div>
 }
 
 function Input({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <input
+    <input className="afrione-field"
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      style={{ width: '100%', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', padding: '10px 12px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+      style={{ width: '100%', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '8px', padding: '10px 12px', color: 'var(--ui-ink)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
     />
   )
 }

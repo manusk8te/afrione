@@ -95,7 +95,7 @@ export default function AdminSidebar({
       borderRadius: '10px',
       fontSize: compact ? '10px' : '13px',
       fontWeight: isActive ? 600 : 400,
-      color: isActive ? '#E85D26' : '#7A7A6E',
+      color: isActive ? '#FF9A6C' : '#BBC5BE',
       background: isActive ? 'rgba(232,93,38,0.12)' : 'transparent',
       border: 'none',
       cursor: 'pointer',
@@ -142,7 +142,7 @@ export default function AdminSidebar({
     }
 
     return (
-      <button key={item.id} onClick={() => onTabChange?.(item.id)} style={sharedStyle}>
+      <button className="afrione-action" key={item.id} onClick={() => onTabChange?.(item.id)} style={sharedStyle}>
         {content}
       </button>
     )
@@ -155,7 +155,7 @@ export default function AdminSidebar({
         flexDirection: 'column',
         width: '220px',
         flexShrink: 0,
-        background: 'rgba(0,0,0,0.25)',
+        background: '#151C18',
         borderRight: '1px solid rgba(255,255,255,0.07)',
         minHeight: '100vh',
         padding: '24px 12px',
@@ -199,8 +199,8 @@ export default function AdminSidebar({
         overflowX: 'auto',
         flexShrink: 0,
       }} className="flex lg:hidden">
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: '#E85D26', borderRadius: '8px', marginRight: '8px', flexShrink: 0 }}>
-          <Zap size={14} color="white" />
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '36px', background: 'transparent', borderRadius: '8px', marginRight: '8px', flexShrink: 0 }}>
+          <img src="/afrione-logo-transparent.png" alt="AfriOne" width={30} height={24} style={{objectFit:"contain"}} />
         </Link>
         {ADMIN_NAV.map(item => renderItem(item, true))}
       </header>

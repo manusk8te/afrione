@@ -81,21 +81,21 @@ export default function ResetPasswordPage() {
           <form onSubmit={confirmCode} style={{ display: 'grid', gap: 14 }}>
             <p>Ouvrez le lien du dernier email AfriOne, ou saisissez le code indiqué dans cet email. Vérifiez aussi les spams.</p>
             <label htmlFor="recovery-email">Adresse email du compte</label>
-            <input id="recovery-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} style={{ color: '#fff', background: '#1A1A1A', borderRadius: 10, padding: 12 }} />
+            <input className="afrione-field" id="recovery-email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} style={{ color: '#fff', background: '#1A1A1A', borderRadius: 10, padding: 12 }} />
             <label htmlFor="recovery-code">Code reçu par email</label>
-            <input id="recovery-code" type="text" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9\s]{6,14}" maxLength={14} value={code} onChange={e => setCode(e.target.value)} style={{ color: '#fff', background: '#1A1A1A', borderRadius: 10, padding: 12 }} />
+            <input className="afrione-field" id="recovery-code" type="text" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9\s]{6,14}" maxLength={14} value={code} onChange={e => setCode(e.target.value)} style={{ color: '#fff', background: '#1A1A1A', borderRadius: 10, padding: 12 }} />
             {error && <p role="alert" style={{ color: '#fca5a5' }}>{error}</p>}
-            <button type="submit" disabled={busy} style={{ background: '#E85D26', color: '#fff', padding: 14, borderRadius: 10 }}>{busy ? 'Vérification…' : 'Vérifier mon code'}</button>
+            <button className="afrione-action" type="submit" disabled={busy} style={{ background: '#E85D26', color: '#fff', padding: 14, borderRadius: 10 }}>{busy ? 'Vérification…' : 'Vérifier mon code'}</button>
             <Link href="/auth?redirect=/diagnostic" style={{ color: '#E85D26' }}>Demander un nouvel email</Link>
           </form>
         ) : (
           <form onSubmit={submit} style={{ display: 'grid', gap: 16 }}>
             <label htmlFor="new-password">Nouveau mot de passe</label>
-            <input id="new-password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} style={{ color: '#fff', background: '#1A1A1A', borderRadius: 10, padding: 12 }} />
+            <input className="afrione-field" id="new-password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} style={{ color: '#fff', background: '#1A1A1A', borderRadius: 10, padding: 12 }} />
             <label htmlFor="confirm-password">Confirmer le mot de passe</label>
-            <input id="confirm-password" type="password" autoComplete="new-password" required minLength={8} value={confirmation} onChange={e => setConfirmation(e.target.value)} style={{ color: '#fff', background: '#1A1A1A', borderRadius: 10, padding: 12 }} />
+            <input className="afrione-field" id="confirm-password" type="password" autoComplete="new-password" required minLength={8} value={confirmation} onChange={e => setConfirmation(e.target.value)} style={{ color: '#fff', background: '#1A1A1A', borderRadius: 10, padding: 12 }} />
             {error && <p role="alert" style={{ color: '#fca5a5' }}>{error}</p>}
-            <button type="submit" disabled={busy} style={{ background: '#E85D26', color: '#fff', padding: 14, borderRadius: 10 }}>{busy ? 'Enregistrement…' : 'Enregistrer mon mot de passe'}</button>
+            <button className="afrione-action" type="submit" disabled={busy} style={{ background: '#E85D26', color: '#fff', padding: 14, borderRadius: 10 }}>{busy ? 'Enregistrement…' : 'Enregistrer mon mot de passe'}</button>
           </form>
         )}
       </section>

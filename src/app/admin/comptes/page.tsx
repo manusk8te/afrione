@@ -6,8 +6,8 @@ import AdminSidebar from '@/components/admin/AdminSidebar'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const TEST_PASSWORD = 'AfriTest2024!'
 
@@ -122,30 +122,30 @@ export default function AdminComptesPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F5F7FA' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--ui-canvas)' }}>
       <AdminSidebar activeId="comptes" />
 
-      <main className="flex-1 p-6" style={{ maxWidth: '1000px', minWidth: 0 }}>
+      <main className="afrione-admin-content flex-1 p-6" style={{ maxWidth: '1000px', minWidth: 0 }}>
 
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#3D4852' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)' }}>
               Comptes & Test urgence
             </h1>
-            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '2px' }}>
+            <p style={{ color: 'var(--ui-muted)', fontSize: '14px', marginTop: '2px' }}>
               Basculer entre les comptes de test · Déclencher une mission urgente vers les artisans test
             </p>
           </div>
-          <button onClick={loadStatuses}
-            style={{ padding: '8px', background: '#FFF', borderRadius: '12px', border: '1.5px solid #E2E8F0', cursor: 'pointer', boxShadow: NEU_SMALL }}>
-            <RefreshCw size={14} style={{ color: '#6B7280' }} />
+          <button className="afrione-action" onClick={loadStatuses}
+            style={{ padding: '8px', background: '#FFF', borderRadius: '12px', border: '1.5px solid var(--ui-border)', cursor: 'pointer', boxShadow: NEU_SMALL }}>
+            <RefreshCw size={14} style={{ color: 'var(--ui-muted)' }} />
           </button>
         </div>
 
         {/* ── Comptes de test ─────────────────────────────────────────── */}
         <div style={{ background: '#FFF', borderRadius: '20px', padding: '22px', boxShadow: NEU_SHADOW, marginBottom: '24px' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'Tahoma' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.12em', marginBottom: '14px', fontFamily: 'var(--font-body)' }}>
             COMPTES DE TEST · mot de passe : {TEST_PASSWORD}
           </div>
 
@@ -159,11 +159,11 @@ export default function AdminComptesPage() {
               {TEST_ACCOUNTS.map(acct => {
                 const st = statuses.find(s => s.email === acct.email)
                 return (
-                  <div key={acct.email} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: '#F5F7FA', borderRadius: '14px', flexWrap: 'wrap' }}>
+                  <div key={acct.email} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'var(--ui-canvas)', borderRadius: '14px', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '22px', flexShrink: 0 }}>{acct.emoji}</span>
                     <div style={{ flex: 1, minWidth: '180px' }}>
-                      <div style={{ fontWeight: 700, fontSize: '14px', color: '#3D4852' }}>{acct.label}</div>
-                      <div style={{ fontSize: '12px', color: '#8B95A5', fontFamily: 'Tahoma' }}>{acct.email}</div>
+                      <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)' }}>{acct.label}</div>
+                      <div style={{ fontSize: '12px', color: '#8B95A5', fontFamily: 'var(--font-body)' }}>{acct.email}</div>
                     </div>
 
                     {/* Badges d'état */}
@@ -189,12 +189,12 @@ export default function AdminComptesPage() {
                       )}
                     </div>
 
-                    <button
+                    <button className="afrione-action"
                       onClick={() => switchTo(acct)}
                       disabled={!!switching || !st?.exists}
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: '6px',
-                        padding: '9px 14px', background: st?.exists ? '#E85D26' : '#E2E8F0',
+                        padding: '9px 14px', background: st?.exists ? '#E85D26' : 'var(--ui-border)',
                         color: 'white', border: 'none', borderRadius: '10px',
                         fontWeight: 700, fontSize: '12px', cursor: st?.exists ? 'pointer' : 'default',
                         opacity: switching === acct.email ? 0.6 : 1, flexShrink: 0,
@@ -221,7 +221,7 @@ export default function AdminComptesPage() {
               <Zap size={16} color="white" />
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852' }}>Lancer une mission urgente test</div>
+              <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--ui-ink)' }}>Lancer une mission urgente test</div>
               <div style={{ fontSize: '12px', color: '#8B95A5' }}>
                 Client : test.client@afrione.ci · Paiement escrow simulé · Broadcast aux artisans test uniquement
               </div>
@@ -233,23 +233,23 @@ export default function AdminComptesPage() {
               <label style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.08em', display: 'block', marginBottom: '6px' }}>CATÉGORIE</label>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {CATEGORIES.map(c => (
-                  <button key={c} onClick={() => setCategory(c)} style={{
+                  <button className="afrione-action" key={c} onClick={() => setCategory(c)} style={{
                     padding: '9px 14px', borderRadius: '10px', fontWeight: 600, fontSize: '12px', cursor: 'pointer',
-                    border: `1.5px solid ${category === c ? '#E85D26' : '#E2E8F0'}`,
+                    border: `1.5px solid ${category === c ? '#E85D26' : 'var(--ui-border)'}`,
                     background: category === c ? 'rgba(232,93,38,0.08)' : '#FFF',
-                    color: category === c ? '#E85D26' : '#6B7280',
+                    color: category === c ? '#E85D26' : 'var(--ui-muted)',
                   }}>{c}</button>
                 ))}
               </div>
             </div>
             <div>
               <label style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.08em', display: 'block', marginBottom: '6px' }}>MONTANT (FCFA)</label>
-              <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
-                style={{ padding: '9px 12px', borderRadius: '10px', border: '1.5px solid #E2E8F0', fontSize: '13px', outline: 'none', width: '120px', color: '#3D4852', fontFamily: 'Tahoma' }} />
+              <input className="afrione-field" type="number" value={amount} onChange={e => setAmount(e.target.value)}
+                style={{ padding: '9px 12px', borderRadius: '10px', border: '1.5px solid var(--ui-border)', fontSize: '13px', outline: 'none', width: '120px', color: 'var(--ui-ink)', fontFamily: 'var(--font-body)' }} />
             </div>
           </div>
 
-          <button onClick={launchUrgent} disabled={launching} className="btn-primary"
+          <button onClick={launchUrgent} disabled={launching} className="btn-primary afrione-action"
             style={{ padding: '13px 22px', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: launching ? 0.6 : 1 }}>
             {launching
               ? <><div style={{ width: '15px', height: '15px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Broadcast en cours…</>
@@ -267,8 +267,8 @@ export default function AdminComptesPage() {
               {result.targets?.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '10px' }}>
                   {result.targets.map(t => (
-                    <div key={t.email} style={{ fontSize: '12px', color: '#6B7280' }}>
-                      🔔 {t.name} · {t.metier} · <span style={{ fontFamily: 'Tahoma' }}>{t.email}</span>
+                    <div key={t.email} style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
+                      🔔 {t.name} · {t.metier} · <span style={{ fontFamily: 'var(--font-body)' }}>{t.email}</span>
                     </div>
                   ))}
                 </div>
@@ -281,7 +281,7 @@ export default function AdminComptesPage() {
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {ARTISAN_SWITCH.map(a => (
-                      <button key={a.email}
+                      <button className="afrione-action" key={a.email}
                         onClick={async () => {
                           setSwitching(a.email)
                           await supabase.auth.signOut()
@@ -298,12 +298,12 @@ export default function AdminComptesPage() {
                 </div>
               )}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button onClick={() => router.push(`/dispatch/${result.mission_id}`)}
-                  style={{ padding: '8px 14px', background: '#FFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', fontWeight: 600, fontSize: '12px', cursor: 'pointer', color: '#3D4852' }}>
+                <button className="afrione-action" onClick={() => router.push(`/dispatch/${result.mission_id}`)}
+                  style={{ padding: '8px 14px', background: '#FFF', border: '1.5px solid var(--ui-border)', borderRadius: '10px', fontWeight: 600, fontSize: '12px', cursor: 'pointer', color: 'var(--ui-ink)' }}>
                   Voir le dispatch (vue client) →
                 </button>
-                <button onClick={() => router.push(`/warroom/${result.mission_id}`)}
-                  style={{ padding: '8px 14px', background: '#FFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', fontWeight: 600, fontSize: '12px', cursor: 'pointer', color: '#3D4852' }}>
+                <button className="afrione-action" onClick={() => router.push(`/warroom/${result.mission_id}`)}
+                  style={{ padding: '8px 14px', background: '#FFF', border: '1.5px solid var(--ui-border)', borderRadius: '10px', fontWeight: 600, fontSize: '12px', cursor: 'pointer', color: 'var(--ui-ink)' }}>
                   Warroom →
                 </button>
               </div>

@@ -8,8 +8,8 @@ import { metierDisplay } from '@/lib/metier'
 import toast from 'react-hot-toast'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const STATUS_COLORS: Record<string, string> = {
   en_cours:    'text-green-600 bg-green-100',
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
             setLitigeNotif(true)
             toast('⚠️ Nouveau litige ouvert !', {
               duration: 6000,
-              style: { background: '#FFFFFF', color: '#3D4852', border: '1px solid rgba(239,68,68,0.4)' },
+              style: { background: '#FFFFFF', color: 'var(--ui-ink)', border: '1px solid rgba(239,68,68,0.4)' },
             })
             loadAll()
           }
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F5F7FA' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--ui-canvas)' }}>
 
       <AdminSidebar
         activeId={tab}
@@ -238,16 +238,16 @@ export default function AdminDashboard() {
       />
 
       {/* Main */}
-      <main style={{ flex: 1, padding: '24px 32px', maxWidth: '1200px', minWidth: 0 }}>
+      <main className="afrione-admin-content" style={{ flex: 1, padding: '24px 32px', maxWidth: '1200px', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 700, color: '#3D4852' }}>Dashboard Admin</h1>
-            <p style={{ fontSize: '13px', color: '#6B7280', marginTop: '4px' }}>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 700, color: 'var(--ui-ink)' }}>Dashboard Admin</h1>
+            <p style={{ fontSize: '13px', color: 'var(--ui-muted)', marginTop: '4px' }}>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {actionMsg && <span style={{ fontSize: '12px', color: '#2B6B3E', background: 'rgba(43,107,62,0.1)', padding: '6px 14px', borderRadius: '20px' }}>{actionMsg}</span>}
             {litigeNotif && (
-              <button onClick={() => { setTab('litiges'); setLitigeNotif(false) }} style={{
+              <button className="afrione-action" onClick={() => { setTab('litiges'); setLitigeNotif(false) }} style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.35)',
                 padding: '6px 14px', borderRadius: '20px', cursor: 'pointer',
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.2)', padding: '6px 14px', borderRadius: '20px' }}>
               <span style={{ width: '8px', height: '8px', background: '#2B6B3E', borderRadius: '50%', display: 'inline-block' }} />
-              <span style={{ fontSize: '11px', fontFamily: 'Tahoma', color: '#2B6B3E' }}>SYSTÈME OPÉRATIONNEL</span>
+              <span style={{ fontSize: '11px', fontFamily: 'var(--font-body)', color: '#2B6B3E' }}>SYSTÈME OPÉRATIONNEL</span>
             </div>
           </div>
         </div>
@@ -275,7 +275,7 @@ export default function AdminDashboard() {
 
                 {/* Alerte litiges */}
                 {litiges.length > 0 && (
-                  <button onClick={() => { setTab('litiges'); setLitigeNotif(false) }} style={{
+                  <button className="afrione-action" onClick={() => { setTab('litiges'); setLitigeNotif(false) }} style={{
                     display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 20px',
                     background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)',
                     borderRadius: '16px', cursor: 'pointer', textAlign: 'left', width: '100%',
@@ -298,12 +298,12 @@ export default function AdminDashboard() {
                     { label: 'Total missions',  value: stats.missions,                icon: Activity,   color: '#E85D26' },
                     { label: 'Artisans actifs', value: stats.artisans,                icon: Users,      color: '#2B6B3E' },
                     { label: 'CA total (FCFA)', value: stats.revenue.toLocaleString(), icon: DollarSign, color: '#C9A84C' },
-                    { label: 'KYC en attente',  value: kycAll.filter(k => k.kyc_status === 'pending').length, icon: Shield, color: '#6B7280' },
+                    { label: 'KYC en attente',  value: kycAll.filter(k => k.kyc_status === 'pending').length, icon: Shield, color: 'var(--ui-muted)' },
                   ].map(k => (
-                    <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', boxShadow: NEU_SMALL }}>
+                    <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SMALL }}>
                       <k.icon size={20} style={{ color: k.color, marginBottom: '12px' }} />
-                      <div style={{ fontSize: '28px', fontWeight: 700, color: '#3D4852', fontFamily: 'var(--font-display)' }}>{k.value}</div>
-                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>{k.label}</div>
+                      <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-display)' }}>{k.value}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>{k.label}</div>
                     </div>
                   ))}
                 </div>
@@ -314,14 +314,14 @@ export default function AdminDashboard() {
                   {[
                     { mode: 'urgent',   label: 'Mode Urgent',   color: '#E85D26', icon: '⚡' },
                     { mode: 'standard', label: 'Mode Standard', color: '#2B6B3E', icon: '📋' },
-                    { mode: 'libre',    label: 'Mode Libre',    color: '#6B7280', icon: '🔍' },
+                    { mode: 'libre',    label: 'Mode Libre',    color: 'var(--ui-muted)', icon: '🔍' },
                   ].map(m => (
-                    <div key={m.mode} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
+                    <div key={m.mode} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
                       <div style={{ fontSize: '20px', marginBottom: '8px' }}>{m.icon}</div>
                       <div style={{ fontSize: '24px', fontWeight: 700, color: m.color, fontFamily: 'var(--font-display)' }}>
                         {missions.filter(ms => ms.mode === m.mode).length}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>{m.label}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>{m.label}</div>
                     </div>
                   ))}
                 </div>
@@ -333,33 +333,33 @@ export default function AdminDashboard() {
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#C9A84C', fontFamily: 'var(--font-display)' }}>
                       {casCReports.filter(r => !r.reviewed_by_admin).length}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>Cas C en attente</div>
+                    <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>Cas C en attente</div>
                   </div>
-                  <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
+                  <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
                     <div style={{ fontSize: '20px', marginBottom: '8px' }}>🛡️</div>
-                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#3D4852', fontFamily: 'var(--font-display)' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-display)' }}>
                       {missions.filter(m => m.insurance_taken).length}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>Missions assurées</div>
+                    <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>Missions assurées</div>
                   </div>
-                  <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
+                  <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
                     <div style={{ fontSize: '20px', marginBottom: '8px' }}>💰</div>
-                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#3D4852', fontFamily: 'var(--font-display)' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-display)' }}>
                       {(missions.filter(m => m.insurance_taken).length * 500).toLocaleString()}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>FCFA assurance</div>
+                    <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>FCFA assurance</div>
                   </div>
                   <div style={{ background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
                     <div style={{ fontSize: '20px', marginBottom: '8px' }}>⚠️</div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#ef4444', fontFamily: 'var(--font-display)' }}>
                       {artisans.filter((a: any) => (a.cas_c_count || 0) / Math.max(a.total_missions || 1, 1) > 0.1).length}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px', fontFamily: 'Tahoma', textTransform: 'uppercase' }}>Artisans à risque (&gt;10%)</div>
+                    <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>Artisans à risque (&gt;10%)</div>
                   </div>
                 </div>
 
                 {/* Bouton Sync Jumia */}
-                <button onClick={triggerScrape} disabled={scraping} style={{
+                <button className="afrione-action" onClick={triggerScrape} disabled={scraping} style={{
                   display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 20px', width: '100%',
                   background: 'rgba(232,93,38,0.06)', border: '1.5px dashed rgba(232,93,38,0.35)',
                   borderRadius: '16px', cursor: scraping ? 'default' : 'pointer', textAlign: 'left',
@@ -378,14 +378,14 @@ export default function AdminDashboard() {
                 </button>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                  <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: NEU_SMALL }}>
-                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852', marginBottom: '16px' }}>Missions récentes</h2>
+                  <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '24px', boxShadow: NEU_SMALL }}>
+                    <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '16px' }}>Missions récentes</h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {missions.slice(0, 5).map(m => (
-                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: '#F5F7FA', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'var(--ui-canvas)', borderRadius: '10px', border: '1px solid var(--ui-border)' }}>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 500, color: '#3D4852' }}>{m.users?.name || 'Client'} → {m.artisan_pros?.users?.name || '—'}</div>
-                            <div style={{ fontSize: '11px', color: '#6B7280' }}>{m.category || '—'} · {m.quartier || 'Abidjan'}</div>
+                            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ui-ink)' }}>{m.users?.name || 'Client'} → {m.artisan_pros?.users?.name || '—'}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--ui-muted)' }}>{m.category || '—'} · {m.quartier || 'Abidjan'}</div>
                           </div>
                           <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '20px', fontWeight: 500, background: 'rgba(232,93,38,0.1)', color: '#E85D26' }}>{m.status}</span>
                         </div>
@@ -393,29 +393,29 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: NEU_SMALL }}>
+                  <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '24px', boxShadow: NEU_SMALL }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                      <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852' }}>KYC en attente</h2>
+                      <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ui-ink)' }}>KYC en attente</h2>
                       <span style={{ fontSize: '11px', color: '#E85D26', background: 'rgba(232,93,38,0.1)', padding: '3px 10px', borderRadius: '20px' }}>{kycAll.filter(k => k.kyc_status === 'pending').length} en attente</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {kycAll.filter(k => k.kyc_status === 'pending').slice(0, 5).map(k => (
-                        <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: '#F5F7FA', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                        <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'var(--ui-canvas)', borderRadius: '10px', border: '1px solid var(--ui-border)' }}>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 500, color: '#3D4852' }}>{k.users?.name || '—'}</div>
-                            <div style={{ fontSize: '11px', color: '#6B7280' }}>{metierDisplay(k.metier).icon} {metierDisplay(k.metier).label} · {new Date(k.created_at).toLocaleDateString('fr-FR')}</div>
+                            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ui-ink)' }}>{k.users?.name || '—'}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--ui-muted)' }}>{metierDisplay(k.metier).icon} {metierDisplay(k.metier).label} · {new Date(k.created_at).toLocaleDateString('fr-FR')}</div>
                           </div>
                           <div style={{ display: 'flex', gap: '6px' }}>
-                            <button onClick={() => approveKyc(k.id, k.kyc_security?.[0]?.id)} style={{ width: '28px', height: '28px', background: 'rgba(43,107,62,0.15)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2B6B3E' }}>
+                            <button className="afrione-action afrione-action--icon" onClick={() => approveKyc(k.id, k.kyc_security?.[0]?.id)} style={{ width: '28px', height: '28px', background: 'rgba(43,107,62,0.15)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2B6B3E' }}>
                               <CheckCircle size={14} />
                             </button>
-                            <button onClick={() => rejectKyc(k.id, k.kyc_security?.[0]?.id)} style={{ width: '28px', height: '28px', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+                            <button className="afrione-action afrione-action--icon" onClick={() => rejectKyc(k.id, k.kyc_security?.[0]?.id)} style={{ width: '28px', height: '28px', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
                               <X size={14} />
                             </button>
                           </div>
                         </div>
                       ))}
-                      {kycAll.filter(k => k.kyc_status === 'pending').length === 0 && <p style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', padding: '24px 0' }}>Aucun KYC en attente 🎉</p>}
+                      {kycAll.filter(k => k.kyc_status === 'pending').length === 0 && <p style={{ fontSize: '13px', color: 'var(--ui-muted)', textAlign: 'center', padding: '24px 0' }}>Aucun KYC en attente 🎉</p>}
                     </div>
                   </div>
                 </div>
@@ -426,7 +426,7 @@ export default function AdminDashboard() {
             {tab === 'litiges' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', margin: 0 }}>Litiges & Arbitrage</h2>
+                  <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', margin: 0 }}>Litiges & Arbitrage</h2>
                   <span style={{
                     fontSize: '12px', padding: '4px 12px', borderRadius: '20px', fontWeight: 700,
                     background: litiges.length > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(43,107,62,0.1)',
@@ -437,9 +437,9 @@ export default function AdminDashboard() {
                 </div>
 
                 {litiges.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '80px 0', color: '#6B7280' }}>
+                  <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--ui-muted)' }}>
                     <p style={{ fontSize: '48px', marginBottom: '16px' }}>⚖️</p>
-                    <p style={{ fontSize: '16px', color: '#3D4852', fontWeight: 600, marginBottom: '8px' }}>Aucun litige en cours</p>
+                    <p style={{ fontSize: '16px', color: 'var(--ui-ink)', fontWeight: 600, marginBottom: '8px' }}>Aucun litige en cours</p>
                     <p style={{ fontSize: '13px' }}>Tous les litiges ont été résolus.</p>
                   </div>
                 ) : (
@@ -450,10 +450,10 @@ export default function AdminDashboard() {
                       {litiges.map(l => {
                         const active = selectedLitige?.id === l.id
                         return (
-                          <button key={l.id} onClick={() => selectLitige(l)} style={{
+                          <button className="afrione-action" key={l.id} onClick={() => selectLitige(l)} style={{
                             width: '100%', textAlign: 'left', padding: '14px 16px', borderRadius: '14px', cursor: 'pointer',
                             background: active ? 'rgba(239,68,68,0.06)' : '#FFFFFF',
-                            border: `1.5px solid ${active ? '#ef4444' : '#E2E8F0'}`,
+                            border: `1.5px solid ${active ? '#ef4444' : 'var(--ui-border)'}`,
                             boxShadow: active ? 'none' : NEU_SMALL,
                             transition: 'all 0.12s',
                           }}>
@@ -463,11 +463,11 @@ export default function AdminDashboard() {
                                 background: '#ef4444',
                                 boxShadow: active ? '0 0 8px rgba(239,68,68,0.6)' : '0 0 4px rgba(239,68,68,0.3)',
                               }} />
-                              <span style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ui-ink)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {l.users?.name || 'Client'}
                               </span>
                             </div>
-                            <div style={{ fontSize: '11px', color: '#6B7280', marginBottom: '6px', paddingLeft: '18px' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '6px', paddingLeft: '18px' }}>
                               vs {l.artisan_pros?.users?.name || '—'} · {l.artisan_pros?.metier || l.category || '—'}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '18px' }}>
@@ -475,7 +475,7 @@ export default function AdminDashboard() {
                                 {l.updated_at ? new Date(l.updated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '—'}
                               </span>
                               {l.total_price > 0 && (
-                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#3D4852', fontFamily: 'Tahoma' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-body)' }}>
                                   {l.total_price.toLocaleString()} F
                                 </span>
                               )}
@@ -488,7 +488,7 @@ export default function AdminDashboard() {
                     {/* ── Colonne droite : détail ── */}
                     {selectedLitige && (
                       <div style={{
-                        background: '#FFFFFF', border: '1px solid #E2E8F0',
+                        background: '#FFFFFF', border: '1px solid var(--ui-border)',
                         borderRadius: '20px', padding: '28px', overflowY: 'auto',
                         display: 'flex', flexDirection: 'column', gap: '20px',
                         boxShadow: NEU_SHADOW,
@@ -505,12 +505,12 @@ export default function AdminDashboard() {
                               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
                               <span style={{ fontSize: '10px', fontWeight: 700, color: '#ef4444', letterSpacing: '0.08em' }}>LITIGE OUVERT</span>
                             </div>
-                            <div style={{ fontSize: '19px', fontWeight: 700, color: '#3D4852', marginBottom: '4px' }}>
+                            <div style={{ fontSize: '19px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '4px' }}>
                               {selectedLitige.users?.name || 'Client'}
                               <span style={{ color: '#8B95A5', fontWeight: 400, margin: '0 8px' }}>vs</span>
                               {selectedLitige.artisan_pros?.users?.name || 'Artisan'}
                             </div>
-                            <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
                               {selectedLitige.category || selectedLitige.artisan_pros?.metier || '—'} · {selectedLitige.quartier || 'Abidjan'}
                             </div>
                           </div>
@@ -520,7 +520,7 @@ export default function AdminDashboard() {
                               background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)',
                               borderRadius: '14px',
                             }}>
-                              <div style={{ fontSize: '24px', fontWeight: 700, color: '#3D4852', fontFamily: 'Tahoma', lineHeight: 1 }}>
+                              <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-body)', lineHeight: 1 }}>
                                 {selectedLitige.total_price.toLocaleString()}
                               </div>
                               <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '4px', fontWeight: 600 }}>FCFA EN LITIGE</div>
@@ -534,12 +534,12 @@ export default function AdminDashboard() {
                             <AlertCircle size={11} /> RAISON DU LITIGE
                           </div>
                           {litigeMessages.length === 0 ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6B7280', fontSize: '13px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ui-muted)', fontSize: '13px' }}>
                               <div style={{ width: '14px', height: '14px', border: '2px solid rgba(239,68,68,0.2)', borderTop: '2px solid #ef4444', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
                               Chargement…
                             </div>
                           ) : (
-                            <p style={{ fontSize: '14px', color: '#3D4852', lineHeight: '1.6', margin: 0 }}>
+                            <p style={{ fontSize: '14px', color: 'var(--ui-ink)', lineHeight: '1.6', margin: 0 }}>
                               {litigeReason(litigeMessages) || 'Raison non spécifiée dans le chat.'}
                             </p>
                           )}
@@ -563,14 +563,14 @@ export default function AdminDashboard() {
                                       : isArtisan
                                         ? 'rgba(232,93,38,0.05)'
                                         : 'rgba(43,107,62,0.05)',
-                                    border: `1px solid ${isLitigeMsg ? 'rgba(239,68,68,0.15)' : '#E2E8F0'}`,
+                                    border: `1px solid ${isLitigeMsg ? 'rgba(239,68,68,0.15)' : 'var(--ui-border)'}`,
                                   }}>
                                     <div className={!isLitigeMsg && isArtisan ? 'afrione-gradient-text' : ''} style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px',
                                       color: isLitigeMsg ? '#ef4444' : isArtisan ? undefined : '#2B6B3E',
                                     }}>
                                       {isArtisan ? '🔧 ARTISAN' : '👤 CLIENT'}
                                     </div>
-                                    <div style={{ fontSize: '13px', color: '#3D4852', lineHeight: '1.4' }}>
+                                    <div style={{ fontSize: '13px', color: 'var(--ui-ink)', lineHeight: '1.4' }}>
                                       {msg.text?.replace('⚠️ Litige signalé : ', '')}
                                     </div>
                                   </div>
@@ -587,11 +587,11 @@ export default function AdminDashboard() {
                         )}
 
                         {/* ── DÉCISION ── */}
-                        <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ borderTop: '1px solid var(--ui-border)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           <div style={{ fontSize: '11px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '2px' }}>DÉCISION DE L'ARBITRE</div>
 
                           {/* Revenir en arrière */}
-                          <button
+                          <button className="afrione-action"
                             onClick={revertLitige}
                             disabled={actingLitige}
                             style={{
@@ -609,7 +609,7 @@ export default function AdminDashboard() {
                           </button>
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            <button
+                            <button className="afrione-action"
                               onClick={() => closeLitige('client')}
                               disabled={actingLitige}
                               style={{
@@ -622,7 +622,7 @@ export default function AdminDashboard() {
                             >
                               <DollarSign size={14} /> Rembourser le client
                             </button>
-                            <button
+                            <button className="afrione-action"
                               onClick={() => closeLitige('artisan')}
                               disabled={actingLitige}
                               style={{
@@ -639,8 +639,8 @@ export default function AdminDashboard() {
 
                           <div style={{
                             display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px',
-                            padding: '12px', background: '#F5F7FA', borderRadius: '12px',
-                            border: '1px solid #E2E8F0',
+                            padding: '12px', background: 'var(--ui-canvas)', borderRadius: '12px',
+                            border: '1px solid var(--ui-border)',
                           }}>
                             {[
                               { label: '↩ Revenir', desc: 'Mission reprend, litige clos' },
@@ -648,7 +648,7 @@ export default function AdminDashboard() {
                               { label: 'Payer artisan', desc: 'Escrow → artisan, mission terminée' },
                             ].map(h => (
                               <div key={h.label} style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '10px', fontWeight: 700, color: '#6B7280', marginBottom: '2px' }}>{h.label}</div>
+                                <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--ui-muted)', marginBottom: '2px' }}>{h.label}</div>
                                 <div style={{ fontSize: '9px', color: '#8B95A5', lineHeight: '1.4' }}>{h.desc}</div>
                               </div>
                             ))}
@@ -678,23 +678,23 @@ export default function AdminDashboard() {
                 <div>
                   {/* Header + compteurs */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
-                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', margin: 0 }}>Artisans — KYC</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', margin: 0 }}>Artisans — KYC</h2>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {FILTERS.map(f => (
-                        <button key={f.id} onClick={() => setKycFilter(f.id)} style={{
+                        <button className="afrione-action" key={f.id} onClick={() => setKycFilter(f.id)} style={{
                           display: 'flex', alignItems: 'center', gap: '6px',
                           padding: '6px 14px', borderRadius: '20px', cursor: 'pointer',
-                          border: kycFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid #E2E8F0',
+                          border: kycFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid var(--ui-border)',
                           background: kycFilter === f.id ? f.bg : '#FFFFFF',
-                          color: kycFilter === f.id ? f.color : '#6B7280',
+                          color: kycFilter === f.id ? f.color : 'var(--ui-muted)',
                           fontSize: '12px', fontWeight: 600, transition: 'all 0.15s',
                           boxShadow: kycFilter === f.id ? 'none' : NEU_SMALL,
                         }}>
                           {f.label}
                           <span style={{
                             minWidth: '18px', height: '18px', borderRadius: '9px', padding: '0 4px',
-                            background: kycFilter === f.id ? f.color : '#E2E8F0',
-                            color: kycFilter === f.id ? 'white' : '#6B7280',
+                            background: kycFilter === f.id ? f.color : 'var(--ui-border)',
+                            color: kycFilter === f.id ? 'white' : 'var(--ui-muted)',
                             fontSize: '10px', fontWeight: 700,
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           }}>{f.count}</span>
@@ -706,7 +706,7 @@ export default function AdminDashboard() {
                   {/* Liste */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {shown.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '64px', color: '#6B7280' }}>
+                      <div style={{ textAlign: 'center', padding: '64px', color: 'var(--ui-muted)' }}>
                         <p style={{ fontSize: '40px', marginBottom: '12px' }}>
                           {kycFilter === 'pending' ? '🎉' : kycFilter === 'approved' ? '✅' : '📋'}
                         </p>
@@ -721,7 +721,7 @@ export default function AdminDashboard() {
                       const statusColor = k.kyc_status === 'approved' ? '#2B6B3E' : k.kyc_status === 'rejected' ? '#ef4444' : '#C9A84C'
                       const statusBg    = k.kyc_status === 'approved' ? 'rgba(43,107,62,0.1)' : k.kyc_status === 'rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(201,168,76,0.1)'
                       const statusLabel = k.kyc_status === 'approved' ? '✓ Validé' : k.kyc_status === 'rejected' ? '✗ Rejeté' : hasCni ? 'Docs envoyés' : 'Sans documents'
-                      const borderColor = k.kyc_status === 'approved' ? 'rgba(43,107,62,0.3)' : k.kyc_status === 'rejected' ? 'rgba(239,68,68,0.2)' : hasCni ? 'rgba(232,93,38,0.2)' : '#E2E8F0'
+                      const borderColor = k.kyc_status === 'approved' ? 'rgba(43,107,62,0.3)' : k.kyc_status === 'rejected' ? 'rgba(239,68,68,0.2)' : hasCni ? 'rgba(232,93,38,0.2)' : 'var(--ui-border)'
 
                       return (
                         <div key={k.id} style={{ background: '#FFFFFF', border: `1px solid ${borderColor}`, borderRadius: '16px', padding: '18px 20px', boxShadow: NEU_SMALL }}>
@@ -734,12 +734,12 @@ export default function AdminDashboard() {
                             {/* Info */}
                             <div style={{ flex: 1, minWidth: '180px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '14px', fontWeight: 600, color: '#3D4852' }}>{k.users?.name || '—'}</span>
+                                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ui-ink)' }}>{k.users?.name || '—'}</span>
                                 <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: statusBg, color: statusColor, fontWeight: 700 }}>
                                   {statusLabel}
                                 </span>
                               </div>
-                              <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
+                              <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginBottom: '8px' }}>
                                 {metierDisplay(k.metier).icon} {metierDisplay(k.metier).label} · {k.users?.email || '—'} · Inscrit le {new Date(k.created_at).toLocaleDateString('fr-FR')}
                                 {kycDoc?.reviewed_at && (
                                   <span style={{ marginLeft: '8px', color: '#8B95A5' }}>
@@ -774,21 +774,21 @@ export default function AdminDashboard() {
                             <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignSelf: 'center', flexWrap: 'wrap' }}>
                               {k.kyc_status === 'pending' && (
                                 <>
-                                  <button onClick={() => approveKyc(k.id, kycDoc?.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#2B6B3E' }}>
+                                  <button className="afrione-action" onClick={() => approveKyc(k.id, kycDoc?.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#2B6B3E' }}>
                                     <CheckCircle size={13} /> Approuver
                                   </button>
-                                  <button onClick={() => rejectKyc(k.id, kycDoc?.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#ef4444' }}>
+                                  <button className="afrione-action" onClick={() => rejectKyc(k.id, kycDoc?.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#ef4444' }}>
                                     <X size={13} /> Rejeter
                                   </button>
                                 </>
                               )}
                               {k.kyc_status === 'approved' && (
-                                <button onClick={() => revokeKyc(k.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#F5F7FA', border: '1px solid #E2E8F0', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#6B7280' }}>
+                                <button className="afrione-action" onClick={() => revokeKyc(k.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'var(--ui-canvas)', border: '1px solid var(--ui-border)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: 'var(--ui-muted)' }}>
                                   <RotateCcw size={13} /> Révoquer
                                 </button>
                               )}
                               {k.kyc_status === 'rejected' && (
-                                <button onClick={() => approveKyc(k.id, kycDoc?.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#2B6B3E' }}>
+                                <button className="afrione-action" onClick={() => approveKyc(k.id, kycDoc?.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#2B6B3E' }}>
                                   <CheckCircle size={13} /> Réhabiliter
                                 </button>
                               )}
@@ -805,18 +805,18 @@ export default function AdminDashboard() {
             {/* ===== MISSIONS ===== */}
             {tab === 'missions' && (
               <div>
-                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', marginBottom: '20px' }}>Toutes les missions ({missions.length})</h2>
+                <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '20px' }}>Toutes les missions ({missions.length})</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {missions.map(m => (
-                    <div key={m.id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: NEU_SMALL }}>
+                    <div key={m.id} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: NEU_SMALL }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '14px', fontWeight: 500, color: '#3D4852' }}>{m.users?.name || 'Client'} → {m.artisan_pros?.users?.name || 'Non assigné'}</div>
-                        <div style={{ fontSize: '12px', color: '#6B7280' }}>{m.category || '—'} · {m.quartier || 'Abidjan'} · {new Date(m.created_at).toLocaleDateString('fr-FR')}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ui-ink)' }}>{m.users?.name || 'Client'} → {m.artisan_pros?.users?.name || 'Non assigné'}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>{m.category || '—'} · {m.quartier || 'Abidjan'} · {new Date(m.created_at).toLocaleDateString('fr-FR')}</div>
                       </div>
                       <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', fontWeight: 500, background: 'rgba(232,93,38,0.1)', color: '#E85D26' }}>{m.status}</span>
                     </div>
                   ))}
-                  {missions.length === 0 && <p style={{ textAlign: 'center', color: '#6B7280', padding: '48px' }}>Aucune mission</p>}
+                  {missions.length === 0 && <p style={{ textAlign: 'center', color: 'var(--ui-muted)', padding: '48px' }}>Aucune mission</p>}
                 </div>
               </div>
             )}
@@ -824,24 +824,24 @@ export default function AdminDashboard() {
             {/* ===== ARTISANS ===== */}
             {tab === 'artisans' && (
               <div>
-                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', marginBottom: '20px' }}>Tous les artisans ({artisans.length})</h2>
+                <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '20px' }}>Tous les artisans ({artisans.length})</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {artisans.map(a => (
-                    <div key={a.id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: NEU_SMALL }}>
+                    <div key={a.id} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: NEU_SMALL }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', background: 'rgba(232,93,38,0.08)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {a.users?.avatar_url ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span>👷</span>}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '14px', fontWeight: 500, color: '#3D4852' }}>{a.users?.name || '—'}</div>
-                        <div style={{ fontSize: '12px', color: '#6B7280' }}>{metierDisplay(a.metier).icon} {metierDisplay(a.metier).label} · {a.rating_avg?.toFixed(1) || '0.0'}⭐ · {a.mission_count || 0} missions</div>
+                        <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ui-ink)' }}>{a.users?.name || '—'}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>{metierDisplay(a.metier).icon} {metierDisplay(a.metier).label} · {a.rating_avg?.toFixed(1) || '0.0'}⭐ · {a.mission_count || 0} missions</div>
                       </div>
                       <span style={{
                         fontSize: '11px', padding: '3px 10px', borderRadius: '20px',
                         background: a.kyc_status === 'approved' ? 'rgba(43,107,62,0.1)' : 'rgba(201,168,76,0.1)',
                         color: a.kyc_status === 'approved' ? '#2B6B3E' : '#C9A84C',
                       }}>{a.kyc_status}</span>
-                      <button onClick={() => toggleArtisan(a.id, a.is_available)} style={{
-                        padding: '6px 14px', borderRadius: '8px', border: '1px solid #E2E8F0', cursor: 'pointer', fontSize: '12px', fontWeight: 500,
+                      <button className="afrione-action" onClick={() => toggleArtisan(a.id, a.is_available)} style={{
+                        padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--ui-border)', cursor: 'pointer', fontSize: '12px', fontWeight: 500,
                         background: a.is_available ? 'rgba(43,107,62,0.1)' : 'rgba(220,38,38,0.08)',
                         color: a.is_available ? '#2B6B3E' : '#ef4444',
                       }}>
@@ -871,8 +871,8 @@ export default function AdminDashboard() {
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', margin: 0 }}>
-                      Transactions <span style={{ fontSize: '14px', fontWeight: 400, color: '#6B7280' }}>({transactions.length})</span>
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', margin: 0 }}>
+                      Transactions <span style={{ fontSize: '14px', fontWeight: 400, color: 'var(--ui-muted)' }}>({transactions.length})</span>
                     </h2>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '11px', padding: '4px 12px', borderRadius: '20px', background: 'rgba(43,107,62,0.1)', color: '#2B6B3E', fontWeight: 600 }}>{released} libérées</span>
@@ -884,13 +884,13 @@ export default function AdminDashboard() {
                   {transactions.length > 0 && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
                       {[
-                        { label: 'Volume total',   value: totalVolume.toLocaleString()  + ' FCFA', color: '#3D4852' },
+                        { label: 'Volume total',   value: totalVolume.toLocaleString()  + ' FCFA', color: 'var(--ui-ink)' },
                         { label: 'Commissions',    value: totalFees.toLocaleString()    + ' FCFA', color: '#C9A84C' },
                         { label: 'Payé artisans',  value: totalArtisan.toLocaleString() + ' FCFA', color: '#2B6B3E' },
                       ].map(s => (
-                        <div key={s.label} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '16px', boxShadow: NEU_SMALL }}>
-                          <div style={{ fontSize: '20px', fontWeight: 700, color: s.color, fontFamily: 'Tahoma' }}>{s.value}</div>
-                          <div style={{ fontSize: '10px', color: '#6B7280', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
+                        <div key={s.label} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '14px', padding: '16px', boxShadow: NEU_SMALL }}>
+                          <div style={{ fontSize: '20px', fontWeight: 700, color: s.color, fontFamily: 'var(--font-body)' }}>{s.value}</div>
+                          <div style={{ fontSize: '10px', color: 'var(--ui-muted)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
                         </div>
                       ))}
                     </div>
@@ -900,20 +900,20 @@ export default function AdminDashboard() {
                     {transactions.map(t => {
                       const st = STATUS_TX[t.status] || STATUS_TX.pending
                       return (
-                        <div key={t.id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', boxShadow: NEU_SMALL }}>
+                        <div key={t.id} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', boxShadow: NEU_SMALL }}>
                           <div style={{ flex: 1, minWidth: '180px' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 500, color: '#3D4852' }}>
-                              {t.missions?.users?.name || 'Client'} · <span style={{ color: '#6B7280', fontSize: '13px' }}>{t.missions?.category || '—'}</span>
+                            <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ui-ink)' }}>
+                              {t.missions?.users?.name || 'Client'} · <span style={{ color: 'var(--ui-muted)', fontSize: '13px' }}>{t.missions?.category || '—'}</span>
                             </div>
-                            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '2px' }}>
                               {new Date(t.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                               {' · '}{t.payment_method || 'Wave'}
-                              {t.wave_transaction_id && <span style={{ marginLeft: '6px', fontFamily: 'Tahoma', fontSize: '10px', color: '#8B95A5' }}>{t.wave_transaction_id}</span>}
+                              {t.wave_transaction_id && <span style={{ marginLeft: '6px', fontFamily: 'var(--font-body)', fontSize: '10px', color: '#8B95A5' }}>{t.wave_transaction_id}</span>}
                             </div>
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            <div style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852', fontFamily: 'Tahoma' }}>{(t.amount || 0).toLocaleString()} F</div>
-                            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '1px' }}>
+                            <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-body)' }}>{(t.amount || 0).toLocaleString()} F</div>
+                            <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '1px' }}>
                               <span style={{ color: '#2B6B3E' }}>{(t.artisan_amount || 0).toLocaleString()} F artisan</span>
                               {t.platform_fee > 0 && <span style={{ color: '#C9A84C', marginLeft: '6px' }}>+{(t.platform_fee || 0).toLocaleString()} F commission</span>}
                             </div>
@@ -923,9 +923,9 @@ export default function AdminDashboard() {
                       )
                     })}
                     {transactions.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '64px 20px', color: '#6B7280' }}>
+                      <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--ui-muted)' }}>
                         <p style={{ fontSize: '36px', marginBottom: '12px' }}>💳</p>
-                        <p style={{ fontSize: '15px', color: '#3D4852', fontWeight: 600, marginBottom: '8px' }}>Aucune transaction</p>
+                        <p style={{ fontSize: '15px', color: 'var(--ui-ink)', fontWeight: 600, marginBottom: '8px' }}>Aucune transaction</p>
                         <p style={{ fontSize: '13px', lineHeight: '1.6' }}>Les transactions apparaissent ici quand un client effectue un paiement Wave/Orange pour une mission.</p>
                       </div>
                     )}
@@ -937,7 +937,7 @@ export default function AdminDashboard() {
             {/* ===== ENTREPRISES ===== */}
             {tab === 'entreprises' && (() => {
               const kpis = [
-                { label: 'Total',      value: entreprises.length,                                    color: '#3D4852' },
+                { label: 'Total',      value: entreprises.length,                                    color: 'var(--ui-ink)' },
                 { label: 'En attente', value: entreprises.filter(e => e.kyc_status === 'pending').length,  color: '#C9A84C' },
                 { label: 'Approuvées', value: entreprises.filter(e => e.kyc_status === 'approved').length, color: '#2B6B3E' },
                 { label: 'Rejetées',   value: entreprises.filter(e => e.kyc_status === 'rejected').length, color: '#ef4444' },
@@ -962,9 +962,9 @@ export default function AdminDashboard() {
                   {/* KPIs */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
                     {kpis.map(k => (
-                      <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '16px 20px', boxShadow: NEU_SMALL }}>
-                        <div style={{ fontSize: '24px', fontWeight: 700, color: k.color, fontFamily: 'Tahoma' }}>{k.value}</div>
-                        <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>{k.label}</div>
+                      <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '14px', padding: '16px 20px', boxShadow: NEU_SMALL }}>
+                        <div style={{ fontSize: '24px', fontWeight: 700, color: k.color, fontFamily: 'var(--font-body)' }}>{k.value}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px' }}>{k.label}</div>
                       </div>
                     ))}
                   </div>
@@ -973,11 +973,11 @@ export default function AdminDashboard() {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {(['all', 'pending', 'approved', 'rejected'] as const).map(f => (
                       <button key={f} onClick={() => setEntreprisesFilter(f)}
-                        className={entreprisesFilter === f ? 'afrione-gradient' : ''}
+                        className={(entreprisesFilter === f ? 'afrione-gradient' : '') + ' afrione-action'}
                         style={{
                           padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: 'none',
                           background: entreprisesFilter === f ? undefined : '#FFFFFF',
-                          color: entreprisesFilter === f ? 'white' : '#6B7280',
+                          color: entreprisesFilter === f ? 'white' : 'var(--ui-muted)',
                           boxShadow: entreprisesFilter === f ? 'none' : NEU_SMALL,
                         }}>
                         {f === 'all' ? 'Toutes' : f === 'pending' ? 'En attente' : f === 'approved' ? 'Approuvées' : 'Rejetées'}
@@ -987,9 +987,9 @@ export default function AdminDashboard() {
 
                   {/* Liste */}
                   {filtered.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '64px 20px', color: '#6B7280' }}>
+                    <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--ui-muted)' }}>
                       <p style={{ fontSize: '36px', marginBottom: '12px' }}>🏢</p>
-                      <p style={{ fontSize: '15px', color: '#3D4852', fontWeight: 600, marginBottom: '8px' }}>Aucune entreprise</p>
+                      <p style={{ fontSize: '15px', color: 'var(--ui-ink)', fontWeight: 600, marginBottom: '8px' }}>Aucune entreprise</p>
                       <p style={{ fontSize: '13px' }}>Les structures multi-artisans apparaîtront ici.</p>
                     </div>
                   ) : (
@@ -1000,7 +1000,7 @@ export default function AdminDashboard() {
                         const kycColor = e.kyc_status === 'approved' ? '#2B6B3E' : e.kyc_status === 'rejected' ? '#ef4444' : '#C9A84C'
                         const kycBg = e.kyc_status === 'approved' ? 'rgba(43,107,62,0.08)' : e.kyc_status === 'rejected' ? 'rgba(239,68,68,0.08)' : 'rgba(201,168,76,0.08)'
                         return (
-                          <div key={e.id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SMALL }}>
+                          <div key={e.id} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SMALL }}>
                             {/* Header entreprise */}
                             <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={() => setSelectedEntreprise(isSelected ? null : e)}>
                               <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
@@ -1010,13 +1010,13 @@ export default function AdminDashboard() {
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                  <span style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852' }}>{e.name}</span>
+                                  <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--ui-ink)' }}>{e.name}</span>
                                   <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '20px', background: kycBg, color: kycColor, border: `1px solid ${kycColor}33` }}>
                                     {e.kyc_status === 'approved' ? '✓ Approuvée' : e.kyc_status === 'rejected' ? '✗ Rejetée' : '⏳ En attente'}
                                   </span>
                                   {e.is_active && <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '20px', background: 'rgba(43,107,62,0.08)', color: '#2B6B3E', border: '1px solid rgba(43,107,62,0.2)' }}>● Active</span>}
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '3px' }}>
+                                <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '3px' }}>
                                   Admin : {e.users?.name || '—'} · {artisans.length} artisan{artisans.length !== 1 ? 's' : ''}
                                   {e.secteurs?.length > 0 && ` · ${e.secteurs.join(', ')}`}
                                 </div>
@@ -1024,21 +1024,21 @@ export default function AdminDashboard() {
                               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                                 {e.kyc_status === 'pending' && (
                                   <>
-                                    <button onClick={ev => { ev.stopPropagation(); approveEntreprise(e.id) }} style={{ padding: '7px 14px', background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', color: '#2B6B3E', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+                                    <button className="afrione-action" onClick={ev => { ev.stopPropagation(); approveEntreprise(e.id) }} style={{ padding: '7px 14px', background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', color: '#2B6B3E', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
                                       ✓ Approuver
                                     </button>
-                                    <button onClick={ev => { ev.stopPropagation(); rejectEntreprise(e.id) }} style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+                                    <button className="afrione-action" onClick={ev => { ev.stopPropagation(); rejectEntreprise(e.id) }} style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
                                       ✗ Rejeter
                                     </button>
                                   </>
                                 )}
                                 {e.kyc_status === 'approved' && (
-                                  <button onClick={ev => { ev.stopPropagation(); rejectEntreprise(e.id) }} style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', color: '#ef4444', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
+                                  <button className="afrione-action" onClick={ev => { ev.stopPropagation(); rejectEntreprise(e.id) }} style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', color: '#ef4444', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
                                     Suspendre
                                   </button>
                                 )}
                                 {e.kyc_status === 'rejected' && (
-                                  <button onClick={ev => { ev.stopPropagation(); approveEntreprise(e.id) }} style={{ padding: '7px 14px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '8px', color: '#2B6B3E', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
+                                  <button className="afrione-action" onClick={ev => { ev.stopPropagation(); approveEntreprise(e.id) }} style={{ padding: '7px 14px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '8px', color: '#2B6B3E', fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>
                                     Réactiver
                                   </button>
                                 )}
@@ -1048,7 +1048,7 @@ export default function AdminDashboard() {
 
                             {/* Détails dépliants */}
                             {isSelected && (
-                              <div style={{ borderTop: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px', background: '#F5F7FA' }}>
+                              <div style={{ borderTop: '1px solid var(--ui-border)', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--ui-canvas)' }}>
                                 {/* Infos */}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
                                   {[
@@ -1056,31 +1056,31 @@ export default function AdminDashboard() {
                                     { label: 'Téléphone', val: e.phone || '—' },
                                     { label: 'Inscrite le', val: new Date(e.created_at).toLocaleDateString('fr-FR') },
                                   ].map(item => (
-                                    <div key={item.label} style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid #E2E8F0' }}>
-                                      <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '3px', fontFamily: 'Tahoma' }}>{item.label.toUpperCase()}</div>
-                                      <div style={{ fontSize: '12px', color: '#3D4852', fontWeight: 500 }}>{item.val}</div>
+                                    <div key={item.label} style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid var(--ui-border)' }}>
+                                      <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '3px', fontFamily: 'var(--font-body)' }}>{item.label.toUpperCase()}</div>
+                                      <div style={{ fontSize: '12px', color: 'var(--ui-ink)', fontWeight: 500 }}>{item.val}</div>
                                     </div>
                                   ))}
                                 </div>
                                 {e.description && (
-                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid #E2E8F0' }}>
-                                    <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '4px', fontFamily: 'Tahoma' }}>DESCRIPTION</div>
-                                    <p style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.6', margin: 0 }}>{e.description}</p>
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid var(--ui-border)' }}>
+                                    <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '4px', fontFamily: 'var(--font-body)' }}>DESCRIPTION</div>
+                                    <p style={{ fontSize: '12px', color: 'var(--ui-muted)', lineHeight: '1.6', margin: 0 }}>{e.description}</p>
                                   </div>
                                 )}
                                 {/* Équipe artisans */}
                                 {artisans.length > 0 && (
                                   <div>
-                                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', fontFamily: 'Tahoma', marginBottom: '8px' }}>ÉQUIPE ({artisans.length} ARTISANS)</div>
+                                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', fontFamily: 'var(--font-body)', marginBottom: '8px' }}>ÉQUIPE ({artisans.length} ARTISANS)</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                       {artisans.map((a: any) => (
-                                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 10px', background: '#FFFFFF', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 10px', background: '#FFFFFF', borderRadius: '10px', border: '1px solid var(--ui-border)' }}>
                                           <div style={{ width: '26px', height: '26px', borderRadius: '7px', background: 'rgba(232,93,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
                                             {a.users?.avatar_url ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <span style={{ fontSize: '11px' }}>🔧</span>}
                                           </div>
                                           <div>
-                                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#3D4852' }}>{a.users?.name || metierDisplay(a.metier).label}</div>
-                                            <div style={{ fontSize: '10px', color: '#6B7280' }}>{metierDisplay(a.metier).icon} {metierDisplay(a.metier).label}</div>
+                                            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ui-ink)' }}>{a.users?.name || metierDisplay(a.metier).label}</div>
+                                            <div style={{ fontSize: '10px', color: 'var(--ui-muted)' }}>{metierDisplay(a.metier).icon} {metierDisplay(a.metier).label}</div>
                                           </div>
                                           <span style={{ fontSize: '9px', padding: '1px 7px', borderRadius: '10px', fontWeight: 700,
                                             background: a.kyc_status === 'approved' ? 'rgba(43,107,62,0.1)' : 'rgba(201,168,76,0.1)',
@@ -1115,7 +1115,7 @@ export default function AdminDashboard() {
             {/* ===== UTILISATEURS ===== */}
             {tab === 'utilisateurs' && (() => {
               const ROLE_FILTERS: { id: 'all'|'client'|'artisan'|'admin'; label: string; color: string }[] = [
-                { id: 'all',     label: `Tous (${users.length})`,                                    color: '#3D4852' },
+                { id: 'all',     label: `Tous (${users.length})`,                                    color: 'var(--ui-ink)' },
                 { id: 'client',  label: `Clients (${users.filter(u => u.role === 'client').length})`,   color: '#2B6B3E' },
                 { id: 'artisan', label: `Artisans (${users.filter(u => u.role === 'artisan').length})`,  color: '#E85D26' },
                 { id: 'admin',   label: `Admins (${users.filter(u => u.role === 'admin').length})`,      color: '#C9A84C' },
@@ -1132,14 +1132,14 @@ export default function AdminDashboard() {
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', margin: 0 }}>Gestion des utilisateurs</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', margin: 0 }}>Gestion des utilisateurs</h2>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       {ROLE_FILTERS.map(f => (
-                        <button key={f.id} onClick={() => setUsersFilter(f.id)} style={{
+                        <button className="afrione-action" key={f.id} onClick={() => setUsersFilter(f.id)} style={{
                           padding: '6px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 600,
-                          border: usersFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid #E2E8F0',
+                          border: usersFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid var(--ui-border)',
                           background: usersFilter === f.id ? `${f.color}15` : '#FFFFFF',
-                          color: usersFilter === f.id ? f.color : '#6B7280',
+                          color: usersFilter === f.id ? f.color : 'var(--ui-muted)',
                           transition: 'all 0.15s',
                           boxShadow: usersFilter === f.id ? 'none' : NEU_SMALL,
                         }}>{f.label}</button>
@@ -1157,7 +1157,7 @@ export default function AdminDashboard() {
                       return (
                         <div key={u.id} style={{
                           background: '#FFFFFF',
-                          border: isAdmin ? '1px solid rgba(201,168,76,0.3)' : '1px solid #E2E8F0',
+                          border: isAdmin ? '1px solid rgba(201,168,76,0.3)' : '1px solid var(--ui-border)',
                           borderRadius: '14px', padding: '16px 20px',
                           display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap',
                           boxShadow: NEU_SMALL,
@@ -1172,17 +1172,17 @@ export default function AdminDashboard() {
                           {/* Infos */}
                           <div style={{ flex: 1, minWidth: '200px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' }}>
-                              <span style={{ fontSize: '14px', fontWeight: 600, color: '#3D4852' }}>{u.name}</span>
+                              <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ui-ink)' }}>{u.name}</span>
                               <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', fontWeight: 700, background: rs.bg, color: rs.color }}>
                                 {rs.label}
                               </span>
                               {artisan && (
-                                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: '#F5F7FA', color: '#6B7280', border: '1px solid #E2E8F0' }}>
+                                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: 'var(--ui-canvas)', color: 'var(--ui-muted)', border: '1px solid var(--ui-border)' }}>
                                   {metierDisplay(artisan.metier).icon} {metierDisplay(artisan.metier).label}
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                            <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
                               {u.email || u.phone || '—'}
                               <span style={{ marginLeft: '8px', color: '#8B95A5' }}>
                                 · Inscrit le {new Date(u.created_at).toLocaleDateString('fr-FR')}
@@ -1193,7 +1193,7 @@ export default function AdminDashboard() {
                           {/* Actions de rôle */}
                           <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
                             {!isAdmin && (
-                              <button
+                              <button className="afrione-action"
                                 onClick={() => {
                                   if (confirm(`Promouvoir ${u.name} en Admin ? Il aura accès au panel admin.`)) setRole(u.id, 'admin')
                                 }}
@@ -1203,7 +1203,7 @@ export default function AdminDashboard() {
                               </button>
                             )}
                             {isAdmin && u.id !== adminId && (
-                              <button
+                              <button className="afrione-action"
                                 onClick={() => {
                                   if (confirm(`Rétrograder ${u.name} ? Il perdra l'accès au panel admin.`)) setRole(u.id, 'client')
                                 }}
@@ -1220,7 +1220,7 @@ export default function AdminDashboard() {
                       )
                     })}
                     {shown.length === 0 && (
-                      <p style={{ textAlign: 'center', color: '#6B7280', padding: '48px' }}>Aucun utilisateur</p>
+                      <p style={{ textAlign: 'center', color: 'var(--ui-muted)', padding: '48px' }}>Aucun utilisateur</p>
                     )}
                   </div>
                 </div>
@@ -1272,25 +1272,25 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                   {/* Header */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#3D4852', margin: 0 }}>
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)', margin: 0 }}>
                       Questionnaires artisans
                     </h2>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {QFILTERS.map(f => (
-                        <button key={f.id} onClick={() => setQuestionnaireFilter(f.id)} style={{
+                        <button className="afrione-action" key={f.id} onClick={() => setQuestionnaireFilter(f.id)} style={{
                           display: 'flex', alignItems: 'center', gap: '6px',
                           padding: '6px 14px', borderRadius: '20px', cursor: 'pointer',
-                          border: questionnaireFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid #E2E8F0',
+                          border: questionnaireFilter === f.id ? `1.5px solid ${f.color}` : '1.5px solid var(--ui-border)',
                           background: questionnaireFilter === f.id ? f.bg : '#FFFFFF',
-                          color: questionnaireFilter === f.id ? f.color : '#6B7280',
+                          color: questionnaireFilter === f.id ? f.color : 'var(--ui-muted)',
                           fontSize: '12px', fontWeight: 600,
                           boxShadow: questionnaireFilter === f.id ? 'none' : NEU_SMALL,
                         }}>
                           {f.label}
                           <span style={{
                             minWidth: '18px', height: '18px', borderRadius: '9px', padding: '0 4px',
-                            background: questionnaireFilter === f.id ? f.color : '#E2E8F0',
-                            color: questionnaireFilter === f.id ? 'white' : '#6B7280',
+                            background: questionnaireFilter === f.id ? f.color : 'var(--ui-border)',
+                            color: questionnaireFilter === f.id ? 'white' : 'var(--ui-muted)',
                             fontSize: '10px', fontWeight: 700,
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           }}>{f.count}</span>
@@ -1301,9 +1301,9 @@ export default function AdminDashboard() {
 
                   {/* Liste */}
                   {shown.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '64px 20px', color: '#6B7280' }}>
+                    <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--ui-muted)' }}>
                       <p style={{ fontSize: '40px', marginBottom: '12px' }}>📝</p>
-                      <p style={{ fontSize: '15px', color: '#3D4852', fontWeight: 600 }}>
+                      <p style={{ fontSize: '15px', color: 'var(--ui-ink)', fontWeight: 600 }}>
                         {questionnaireFilter === 'pending' ? 'Aucun questionnaire en attente' : questionnaireFilter === 'approved' ? 'Aucun questionnaire approuvé' : 'Aucun questionnaire rejeté'}
                       </p>
                     </div>
@@ -1318,7 +1318,7 @@ export default function AdminDashboard() {
                         const materials: any[] = Array.isArray(q.materials_used) ? q.materials_used : []
 
                         return (
-                          <div key={q.id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SMALL }}>
+                          <div key={q.id} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SMALL }}>
                             {/* Row header */}
                             <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', flexWrap: 'wrap' }}
                               onClick={() => setExpandedQuestionnaire(isExpanded ? null : q.id)}>
@@ -1330,13 +1330,13 @@ export default function AdminDashboard() {
                               {/* Info */}
                               <div style={{ flex: 1, minWidth: '160px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
-                                  <span style={{ fontWeight: 700, fontSize: '14px', color: '#3D4852' }}>{user?.name || '—'}</span>
+                                  <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)' }}>{user?.name || '—'}</span>
                                   <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', fontWeight: 700, background: statusBg, color: statusColor }}>
                                     {q.status === 'approved' ? '✓ Approuvé' : q.status === 'rejected' ? '✗ Rejeté' : '⏳ En attente'}
                                   </span>
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#6B7280' }}>
-                                  {artisan ? `${metierDisplay(artisan.metier).icon} ${metierDisplay(artisan.metier).label}` : '—'} · {q.experience_years || '—'} ans d'exp · Taux : <strong style={{ color: '#3D4852' }}>{q.hourly_rate_declared ? q.hourly_rate_declared.toLocaleString() + ' FCFA/h' : '—'}</strong>
+                                <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
+                                  {artisan ? `${metierDisplay(artisan.metier).icon} ${metierDisplay(artisan.metier).label}` : '—'} · {q.experience_years || '—'} ans d'exp · Taux : <strong style={{ color: 'var(--ui-ink)' }}>{q.hourly_rate_declared ? q.hourly_rate_declared.toLocaleString() + ' FCFA/h' : '—'}</strong>
                                 </div>
                                 <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>
                                   Soumis le {new Date(q.submitted_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -1346,13 +1346,13 @@ export default function AdminDashboard() {
                               {/* Quick actions for pending */}
                               {q.status === 'pending' && (
                                 <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                                  <button
+                                  <button className="afrione-action"
                                     onClick={() => handleApprove(q)}
                                     disabled={questActing === q.id}
                                     style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#2B6B3E', opacity: questActing === q.id ? 0.5 : 1 }}>
                                     <CheckCircle size={13} /> Approuver
                                   </button>
-                                  <button
+                                  <button className="afrione-action"
                                     onClick={() => setExpandedQuestionnaire(isExpanded ? null : q.id)}
                                     style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#ef4444' }}>
                                     Rejeter…
@@ -1365,7 +1365,7 @@ export default function AdminDashboard() {
 
                             {/* Expanded details */}
                             {isExpanded && (
-                              <div style={{ borderTop: '1px solid #E2E8F0', padding: '20px', background: '#F5F7FA', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              <div style={{ borderTop: '1px solid var(--ui-border)', padding: '20px', background: 'var(--ui-canvas)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                 {/* Grid of details */}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                                   {[
@@ -1378,16 +1378,16 @@ export default function AdminDashboard() {
                                     { label: 'Propre outillage',  val: q.has_own_tools ? '✓ Oui' : '✗ Non' },
                                     { label: 'Expérience',        val: q.experience_years ? q.experience_years + ' ans' : '—' },
                                   ].map(item => (
-                                    <div key={item.label} style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid #E2E8F0' }}>
+                                    <div key={item.label} style={{ background: '#FFFFFF', borderRadius: '10px', padding: '10px 14px', border: '1px solid var(--ui-border)' }}>
                                       <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>
-                                      <div style={{ fontSize: '13px', color: '#3D4852', fontWeight: 600 }}>{item.val}</div>
+                                      <div style={{ fontSize: '13px', color: 'var(--ui-ink)', fontWeight: 600 }}>{item.val}</div>
                                     </div>
                                   ))}
                                 </div>
 
                                 {/* Zones */}
                                 {q.zones_travail?.length > 0 && (
-                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid var(--ui-border)' }}>
                                     <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Zones d'intervention</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                       {q.zones_travail.map((z: string) => (
@@ -1399,11 +1399,11 @@ export default function AdminDashboard() {
 
                                 {/* Interventions */}
                                 {q.intervention_types?.length > 0 && (
-                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid var(--ui-border)' }}>
                                     <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Types d'interventions</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                       {q.intervention_types.map((i: string) => (
-                                        <span key={i} style={{ padding: '3px 10px', borderRadius: '20px', background: '#F5F7FA', border: '1px solid #E2E8F0', fontSize: '12px', color: '#6B7280' }}>{i}</span>
+                                        <span key={i} style={{ padding: '3px 10px', borderRadius: '20px', background: 'var(--ui-canvas)', border: '1px solid var(--ui-border)', fontSize: '12px', color: 'var(--ui-muted)' }}>{i}</span>
                                       ))}
                                     </div>
                                   </div>
@@ -1411,22 +1411,22 @@ export default function AdminDashboard() {
 
                                 {/* Outils */}
                                 {q.tools_description && (
-                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid var(--ui-border)' }}>
                                     <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Outils déclarés</div>
-                                    <p style={{ fontSize: '13px', color: '#3D4852', margin: 0, lineHeight: '1.5' }}>{q.tools_description}</p>
+                                    <p style={{ fontSize: '13px', color: 'var(--ui-ink)', margin: 0, lineHeight: '1.5' }}>{q.tools_description}</p>
                                   </div>
                                 )}
 
                                 {/* Matériaux */}
                                 {materials.length > 0 && (
-                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid #E2E8F0' }}>
+                                  <div style={{ background: '#FFFFFF', borderRadius: '10px', padding: '12px 14px', border: '1px solid var(--ui-border)' }}>
                                     <div style={{ fontSize: '10px', color: '#8B95A5', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Matériaux déclarés ({materials.length})</div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                       {materials.map((m: any, i: number) => (
-                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 10px', background: '#F5F7FA', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 10px', background: 'var(--ui-canvas)', borderRadius: '8px', border: '1px solid var(--ui-border)' }}>
                                           <div style={{ flex: 1, minWidth: 0 }}>
-                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852' }}>{m.name}</span>
-                                            <span style={{ fontSize: '11px', color: '#6B7280', marginLeft: '8px' }}>{m.category} · {m.unit}</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ui-ink)' }}>{m.name}</span>
+                                            <span style={{ fontSize: '11px', color: 'var(--ui-muted)', marginLeft: '8px' }}>{m.category} · {m.unit}</span>
                                           </div>
                                           <span style={{ fontSize: '13px', fontWeight: 700, color: '#E85D26', whiteSpace: 'nowrap' }}>
                                             {m.price_fcfa?.toLocaleString()} F
@@ -1449,7 +1449,7 @@ export default function AdminDashboard() {
                                 {q.status === 'pending' && (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                     <div style={{ display: 'flex', gap: '10px' }}>
-                                      <button
+                                      <button className="afrione-action"
                                         onClick={() => handleApprove(q)}
                                         disabled={questActing === q.id}
                                         style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'rgba(43,107,62,0.12)', border: '1px solid rgba(43,107,62,0.35)', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '14px', color: '#2B6B3E', opacity: questActing === q.id ? 0.5 : 1 }}>
@@ -1457,13 +1457,13 @@ export default function AdminDashboard() {
                                       </button>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                      <input
+                                      <input className="afrione-field"
                                         value={rejectNoteMap[q.id] || ''}
                                         onChange={e => setRejectNoteMap(prev => ({ ...prev, [q.id]: e.target.value }))}
                                         placeholder="Note pour le rejet (optionnel)…"
-                                        style={{ width: '100%', padding: '10px 12px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', fontSize: '13px', color: '#3D4852', outline: 'none', boxSizing: 'border-box' }}
+                                        style={{ width: '100%', padding: '10px 12px', background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '10px', fontSize: '13px', color: 'var(--ui-ink)', outline: 'none', boxSizing: 'border-box' }}
                                       />
-                                      <button
+                                      <button className="afrione-action"
                                         onClick={() => handleReject(q)}
                                         disabled={questActing === q.id}
                                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '13px', color: '#ef4444', opacity: questActing === q.id ? 0.5 : 1 }}>

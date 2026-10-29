@@ -12,7 +12,7 @@ import {
 import toast from 'react-hot-toast'
 import { useJsApiLoader, GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api'
 
-const NEU_SM = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SM = 'var(--ui-shadow-soft)'
 
 const QUARTIER_COORDS: Record<string, [number, number]> = {
   'Cocody':      [5.3600, -3.9910], 'Plateau':     [5.3190, -4.0200],
@@ -413,8 +413,8 @@ export default function MissionLivePage() {
   if (roleReady && !allow('view_mission')) return (
     <div style={{ height: '100dvh', background: '#FFFFFF', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center' }}>
       <AlertCircle size={40} color="#ef4444" style={{ marginBottom: '16px' }} />
-      <div style={{ fontWeight: 800, fontSize: '18px', color: '#3D4852', marginBottom: '8px' }}>Accès non autorisé</div>
-      <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: 1.6, maxWidth: '360px', marginBottom: '20px' }}>
+      <div style={{ fontWeight: 800, fontSize: '18px', color: 'var(--ui-ink)', marginBottom: '8px' }}>Accès non autorisé</div>
+      <p style={{ fontSize: '14px', color: 'var(--ui-muted)', lineHeight: 1.6, maxWidth: '360px', marginBottom: '20px' }}>
         Ce suivi appartient à une mission dont vous n'êtes ni le client ni l'artisan.
       </p>
       <Link href="/dashboard" className="btn-primary" style={{ padding: '12px 22px', color: 'white', borderRadius: '12px', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
@@ -447,7 +447,7 @@ export default function MissionLivePage() {
     (status === 'en_cours' || status === 'disputed') ? 1 : 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#FFFFFF', color: '#3D4852' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#FFFFFF', color: 'var(--ui-ink)' }}>
 
       {/* MODAL LITIGE */}
       {showLitige && (
@@ -458,17 +458,17 @@ export default function MissionLivePage() {
                 <AlertCircle size={18} color="#ef4444" />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '16px', color: '#3D4852' }}>Signaler un problème</div>
-                <div style={{ fontSize: '12px', color: '#6B7280' }}>Notre équipe examinera la situation sous 24h</div>
+                <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--ui-ink)' }}>Signaler un problème</div>
+                <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>Notre équipe examinera la situation sous 24h</div>
               </div>
             </div>
-            <textarea value={litigeText} onChange={e => setLitigeText(e.target.value)}
+            <textarea className="afrione-field" value={litigeText} onChange={e => setLitigeText(e.target.value)}
               placeholder="Décrivez le problème en détail : travaux non conformes, artisan absent, dégâts..."
-              rows={4} style={{ width: '100%', padding: '12px', border: '1.5px solid #E2E8F0', borderRadius: '12px', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: '16px', color: '#3D4852' }}
+              rows={4} style={{ width: '100%', padding: '12px', border: '1.5px solid var(--ui-border)', borderRadius: '12px', fontSize: '14px', resize: 'none', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: '16px', color: 'var(--ui-ink)' }}
             />
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setShowLitige(false)} style={{ flex: 1, padding: '12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: '#6B7280', boxShadow: NEU_SM }}>Annuler</button>
-              <button onClick={submitLitige} disabled={submittingLitige || !litigeText.trim()} style={{ flex: 2, padding: '12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', opacity: submittingLitige ? 0.6 : 1 }}>
+              <button className="afrione-action" onClick={() => setShowLitige(false)} style={{ flex: 1, padding: '12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '12px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: 'var(--ui-muted)', boxShadow: NEU_SM }}>Annuler</button>
+              <button className="afrione-action" onClick={submitLitige} disabled={submittingLitige || !litigeText.trim()} style={{ flex: 2, padding: '12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', opacity: submittingLitige ? 0.6 : 1 }}>
                 {submittingLitige ? 'Envoi…' : '⚠️ Ouvrir le litige →'}
               </button>
             </div>
@@ -477,21 +477,21 @@ export default function MissionLivePage() {
       )}
 
       {/* HEADER */}
-      <div style={{ flexShrink: 0, background: '#FFFFFF', borderBottom: '1px solid #E2E8F0' }}>
+      <div style={{ flexShrink: 0, background: '#FFFFFF', borderBottom: '1px solid var(--ui-border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px' }}>
-          <Link href={`/warroom/${missionId}`} style={{ color: '#6B7280', display: 'flex' }}>
+          <Link href={`/warroom/${missionId}`} style={{ color: 'var(--ui-muted)', display: 'flex' }}>
             <ArrowLeft size={20} />
           </Link>
-          <div style={{ width: '36px', height: '36px', background: '#F5F7FA', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', border: '1px solid #E2E8F0', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: '36px', height: '36px', background: 'var(--ui-canvas)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', border: '1px solid var(--ui-border)', overflow: 'hidden', flexShrink: 0 }}>
             {mission?.artisan_pros?.users?.avatar_url
               ? <img src={mission.artisan_pros.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
               : '🔧'}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: '14px', color: '#3D4852', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{artisanName}</div>
-            <div style={{ fontSize: '11px', color: '#6B7280' }}>{artisanMetier}</div>
+            <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{artisanName}</div>
+            <div style={{ fontSize: '11px', color: 'var(--ui-muted)' }}>{artisanMetier}</div>
           </div>
-          <Link href={`/warroom/${missionId}`} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '6px 12px', textDecoration: 'none', color: '#3D4852', fontSize: '12px', fontWeight: 600, flexShrink: 0, boxShadow: NEU_SM }}>
+          <Link className="afrione-action" href={`/warroom/${missionId}`} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '20px', padding: '6px 12px', textDecoration: 'none', color: 'var(--ui-ink)', fontSize: '12px', fontWeight: 600, flexShrink: 0, boxShadow: NEU_SM }}>
             <MessageCircle size={13} /> Chat
           </Link>
         </div>
@@ -501,13 +501,13 @@ export default function MissionLivePage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px 10px', flexWrap: 'wrap' }}>
             <span style={{
               fontSize: '10.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '20px', flexShrink: 0,
-              color:      role === 'artisan' ? '#E85D26' : role === 'admin' ? '#6B7280' : '#2B6B3E',
+              color:      role === 'artisan' ? '#E85D26' : role === 'admin' ? 'var(--ui-muted)' : '#2B6B3E',
               background: role === 'artisan' ? 'rgba(232,93,38,0.09)' : role === 'admin' ? 'rgba(107,114,128,0.09)' : 'rgba(43,107,62,0.09)',
               border: `1px solid ${role === 'artisan' ? 'rgba(232,93,38,0.28)' : role === 'admin' ? 'rgba(107,114,128,0.28)' : 'rgba(43,107,62,0.28)'}`,
             }}>
               {role === 'artisan' ? '🔧' : role === 'admin' ? '🛡️' : '👤'} {ROLE_LABEL[role]}
             </span>
-            <span style={{ fontSize: '11.5px', color: '#6B7280', lineHeight: 1.4, minWidth: 0 }}>
+            <span style={{ fontSize: '11.5px', color: 'var(--ui-muted)', lineHeight: 1.4, minWidth: 0 }}>
               {nextStepHint(role, status)}
             </span>
           </div>
@@ -521,13 +521,13 @@ export default function MissionLivePage() {
             return (
               <div key={s.key} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', border: `2px solid ${done ? '#2B6B3E' : active ? '#E85D26' : '#E2E8F0'}`, background: done ? 'rgba(43,107,62,0.08)' : active ? 'rgba(232,93,38,0.08)' : '#F5F7FA', flexShrink: 0 }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', border: `2px solid ${done ? '#2B6B3E' : active ? '#E85D26' : 'var(--ui-border)'}`, background: done ? 'rgba(43,107,62,0.08)' : active ? 'rgba(232,93,38,0.08)' : 'var(--ui-canvas)', flexShrink: 0 }}>
                     {done ? <CheckCircle size={16} color="#2B6B3E" /> : <span>{s.icon}</span>}
                   </div>
                   <span style={{ fontSize: '10px', fontWeight: 600, color: done ? '#2B6B3E' : active ? '#E85D26' : '#8B95A5', whiteSpace: 'nowrap' }}>{s.label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div style={{ flex: 1, height: '2px', background: done ? '#2B6B3E' : '#E2E8F0', marginBottom: '16px', marginLeft: '4px', marginRight: '4px' }} />
+                  <div style={{ flex: 1, height: '2px', background: done ? '#2B6B3E' : 'var(--ui-border)', marginBottom: '16px', marginLeft: '4px', marginRight: '4px' }} />
                 )}
               </div>
             )
@@ -536,13 +536,13 @@ export default function MissionLivePage() {
       </div>
 
       {/* TABS */}
-      <div style={{ flexShrink: 0, display: 'flex', background: '#F5F7FA', borderBottom: '1px solid #E2E8F0', padding: '4px 12px', gap: '4px' }}>
+      <div style={{ flexShrink: 0, display: 'flex', background: 'var(--ui-canvas)', borderBottom: '1px solid var(--ui-border)', padding: '4px 12px', gap: '4px' }}>
         {[
           { id: 'gps'    as const, label: '🗺️ GPS' },
           { id: 'photos' as const, label: `📸 Photos${proofAfterUrls.length > 0 ? ` (${proofAfterUrls.length})` : ''}` },
           { id: 'infos'  as const, label: 'ℹ️ Infos' },
         ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '10px 8px', background: tab === t.id ? '#FFFFFF' : 'transparent', border: tab === t.id ? '1px solid #E2E8F0' : '1px solid transparent', borderRadius: '10px', color: tab === t.id ? '#E85D26' : '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: tab === t.id ? NEU_SM : 'none' }}>
+          <button className="afrione-action" key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '10px 8px', background: tab === t.id ? '#FFFFFF' : 'transparent', border: tab === t.id ? '1px solid var(--ui-border)' : '1px solid transparent', borderRadius: '10px', color: tab === t.id ? '#E85D26' : 'var(--ui-muted)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: tab === t.id ? NEU_SM : 'none' }}>
             {t.label}
           </button>
         ))}
@@ -591,7 +591,7 @@ export default function MissionLivePage() {
                   <span style={{ width: '8px', height: '8px', background: '#E85D26', borderRadius: '50%', boxShadow: '0 0 0 3px rgba(232,93,38,0.25)' }} />
                   <span style={{ fontSize: '12px', fontWeight: 600, color: '#FAFAF5' }}>{isArtisan ? 'Vous' : artisanName}</span>
                 </div>
-                <div style={{ fontSize: '10px', color: '#7A7A6E', fontFamily: 'Tahoma' }}>{artisanPos.lat.toFixed(4)}, {artisanPos.lng.toFixed(4)}</div>
+                <div style={{ fontSize: '10px', color: '#7A7A6E', fontFamily: 'var(--font-body)' }}>{artisanPos.lat.toFixed(4)}, {artisanPos.lng.toFixed(4)}</div>
               </div>
             )}
             <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(15,20,16,0.93)', backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '10px 14px', border: '1px solid rgba(43,107,62,0.35)' }}>
@@ -603,7 +603,7 @@ export default function MissionLivePage() {
             </div>
             {distanceKm !== null && (
               <div style={{ position: 'absolute', bottom: '16px', left: '12px', background: 'rgba(15,20,16,0.93)', borderRadius: '12px', padding: '7px 12px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <span style={{ fontFamily: 'Tahoma', fontSize: '13px', fontWeight: 700, color: '#FAFAF5' }}>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: '#FAFAF5' }}>
                   {distanceKm < 1 ? `${Math.round(distanceKm*1000)} m` : `${distanceKm.toFixed(1)} km`}
                 </span>
               </div>
@@ -611,7 +611,7 @@ export default function MissionLivePage() {
             {eta !== null && (
               <div style={{ position: 'absolute', bottom: '16px', right: '12px', background: 'rgba(15,20,16,0.93)', borderRadius: '12px', padding: '7px 12px', border: '1px solid rgba(232,93,38,0.25)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Clock size={11} color="#E85D26" />
-                <span style={{ fontFamily: 'Tahoma', fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>{eta} min</span>
+                <span style={{ fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>{eta} min</span>
               </div>
             )}
           </div>
@@ -623,39 +623,39 @@ export default function MissionLivePage() {
             {allow('upload_proof') ? (
               <div>
                 <div style={{ marginBottom: '14px' }}>
-                  <h3 style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852', marginBottom: '4px' }}>Photos de chantier</h3>
-                  <p style={{ fontSize: '12px', color: '#6B7280' }}>Ces photos seront visibles par le client et ajoutées à votre portfolio.</p>
+                  <h3 style={{ fontWeight: 700, fontSize: '15px', color: 'var(--ui-ink)', marginBottom: '4px' }}>Photos de chantier</h3>
+                  <p style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>Ces photos seront visibles par le client et ajoutées à votre portfolio.</p>
                 </div>
                 <input ref={proofRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleProofUpload} />
 
                 {proofAfterUrls.length > 0 ? (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '12px' }}>
                     {proofAfterUrls.map((url, i) => (
-                      <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: '#F5F7FA' }}>
+                      <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', background: 'var(--ui-canvas)' }}>
                         <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button onClick={() => { setProofAfterUrls(prev => prev.filter((_,j) => j !== i)); setProofSaved(false) }} style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button className="afrione-action afrione-action--icon" onClick={() => { setProofAfterUrls(prev => prev.filter((_,j) => j !== i)); setProofSaved(false) }} style={{ position: 'absolute', top: '4px', right: '4px', width: '22px', height: '22px', background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <X size={11} />
                         </button>
                       </div>
                     ))}
-                    <button onClick={() => proofRef.current?.click()} disabled={uploadingProof} style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed #E2E8F0', background: '#F5F7FA', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '11px', color: '#6B7280' }}>
+                    <button className="afrione-action" onClick={() => proofRef.current?.click()} disabled={uploadingProof} style={{ aspectRatio: '1', borderRadius: '10px', border: '2px dashed var(--ui-border)', background: 'var(--ui-canvas)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '11px', color: 'var(--ui-muted)' }}>
                       {uploadingProof ? <div style={{ width: '18px', height: '18px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <><Upload size={18} /><span>Ajouter</span></>}
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => proofRef.current?.click()} disabled={uploadingProof} style={{ width: '100%', aspectRatio: '16/9', border: '2px dashed #E2E8F0', borderRadius: '16px', background: '#F5F7FA', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <button className="afrione-action" onClick={() => proofRef.current?.click()} disabled={uploadingProof} style={{ width: '100%', aspectRatio: '16/9', border: '2px dashed var(--ui-border)', borderRadius: '16px', background: 'var(--ui-canvas)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '12px' }}>
                     {uploadingProof ? <div style={{ width: '28px', height: '28px', border: '3px solid rgba(232,93,38,0.3)', borderTop: '3px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> : <Camera size={36} color="#8B95A5" />}
-                    <span style={{ fontSize: '14px', color: '#6B7280' }}>Appuyer pour ajouter des photos</span>
+                    <span style={{ fontSize: '14px', color: 'var(--ui-muted)' }}>Appuyer pour ajouter des photos</span>
                     <span style={{ fontSize: '12px', color: '#8B95A5' }}>Avant / Après · Résultats · Pièces remplacées</span>
                   </button>
                 )}
 
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ fontSize: '11px', fontWeight: 600, color: '#8B95A5', display: 'block', marginBottom: '6px', letterSpacing: '0.08em' }}>NOTES SUR LE CHANTIER (optionnel)</label>
-                  <textarea value={proofNotes} onChange={e => { setProofNotes(e.target.value); setProofSaved(false) }} placeholder="Ex: Remplacement robinet cuisine + joint sous évier. Client informé de l'état de la tuyauterie…" rows={3} style={{ width: '100%', padding: '12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px', fontSize: '13px', color: '#3D4852', resize: 'none', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                  <textarea className="afrione-field" value={proofNotes} onChange={e => { setProofNotes(e.target.value); setProofSaved(false) }} placeholder="Ex: Remplacement robinet cuisine + joint sous évier. Client informé de l'état de la tuyauterie…" rows={3} style={{ width: '100%', padding: '12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '12px', fontSize: '13px', color: 'var(--ui-ink)', resize: 'none', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
 
-                <button onClick={saveProof} disabled={!proofAfterUrls.length || uploadingProof} style={{ width: '100%', padding: '14px', background: proofAfterUrls.length ? (proofSaved ? 'rgba(43,107,62,0.1)' : '#2B6B3E') : '#F5F7FA', color: proofAfterUrls.length ? 'white' : '#8B95A5', border: proofSaved ? '1px solid rgba(43,107,62,0.3)' : 'none', borderRadius: '14px', fontWeight: 700, fontSize: '14px', cursor: proofAfterUrls.length ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <button className="afrione-action" onClick={saveProof} disabled={!proofAfterUrls.length || uploadingProof} style={{ width: '100%', padding: '14px', background: proofAfterUrls.length ? (proofSaved ? 'rgba(43,107,62,0.1)' : '#2B6B3E') : 'var(--ui-canvas)', color: proofAfterUrls.length ? 'white' : '#8B95A5', border: proofSaved ? '1px solid rgba(43,107,62,0.3)' : 'none', borderRadius: '14px', fontWeight: 700, fontSize: '14px', cursor: proofAfterUrls.length ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   {proofSaved ? <><CheckCircle size={16} /> Photos enregistrées ✓</> : <><Camera size={16} /> Enregistrer les photos →</>}
                 </button>
               </div>
@@ -667,8 +667,8 @@ export default function MissionLivePage() {
                  quelqu'un d'autre. Le libellé suit désormais QUI on est
                  (`canRole`), pas ce qu'on peut faire à cet instant (`can`). */
               <div>
-                <h3 style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852', marginBottom: '4px' }}>Photos de chantier</h3>
-                <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '16px' }}>
+                <h3 style={{ fontWeight: 700, fontSize: '15px', color: 'var(--ui-ink)', marginBottom: '4px' }}>Photos de chantier</h3>
+                <p style={{ fontSize: '12px', color: 'var(--ui-muted)', marginBottom: '16px' }}>
                   {isArtisan
                     ? "Vos photos de chantier. L'ajout est ouvert pendant l'intervention."
                     : "Photos ajoutées par l'artisan en cours de mission."}
@@ -677,17 +677,17 @@ export default function MissionLivePage() {
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '8px', marginBottom: '12px' }}>
                       {proofAfterUrls.map((url, i) => (
-                        <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'block', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#F5F7FA' }}>
+                        <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'block', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: 'var(--ui-canvas)' }}>
                           <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </a>
                       ))}
                     </div>
-                    {proofNotes && <div style={{ padding: '12px 14px', background: '#F5F7FA', borderRadius: '12px', fontSize: '13px', color: '#6B7280', fontStyle: 'italic', border: '1px solid #E2E8F0' }}>"{proofNotes}"</div>}
+                    {proofNotes && <div style={{ padding: '12px 14px', background: 'var(--ui-canvas)', borderRadius: '12px', fontSize: '13px', color: 'var(--ui-muted)', fontStyle: 'italic', border: '1px solid var(--ui-border)' }}>"{proofNotes}"</div>}
                   </>
                 ) : (
                   <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                    <Camera size={40} color="#E2E8F0" style={{ margin: '0 auto 12px' }} />
-                    <p style={{ fontSize: '14px', color: '#6B7280' }}>
+                    <Camera size={40} color="var(--ui-border)" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ fontSize: '14px', color: 'var(--ui-muted)' }}>
                       {isArtisan
                         ? "Aucune photo pour l'instant — vous pourrez en ajouter une fois sur place."
                         : "L'artisan n'a pas encore ajouté de photos."}
@@ -702,7 +702,7 @@ export default function MissionLivePage() {
         {/* INFOS */}
         {tab === 'infos' && (
           <div style={{ height: '100%', overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SM }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', overflow: 'hidden', boxShadow: NEU_SM }}>
               {[
                 { label: 'Mission',  value: mission?.category || 'Intervention' },
                 { label: isArtisan ? 'Client' : 'Artisan', value: isArtisan ? clientName : `${artisanName} · ${artisanMetier}` },
@@ -710,14 +710,14 @@ export default function MissionLivePage() {
                 { label: 'Montant',  value: amount > 0 ? `${amount.toLocaleString()} FCFA` : '—' },
                 { label: 'Statut escrow', value: status === 'completed' ? 'Transféré ✓' : status === 'disputed' ? '⚠️ En litige' : status === 'pending_validation' ? '⏳ En attente de validation' : '🔒 Sécurisé' },
               ].map((item, i, arr) => (
-                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid #E2E8F0' : 'none' }}>
-                  <span style={{ fontSize: '12px', color: '#6B7280' }}>{item.label}</span>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852' }}>{item.value}</span>
+                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid var(--ui-border)' : 'none' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>{item.label}</span>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ui-ink)' }}>{item.value}</span>
                 </div>
               ))}
             </div>
 
-            <Link href={`/warroom/${missionId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', color: '#3D4852', fontWeight: 600, fontSize: '14px', textDecoration: 'none', boxShadow: NEU_SM }}>
+            <Link className="afrione-action" href={`/warroom/${missionId}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px', background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '14px', color: 'var(--ui-ink)', fontWeight: 600, fontSize: '14px', textDecoration: 'none', boxShadow: NEU_SM }}>
               <MessageCircle size={16} /> Ouvrir la conversation
             </Link>
 
@@ -726,7 +726,7 @@ export default function MissionLivePage() {
                 <AlertCircle size={16} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '13px', color: '#ef4444' }}>Litige en cours</div>
-                  <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>Notre équipe examine la situation. Les fonds restent sécurisés en attendant la résolution.</div>
+                  <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '4px' }}>Notre équipe examine la situation. Les fonds restent sécurisés en attendant la résolution.</div>
                 </div>
               </div>
             )}
@@ -735,12 +735,12 @@ export default function MissionLivePage() {
       </div>
 
       {/* BARRE D'ACTIONS */}
-      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E2E8F0', padding: '14px 16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid var(--ui-border)', padding: '14px 16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
         {allow('start_tracking') && status === 'en_route' && (
           <>
             {!isTracking ? (
-              <button onClick={startTracking} className="btn-primary" style={{ width: '100%', padding: '15px', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              <button onClick={startTracking} className="btn-primary afrione-action" style={{ width: '100%', padding: '15px', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                 <Navigation size={18} /> Démarrer le suivi GPS
               </button>
             ) : (
@@ -749,10 +749,10 @@ export default function MissionLivePage() {
                   <span style={{ width: '10px', height: '10px', background: '#E85D26', borderRadius: '50%', flexShrink: 0, boxShadow: '0 0 0 4px rgba(232,93,38,0.15)' }} />
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#E85D26' }}>GPS actif — position transmise</div>
-                    <div style={{ fontSize: '11px', color: '#6B7280' }}>Le client voit votre déplacement en direct</div>
+                    <div style={{ fontSize: '11px', color: 'var(--ui-muted)' }}>Le client voit votre déplacement en direct</div>
                   </div>
                 </div>
-                <button onClick={markArrived} disabled={acting} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: acting ? 0.6 : 1 }}>
+                <button className="afrione-action" onClick={markArrived} disabled={acting} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: acting ? 0.6 : 1 }}>
                   {acting ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Démarrage…</> : <><CheckCircle size={18} /> Je suis arrivé — Démarrer la mission</>}
                 </button>
               </>
@@ -767,16 +767,16 @@ export default function MissionLivePage() {
                 ⚠️ Le client recevra une notification pour valider. L'escrow reste bloqué jusqu'à sa validation (max 24h). Confirmer ?
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => setConfirmDone(false)} style={{ flex: 1, padding: '13px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '12px', color: '#6B7280', fontWeight: 600, fontSize: '13px', cursor: 'pointer', boxShadow: NEU_SM }}>
+                <button className="afrione-action" onClick={() => setConfirmDone(false)} style={{ flex: 1, padding: '13px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '12px', color: 'var(--ui-muted)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', boxShadow: NEU_SM }}>
                   Annuler
                 </button>
-                <button onClick={markDone} disabled={acting} style={{ flex: 2, padding: '13px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', opacity: acting ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <button className="afrione-action" onClick={markDone} disabled={acting} style={{ flex: 2, padding: '13px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: acting ? 'not-allowed' : 'pointer', opacity: acting ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   {acting ? <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> En cours…</> : <><CheckCircle size={16} /> Oui, terminer</>}
                 </button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setConfirmDone(true)} disabled={acting} style={{ width: '100%', padding: '15px', background: 'rgba(43,107,62,0.08)', color: '#2B6B3E', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            <button className="afrione-action" onClick={() => setConfirmDone(true)} disabled={acting} style={{ width: '100%', padding: '15px', background: 'rgba(43,107,62,0.08)', color: '#2B6B3E', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
               <CheckCircle size={18} /> Marquer la mission comme terminée
             </button>
           )
@@ -789,17 +789,17 @@ export default function MissionLivePage() {
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
               <span style={{ width: '8px', height: '8px', background: '#E85D26', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(232,93,38,0.15)' }} />
-              <span style={{ fontWeight: 700, fontSize: '14px', color: '#3D4852' }}>{artisanName} est en route</span>
+              <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)' }}>{artisanName} est en route</span>
             </div>
             {eta !== null
-              ? <p style={{ fontSize: '13px', color: '#6B7280' }}>Arrivée estimée dans <strong style={{ color: '#E85D26' }}>{eta} min</strong></p>
-              : <p style={{ fontSize: '13px', color: '#6B7280' }}>En attente de la position GPS…</p>
+              ? <p style={{ fontSize: '13px', color: 'var(--ui-muted)' }}>Arrivée estimée dans <strong style={{ color: '#E85D26' }}>{eta} min</strong></p>
+              : <p style={{ fontSize: '13px', color: 'var(--ui-muted)' }}>En attente de la position GPS…</p>
             }
           </div>
         )}
 
         {allow('report_issue') && status === 'en_cours' && (
-          <button onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <button className="afrione-action" onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <AlertCircle size={15} /> Signaler un problème
           </button>
         )}
@@ -810,7 +810,7 @@ export default function MissionLivePage() {
             <Clock size={18} color="#E85D26" style={{ flexShrink: 0 }} />
             <div>
               <div style={{ fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>En attente de validation client</div>
-              <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '2px' }}>
                 {countdown ? `Auto-validation dans ${countdown}` : 'Le client a 24h pour valider ou contester'}
               </div>
             </div>
@@ -823,18 +823,18 @@ export default function MissionLivePage() {
               <div style={{ fontWeight: 700, fontSize: '14px', color: '#2B6B3E', marginBottom: '3px' }}>
                 {artisanName} a terminé la mission ✅
               </div>
-              <div style={{ fontSize: '12px', color: '#6B7280' }}>
+              <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
                 Validez maintenant pour libérer le paiement
                 {countdown ? ` · Auto-validation dans ${countdown}` : ' · Auto-validation dans 24h'}
               </div>
             </div>
-            <button onClick={validateMission} disabled={validating} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: validating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: validating ? 0.6 : 1 }}>
+            <button className="afrione-action" onClick={validateMission} disabled={validating} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: validating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: validating ? 0.6 : 1 }}>
               {validating
                 ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Validation…</>
                 : <><CheckCircle size={18} /> Valider et libérer le paiement →</>
               }
             </button>
-            <button onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <button className="afrione-action" onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
               <AlertCircle size={15} /> J'ai un problème avec les travaux
             </button>
           </div>

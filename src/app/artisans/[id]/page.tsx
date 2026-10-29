@@ -10,8 +10,8 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 
 type Photo = { url: string; category: string; date: string | null; notes?: string }
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 export default function ArtisanProfilePage() {
   const params = useParams()
@@ -92,13 +92,13 @@ export default function ArtisanProfilePage() {
   }, [lightbox, closeLightbox, prevPhoto, nextPhoto])
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: '40px', height: '40px', border: '4px solid rgba(232,93,38,0.2)', borderTop: '4px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
     </div>
   )
 
   if (!artisan) return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <p style={{ fontSize: '48px' }}>404</p>
         <Link href="/artisans" className="afrione-gradient-text">← Retour</Link>
@@ -152,7 +152,7 @@ export default function ArtisanProfilePage() {
   const allPhotos: Photo[] = [...portfolioPhotos, ...missionPhotos].slice(0, 18)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7FA' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)' }}>
       <Navbar />
 
       {/* Lightbox */}
@@ -162,18 +162,18 @@ export default function ArtisanProfilePage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {/* Bouton fermer */}
-          <button onClick={closeLightbox} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+          <button className="afrione-action afrione-action--icon" onClick={closeLightbox} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
             <X size={20} />
           </button>
 
           {/* Compteur */}
-          <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontFamily: 'Tahoma' }}>
+          <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-body)' }}>
             {lightbox.index + 1} / {lightbox.photos.length}
           </div>
 
           {/* Prev */}
           {lightbox.index > 0 && (
-            <button onClick={e => { e.stopPropagation(); prevPhoto() }} style={{
+            <button className="afrione-action" onClick={e => { e.stopPropagation(); prevPhoto() }} style={{
               position: 'absolute', left: '20px', background: 'rgba(255,255,255,0.1)', border: 'none',
               borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center',
               justifyContent: 'center', cursor: 'pointer', color: 'white',
@@ -184,7 +184,7 @@ export default function ArtisanProfilePage() {
 
           {/* Next */}
           {lightbox.index < lightbox.photos.length - 1 && (
-            <button onClick={e => { e.stopPropagation(); nextPhoto() }} style={{
+            <button className="afrione-action" onClick={e => { e.stopPropagation(); nextPhoto() }} style={{
               position: 'absolute', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none',
               borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center',
               justifyContent: 'center', cursor: 'pointer', color: 'white',
@@ -240,16 +240,16 @@ export default function ArtisanProfilePage() {
       <div style={{ paddingTop: '80px', paddingBottom: '64px' }}>
 
         {/* Hero blanc/neumorphique */}
-        <div style={{ background: '#FFFFFF', borderBottom: '1.5px solid #E2E8F0', boxShadow: '0 4px 20px rgba(163,177,198,0.3)' }}>
+        <div style={{ background: '#FFFFFF', borderBottom: '1.5px solid var(--ui-border)', boxShadow: 'var(--ui-shadow-soft)' }}>
           <div className="page-container" style={{ padding: isMobile ? '16px' : '32px', maxWidth: '896px' }}>
-            <Link href="/artisans" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#6B7280', textDecoration: 'none', marginBottom: '24px' }}>
+            <Link href="/artisans" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--ui-muted)', textDecoration: 'none', marginBottom: '24px' }}>
               <ArrowLeft size={16} /> Retour aux artisans
             </Link>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? '14px' : '24px' }}>
               <div style={{
                 width: '96px', height: '96px', borderRadius: '20px', flexShrink: 0,
                 border: '2px solid rgba(232,93,38,0.3)', overflow: 'hidden',
-                background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--ui-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: NEU_SMALL,
               }}>
                 {avatarUrl ? <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '40px' }}>👷</span>}
@@ -265,23 +265,23 @@ export default function ArtisanProfilePage() {
                     </span>
                   )}
                 </div>
-                <div className="font-display" style={{ fontSize: '32px', fontWeight: 800, color: '#3D4852', lineHeight: 1.1 }}>{artisan.metier}</div>
-                <div style={{ fontSize: '15px', color: '#6B7280', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="font-display" style={{ fontSize: '32px', fontWeight: 800, color: 'var(--ui-ink)', lineHeight: 1.1 }}>{artisan.metier}</div>
+                <div style={{ fontSize: '15px', color: 'var(--ui-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>{name}</span><span>·</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><MapPin size={12} /> {user?.quartier || 'Abidjan'}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
                   <div style={{ display: 'flex', gap: '2px' }}>
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} size={16} style={{ color: i < stars ? '#C9A84C' : '#E2E8F0' }} fill={i < stars ? '#C9A84C' : 'none'} />
+                      <Star key={i} size={16} style={{ color: i < stars ? '#C9A84C' : 'var(--ui-border)' }} fill={i < stars ? '#C9A84C' : 'none'} />
                     ))}
                   </div>
-                  <span className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852' }}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
-                  <span style={{ fontSize: '13px', color: '#6B7280' }}>({artisan.rating_count || 0} avis)</span>
+                  <span className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ui-ink)' }}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
+                  <span style={{ fontSize: '13px', color: 'var(--ui-muted)' }}>({artisan.rating_count || 0} avis)</span>
                 </div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: '12px', borderTop: '1.5px solid #E2E8F0', paddingTop: '20px', marginTop: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: '12px', borderTop: '1.5px solid var(--ui-border)', paddingTop: '20px', marginTop: '20px' }}>
               {[
                 { value: artisan.mission_count || missions.length, label: 'Missions' },
                 { value: `${artisan.years_experience || 0}ans`, label: 'Expérience' },
@@ -289,11 +289,11 @@ export default function ArtisanProfilePage() {
                 { value: `${artisan.response_time_min || 30}min`, label: 'Réponse' },
               ].map(s => (
                 <div key={s.label} style={{
-                  textAlign: 'center', padding: '12px', background: '#F5F7FA', borderRadius: '12px',
-                  border: '1px solid #E2E8F0',
+                  textAlign: 'center', padding: '12px', background: 'var(--ui-canvas)', borderRadius: '12px',
+                  border: '1px solid var(--ui-border)',
                 }}>
-                  <div className="font-display" style={{ fontSize: '22px', fontWeight: 700, color: '#3D4852' }}>{s.value}</div>
-                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'Tahoma' }}>{s.label}</div>
+                  <div className="font-display" style={{ fontSize: '22px', fontWeight: 700, color: 'var(--ui-ink)' }}>{s.value}</div>
+                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'var(--font-body)' }}>{s.label}</div>
                 </div>
               ))}
             </div>
@@ -305,14 +305,14 @@ export default function ArtisanProfilePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
               {/* RÉALISATIONS — section mise en avant */}
-              <div style={{ background: '#FFFFFF', borderRadius: '20px', overflow: 'hidden', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
-                <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1.5px solid #E2E8F0' }}>
-                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852', margin: 0 }}>
+              <div style={{ background: '#FFFFFF', borderRadius: '20px', overflow: 'hidden', boxShadow: NEU_SHADOW, border: '1.5px solid var(--ui-border)' }}>
+                <div style={{ padding: '20px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1.5px solid var(--ui-border)' }}>
+                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ui-ink)', margin: 0 }}>
                     Réalisations
-                    {allPhotos.length > 0 && <span style={{ marginLeft: '8px', fontSize: '14px', fontWeight: 400, color: '#6B7280' }}>({allPhotos.length} photos)</span>}
+                    {allPhotos.length > 0 && <span style={{ marginLeft: '8px', fontSize: '14px', fontWeight: 400, color: 'var(--ui-muted)' }}>({allPhotos.length} photos)</span>}
                   </h2>
                   {allPhotos.length > 0 && (
-                    <span style={{ fontSize: '12px', color: '#8B95A5', fontFamily: 'Tahoma' }}>Cliquez pour agrandir</span>
+                    <span style={{ fontSize: '12px', color: '#8B95A5', fontFamily: 'var(--font-body)' }}>Cliquez pour agrandir</span>
                   )}
                 </div>
 
@@ -321,7 +321,7 @@ export default function ArtisanProfilePage() {
                     {/* Grande première photo */}
                     <div
                       onClick={() => setLightbox({ photos: allPhotos, index: 0 })}
-                      style={{ cursor: 'pointer', position: 'relative', height: '280px', background: '#E2E8F0', overflow: 'hidden' }}
+                      style={{ cursor: 'pointer', position: 'relative', height: '280px', background: 'var(--ui-border)', overflow: 'hidden' }}
                     >
                       <img src={allPhotos[0].url} alt={allPhotos[0].category} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
                         onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.03)')}
@@ -350,7 +350,7 @@ export default function ArtisanProfilePage() {
                             <div
                               key={i}
                               onClick={() => setLightbox({ photos: allPhotos, index: i + 1 })}
-                              style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: '#F5F7FA', cursor: 'pointer' }}
+                              style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: 'var(--ui-canvas)', cursor: 'pointer' }}
                             >
                               <img src={p.url} alt={p.category} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
                                 onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
@@ -378,13 +378,13 @@ export default function ArtisanProfilePage() {
                 ) : missions.length > 0 ? (
                   <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {missions.map((m: any) => (
-                      <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F5F7FA', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                      <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--ui-canvas)', borderRadius: '12px', border: '1px solid var(--ui-border)' }}>
                         <div style={{ width: '40px', height: '40px', background: 'rgba(232,93,38,0.08)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <Briefcase size={18} style={{ color: '#E85D26' }} />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600, fontSize: '14px', color: '#3D4852' }}>{m.category || m.diagnostics?.[0]?.category_detected || 'Intervention'}</div>
-                          <div style={{ fontSize: '12px', color: '#6B7280' }}>{m.quartier || 'Abidjan'} · {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''}</div>
+                          <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ui-ink)' }}>{m.category || m.diagnostics?.[0]?.category_detected || 'Intervention'}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>{m.quartier || 'Abidjan'} · {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''}</div>
                         </div>
                         <CheckCircle size={16} style={{ color: '#2B6B3E' }} />
                       </div>
@@ -399,15 +399,15 @@ export default function ArtisanProfilePage() {
               </div>
 
               {artisan.bio && (
-                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
-                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>À propos</h2>
-                  <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.7' }}>{artisan.bio}</p>
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid var(--ui-border)' }}>
+                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '12px' }}>À propos</h2>
+                  <p style={{ fontSize: '14px', color: 'var(--ui-muted)', lineHeight: '1.7' }}>{artisan.bio}</p>
                 </div>
               )}
 
               {artisan.specialties?.length > 0 && (
-                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
-                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852', marginBottom: '12px' }}>Spécialités</h2>
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid var(--ui-border)' }}>
+                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '12px' }}>Spécialités</h2>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {artisan.specialties.map((s: string) => (
                       <span key={s} className="afrione-gradient-text" style={{ padding: '6px 14px', background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.18)', borderRadius: '20px', fontSize: '13px', fontWeight: 500 }}>{s}</span>
@@ -417,30 +417,30 @@ export default function ArtisanProfilePage() {
               )}
 
               {artisan.quartiers?.length > 0 && (
-                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
-                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#3D4852', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid var(--ui-border)' }}>
+                  <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <MapPin size={16} style={{ color: '#E85D26' }} /> Zones d'intervention
                   </h2>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {artisan.quartiers.map((q: string) => (
-                      <span key={q} style={{ padding: '6px 14px', background: '#F5F7FA', border: '1.5px solid #E2E8F0', borderRadius: '20px', fontSize: '13px', color: '#3D4852' }}>{q}</span>
+                      <span key={q} style={{ padding: '6px 14px', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', borderRadius: '20px', fontSize: '13px', color: 'var(--ui-ink)' }}>{q}</span>
                     ))}
                   </div>
                 </div>
               )}
 
               {/* Avis + Certifs */}
-              <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0' }}>
-                <div style={{ display: 'flex', borderBottom: '1.5px solid #E2E8F0', marginBottom: '24px' }}>
+              <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid var(--ui-border)' }}>
+                <div style={{ display: 'flex', borderBottom: '1.5px solid var(--ui-border)', marginBottom: '24px' }}>
                   {[
                     { id: 'avis' as const, label: `Avis (${reviews.length})` },
                     { id: 'certifs' as const, label: 'Certifications' },
                   ].map(t => (
-                    <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+                    <button className="afrione-action" key={t.id} onClick={() => setActiveTab(t.id)} style={{
                       padding: '0 4px', paddingBottom: '12px', marginRight: '24px', fontSize: '14px', fontWeight: 500,
                       border: 'none', background: 'none', cursor: 'pointer',
                       borderBottom: activeTab === t.id ? '2px solid #E85D26' : '2px solid transparent',
-                      color: activeTab === t.id ? '#3D4852' : '#6B7280',
+                      color: activeTab === t.id ? 'var(--ui-ink)' : 'var(--ui-muted)',
                     }}>{t.label}</button>
                   ))}
                 </div>
@@ -453,21 +453,21 @@ export default function ArtisanProfilePage() {
                         <p style={{ fontSize: '14px' }}>Aucun avis pour l'instant</p>
                       </div>
                     ) : reviews.map((r: any, i: number) => (
-                      <div key={i} style={{ paddingBottom: '16px', borderBottom: '1.5px solid #E2E8F0' }}>
+                      <div key={i} style={{ paddingBottom: '16px', borderBottom: '1.5px solid var(--ui-border)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '32px', height: '32px', background: '#F5F7FA', border: '1.5px solid #E2E8F0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '13px', color: '#3D4852' }}>
+                            <div style={{ width: '32px', height: '32px', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '13px', color: 'var(--ui-ink)' }}>
                               {(r.missions?.users?.name || 'C')[0]}
                             </div>
-                            <span style={{ fontWeight: 500, fontSize: '14px', color: '#3D4852' }}>{r.missions?.users?.name || 'Client'}</span>
+                            <span style={{ fontWeight: 500, fontSize: '14px', color: 'var(--ui-ink)' }}>{r.missions?.users?.name || 'Client'}</span>
                           </div>
                           <div style={{ display: 'flex', gap: '2px' }}>
                             {Array.from({ length: 5 }).map((_, j) => (
-                              <Star key={j} size={12} style={{ color: r.sentiment_score && j < Math.round(r.sentiment_score * 5) ? '#C9A84C' : '#E2E8F0' }} fill={r.sentiment_score && j < Math.round(r.sentiment_score * 5) ? '#C9A84C' : 'none'} />
+                              <Star key={j} size={12} style={{ color: r.sentiment_score && j < Math.round(r.sentiment_score * 5) ? '#C9A84C' : 'var(--ui-border)' }} fill={r.sentiment_score && j < Math.round(r.sentiment_score * 5) ? '#C9A84C' : 'none'} />
                             ))}
                           </div>
                         </div>
-                        <p style={{ fontSize: '14px', color: '#6B7280', lineHeight: '1.6' }}>{r.raw_text}</p>
+                        <p style={{ fontSize: '14px', color: 'var(--ui-muted)', lineHeight: '1.6' }}>{r.raw_text}</p>
                       </div>
                     ))}
                   </div>
@@ -483,7 +483,7 @@ export default function ArtisanProfilePage() {
                     ) : artisan.certifications.map((c: string) => (
                       <div key={c} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'rgba(43,107,62,0.04)', border: '1px solid rgba(43,107,62,0.18)', borderRadius: '12px' }}>
                         <Shield size={16} style={{ color: '#2B6B3E' }} />
-                        <span style={{ fontSize: '14px', color: '#3D4852', fontWeight: 500 }}>{c}</span>
+                        <span style={{ fontSize: '14px', color: 'var(--ui-ink)', fontWeight: 500 }}>{c}</span>
                       </div>
                     ))}
                   </div>
@@ -495,22 +495,22 @@ export default function ArtisanProfilePage() {
             <div>
               <div style={{
                 background: '#FFFFFF', borderRadius: '20px', padding: '24px',
-                boxShadow: NEU_SHADOW, border: '1.5px solid #E2E8F0',
+                boxShadow: NEU_SHADOW, border: '1.5px solid var(--ui-border)',
                 ...(isMobile ? {} : { position: 'sticky', top: '96px' }),
               }}>
                 <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                  <div style={{ width: '64px', height: '64px', borderRadius: '16px', overflow: 'hidden', background: '#F5F7FA', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: NEU_SMALL, border: '1.5px solid #E2E8F0' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '16px', overflow: 'hidden', background: 'var(--ui-canvas)', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: NEU_SMALL, border: '1.5px solid var(--ui-border)' }}>
                     {avatarUrl
                       ? <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       : <span style={{ fontSize: '28px' }}>👷</span>
                     }
                   </div>
-                  <p style={{ fontWeight: 700, fontSize: '15px', color: '#3D4852' }}>{name}</p>
-                  <p style={{ fontSize: '13px', color: '#6B7280' }}>{artisan.metier}</p>
+                  <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--ui-ink)' }}>{name}</p>
+                  <p style={{ fontSize: '13px', color: 'var(--ui-muted)' }}>{artisan.metier}</p>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '6px' }}>
                     <Star size={13} fill='#C9A84C' style={{ color: '#C9A84C' }} />
-                    <span style={{ fontWeight: 600, fontSize: '13px', color: '#3D4852' }}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
-                    <span style={{ fontSize: '12px', color: '#6B7280' }}>· {artisan.mission_count || 0} missions</span>
+                    <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ui-ink)' }}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
+                    <span style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>· {artisan.mission_count || 0} missions</span>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
@@ -519,14 +519,14 @@ export default function ArtisanProfilePage() {
                     { icon: ThumbsUp, text: `${artisan.success_rate || 0}% de satisfaction` },
                     { icon: Shield, text: 'Paiement sécurisé via Wave' },
                   ].map(item => (
-                    <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#6B7280' }}>
+                    <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--ui-muted)' }}>
                       <item.icon size={14} style={{ color: '#2B6B3E', flexShrink: 0 }} /> {item.text}
                     </div>
                   ))}
                 </div>
-                <button onClick={handleReserver} disabled={reserving} className={reserving ? '' : 'btn-primary'} style={{
+                <button onClick={handleReserver} disabled={reserving} className={(reserving ? '' : 'btn-primary') + ' afrione-action'} style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '14px', background: reserving ? '#E2E8F0' : undefined, color: reserving ? '#6B7280' : 'white',
+                  padding: '14px', background: reserving ? 'var(--ui-border)' : undefined, color: reserving ? 'var(--ui-muted)' : 'white',
                   border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '12px'
                 }}>
                   {reserving
@@ -541,13 +541,13 @@ export default function ArtisanProfilePage() {
                     Faire un diagnostic d'abord <ChevronRight size={14} />
                   </Link>
                 )}
-                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1.5px solid #E2E8F0', display: 'flex', gap: '8px' }}>
-                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: '#6B7280', background: '#F5F7FA', border: '1.5px solid #E2E8F0', cursor: 'pointer', padding: '8px', borderRadius: '8px', boxShadow: NEU_SMALL }}>
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1.5px solid var(--ui-border)', display: 'flex', gap: '8px' }}>
+                  <button className="afrione-action" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: 'var(--ui-muted)', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', cursor: 'pointer', padding: '8px', borderRadius: '8px', boxShadow: NEU_SMALL }}>
                     <Phone size={14} /> Appeler
                   </button>
                   <button onClick={() => existingMission ? router.push(`/warroom/${existingMission.id}`) : handleReserver()}
-                    className={existingMission ? 'afrione-gradient-text' : ''}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: existingMission ? undefined : '#6B7280', background: '#F5F7FA', border: '1.5px solid #E2E8F0', cursor: 'pointer', padding: '8px', borderRadius: '8px', fontWeight: existingMission ? 600 : 400, boxShadow: NEU_SMALL }}>
+                    className={(existingMission ? 'afrione-gradient-text' : '') + ' afrione-action'}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: existingMission ? undefined : 'var(--ui-muted)', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', cursor: 'pointer', padding: '8px', borderRadius: '8px', fontWeight: existingMission ? 600 : 400, boxShadow: NEU_SMALL }}>
                     <MessageCircle size={14} /> {existingMission ? 'Ouvrir le chat' : 'Message'}
                   </button>
                 </div>

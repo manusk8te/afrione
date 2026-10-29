@@ -6,8 +6,8 @@ import MaterialObservationForm, {PartnerRegistration} from '@/components/admin/M
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { Globe, Store, Plus, CheckCircle, Trash2, RefreshCw, Package, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 type Source = {
   id: string
@@ -183,14 +183,14 @@ export default function AdminSourcesPage() {
   const magasins = sources.filter(s => s.type === 'magasin')
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F5F7FA' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--ui-canvas)' }}>
       <AdminSidebar activeId="sources" />
 
-      <main className="flex-1 p-6" style={{ maxWidth: '1100px', minWidth: 0 }}>
+      <main className="afrione-admin-content flex-1 p-6" style={{ maxWidth: '1100px', minWidth: 0 }}>
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#3D4852' }}>Sources de prix</h1>
-            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '2px' }}>Fiches publiques collectables + relevés de magasins, avec contrôle des prix</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)' }}>Sources de prix</h1>
+            <p style={{ color: 'var(--ui-muted)', fontSize: '14px', marginTop: '2px' }}>Fiches publiques collectables + relevés de magasins, avec contrôle des prix</p>
           </div>
           {msg && (
             <div style={{ background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', color: '#2B6B3E' }}>
@@ -203,8 +203,8 @@ export default function AdminSourcesPage() {
           <h2 className="font-semibold mb-2">Rechercher un prix à la demande</h2>
           <p className="text-sm text-gray-500 mb-3">Décrivez la fourniture précise : usage, type, dimensions et conditionnement. Si une caractéristique manque, elle sera demandée. Aucun article ajouté au catalogue, aucune validation individuelle. Les résultats sont réutilisés pendant une heure. Fournitures séparées de la prestation ; modèle, conditionnement et livraison à confirmer.</p>
           <div className="flex gap-2">
-            <input aria-label="Fourniture à rechercher" maxLength={120} value={lookupQuery} onChange={e=>setLookupQuery(e.target.value)} placeholder="Ex. ciment CPJ 32.5R la tonne, mitigeur cuisine" className="border rounded-lg p-2 flex-1 min-w-0" />
-            <button onClick={searchOffers} disabled={lookupBusy||lookupQuery.trim().length<2} className="afrione-gradient text-white rounded-lg px-4 disabled:opacity-50">{lookupBusy?'Recherche…':'Chercher les prix'}</button>
+            <input aria-label="Fourniture à rechercher" maxLength={120} value={lookupQuery} onChange={e=>setLookupQuery(e.target.value)} placeholder="Ex. ciment CPJ 32.5R la tonne, mitigeur cuisine" className="border rounded-lg p-2 flex-1 min-w-0 afrione-field" />
+            <button onClick={searchOffers} disabled={lookupBusy||lookupQuery.trim().length<2} className="afrione-gradient text-white rounded-lg px-4 disabled:opacity-50 afrione-action">{lookupBusy?'Recherche…':'Chercher les prix'}</button>
           </div>
           {lookupResult && <div role="status" className="mt-4 text-sm">
             <p>{lookupResult.note}</p>
@@ -228,7 +228,7 @@ export default function AdminSourcesPage() {
             </h2>
             <button
               onClick={() => setShowWebForm(v => !v)}
-              className="afrione-gradient"
+              className="afrione-gradient afrione-action"
               style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
             >
               <Plus size={14} /> Ajouter un site
@@ -236,42 +236,42 @@ export default function AdminSourcesPage() {
           </div>
 
           {showWebForm && (
-            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', marginBottom: '16px', boxShadow: NEU_SHADOW }}>
-              <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '16px', color: '#3D4852' }}>Nouveau site web</h3>
+            <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '12px', padding: '20px', marginBottom: '16px', boxShadow: NEU_SHADOW }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '16px', color: 'var(--ui-ink)' }}>Nouveau site web</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>Nom du site *</label>
-                  <input value={webName} onChange={e => setWebName(e.target.value)} placeholder="ex: CasaShop CI"
-                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '4px' }}>Nom du site *</label>
+                  <input className="afrione-field" value={webName} onChange={e => setWebName(e.target.value)} placeholder="ex: CasaShop CI"
+                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '8px', color: 'var(--ui-ink)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>URL catalogue *</label>
-                  <input value={webUrl} onChange={e => setWebUrl(e.target.value)} placeholder="https://..."
-                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '4px' }}>URL catalogue *</label>
+                  <input className="afrione-field" value={webUrl} onChange={e => setWebUrl(e.target.value)} placeholder="https://..."
+                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '8px', color: 'var(--ui-ink)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px', marginBottom: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>Type de scraper</label>
-                  <select value={webScraper} onChange={e => setWebScraper(e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '4px' }}>Type de scraper</label>
+                  <select className="afrione-field" value={webScraper} onChange={e => setWebScraper(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '8px', color: 'var(--ui-ink)', fontSize: '13px' }}>
                     {SCRAPER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>Notes (format de la page, spécificités…)</label>
-                  <input value={webNotes} onChange={e => setWebNotes(e.target.value)} placeholder="ex: JSON dans window.__data.products"
-                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '8px', color: '#3D4852', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                  <label style={{ display: 'block', fontSize: '11px', color: 'var(--ui-muted)', marginBottom: '4px' }}>Notes (format de la page, spécificités…)</label>
+                  <input className="afrione-field" value={webNotes} onChange={e => setWebNotes(e.target.value)} placeholder="ex: JSON dans window.__data.products"
+                    style={{ width: '100%', padding: '8px 12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '8px', color: 'var(--ui-ink)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={addWebsite} disabled={saving}
-                  className="afrione-gradient"
+                  className="afrione-gradient afrione-action"
                   style={{ padding: '8px 20px', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600, opacity: saving ? 0.6 : 1 }}>
                   {saving ? 'Ajout…' : 'Ajouter'}
                 </button>
-                <button onClick={() => setShowWebForm(false)}
-                  style={{ padding: '8px 14px', background: '#F5F7FA', color: '#6B7280', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                <button className="afrione-action" onClick={() => setShowWebForm(false)}
+                  style={{ padding: '8px 14px', background: 'var(--ui-canvas)', color: 'var(--ui-muted)', border: '1px solid var(--ui-border)', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
                   Annuler
                 </button>
               </div>
@@ -279,7 +279,7 @@ export default function AdminSourcesPage() {
           )}
 
           {loading ? (
-            <div style={{ color: '#6B7280', fontSize: '13px' }}>Chargement…</div>
+            <div style={{ color: 'var(--ui-muted)', fontSize: '13px' }}>Chargement…</div>
           ) : websites.length === 0 ? (
             <div style={{ color: '#8B95A5', fontSize: '13px', fontStyle: 'italic' }}>Aucun site web configuré. Ajoutez Jumia CI, CasaShop CI, etc.</div>
           ) : (
@@ -358,10 +358,10 @@ function SourceCard({
   onConfirmMaterial: (id: string) => void
 }) {
   const isWeb = source.type === 'website'
-  const NEU_SMALL = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+  const NEU_SMALL = 'var(--ui-shadow-soft)'
 
   return (
-    <div style={{ background: '#FFFFFF', border: `1px solid ${source.verified ? 'rgba(43,107,62,0.3)' : '#E2E8F0'}`, borderRadius: '12px', overflow: 'hidden', boxShadow: NEU_SMALL }}>
+    <div style={{ background: '#FFFFFF', border: `1px solid ${source.verified ? 'rgba(43,107,62,0.3)' : 'var(--ui-border)'}`, borderRadius: '12px', overflow: 'hidden', boxShadow: NEU_SMALL }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer' }} onClick={onToggle}>
         <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: isWeb ? 'rgba(201,168,76,0.1)' : 'rgba(232,93,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -370,10 +370,10 @@ function SourceCard({
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontWeight: 600, fontSize: '14px', color: '#3D4852' }}>{source.name}</span>
+            <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ui-ink)' }}>{source.name}</span>
             {source.verified
               ? <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(43,107,62,0.1)', color: '#2B6B3E', fontWeight: 600 }}>Vérifié</span>
-              : <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: '#F5F7FA', color: '#6B7280', fontWeight: 600, border: '1px solid #E2E8F0' }}>En attente</span>
+              : <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'var(--ui-canvas)', color: 'var(--ui-muted)', fontWeight: 600, border: '1px solid var(--ui-border)' }}>En attente</span>
             }
             {source.is_partner && <span>Partenaire AfriOne confirmé</span>}
             {source.access_status && <span style={{fontSize:11}}>Accès : {source.access_status === 'blocked' ? 'automatisation bloquée' : source.access_status === 'unreachable' ? 'site non accessible au dernier contrôle' : source.access_status === 'available' ? 'site accessible au dernier contrôle' : 'à contrôler'}</span>}
@@ -381,26 +381,26 @@ function SourceCard({
               <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.2)' }}>{source.scraper_type === 'public_catalogue' ? 'Fiches publiques' : source.scraper_type === 'manual' ? 'Relevé manuel' : source.scraper_type}</span>
             )}
           </div>
-          <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '2px' }}>
             {source.quartier ? `📍 ${source.quartier}` : source.url ? source.url.replace(/^https?:\/\//, '').split('/')[0] : ''}
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
           {isWeb && onScrape && (
-            <button onClick={onScrape} disabled={scraping}
+            <button className="afrione-action" onClick={onScrape} disabled={scraping}
               style={{ padding: '5px 10px', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '6px', color: '#C9A84C', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', opacity: scraping ? 0.6 : 1 }}>
               <RefreshCw size={11} style={{ animation: scraping ? 'spin 1s linear infinite' : 'none' }} />
               {scraping ? 'Collecte…' : 'Actualiser les prix'}
             </button>
           )}
           {!source.verified && (
-            <button onClick={onVerify}
+            <button className="afrione-action" onClick={onVerify}
               style={{ padding: '5px 10px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.25)', borderRadius: '6px', color: '#2B6B3E', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <CheckCircle size={11} /> Valider
             </button>
           )}
-          <button onClick={onDelete}
+          <button className="afrione-action" onClick={onDelete}
             style={{ padding: '5px 8px', background: isConfirmingDelete ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.05)', border: `1px solid ${isConfirmingDelete ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.15)'}`, borderRadius: '6px', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontWeight: isConfirmingDelete ? 700 : 400, whiteSpace: 'nowrap' }}>
             {isConfirmingDelete ? '⚠️ Confirmer ?' : <Trash2 size={11} />}
           </button>
@@ -410,9 +410,9 @@ function SourceCard({
 
       {/* Expanded — liste des articles */}
       {expanded && (
-        <div style={{ borderTop: '1px solid #E2E8F0', padding: '12px 16px', background: '#F5F7FA' }}>
+        <div style={{ borderTop: '1px solid var(--ui-border)', padding: '12px 16px', background: 'var(--ui-canvas)' }}>
           {source.notes && (
-            <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '12px', fontStyle: 'italic' }}>{source.notes}</p>
+            <p style={{ fontSize: '12px', color: 'var(--ui-muted)', marginBottom: '12px', fontStyle: 'italic' }}>{source.notes}</p>
           )}
           {source.url && (
             <a href={source.url} target="_blank" rel="noopener noreferrer"
@@ -422,7 +422,7 @@ function SourceCard({
           )}
 
           {matLoading ? (
-            <div style={{ color: '#6B7280', fontSize: '12px' }}>Chargement…</div>
+            <div style={{ color: 'var(--ui-muted)', fontSize: '12px' }}>Chargement…</div>
           ) : !materials || materials.length === 0 ? (
             <div style={{ color: '#8B95A5', fontSize: '12px', fontStyle: 'italic' }}>
               <Package size={13} style={{ display: 'inline', marginRight: '6px' }} />
@@ -431,30 +431,30 @@ function SourceCard({
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#FFFFFF', borderRadius: '8px', overflow: 'hidden' }}>
               <thead>
-                <tr style={{ background: '#F5F7FA', borderBottom: '1px solid #E2E8F0' }}>
-                  <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Article</th>
-                  <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Catégorie</th>
-                  <th style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Prix marché</th>
-                  <th style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Prix web</th>
-                  <th style={{ textAlign: 'center', padding: '8px 10px', fontWeight: 600, color: '#6B7280' }}>Statut</th>
+                <tr style={{ background: 'var(--ui-canvas)', borderBottom: '1px solid var(--ui-border)' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 600, color: 'var(--ui-muted)' }}>Article</th>
+                  <th style={{ textAlign: 'left', padding: '8px 10px', fontWeight: 600, color: 'var(--ui-muted)' }}>Catégorie</th>
+                  <th style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 600, color: 'var(--ui-muted)' }}>Prix marché</th>
+                  <th style={{ textAlign: 'right', padding: '8px 10px', fontWeight: 600, color: 'var(--ui-muted)' }}>Prix web</th>
+                  <th style={{ textAlign: 'center', padding: '8px 10px', fontWeight: 600, color: 'var(--ui-muted)' }}>Statut</th>
                 </tr>
               </thead>
               <tbody>
                 {materials.map(mat => (
-                  <tr key={mat.id} style={{ borderTop: '1px solid #E2E8F0' }}>
-                    <td style={{ padding: '8px 10px', color: '#3D4852' }}>{mat.name}<small style={{display:'block'}}>Unité : {mat.unit} · {observationLabel(mat.price_provenance)} · {mat.observed_at ? new Date(mat.observed_at).toLocaleDateString('fr-FR') : 'date manquante'}</small>{(mat.evidence_url || mat.source_url) && <a href={mat.evidence_url || mat.source_url || ''} target="_blank" rel="noopener noreferrer">Voir le justificatif / produit</a>}</td>
-                    <td style={{ padding: '8px 10px', color: '#6B7280' }}>{mat.category}</td>
+                  <tr key={mat.id} style={{ borderTop: '1px solid var(--ui-border)' }}>
+                    <td style={{ padding: '8px 10px', color: 'var(--ui-ink)' }}>{mat.name}<small style={{display:'block'}}>Unité : {mat.unit} · {observationLabel(mat.price_provenance)} · {mat.observed_at ? new Date(mat.observed_at).toLocaleDateString('fr-FR') : 'date manquante'}</small>{(mat.evidence_url || mat.source_url) && <a href={mat.evidence_url || mat.source_url || ''} target="_blank" rel="noopener noreferrer">Voir le justificatif / produit</a>}</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--ui-muted)' }}>{mat.category}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right', color: '#C9A84C', fontWeight: 600 }}>
                       {mat.price_market?.toLocaleString('fr')} F
                     </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', color: '#6B7280' }}>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--ui-muted)' }}>
                       {mat.web_price ? `${mat.web_price.toLocaleString('fr')} F` : '—'}
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                       {mat.confirmed_at ? (
                         <span style={{ fontSize: '10px', color: '#2B6B3E', fontWeight: 600 }}>✓ Confirmé</span>
                       ) : (
-                        <button onClick={() => onConfirmMaterial(mat.id)}
+                        <button className="afrione-action" onClick={() => onConfirmMaterial(mat.id)}
                           style={{ fontSize: '10px', padding: '3px 10px', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.2)', borderRadius: '6px', color: '#2B6B3E', cursor: 'pointer' }}>
                           Confirmer
                         </button>

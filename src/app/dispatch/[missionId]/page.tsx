@@ -259,12 +259,12 @@ export default function DispatchLoadingPage() {
           <p style={{ ...body, fontSize: '14px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
             Tous les artisans disponibles ont été contactés sans succès. Tu seras remboursé intégralement sous 24h.
           </p>
-          <button
+          <button className="afrione-action"
             onClick={() => router.push('/mode-select?category=' + encodeURIComponent(category))}
             style={{ padding: '14px 28px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '14px', ...syne, fontWeight: 700, fontSize: '15px', cursor: 'pointer', boxShadow: '0 8px 24px rgba(232,93,38,0.35)' }}>
             Essayer en mode Standard
           </button>
-          <button
+          <button className="afrione-action"
             onClick={() => router.push('/')}
             style={{ ...body, fontSize: '13px', color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer' }}>
             Retour à l'accueil

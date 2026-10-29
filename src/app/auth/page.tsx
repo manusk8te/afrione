@@ -61,7 +61,7 @@ function InputGroup({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <label htmlFor={inputId} style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>{label}</label>
       <div style={{ position: 'relative' }}>
-        <input
+        <input className="afrione-field"
           id={inputId}
           type={type}
           value={value}
@@ -263,7 +263,7 @@ function AuthContent() {
             background: BRAND_GRAY, padding: 4, borderRadius: 12,
           }}>
             {(['login', 'signup'] as const).map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{
+              <button className="afrione-action" key={t} onClick={() => setTab(t)} style={{
                 padding: '10px 0', borderRadius: 9, border: 'none', cursor: 'pointer',
                 fontWeight: 600, fontSize: 13, transition: 'all 0.2s',
                 background: tab === t ? ORANGE : 'transparent',
@@ -309,14 +309,14 @@ function AuthContent() {
                 value={password}
                 onChange={setPassword}
                 rightEl={
-                  <button type="button" onClick={() => setShowPw(v => !v)}
+                  <button className="afrione-action" type="button" onClick={() => setShowPw(v => !v)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 0, display: 'flex' }}>
                     {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 }
               />
               {tab === 'login' && (
-                <button type="button" disabled={loading} onClick={handlePasswordRecovery}
+                <button className="afrione-action" type="button" disabled={loading} onClick={handlePasswordRecovery}
                   style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: ORANGE, fontSize: 13, cursor: 'pointer' }}>
                   Mot de passe oublié ?
                 </button>
@@ -328,7 +328,7 @@ function AuthContent() {
               )}
             </div>
 
-            <button
+            <button className="afrione-action"
               type="submit" disabled={loading}
               style={{
                 marginTop: 8, width: '100%', height: 52, borderRadius: 12, border: 'none',
@@ -352,7 +352,7 @@ function AuthContent() {
           <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.3)', margin: 0 }}>
             {tab === 'login' ? (
               <>Pas encore de compte ?{' '}
-                <button onClick={() => setTab('signup')} style={{
+                <button className="afrione-action" onClick={() => setTab('signup')} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: ORANGE, fontWeight: 600, fontSize: 13, padding: 0, fontFamily: 'inherit',
                 }}>
@@ -361,7 +361,7 @@ function AuthContent() {
               </>
             ) : (
               <>Déjà membre ?{' '}
-                <button onClick={() => setTab('login')} style={{
+                <button className="afrione-action" onClick={() => setTab('login')} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: ORANGE, fontWeight: 600, fontSize: 13, padding: 0, fontFamily: 'inherit',
                 }}>

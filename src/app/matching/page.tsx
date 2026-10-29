@@ -160,7 +160,7 @@ function MatchingContent() {
             <ArrowLeft size={14} /> Retour
           </Link>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px', marginLeft: '12px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Tahoma' }}>MATCHING IA</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>MATCHING IA</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Artisans disponibles</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>Sélectionnés selon votre quartier et votre besoin</p>
@@ -179,7 +179,7 @@ function MatchingContent() {
             <div style={{marginBottom:'32px'}}>
               <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
                 <Building2 size={16} style={{color:'#60a5fa'}} />
-                <span style={{fontSize:'13px',fontWeight:700,color:'#3D4852'}}>Structures professionnelles</span>
+                <span style={{fontSize:'13px',fontWeight:700,color:'var(--ui-ink)'}}>Structures professionnelles</span>
                 <span style={{fontSize:'11px',color:'#7A7A6E',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'2px 8px',borderRadius:'10px'}}>multi-corps d'état</span>
               </div>
               <div className="space-y-3">
@@ -197,7 +197,7 @@ function MatchingContent() {
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}}>
                             <Building2 size={14} style={{color:'#60a5fa',flexShrink:0}} />
-                            <span style={{fontWeight:700,fontSize:'15px',color:'#3D4852'}}>{e.name}</span>
+                            <span style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}>{e.name}</span>
                           </div>
                           {e.description && (
                             <p style={{fontSize:'12px',color:'#7A7A6E',margin:'0 0 8px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.description}</p>
@@ -209,7 +209,7 @@ function MatchingContent() {
                           </div>
                         </div>
                         <div style={{textAlign:'right',flexShrink:0}}>
-                          <div style={{fontSize:'13px',fontWeight:700,color:'#3D4852'}}>{(e.artisan_pros||[]).length} artisan{(e.artisan_pros||[]).length !== 1 ? 's' : ''}</div>
+                          <div style={{fontSize:'13px',fontWeight:700,color:'var(--ui-ink)'}}>{(e.artisan_pros||[]).length} artisan{(e.artisan_pros||[]).length !== 1 ? 's' : ''}</div>
                           <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'2px'}}>dans l'équipe</div>
                           <div style={{display:'flex',alignItems:'center',gap:'4px',marginTop:'8px',fontSize:'12px',color:'#60a5fa',fontWeight:600}}>
                             Voir l'espace <ChevronRight size={12} />
@@ -233,7 +233,7 @@ function MatchingContent() {
           ) : artisans.length === 0 ? (
             <div className="card" style={{textAlign:'center',padding:'48px'}}>
               <p style={{fontSize:'48px',marginBottom:'16px'}}>😔</p>
-              <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#3D4852',marginBottom:'8px'}}>Aucun artisan disponible</h3>
+              <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucun artisan disponible</h3>
               <p style={{color:'#7A7A6E',fontSize:'14px',marginBottom:'24px'}}>Tous nos artisans {category} sont actuellement occupés.</p>
               <Link href="/artisans" className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
                 Voir tous les artisans
@@ -243,7 +243,7 @@ function MatchingContent() {
             <>
               <div className="space-y-4 mb-8">
                 {artisans.map((a, idx) => (
-                  <button key={a.id} onClick={() => setSelected(a.id)}
+                  <button className="afrione-action" key={a.id} onClick={() => setSelected(a.id)}
                     style={{
                       width:'100%',textAlign:'left',borderRadius:'16px',padding:'24px',cursor:'pointer',transition:'all 0.2s',
                       border: selected === a.id ? '2px solid #E85D26' : '2px solid #D8D2C4',
@@ -269,7 +269,7 @@ function MatchingContent() {
                       <div style={{flex:1}}>
                         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'8px',flexWrap:'wrap'}}>
                           <div>
-                            <h3 className="font-display" style={{fontWeight:700,color:'#3D4852',fontSize:'16px'}}>{a.users?.name || a.metier || 'Artisan'}</h3>
+                            <h3 className="font-display" style={{fontWeight:700,color:'var(--ui-ink)',fontSize:'16px'}}>{a.users?.name || a.metier || 'Artisan'}</h3>
                             <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'#7A7A6E',marginTop:'2px'}}>
                               <MapPin size={12} /> {a.users?.quartier || 'Abidjan'}
                             </div>
@@ -279,7 +279,7 @@ function MatchingContent() {
                         <div style={{display:'flex',flexWrap:'wrap',gap:'16px',marginTop:'12px'}}>
                           <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px'}}>
                             <Star size={13} style={{color:'#C9A84C',fill:'#C9A84C'}} />
-                            <span style={{fontWeight:600,color:'#3D4852'}}>{(a.rating_avg || 0).toFixed(1)}</span>
+                            <span style={{fontWeight:600,color:'var(--ui-ink)'}}>{(a.rating_avg || 0).toFixed(1)}</span>
                             <span style={{color:'#7A7A6E'}}>({a.rating_count || 0})</span>
                           </div>
                           <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#7A7A6E'}}>
@@ -320,7 +320,7 @@ function MatchingContent() {
                 <p style={{fontSize:'13px',color:'#7A7A6E'}}>Paiement sécurisé en séquestre Wave jusqu'à la fin des travaux. Remboursement garanti si insatisfait.</p>
               </div>
 
-              <button onClick={confirm} disabled={!selected || confirming} className="btn-primary"
+              <button onClick={confirm} disabled={!selected || confirming} className="btn-primary afrione-action"
                 style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',padding:'16px',fontSize:'15px',opacity: (!selected || confirming) ? 0.4 : 1}}>
                 {confirming
                   ? <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Connexion en cours...</>

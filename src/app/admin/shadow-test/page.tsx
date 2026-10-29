@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Play, PlayCircle, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 type TestCase = {
   id:            string
@@ -116,32 +116,32 @@ export default function ShadowTestPage() {
   const totalRuns   = cases.reduce((s, c) => s + c.run_count, 0)
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F5F7FA' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--ui-canvas)' }}>
       <AdminSidebar activeId="shadow-test" />
 
-      <main className="flex-1 p-6" style={{ maxWidth: '1200px', minWidth: 0 }}>
+      <main className="afrione-admin-content flex-1 p-6" style={{ maxWidth: '1200px', minWidth: 0 }}>
 
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: '#3D4852' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)' }}>
               Shadow Test — Calibrage IA
             </h1>
-            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '2px' }}>
+            <p style={{ color: 'var(--ui-muted)', fontSize: '14px', marginTop: '2px' }}>
               15 missions Abidjan · Prix terrain enquête juin 2026 · Comparer l&apos;agent vs marché réel
             </p>
           </div>
           <div className="flex gap-2">
-            <button onClick={load}
-              style={{ padding: '8px', background: '#FFF', borderRadius: '12px', border: '1.5px solid #E2E8F0', cursor: 'pointer', boxShadow: NEU_SMALL }}>
-              <RefreshCw size={14} style={{ color: '#6B7280' }} />
+            <button className="afrione-action" onClick={load}
+              style={{ padding: '8px', background: '#FFF', borderRadius: '12px', border: '1.5px solid var(--ui-border)', cursor: 'pointer', boxShadow: NEU_SMALL }}>
+              <RefreshCw size={14} style={{ color: 'var(--ui-muted)' }} />
             </button>
-            <button
+            <button className="afrione-action"
               onClick={() => runTest()}
               disabled={running === 'all'}
               style={{
                 display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 18px',
-                background: '#FFF', border: '1.5px solid #E2E8F0', borderRadius: '12px',
+                background: '#FFF', border: '1.5px solid var(--ui-border)', borderRadius: '12px',
                 fontSize: '13px', fontWeight: 600, cursor: running ? 'default' : 'pointer',
                 opacity: running === 'all' ? 0.6 : 1, boxShadow: NEU_SMALL,
               }}>
@@ -181,9 +181,9 @@ export default function ShadowTestPage() {
           ].map(kpi => (
             <div key={kpi.label} style={{
               background: '#FFF', borderRadius: '16px', padding: '20px',
-              border: '1px solid #E2E8F0', boxShadow: NEU_SMALL,
+              border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL,
             }}>
-              <div style={{ fontSize: '11px', fontFamily: 'Tahoma', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', fontFamily: 'var(--font-body)', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
                 {kpi.label}
               </div>
               <div style={{ fontSize: '28px', fontWeight: 700, color: kpi.color, lineHeight: 1, marginBottom: '4px' }}>
@@ -198,12 +198,12 @@ export default function ShadowTestPage() {
         <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
           {categories.map(c => (
             <button key={c} onClick={() => setFilterCat(c)}
-              className={filterCat === c ? 'afrione-gradient' : ''}
+              className={(filterCat === c ? 'afrione-gradient' : '') + ' afrione-action'}
               style={{
                 flexShrink: 0, padding: '7px 14px', borderRadius: '9999px', fontSize: '13px', fontWeight: 500,
                 cursor: 'pointer', border: 'none', transition: 'all 0.15s',
                 background: filterCat === c ? undefined : '#FFF',
-                color: filterCat === c ? 'white' : '#6B7280',
+                color: filterCat === c ? 'white' : 'var(--ui-muted)',
                 boxShadow: filterCat === c ? 'none' : NEU_SMALL,
               }}>
               {c}
@@ -212,24 +212,24 @@ export default function ShadowTestPage() {
         </div>
 
         {/* Test cases table */}
-        <div style={{ background: '#FFF', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: NEU_SHADOW }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', background: '#F5F7FA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'Tahoma', fontSize: '12px', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ background: '#FFF', borderRadius: '16px', border: '1px solid var(--ui-border)', overflow: 'hidden', boxShadow: NEU_SHADOW }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--ui-border)', background: 'var(--ui-canvas)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Cas de test — {filtered.length} missions
             </span>
           </div>
 
           {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px', color: '#6B7280', fontSize: '14px', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px', color: 'var(--ui-muted)', fontSize: '14px', gap: '8px' }}>
               <RefreshCw size={14} className="animate-spin" /> Chargement…
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #E2E8F0', background: '#F5F7FA' }}>
+                  <tr style={{ borderBottom: '1px solid var(--ui-border)', background: 'var(--ui-canvas)' }}>
                     {['Mission', 'Zone', 'Durée', 'Fourchette terrain', 'Agent IA', 'Écart', 'Runs', ''].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontFamily: 'Tahoma', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                      <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontFamily: 'var(--font-body)', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -238,14 +238,14 @@ export default function ShadowTestPage() {
                     const isOpen = expanded === tc.id
                     const lastPrice = tc.last_result?.agent_price
                     const dev = lastPrice !== undefined ? deviation(lastPrice, tc.expected_min, tc.expected_max) : null
-                    const catColor = CAT_COLORS[tc.category] || '#6B7280'
+                    const catColor = CAT_COLORS[tc.category] || 'var(--ui-muted)'
 
                     return (
                       <>
                         <tr key={tc.id}
-                          style={{ borderBottom: isOpen ? 'none' : '1px solid #E2E8F0', cursor: 'pointer' }}
+                          style={{ borderBottom: isOpen ? 'none' : '1px solid var(--ui-border)', cursor: 'pointer' }}
                           onClick={() => setExpanded(isOpen ? null : tc.id)}
-                          onMouseEnter={e => !isOpen && ((e.currentTarget as HTMLElement).style.background = '#F5F7FA')}
+                          onMouseEnter={e => !isOpen && ((e.currentTarget as HTMLElement).style.background = 'var(--ui-canvas)')}
                           onMouseLeave={e => !isOpen && ((e.currentTarget as HTMLElement).style.background = '#FFF')}>
 
                           {/* Mission label + categorie */}
@@ -256,7 +256,7 @@ export default function ShadowTestPage() {
                                 background: catColor,
                               }} />
                               <div>
-                                <div style={{ fontWeight: 600, color: '#3D4852', fontSize: '13px', lineHeight: 1.3 }}>
+                                <div style={{ fontWeight: 600, color: 'var(--ui-ink)', fontSize: '13px', lineHeight: 1.3 }}>
                                   {tc.label.split('·')[0].trim()}
                                 </div>
                                 <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>
@@ -267,18 +267,18 @@ export default function ShadowTestPage() {
                           </td>
 
                           {/* Zone */}
-                          <td style={{ padding: '12px 14px', color: '#6B7280', whiteSpace: 'nowrap' }}>{tc.quartier}</td>
+                          <td style={{ padding: '12px 14px', color: 'var(--ui-muted)', whiteSpace: 'nowrap' }}>{tc.quartier}</td>
 
                           {/* Durée */}
-                          <td style={{ padding: '12px 14px', color: '#6B7280', whiteSpace: 'nowrap' }}>{tc.hours}h</td>
+                          <td style={{ padding: '12px 14px', color: 'var(--ui-muted)', whiteSpace: 'nowrap' }}>{tc.hours}h</td>
 
                           {/* Fourchette terrain */}
                           <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                            <span style={{ fontFamily: 'Tahoma', fontSize: '12px', color: '#3D4852' }}>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ui-ink)' }}>
                               {tc.expected_min.toLocaleString('fr')}
                             </span>
                             <span style={{ color: '#8B95A5', margin: '0 4px' }}>–</span>
-                            <span style={{ fontFamily: 'Tahoma', fontSize: '12px', color: '#3D4852' }}>
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ui-ink)' }}>
                               {tc.expected_max.toLocaleString('fr')} FCFA
                             </span>
                           </td>
@@ -287,7 +287,7 @@ export default function ShadowTestPage() {
                           <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                             {lastPrice !== undefined ? (
                               <span style={{
-                                fontFamily: 'Tahoma', fontSize: '13px', fontWeight: 700,
+                                fontFamily: 'var(--font-body)', fontSize: '13px', fontWeight: 700,
                                 color: tc.last_result?.within_range ? '#16a34a' : '#dc2626',
                               }}>
                                 {lastPrice.toLocaleString('fr')} FCFA
@@ -307,7 +307,7 @@ export default function ShadowTestPage() {
                           {/* Runs */}
                           <td style={{ padding: '12px 14px' }}>
                             {tc.run_count > 0 ? (
-                              <span style={{ fontSize: '12px', color: '#6B7280' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
                                 {tc.within_count}/{tc.run_count}
                                 <span style={{ color: '#8B95A5', marginLeft: '4px', fontSize: '10px' }}>ok</span>
                               </span>
@@ -318,13 +318,13 @@ export default function ShadowTestPage() {
 
                           {/* Run button */}
                           <td style={{ padding: '12px 14px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                            <button
+                            <button className="afrione-action"
                               onClick={() => runTest(tc.id)}
                               disabled={running !== null}
                               title="Lancer ce test"
                               style={{
-                                padding: '6px', background: '#F5F7FA', color: '#E85D26',
-                                borderRadius: '8px', border: '1px solid #E2E8F0', cursor: running ? 'default' : 'pointer',
+                                padding: '6px', background: 'var(--ui-canvas)', color: '#E85D26',
+                                borderRadius: '8px', border: '1px solid var(--ui-border)', cursor: running ? 'default' : 'pointer',
                                 opacity: running !== null ? 0.5 : 1,
                               }}>
                               <Play size={12} className={running === tc.id ? 'animate-spin' : ''} />
@@ -334,16 +334,16 @@ export default function ShadowTestPage() {
 
                         {/* Expanded details */}
                         {isOpen && (
-                          <tr key={`${tc.id}-detail`} style={{ borderBottom: '1px solid #E2E8F0', background: '#FAFAFA' }}>
+                          <tr key={`${tc.id}-detail`} style={{ borderBottom: '1px solid var(--ui-border)', background: '#FAFAFA' }}>
                             <td colSpan={8} style={{ padding: '12px 14px 16px 32px' }}>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
 
                                 {/* Description */}
                                 <div>
-                                  <div style={{ fontSize: '10px', fontFamily: 'Tahoma', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Mission</div>
-                                  <p style={{ fontSize: '12px', color: '#3D4852', lineHeight: 1.5 }}>{tc.label.split('·').slice(0, 2).join('·')}</p>
+                                  <div style={{ fontSize: '10px', fontFamily: 'var(--font-body)', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Mission</div>
+                                  <p style={{ fontSize: '12px', color: 'var(--ui-ink)', lineHeight: 1.5 }}>{tc.label.split('·').slice(0, 2).join('·')}</p>
                                   <div style={{ marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                    <span style={{ fontSize: '10px', background: '#E2E8F0', borderRadius: '9999px', padding: '2px 8px', color: '#6B7280' }}>
+                                    <span style={{ fontSize: '10px', background: 'var(--ui-border)', borderRadius: '9999px', padding: '2px 8px', color: 'var(--ui-muted)' }}>
                                       {tc.hours}h · {URGENCY_LABEL[tc.urgency]} · {tc.quartier}
                                     </span>
                                   </div>
@@ -351,21 +351,21 @@ export default function ShadowTestPage() {
 
                                 {/* Source note */}
                                 <div>
-                                  <div style={{ fontSize: '10px', fontFamily: 'Tahoma', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Source prix terrain</div>
-                                  <p style={{ fontSize: '11px', color: '#6B7280', lineHeight: 1.5, fontStyle: 'italic' }}>{tc.source_note}</p>
+                                  <div style={{ fontSize: '10px', fontFamily: 'var(--font-body)', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Source prix terrain</div>
+                                  <p style={{ fontSize: '11px', color: 'var(--ui-muted)', lineHeight: 1.5, fontStyle: 'italic' }}>{tc.source_note}</p>
                                 </div>
 
                                 {/* Last breakdown */}
                                 {tc.last_result?.agent_breakdown && (
                                   <div>
-                                    <div style={{ fontSize: '10px', fontFamily: 'Tahoma', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Dernier calcul agent</div>
+                                    <div style={{ fontSize: '10px', fontFamily: 'var(--font-body)', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Dernier calcul agent</div>
                                     {Object.entries(tc.last_result.agent_breakdown).map(([k, v]) => (
                                       <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', padding: '2px 0', borderBottom: '1px solid #F0F0F0' }}>
-                                        <span style={{ color: '#6B7280' }}>{k.replace('_', ' ')}</span>
-                                        <span style={{ fontFamily: 'Tahoma', fontWeight: 600, color: '#3D4852' }}>{Number(v).toLocaleString('fr')} F</span>
+                                        <span style={{ color: 'var(--ui-muted)' }}>{k.replace('_', ' ')}</span>
+                                        <span style={{ fontFamily: 'var(--font-body)', fontWeight: 600, color: 'var(--ui-ink)' }}>{Number(v).toLocaleString('fr')} F</span>
                                       </div>
                                     ))}
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, paddingTop: '4px', color: '#3D4852', marginTop: '2px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, paddingTop: '4px', color: 'var(--ui-ink)', marginTop: '2px' }}>
                                       <span>Total agent</span>
                                       <span className="afrione-gradient-text">{tc.last_result.agent_price.toLocaleString('fr')} FCFA</span>
                                     </div>
@@ -375,13 +375,13 @@ export default function ShadowTestPage() {
                                 {/* Stats historiques */}
                                 {tc.run_count > 0 && (
                                   <div>
-                                    <div style={{ fontSize: '10px', fontFamily: 'Tahoma', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Historique</div>
-                                    <div style={{ fontSize: '12px', color: '#3D4852' }}>
+                                    <div style={{ fontSize: '10px', fontFamily: 'var(--font-body)', color: '#8B95A5', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Historique</div>
+                                    <div style={{ fontSize: '12px', color: 'var(--ui-ink)' }}>
                                       {tc.run_count} run{tc.run_count > 1 ? 's' : ''} total
                                     </div>
                                     <div style={{ marginTop: '4px' }}>
                                       <div style={{
-                                        height: '8px', borderRadius: '9999px', background: '#E2E8F0', overflow: 'hidden', width: '120px',
+                                        height: '8px', borderRadius: '9999px', background: 'var(--ui-border)', overflow: 'hidden', width: '120px',
                                       }}>
                                         <div style={{
                                           height: '100%', borderRadius: '9999px',

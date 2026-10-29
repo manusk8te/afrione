@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
 import Navbar from '@/components/layout/Navbar'
+import Brand from '@/components/brand/Brand'
 import {
   ArrowRight, Shield, Zap, Star, CheckCircle, ChevronRight, Building2,
   Droplets, Hammer, Paintbrush, Ruler, Wind, Lock, LayoutGrid,
@@ -80,17 +81,17 @@ const fadeIn  = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { dura
 
 /* ─── Design tokens — 100% white ─────────────────────────────────────────── */
 const W   = '#FFFFFF'
-const W2  = '#F5F7FA'
-const T1  = '#3D4852'
-const T2  = '#6B7280'
+const W2  = 'var(--ui-canvas)'
+const T1  = 'var(--ui-ink)'
+const T2  = 'var(--ui-muted)'
 const T3  = '#8B95A5'
-const BO  = '#E2E8F0'
+const BO  = 'var(--ui-border)'
 
-const NEU_SHADOW    = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_HOVER     = '10px 10px 22px rgba(163,177,198,0.65), -6px -6px 16px rgba(255,255,255,1)'
-const NEU_INSET     = 'inset 4px 4px 10px rgba(163,177,198,0.45), inset -4px -4px 8px rgba(255,255,255,0.9)'
-const NEU_INSET_DEEP = 'inset 8px 8px 18px rgba(163,177,198,0.55), inset -6px -6px 12px rgba(255,255,255,0.95)'
-const NEU_SMALL     = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW    = 'var(--ui-shadow-card)'
+const NEU_HOVER     = 'var(--ui-shadow-card)'
+const NEU_INSET     = 'var(--ui-shadow-inset)'
+const NEU_INSET_DEEP = 'var(--ui-shadow-inset)'
+const NEU_SMALL     = 'var(--ui-shadow-soft)'
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function HomePage() {
@@ -185,13 +186,13 @@ export default function HomePage() {
 
               {/* CTAs */}
               <motion.div variants={fadeUp} className="flex flex-wrap gap-3 justify-center" style={{ marginBottom: '56px' }}>
-                <Link href="/diagnostic"
+                <Link className="afrione-action" href="/diagnostic"
                   style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 700, color: '#E85D26', textDecoration: 'none', cursor: 'pointer', background: 'white', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', transition: 'transform 0.2s, box-shadow 0.2s' }}
                   onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)' }}
                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)' }}>
                   Décrire mon problème <ArrowRight size={16} />
                 </Link>
-                <Link href="/artisans"
+                <Link className="afrione-action" href="/artisans"
                   style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', textDecoration: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '999px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', transition: 'background 0.2s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.28)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)'}>
@@ -225,7 +226,7 @@ export default function HomePage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {SERVICES.map(({ Icon, label, metier }) => (
-                    <Link key={metier} href={`/artisans?metier=${encodeURIComponent(metier)}`}
+                    <Link className="afrione-action" key={metier} href={`/artisans?metier=${encodeURIComponent(metier)}`}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '999px', fontSize: '13px', color: 'rgba(255,255,255,0.88)', textDecoration: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', transition: 'background 0.15s' }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.28)'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)'}>
@@ -683,7 +684,7 @@ export default function HomePage() {
               <p style={{ ...body, fontSize: '15px', color: 'rgba(255,255,255,0.78)', lineHeight: 1.6, marginBottom: '32px', maxWidth: '38ch' }}>
                 Inscription gratuite. Accédez à vos premiers clients qualifiés dès aujourd'hui. Paiement garanti par AfriOne.
               </p>
-              <Link href="/auth"
+              <Link className="afrione-action" href="/auth"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   padding: '13px 28px', background: W, borderRadius: '16px',
@@ -743,12 +744,7 @@ export default function HomePage() {
 
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="afrione-gradient rounded flex items-center justify-center" style={{ width: '28px', height: '28px' }}>
-                  <Zap size={13} color="white" />
-                </div>
-                <span style={{ ...syne, fontWeight: 700, fontSize: '16px', letterSpacing: '-0.02em', color: T1 }}>
-                  AFRI<span className="afrione-gradient-text">ONE</span>
-                </span>
+                <Brand />
               </div>
               <p style={{ ...body, fontSize: '13px', color: T2, lineHeight: 1.65, maxWidth: '200px' }}>
                 La plateforme des artisans vérifiés à Abidjan. Rapide, sécurisé, transparent.
@@ -799,13 +795,13 @@ export default function HomePage() {
             <div>
               <h4 style={{ ...syne, fontWeight: 700, fontSize: '13px', color: T1, marginBottom: '16px', letterSpacing: '-0.01em' }}>Votre espace</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <Link href="/artisan-space/dashboard"
+                <Link className="afrione-action" href="/artisan-space/dashboard"
                   style={{ background: W, borderRadius: '10px', boxShadow: NEU_SMALL, display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 14px', fontSize: '13px', color: T1, textDecoration: 'none', cursor: 'pointer', ...syne, fontWeight: 600, transition: 'box-shadow 0.2s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SHADOW}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SMALL}>
                   <Wrench size={13} style={{ color: '#E85D26' }} /> Espace artisan
                 </Link>
-                <Link href="/entreprise-space/register"
+                <Link className="afrione-action" href="/entreprise-space/register"
                   style={{ background: W, borderRadius: '10px', boxShadow: NEU_SMALL, display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 14px', fontSize: '13px', color: T1, textDecoration: 'none', cursor: 'pointer', ...syne, fontWeight: 600, transition: 'box-shadow 0.2s' }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SHADOW}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = NEU_SMALL}>

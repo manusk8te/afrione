@@ -4,7 +4,7 @@ import { Video, CheckCircle, XCircle, AlertTriangle, RefreshCw, ExternalLink, Cl
 import { supabase } from '@/lib/supabase'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 
-const NEU_SMALL = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SMALL = 'var(--ui-shadow-soft)'
 
 type Filter = 'pending' | 'reviewed'
 type Decision = 'full' | 'partial' | 'refused'
@@ -116,17 +116,17 @@ export default function CasCReviewPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: '#F5F7FA' }}>
+    <div className="min-h-screen flex flex-col lg:flex-row" style={{ background: 'var(--ui-canvas)' }}>
       <AdminSidebar activeId="cas-c" adminName="Admin" />
 
-      <main style={{ flex: 1, padding: '24px 32px', maxWidth: '1200px', minWidth: 0 }}>
+      <main className="afrione-admin-content" style={{ flex: 1, padding: '24px 32px', maxWidth: '1200px', minWidth: 0 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: '#3D4852' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700, color: 'var(--ui-ink)' }}>
               Cas Complexes (Cas C)
             </h1>
-            <p style={{ fontSize: '13px', color: '#6B7280', marginTop: '4px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--ui-muted)', marginTop: '4px' }}>
               Litiges graves — visionnez la vidéo et traitez le remboursement
             </p>
           </div>
@@ -136,9 +136,9 @@ export default function CasCReviewPage() {
                 {flash}
               </span>
             )}
-            <button
+            <button className="afrione-action"
               onClick={load}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', color: '#6B7280', boxShadow: NEU_SMALL }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', color: 'var(--ui-muted)', boxShadow: NEU_SMALL }}
             >
               <RefreshCw size={14} /> Actualiser
             </button>
@@ -148,13 +148,13 @@ export default function CasCReviewPage() {
         {/* Filter tabs */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
           {(['pending', 'reviewed'] as Filter[]).map(f => (
-            <button
+            <button className="afrione-action"
               key={f}
               onClick={() => setFilter(f)}
               style={{
                 padding: '8px 20px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: filter === f ? 600 : 400,
                 background: filter === f ? '#E85D26' : '#fff',
-                color:      filter === f ? '#fff'    : '#6B7280',
+                color:      filter === f ? '#fff'    : 'var(--ui-muted)',
                 boxShadow:  filter === f ? 'none'    : NEU_SMALL,
                 transition: 'all 0.15s',
               }}
@@ -174,7 +174,7 @@ export default function CasCReviewPage() {
             {/* List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {filtered.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '48px 0', color: '#6B7280', fontSize: '14px' }}>
+                <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--ui-muted)', fontSize: '14px' }}>
                   {filter === 'pending' ? '🎉 Aucun Cas C en attente' : 'Aucun Cas C traité'}
                 </div>
               )}
@@ -182,13 +182,13 @@ export default function CasCReviewPage() {
                 const isSelected = selected?.id === r.id
                 const mission = r.missions
                 return (
-                  <button
+                  <button className="afrione-action"
                     key={r.id}
                     onClick={() => { setSelected(isSelected ? null : r); setPartialAmount('') }}
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '16px 18px',
                       background: isSelected ? 'rgba(232,93,38,0.05)' : '#fff',
-                      border: `1.5px solid ${isSelected ? '#E85D26' : '#E2E8F0'}`,
+                      border: `1.5px solid ${isSelected ? '#E85D26' : 'var(--ui-border)'}`,
                       borderRadius: '14px', cursor: 'pointer', textAlign: 'left',
                       boxShadow: isSelected ? 'none' : NEU_SMALL, transition: 'all 0.15s',
                     }}
@@ -198,11 +198,11 @@ export default function CasCReviewPage() {
                       background: r.video_url ? 'rgba(232,93,38,0.1)' : 'rgba(107,114,128,0.1)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      {r.video_url ? <Video size={18} color="#E85D26" /> : <AlertTriangle size={18} color="#6B7280" />}
+                      {r.video_url ? <Video size={18} color="#E85D26" /> : <AlertTriangle size={18} color="var(--ui-muted)" />}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#3D4852' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ui-ink)' }}>
                           {mission?.users?.name || 'Client'} — {mission?.category || '—'}
                         </span>
                         {r.refund_decision && (
@@ -220,7 +220,7 @@ export default function CasCReviewPage() {
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '3px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '3px' }}>
                         Artisan : {mission?.artisan_pros?.users?.name || '—'} · {mission?.artisan_pros?.metier || '—'}
                       </div>
                       <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', display: 'flex', gap: '12px' }}>
@@ -232,7 +232,7 @@ export default function CasCReviewPage() {
                         </span>
                       </div>
                       {r.reason && (
-                        <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '6px', background: '#F9FAFB', padding: '6px 10px', borderRadius: '8px', fontStyle: 'italic' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '6px', background: '#F9FAFB', padding: '6px 10px', borderRadius: '8px', fontStyle: 'italic' }}>
                           "{r.reason}"
                         </div>
                       )}
@@ -244,16 +244,16 @@ export default function CasCReviewPage() {
 
             {/* Detail panel */}
             {selected && (
-              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', boxShadow: NEU_SMALL, position: 'sticky', top: '24px', alignSelf: 'flex-start' }}>
+              <div style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '24px', boxShadow: NEU_SMALL, position: 'sticky', top: '24px', alignSelf: 'flex-start' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#3D4852' }}>Détail du rapport</h2>
-                  <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>✕</button>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ui-ink)' }}>Détail du rapport</h2>
+                  <button className="afrione-action" onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>✕</button>
                 </div>
 
                 {/* Video player */}
                 {selected.video_url ? (
                   <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ui-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
                       Vidéo soumise par le client
                     </div>
                     <video
@@ -290,7 +290,7 @@ export default function CasCReviewPage() {
                         <Icon size={12} color="#9CA3AF" />
                         <span style={{ fontSize: '10px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
                       </div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#3D4852' }}>{value}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ui-ink)' }}>{value}</div>
                     </div>
                   ))}
                 </div>
@@ -298,7 +298,7 @@ export default function CasCReviewPage() {
                 {selected.reason && (
                   <div style={{ marginBottom: '20px', padding: '12px 14px', background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px' }}>
                     <div style={{ fontSize: '11px', fontWeight: 600, color: '#ef4444', marginBottom: '4px' }}>MOTIF DÉCLARÉ</div>
-                    <p style={{ fontSize: '13px', color: '#3D4852', fontStyle: 'italic', margin: 0 }}>"{selected.reason}"</p>
+                    <p style={{ fontSize: '13px', color: 'var(--ui-ink)', fontStyle: 'italic', margin: 0 }}>"{selected.reason}"</p>
                   </div>
                 )}
 
@@ -309,7 +309,7 @@ export default function CasCReviewPage() {
                       Décision : {decisionLabel[selected.refund_decision].label}
                     </div>
                     {selected.refund_amount ? (
-                      <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
                         Montant remboursé : {selected.refund_amount.toLocaleString()} FCFA
                       </div>
                     ) : null}
@@ -317,12 +317,12 @@ export default function CasCReviewPage() {
                 ) : (
                   /* Action buttons */
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ui-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Décision de remboursement
                     </div>
 
                     {/* Full refund */}
-                    <button
+                    <button className="afrione-action"
                       onClick={() => !acting && decide('full')}
                       disabled={acting}
                       style={{
@@ -335,7 +335,7 @@ export default function CasCReviewPage() {
                       <CheckCircle size={18} color="#2B6B3E" />
                       <div style={{ textAlign: 'left' }}>
                         <div style={{ fontSize: '13px', fontWeight: 700, color: '#2B6B3E' }}>Remboursement total</div>
-                        <div style={{ fontSize: '11px', color: '#6B7280' }}>{(selected.missions?.total_price ?? 0).toLocaleString()} FCFA au client</div>
+                        <div style={{ fontSize: '11px', color: 'var(--ui-muted)' }}>{(selected.missions?.total_price ?? 0).toLocaleString()} FCFA au client</div>
                       </div>
                     </button>
 
@@ -346,17 +346,17 @@ export default function CasCReviewPage() {
                         <span style={{ fontSize: '13px', fontWeight: 700, color: '#C9A84C' }}>Remboursement partiel</span>
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
+                        <input className="afrione-field"
                           type="number"
                           placeholder="Montant FCFA"
                           value={partialAmount}
                           onChange={e => setPartialAmount(e.target.value)}
                           style={{
                             flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(201,168,76,0.4)',
-                            background: '#fff', fontSize: '13px', color: '#3D4852', outline: 'none',
+                            background: '#fff', fontSize: '13px', color: 'var(--ui-ink)', outline: 'none',
                           }}
                         />
-                        <button
+                        <button className="afrione-action"
                           onClick={() => !acting && partialAmount && decide('partial', parseInt(partialAmount))}
                           disabled={acting || !partialAmount}
                           style={{
@@ -371,7 +371,7 @@ export default function CasCReviewPage() {
                     </div>
 
                     {/* Refuse */}
-                    <button
+                    <button className="afrione-action"
                       onClick={() => !acting && decide('refused')}
                       disabled={acting}
                       style={{
@@ -384,7 +384,7 @@ export default function CasCReviewPage() {
                       <XCircle size={18} color="#ef4444" />
                       <div style={{ textAlign: 'left' }}>
                         <div style={{ fontSize: '13px', fontWeight: 700, color: '#ef4444' }}>Refuser le remboursement</div>
-                        <div style={{ fontSize: '11px', color: '#6B7280' }}>Artisan crédité, travail validé</div>
+                        <div style={{ fontSize: '11px', color: 'var(--ui-muted)' }}>Artisan crédité, travail validé</div>
                       </div>
                     </button>
                   </div>

@@ -13,8 +13,8 @@ import toast from 'react-hot-toast'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const TABS = [
   { id: 'missions',      label: 'Missions',    icon: Clock },
@@ -202,7 +202,7 @@ export default function ArtisanDashboardPage() {
               setConversations(prev => [{ ...newM, lastMessage: null }, ...prev])
             }
             toast('🔔 Nouvelle mission reçue !', {
-              style: { background: '#FFFFFF', color: '#3D4852', fontWeight: 600, boxShadow: NEU_SMALL },
+              style: { background: '#FFFFFF', color: 'var(--ui-ink)', fontWeight: 600, boxShadow: NEU_SMALL },
               duration: 5000,
             })
           })
@@ -571,7 +571,7 @@ export default function ArtisanDashboardPage() {
   const allPhotos = [...missionPhotos, ...manualPhotos]
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{background:'#F5F7FA'}}>
+    <div className="min-h-screen flex items-center justify-center" style={{background:'var(--ui-canvas)'}}>
       <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
     </div>
   )
@@ -600,7 +600,7 @@ export default function ArtisanDashboardPage() {
         {/* Countdown */}
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
           <div style={{
-            fontSize: '28px', fontWeight: 900, fontFamily: 'Tahoma',
+            fontSize: '28px', fontWeight: 900, fontFamily: 'var(--font-body)',
             color: urgentTimeLeft > 30000 ? '#E85D26' : urgentTimeLeft > 12000 ? '#C9A84C' : '#ef4444',
             lineHeight: 1,
           }}>
@@ -636,14 +636,14 @@ export default function ArtisanDashboardPage() {
 
       {/* Boutons */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        <button
+        <button className="afrione-action"
           onClick={() => !respondingUrgent && respondUrgent('refused')}
           disabled={respondingUrgent}
           style={{ padding: '14px', background: 'rgba(239,68,68,0.12)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: '12px', color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: respondingUrgent ? 'not-allowed' : 'pointer', opacity: respondingUrgent ? 0.5 : 1 }}
         >
           ✕ Refuser
         </button>
-        <button
+        <button className="afrione-action"
           onClick={() => !respondingUrgent && respondUrgent('accepted')}
           disabled={respondingUrgent}
           style={{ padding: '14px', background: respondingUrgent ? 'rgba(232,93,38,0.3)' : 'linear-gradient(135deg,#E85D26,#ff7043)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: 800, cursor: respondingUrgent ? 'not-allowed' : 'pointer', boxShadow: respondingUrgent ? 'none' : '0 4px 16px rgba(232,93,38,0.45)' }}
@@ -655,15 +655,15 @@ export default function ArtisanDashboardPage() {
   ) : null
 
   return (
-    <div className="min-h-screen" style={{background:'#F5F7FA'}}>
+    <div className="min-h-screen" style={{background:'var(--ui-canvas)'}}>
       {/* Navbar */}
-      <div style={{background:'#FFFFFF',borderBottom:'1px solid #E2E8F0',position:'sticky',top:0,zIndex:50,boxShadow:NEU_SMALL}}>
+      <div style={{background:'#FFFFFF',borderBottom:'1px solid var(--ui-border)',position:'sticky',top:0,zIndex:50,boxShadow:NEU_SMALL}}>
         <div className="page-container" style={{padding:isMobile?'12px 16px':'16px 32px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <Link href="/" style={{display:'flex',alignItems:'center',gap:'8px',textDecoration:'none'}}>
             <div className="afrione-gradient" style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Zap size={14} color="white" />
             </div>
-            <span className="font-display" style={{fontWeight:700,fontSize:'18px',color:'#3D4852'}}>AFRI<span className="afrione-gradient-text">ONE</span></span>
+            <span className="font-display" style={{fontWeight:700,fontSize:'18px',color:'var(--ui-ink)'}}>AFRI<span className="afrione-gradient-text">ONE</span></span>
           </Link>
           <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
             {saveMsg && <span style={{fontSize:'12px',color:'#2B6B3E',background:'rgba(43,107,62,0.15)',padding:'4px 12px',borderRadius:'20px'}}>{saveMsg}</span>}
@@ -673,14 +673,14 @@ export default function ArtisanDashboardPage() {
             </span>
             <div
               onClick={() => fileInputRef.current?.click()}
-              style={{width:'36px',height:'36px',borderRadius:'50%',overflow:'hidden',cursor:'pointer',border:'2px solid #E85D26',flexShrink:0,background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
+              style={{width:'36px',height:'36px',borderRadius:'50%',overflow:'hidden',cursor:'pointer',border:'2px solid #E85D26',flexShrink:0,background:'var(--ui-canvas)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
               title="Changer la photo"
             >
               {uploadingAvatar
                 ? <div style={{width:'16px',height:'16px',border:'2px solid rgba(232,93,38,0.3)',borderTop:'2px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
                 : avatarUrl
                   ? <img src={avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                  : <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>{userName[0].toUpperCase()}</span>
+                  : <span style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>{userName[0].toUpperCase()}</span>
               }
             </div>
             <input ref={fileInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleAvatarUpload} />
@@ -698,7 +698,7 @@ export default function ArtisanDashboardPage() {
         <div style={{ position: 'absolute', top: '42%', left: '42%',  width: 14, height: 14, background: 'rgba(255,255,255,0.2)',  borderRadius: 4,  animation: 'floatSquareDrift 5s ease-in-out infinite 3s' }} />
         <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: '32px', maxWidth: '896px', width: '100%' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'Tahoma' }}>ESPACE ARTISAN</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>ESPACE ARTISAN</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 38px)', fontWeight: 800, color: 'white', margin: '0 0 8px' }}>Mon tableau de bord</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '14px', margin: 0 }}>Missions, planning et statistiques</p>
@@ -712,8 +712,8 @@ export default function ArtisanDashboardPage() {
           <div style={{background:'rgba(232,93,38,0.07)',border:'1.5px solid rgba(232,93,38,0.35)',borderRadius:'16px',padding:'14px 16px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'12px',flexWrap:'wrap'}}>
             <span style={{fontSize:'22px',flexShrink:0}}>🔔</span>
             <div style={{flex:1,minWidth:'200px'}}>
-              <div style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>Activez les notifications</div>
-              <div style={{fontSize:'12px',color:'#6B7280',marginTop:'2px'}}>
+              <div style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>Activez les notifications</div>
+              <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'2px'}}>
                 {pushStatus === 'denied'
                   ? 'Notifications bloquées par le navigateur — autorisez-les dans les paramètres du site pour recevoir les missions urgentes.'
                   : 'Sans elles, vous ne recevrez pas les missions urgentes quand l\'application est fermée.'}
@@ -729,7 +729,7 @@ export default function ArtisanDashboardPage() {
                   else toast.error('Permission refusée — activez-les dans les paramètres du navigateur.')
                 }}
                 disabled={enablingPush}
-                className="btn-primary"
+                className="btn-primary afrione-action"
                 style={{padding:'10px 18px',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'13px',cursor:'pointer',opacity:enablingPush?0.6:1,flexShrink:0}}
               >
                 {enablingPush ? 'Activation…' : 'Activer →'}
@@ -746,7 +746,7 @@ export default function ArtisanDashboardPage() {
         <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'14px',flexWrap:isMobile?'wrap':'nowrap'}}>
           <div
             onClick={() => fileInputRef.current?.click()}
-            style={{width:'72px',height:'72px',borderRadius:'16px',overflow:'hidden',cursor:'pointer',border:'2px dashed #E2E8F0',flexShrink:0,background:'#F5F7FA',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
+            style={{width:'72px',height:'72px',borderRadius:'16px',overflow:'hidden',cursor:'pointer',border:'2px dashed var(--ui-border)',flexShrink:0,background:'var(--ui-canvas)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
             title="Changer la photo"
           >
             {avatarUrl
@@ -761,31 +761,31 @@ export default function ArtisanDashboardPage() {
             </div>
           </div>
           <div style={{flex:1}}>
-            <h1 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#3D4852'}}>{userName}</h1>
-            <p style={{fontSize:'14px',color:'#6B7280'}}>{artisan?.metier || 'Artisan'} · {user?.user_metadata?.quartier || 'Abidjan'}</p>
+            <h1 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)'}}>{userName}</h1>
+            <p style={{fontSize:'14px',color:'var(--ui-muted)'}}>{artisan?.metier || 'Artisan'} · {user?.user_metadata?.quartier || 'Abidjan'}</p>
             {artisan && (
               <div style={{display:'flex',alignItems:'center',gap:'16px',marginTop:'8px'}}>
-                <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'#3D4852'}}>
+                <span style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',color:'var(--ui-ink)'}}>
                   <Star size={14} color="#C9A84C" fill="#C9A84C" /> {artisan.rating_avg?.toFixed(1) || '0.0'}
-                  <span style={{color:'#6B7280',fontSize:'12px'}}>({artisan.rating_count || 0})</span>
+                  <span style={{color:'var(--ui-muted)',fontSize:'12px'}}>({artisan.rating_count || 0})</span>
                 </span>
-                <span style={{fontSize:'13px',color:'#6B7280'}}>{artisan.mission_count || completedMissions.length} missions</span>
+                <span style={{fontSize:'13px',color:'var(--ui-muted)'}}>{artisan.mission_count || completedMissions.length} missions</span>
                 {artisan.kyc_status === 'approved' && (
                   <span style={{fontSize:'13px',color:'#2B6B3E',background:'rgba(43,107,62,0.1)',padding:'2px 8px',borderRadius:'20px'}}>✓ KYC Vérifié</span>
                 )}
               </div>
             )}
           </div>
-          <div style={{textAlign:isMobile?'left':'right',borderTop:isMobile?'1px solid #E2E8F0':'none',paddingTop:isMobile?'12px':'0',width:isMobile?'100%':'auto'}}>
+          <div style={{textAlign:isMobile?'left':'right',borderTop:isMobile?'1px solid var(--ui-border)':'none',paddingTop:isMobile?'12px':'0',width:isMobile?'100%':'auto'}}>
             <div className="font-display afrione-gradient-text" style={{fontSize:'28px',fontWeight:700}}>
               {(wallet?.balance_available || 0).toLocaleString()}
             </div>
-            <div style={{fontSize:'12px',color:'#6B7280'}}>FCFA disponible</div>
+            <div style={{fontSize:'12px',color:'var(--ui-muted)'}}>FCFA disponible</div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div style={{display:'flex',background:'#FFFFFF',border:'1px solid #E2E8F0',borderRadius:'12px',padding:'4px',marginBottom:'20px',gap:'4px',overflowX:'auto',boxShadow:NEU_SMALL}}>
+        <div style={{display:'flex',background:'#FFFFFF',border:'1px solid var(--ui-border)',borderRadius:'12px',padding:'4px',marginBottom:'20px',gap:'4px',overflowX:'auto',boxShadow:NEU_SMALL}}>
           {TABS.map(t => {
             const isActive = tab === t.id
             const sharedStyle: React.CSSProperties = {
@@ -794,7 +794,7 @@ export default function ArtisanDashboardPage() {
               fontSize:isMobile?'12px':'13px',fontWeight:500,transition:'all 0.2s',position:'relative',
               background: isActive ? '#FFFFFF' : 'transparent',
               boxShadow: isActive ? NEU_SMALL : 'none',
-              color: isActive ? '#E85D26' : '#6B7280',
+              color: isActive ? '#E85D26' : 'var(--ui-muted)',
               textDecoration:'none',
             }
             const content = (
@@ -813,7 +813,7 @@ export default function ArtisanDashboardPage() {
               return <Link key={t.id} href={(t as any).href} style={sharedStyle}>{content}</Link>
             }
             return (
-              <button key={t.id} onClick={() => setTab(t.id)} style={sharedStyle}>{content}</button>
+              <button className="afrione-action" key={t.id} onClick={() => setTab(t.id)} style={sharedStyle}>{content}</button>
             )
           })}
         </div>
@@ -841,7 +841,7 @@ export default function ArtisanDashboardPage() {
                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#E85D26', marginBottom: '3px' }}>
                       Complétez votre questionnaire artisan
                     </div>
-                    <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '12px', color: 'var(--ui-muted)', lineHeight: 1.5 }}>
                       Renseignez vos tarifs, zones et matériaux pour optimiser votre visibilité et vos devis AfriOne.
                     </div>
                   </div>
@@ -859,7 +859,7 @@ export default function ArtisanDashboardPage() {
                 <ClipboardList size={16} color="#C9A84C" />
                 <div style={{ flex: 1 }}>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: '#C9A84C' }}>Questionnaire en cours de validation</span>
-                  <span style={{ fontSize: '12px', color: '#6B7280', marginLeft: '8px' }}>— sous 24-48h</span>
+                  <span style={{ fontSize: '12px', color: 'var(--ui-muted)', marginLeft: '8px' }}>— sous 24-48h</span>
                 </div>
               </div>
             )}
@@ -880,7 +880,7 @@ export default function ArtisanDashboardPage() {
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}}>
                   <Calendar size={15} color="#C9A84C" />
-                  <span className="font-display" style={{fontSize:'15px',fontWeight:700,color:'#3D4852'}}>Prochaines interventions</span>
+                  <span className="font-display" style={{fontSize:'15px',fontWeight:700,color:'var(--ui-ink)'}}>Prochaines interventions</span>
                 </div>
                 {missions.filter(m => m.status === 'scheduled' && m.scheduled_at).map(m => {
                   const d = new Date(m.scheduled_at)
@@ -902,12 +902,12 @@ export default function ArtisanDashboardPage() {
                         <span className={isToday ? 'afrione-gradient-text' : ''} style={{fontSize:'10px',fontWeight:700,color: isToday?undefined:'#C9A84C',textTransform:'uppercase'}}>
                           {d.toLocaleDateString('fr-FR',{month:'short'})}
                         </span>
-                        <span style={{fontSize:'22px',fontWeight:800,color:'#3D4852',lineHeight:1}}>{d.getDate()}</span>
+                        <span style={{fontSize:'22px',fontWeight:800,color:'var(--ui-ink)',lineHeight:1}}>{d.getDate()}</span>
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>{m.users?.name || 'Client'}</div>
+                        <div style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>{m.users?.name || 'Client'}</div>
                         <div className={isToday ? 'afrione-gradient-text' : ''} style={{fontSize:'13px',fontWeight:600,color:isToday?undefined:'#C9A84C',marginTop:'2px'}}>{dateLabel}</div>
-                        {!isToday && diffDays > 0 && <div style={{fontSize:'12px',color:'#6B7280'}}>Dans {diffDays} jour{diffDays>1?'s':''}</div>}
+                        {!isToday && diffDays > 0 && <div style={{fontSize:'12px',color:'var(--ui-muted)'}}>Dans {diffDays} jour{diffDays>1?'s':''}</div>}
                       </div>
                       <Link href={`/suivi/${m.id}`} className="afrione-gradient" style={{
                         padding:'8px 14px',color:'white',borderRadius:'10px',
@@ -924,15 +924,15 @@ export default function ArtisanDashboardPage() {
             {missions.length === 0 ? (
               <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'48px',textAlign:'center'}}>
                 <p style={{fontSize:'48px',marginBottom:'16px'}}>📋</p>
-                <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'#3D4852',marginBottom:'8px'}}>Aucune mission pour l'instant</h3>
-                <p style={{color:'#6B7280',fontSize:'14px'}}>Les nouvelles missions apparaîtront ici</p>
+                <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucune mission pour l'instant</h3>
+                <p style={{color:'var(--ui-muted)',fontSize:'14px'}}>Les nouvelles missions apparaîtront ici</p>
               </div>
             ) : missions.map(m => (
               <div key={m.id} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px'}}>
                 <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'12px'}}>
                   <div>
-                    <div style={{fontWeight:600,color:'#3D4852',fontSize:'15px'}}>{m.users?.name || 'Client'}</div>
-                    <div style={{fontSize:'13px',color:'#6B7280'}}>{m.category || m.diagnostics?.[0]?.category_detected || '—'} · {m.users?.quartier || m.quartier || 'Abidjan'}</div>
+                    <div style={{fontWeight:600,color:'var(--ui-ink)',fontSize:'15px'}}>{m.users?.name || 'Client'}</div>
+                    <div style={{fontSize:'13px',color:'var(--ui-muted)'}}>{m.category || m.diagnostics?.[0]?.category_detected || '—'} · {m.users?.quartier || m.quartier || 'Abidjan'}</div>
                   </div>
                   <span className={m.status === 'en_cours' ? 'afrione-gradient-text' : ''} style={{
                     fontSize:'11px',padding:'3px 10px',borderRadius:'20px',fontWeight:600,
@@ -944,7 +944,7 @@ export default function ArtisanDashboardPage() {
                 </div>
                 {m.status === 'matching' && (
                   <div style={{marginBottom:'8px',padding:'10px',background:'rgba(232,93,38,0.06)',borderRadius:'10px',border:'1px dashed rgba(232,93,38,0.3)'}}>
-                    <p style={{fontSize:'13px',color:'#6B7280',margin:0}}>Nouveau client en attente — ouvrez le chat pour discuter et envoyer un devis.</p>
+                    <p style={{fontSize:'13px',color:'var(--ui-muted)',margin:0}}>Nouveau client en attente — ouvrez le chat pour discuter et envoyer un devis.</p>
                   </div>
                 )}
                 {(m.status === 'negotiation' || m.status === 'matching') && (
@@ -954,7 +954,7 @@ export default function ArtisanDashboardPage() {
                 )}
                 {m.status === 'scheduled' && (
                   <div style={{display:'flex',gap:'8px'}}>
-                    <Link href={`/warroom/${m.id}`} style={{
+                    <Link className="afrione-action" href={`/warroom/${m.id}`} style={{
                       flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                       padding:'10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.3)',
                       borderRadius:'10px',color:'#C9A84C',fontWeight:600,fontSize:'13px',textDecoration:'none',
@@ -980,7 +980,7 @@ export default function ArtisanDashboardPage() {
                   </Link>
                 )}
                 {m.status === 'en_cours' && (
-                  <Link href={`/warroom/${m.id}`} style={{
+                  <Link className="afrione-action" href={`/warroom/${m.id}`} style={{
                     display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                     width:'100%',padding:'10px',background:'rgba(43,107,62,0.1)',
                     border:'1px solid rgba(43,107,62,0.3)',borderRadius:'10px',
@@ -1006,31 +1006,31 @@ export default function ArtisanDashboardPage() {
             {urgentOfferCard}
             {conversations.length === 0 && !urgentDispatch ? (
               <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'48px',textAlign:'center'}}>
-                <MessageCircle size={40} style={{margin:'0 auto 16px',color:'#E2E8F0'}} />
-                <h3 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#3D4852',marginBottom:'8px'}}>Aucune conversation</h3>
-                <p style={{color:'#6B7280',fontSize:'14px'}}>Les messages de vos clients apparaîtront ici</p>
+                <MessageCircle size={40} style={{margin:'0 auto 16px',color:'var(--ui-border)'}} />
+                <h3 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucune conversation</h3>
+                <p style={{color:'var(--ui-muted)',fontSize:'14px'}}>Les messages de vos clients apparaîtront ici</p>
               </div>
             ) : conversations.map(c => {
               const hasUnread = c.lastMessage && !c.lastMessage.read_at && c.lastMessage.sender_id !== artisan?.user_id
               return (
                 <Link key={c.id} href={`/warroom/${c.id}`} style={{textDecoration:'none'}}>
-                  <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px',display:'flex',alignItems:'center',gap:'16px',cursor:'pointer',border: hasUnread ? '2px solid #E85D26' : '1px solid #E2E8F0',transition:'all 0.2s'}}>
+                  <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px',display:'flex',alignItems:'center',gap:'16px',cursor:'pointer',border: hasUnread ? '2px solid #E85D26' : '1px solid var(--ui-border)',transition:'all 0.2s'}}>
                     <div style={{width:'48px',height:'48px',background:'rgba(232,93,38,0.1)',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
                       💬
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}}>
-                        <span style={{fontWeight:700,fontSize:'14px',color:'#3D4852'}}>{c.users?.name || 'Client'}</span>
-                        <span style={{fontSize:'11px',color:'#6B7280',fontFamily:'Tahoma'}}>
+                        <span style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>{c.users?.name || 'Client'}</span>
+                        <span style={{fontSize:'11px',color:'var(--ui-muted)',fontFamily: 'var(--font-body)'}}>
                           {c.lastMessage ? new Date(c.lastMessage.created_at).toLocaleDateString('fr-FR') : ''}
                         </span>
                       </div>
-                      <div style={{fontSize:'13px',color:'#6B7280',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                      <div style={{fontSize:'13px',color:'var(--ui-muted)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                         {c.lastMessage?.text || 'Nouvelle mission — ' + (c.category || '')}
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'6px'}}>
                         <span className="afrione-gradient-text" style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:'rgba(232,93,38,0.1)'}}>{c.status}</span>
-                        <span style={{fontSize:'11px',color:'#6B7280'}}>{c.category || ''}</span>
+                        <span style={{fontSize:'11px',color:'var(--ui-muted)'}}>{c.category || ''}</span>
                       </div>
                     </div>
                     {hasUnread && <div className="afrione-gradient" style={{width:'10px',height:'10px',borderRadius:'50%',flexShrink:0}} />}
@@ -1046,47 +1046,47 @@ export default function ArtisanDashboardPage() {
 
             {/* Bio */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'12px'}}>Description / Bio</h3>
-              <textarea
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'12px'}}>Description / Bio</h3>
+              <textarea className="afrione-field"
                 value={bio}
                 onChange={e => setBio(e.target.value)}
                 placeholder="Décrivez votre expertise, vos années d'expérience, votre façon de travailler..."
                 rows={4}
-                style={{width:'100%',padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',resize:'vertical',fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
+                style={{width:'100%',padding:'12px',border:'1.5px solid var(--ui-border)',borderRadius:'10px',fontSize:'14px',color:'var(--ui-ink)',resize:'vertical',fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
               />
-              <div style={{fontSize:'12px',color:'#6B7280',marginTop:'4px',textAlign:'right'}}>{bio.length}/500 caractères</div>
+              <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'4px',textAlign:'right'}}>{bio.length}/500 caractères</div>
             </div>
 
             {/* Tarif horaire et expérience — lus en priorité par le moteur de prix */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'4px'}}>Votre tarif</h3>
-              <p style={{fontSize:'12.5px',color:'#6B7280',marginBottom:'16px',lineHeight:1.5}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'4px'}}>Votre tarif</h3>
+              <p style={{fontSize:'12.5px',color:'var(--ui-muted)',marginBottom:'16px',lineHeight:1.5}}>
                 Ce tarif sert de base au calcul des devis proposés sur vos missions. Sans lui, AfriOne applique le tarif moyen du marché pour votre métier.
               </p>
               <div style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
                 <div style={{flex:1,minWidth:'150px'}}>
-                  <label style={{fontSize:'11px',fontWeight:700,color:'#6B7280',display:'block',marginBottom:'6px',letterSpacing:'0.06em'}}>TARIF HORAIRE</label>
+                  <label style={{fontSize:'11px',fontWeight:700,color:'var(--ui-muted)',display:'block',marginBottom:'6px',letterSpacing:'0.06em'}}>TARIF HORAIRE</label>
                   <div style={{position:'relative'}}>
-                    <input
+                    <input className="afrione-field"
                       type="text" inputMode="numeric"
                       value={tarifMin || ''}
                       onChange={e => setTarifMin(parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)}
                       placeholder="3000"
-                      style={{width:'100%',padding:'12px 58px 12px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'15px',fontWeight:600,color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
+                      style={{width:'100%',padding:'12px 58px 12px 12px',border:'1.5px solid var(--ui-border)',borderRadius:'10px',fontSize:'15px',fontWeight:600,color:'var(--ui-ink)',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
                     />
                     <span style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',fontSize:'12px',color:'#8B95A5',fontWeight:600,pointerEvents:'none'}}>FCFA/h</span>
                   </div>
                   <div style={{fontSize:'11px',color:'#8B95A5',marginTop:'5px'}}>Minimum légal : 866 FCFA/h</div>
                 </div>
                 <div style={{flex:1,minWidth:'150px'}}>
-                  <label style={{fontSize:'11px',fontWeight:700,color:'#6B7280',display:'block',marginBottom:'6px',letterSpacing:'0.06em'}}>EXPÉRIENCE</label>
+                  <label style={{fontSize:'11px',fontWeight:700,color:'var(--ui-muted)',display:'block',marginBottom:'6px',letterSpacing:'0.06em'}}>EXPÉRIENCE</label>
                   <div style={{position:'relative'}}>
-                    <input
+                    <input className="afrione-field"
                       type="text" inputMode="numeric"
                       value={yearsExp || ''}
                       onChange={e => setYearsExp(parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)}
                       placeholder="5"
-                      style={{width:'100%',padding:'12px 44px 12px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'15px',fontWeight:600,color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
+                      style={{width:'100%',padding:'12px 44px 12px 12px',border:'1.5px solid var(--ui-border)',borderRadius:'10px',fontSize:'15px',fontWeight:600,color:'var(--ui-ink)',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
                     />
                     <span style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',fontSize:'12px',color:'#8B95A5',fontWeight:600,pointerEvents:'none'}}>ans</span>
                   </div>
@@ -1097,11 +1097,11 @@ export default function ArtisanDashboardPage() {
 
             {/* Infos de base */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'16px'}}>Informations</h3>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'16px'}}>Informations</h3>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',background:'rgba(232,93,38,0.04)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'10px'}}>
                 <div>
-                  <div style={{fontSize:'12px',color:'#6B7280',marginBottom:'2px'}}>Années d'expérience</div>
-                  <div style={{fontSize:'16px',fontWeight:700,color:'#3D4852',fontFamily:'Tahoma'}}>{yearsExp > 0 ? `${yearsExp} ans` : '—'}</div>
+                  <div style={{fontSize:'12px',color:'var(--ui-muted)',marginBottom:'2px'}}>Années d'expérience</div>
+                  <div style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',fontFamily: 'var(--font-body)'}}>{yearsExp > 0 ? `${yearsExp} ans` : '—'}</div>
                 </div>
                 <div style={{fontSize:'11px',color:'#E85D26',fontWeight:600,textAlign:'right'}}>
                   🔒 Fixé via questionnaire<br/>
@@ -1112,28 +1112,28 @@ export default function ArtisanDashboardPage() {
 
             {/* Spécialités */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'12px'}}>Spécialités</h3>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'12px'}}>Spécialités</h3>
               <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'12px'}}>
                 {specialties.map(s => (
                   <span key={s} className="afrione-gradient-text" style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 12px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'20px',fontSize:'13px'}}>
                     {s}
-                    <button onClick={() => setSpecialties(prev => prev.filter(x => x !== s))} className="afrione-gradient-text" style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex'}}>
+                    <button onClick={() => setSpecialties(prev => prev.filter(x => x !== s))} className="afrione-gradient-text afrione-action" style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex'}}>
                       <X size={12} />
                     </button>
                   </span>
                 ))}
               </div>
               <div style={{display:'flex',gap:'8px'}}>
-                <input
+                <input className="afrione-field"
                   value={newSpecialty}
                   onChange={e => setNewSpecialty(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && newSpecialty.trim()) { setSpecialties(p => [...p, newSpecialty.trim()]); setNewSpecialty('') }}}
                   placeholder="Ajouter une spécialité..."
-                  style={{flex:1,padding:'10px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF'}}
+                  style={{flex:1,padding:'10px 12px',border:'1.5px solid var(--ui-border)',borderRadius:'10px',fontSize:'14px',color:'var(--ui-ink)',outline:'none',background:'#FFFFFF'}}
                 />
                 <button
                   onClick={() => { if (newSpecialty.trim()) { setSpecialties(p => [...p, newSpecialty.trim()]); setNewSpecialty('') }}}
-                  className="afrione-gradient"
+                  className="afrione-gradient afrione-action"
                   style={{padding:'10px 16px',color:'white',border:'none',borderRadius:'10px',cursor:'pointer',display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',fontWeight:600}}
                 >
                   <Plus size={14} /> Ajouter
@@ -1143,17 +1143,17 @@ export default function ArtisanDashboardPage() {
 
             {/* Zones d'intervention */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'12px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'12px'}}>
                 <MapPin size={16} className="afrione-gradient-text" style={{display:'inline',marginRight:'6px'}} />
                 Zones d'intervention (Abidjan)
               </h3>
               <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
                 {QUARTIERS_ABJ.map(q => (
-                  <button key={q} onClick={() => toggleQuartier(q)} style={{
+                  <button className="afrione-action" key={q} onClick={() => toggleQuartier(q)} style={{
                     padding:'8px 16px',borderRadius:'20px',fontSize:'13px',fontWeight:500,cursor:'pointer',transition:'all 0.15s',border:'none',
-                    background: quartiers.includes(q) ? '#E85D26' : '#F5F7FA',
+                    background: quartiers.includes(q) ? '#E85D26' : 'var(--ui-canvas)',
                     boxShadow: quartiers.includes(q) ? 'none' : NEU_SMALL,
-                    color: quartiers.includes(q) ? '#FFFFFF' : '#6B7280',
+                    color: quartiers.includes(q) ? '#FFFFFF' : 'var(--ui-muted)',
                   }}>{q}</button>
                 ))}
               </div>
@@ -1161,26 +1161,26 @@ export default function ArtisanDashboardPage() {
 
             {/* Certifications */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'12px'}}>Certifications & Diplômes</h3>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'12px'}}>Certifications & Diplômes</h3>
               <div style={{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'12px'}}>
                 {certifications.map((c, i) => (
                   <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'10px'}}>
-                    <span style={{fontSize:'14px',color:'#3D4852'}}>{c}</span>
-                    <button onClick={() => setCertifications(prev => prev.filter((_, j) => j !== i))} style={{background:'none',border:'none',cursor:'pointer',color:'#6B7280',display:'flex'}}>
+                    <span style={{fontSize:'14px',color:'var(--ui-ink)'}}>{c}</span>
+                    <button className="afrione-action" onClick={() => setCertifications(prev => prev.filter((_, j) => j !== i))} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ui-muted)',display:'flex'}}>
                       <Trash2 size={14} />
                     </button>
                   </div>
                 ))}
               </div>
               <div style={{display:'flex',gap:'8px'}}>
-                <input
+                <input className="afrione-field"
                   value={newCertif}
                   onChange={e => setNewCertif(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && newCertif.trim()) { setCertifications(p => [...p, newCertif.trim()]); setNewCertif('') }}}
                   placeholder="Ex: CAP Plomberie, Habilitation électrique..."
-                  style={{flex:1,padding:'10px 12px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF'}}
+                  style={{flex:1,padding:'10px 12px',border:'1.5px solid var(--ui-border)',borderRadius:'10px',fontSize:'14px',color:'var(--ui-ink)',outline:'none',background:'#FFFFFF'}}
                 />
-                <button
+                <button className="afrione-action"
                   onClick={() => { if (newCertif.trim()) { setCertifications(p => [...p, newCertif.trim()]); setNewCertif('') }}}
                   style={{padding:'10px 16px',background:'#2B6B3E',color:'white',border:'none',borderRadius:'10px',cursor:'pointer',display:'flex',alignItems:'center',gap:'4px',fontSize:'13px',fontWeight:600}}
                 >
@@ -1191,10 +1191,10 @@ export default function ArtisanDashboardPage() {
 
             {/* Mon entreprise */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
-              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px'}}>
+              <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px'}}>
                 <Building2 size={16} color="#60a5fa" /> Mon entreprise
               </h3>
-              <p style={{fontSize:'12px',color:'#6B7280',marginBottom:'16px'}}>Rattachez-vous à une structure pour apparaître dans son catalogue.</p>
+              <p style={{fontSize:'12px',color:'var(--ui-muted)',marginBottom:'16px'}}>Rattachez-vous à une structure pour apparaître dans son catalogue.</p>
 
               {/* État 1 — affilié */}
               {artisanEntreprise && (
@@ -1204,11 +1204,11 @@ export default function ArtisanDashboardPage() {
                       <Building2 size={16} color="#60a5fa" />
                     </div>
                     <div style={{minWidth:0}}>
-                      <div style={{fontSize:'14px',fontWeight:700,color:'#3D4852',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{artisanEntreprise.name}</div>
+                      <div style={{fontSize:'14px',fontWeight:700,color:'var(--ui-ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{artisanEntreprise.name}</div>
                       <div style={{fontSize:'11px',color:'#2B6B3E',fontWeight:600}}>✓ Membre actif</div>
                     </div>
                   </div>
-                  <button onClick={leaveEntreprise} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer',flexShrink:0,fontWeight:600}}>
+                  <button className="afrione-action" onClick={leaveEntreprise} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer',flexShrink:0,fontWeight:600}}>
                     <LogOut size={12}/> Quitter
                   </button>
                 </div>
@@ -1223,15 +1223,15 @@ export default function ArtisanDashboardPage() {
                         <Building2 size={16} color="#C9A84C" />
                       </div>
                       <div style={{minWidth:0}}>
-                        <div style={{fontSize:'14px',fontWeight:700,color:'#3D4852',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(pendingRequest.entreprises as any)?.name}</div>
+                        <div style={{fontSize:'14px',fontWeight:700,color:'var(--ui-ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(pendingRequest.entreprises as any)?.name}</div>
                         <div style={{fontSize:'11px',color:'#C9A84C',fontWeight:600}}>⏳ En attente de validation</div>
                       </div>
                     </div>
-                    <button onClick={cancelRequest} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer',flexShrink:0,fontWeight:600}}>
+                    <button className="afrione-action" onClick={cancelRequest} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer',flexShrink:0,fontWeight:600}}>
                       <X size={12}/> Annuler
                     </button>
                   </div>
-                  <p style={{fontSize:'11px',color:'#6B7280',marginTop:'8px',marginBottom:0}}>L'administrateur de l'entreprise doit valider votre demande.</p>
+                  <p style={{fontSize:'11px',color:'var(--ui-muted)',marginTop:'8px',marginBottom:0}}>L'administrateur de l'entreprise doit valider votre demande.</p>
                 </div>
               )}
 
@@ -1239,27 +1239,27 @@ export default function ArtisanDashboardPage() {
               {!artisanEntreprise && !pendingRequest && (
                 <div style={{position:'relative'}}>
                   <div style={{position:'relative'}}>
-                    <Search size={14} style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',color:'#6B7280'}} />
-                    <input
+                    <Search size={14} style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',color:'var(--ui-muted)'}} />
+                    <input className="afrione-field"
                       value={entrepriseSearch}
                       onChange={e => searchEntreprises(e.target.value)}
                       placeholder="Rechercher une entreprise par nom…"
-                      style={{width:'100%',padding:'11px 12px 11px 36px',border:'1.5px solid #E2E8F0',borderRadius:'10px',fontSize:'14px',color:'#3D4852',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
+                      style={{width:'100%',padding:'11px 12px 11px 36px',border:'1.5px solid var(--ui-border)',borderRadius:'10px',fontSize:'14px',color:'var(--ui-ink)',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
                     />
                   </div>
                   {entrepriseResults.length > 0 && (
-                    <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'#FFFFFF',border:'1px solid #E2E8F0',borderRadius:'12px',overflow:'hidden',zIndex:20,boxShadow:'0 8px 24px rgba(163,177,198,0.35)'}}>
+                    <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'#FFFFFF',border:'1px solid var(--ui-border)',borderRadius:'12px',overflow:'hidden',zIndex:20,boxShadow:'var(--ui-shadow-soft)'}}>
                       {entrepriseResults.map(e => (
-                        <button key={e.id} onClick={() => requestJoinEntreprise(e)} disabled={joiningEntreprise}
-                          style={{width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'12px 14px',background:'none',border:'none',borderBottom:'1px solid #F5F7FA',cursor:'pointer',textAlign:'left'}}
-                          onMouseEnter={el => (el.currentTarget.style.background='#F5F7FA')}
+                        <button className="afrione-action" key={e.id} onClick={() => requestJoinEntreprise(e)} disabled={joiningEntreprise}
+                          style={{width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'12px 14px',background:'none',border:'none',borderBottom:'1px solid var(--ui-canvas)',cursor:'pointer',textAlign:'left'}}
+                          onMouseEnter={el => (el.currentTarget.style.background='var(--ui-canvas)')}
                           onMouseLeave={el => (el.currentTarget.style.background='none')}>
                           <div style={{width:'32px',height:'32px',background:'rgba(96,165,250,0.1)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                             <Building2 size={14} color="#60a5fa" />
                           </div>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:'13px',fontWeight:600,color:'#3D4852'}}>{e.name}</div>
-                            <div style={{fontSize:'11px',color:'#6B7280'}}>{(e.secteurs||[]).slice(0,3).join(' · ')}</div>
+                            <div style={{fontSize:'13px',fontWeight:600,color:'var(--ui-ink)'}}>{e.name}</div>
+                            <div style={{fontSize:'11px',color:'var(--ui-muted)'}}>{(e.secteurs||[]).slice(0,3).join(' · ')}</div>
                           </div>
                           <span style={{fontSize:'12px',color:'#60a5fa',fontWeight:600,flexShrink:0}}>Demander →</span>
                         </button>
@@ -1267,7 +1267,7 @@ export default function ArtisanDashboardPage() {
                     </div>
                   )}
                   {entrepriseSearch.length >= 2 && entrepriseResults.length === 0 && (
-                    <p style={{fontSize:'12px',color:'#6B7280',marginTop:'8px'}}>Aucune entreprise trouvée. <Link href="/entreprise-space/register" className="afrione-gradient-text">Créer la vôtre →</Link></p>
+                    <p style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'8px'}}>Aucune entreprise trouvée. <Link href="/entreprise-space/register" className="afrione-gradient-text">Créer la vôtre →</Link></p>
                   )}
                 </div>
               )}
@@ -1277,8 +1277,8 @@ export default function ArtisanDashboardPage() {
             <button
               onClick={saveProfile}
               disabled={saving}
-              className={saving ? '' : 'afrione-gradient'}
-              style={{padding:'14px',background: saving ? '#E2E8F0' : undefined,color: saving ? '#8B95A5' : 'white',border:'none',borderRadius:'12px',fontSize:'15px',fontWeight:700,cursor: saving ? 'not-allowed' : 'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}
+              className={(saving ? '' : 'afrione-gradient') + ' afrione-action'}
+              style={{padding:'14px',background: saving ? 'var(--ui-border)' : undefined,color: saving ? '#8B95A5' : 'white',border:'none',borderRadius:'12px',fontSize:'15px',fontWeight:700,cursor: saving ? 'not-allowed' : 'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}
             >
               {saving ? (
                 <><div style={{width:'16px',height:'16px',border:'2px solid rgba(139,149,165,0.3)',borderTop:'2px solid #8B95A5',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Sauvegarde...</>
@@ -1295,15 +1295,15 @@ export default function ArtisanDashboardPage() {
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
                 <div>
-                  <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'#3D4852'}}>Galerie de réalisations</h3>
-                  <p style={{fontSize:'13px',color:'#6B7280',marginTop:'4px'}}>
+                  <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)'}}>Galerie de réalisations</h3>
+                  <p style={{fontSize:'13px',color:'var(--ui-muted)',marginTop:'4px'}}>
                     {missionPhotos.length} photos automatiques (missions terminées) · {manualPhotos.length} ajoutées manuellement
                   </p>
                 </div>
                 <button
                   onClick={() => portfolioInputRef.current?.click()}
                   disabled={saving}
-                  className="afrione-gradient"
+                  className="afrione-gradient afrione-action"
                   style={{padding:'10px 16px',color:'white',border:'none',borderRadius:'10px',cursor:'pointer',display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',fontWeight:600,flexShrink:0}}
                 >
                   <Upload size={14} /> Ajouter des photos
@@ -1314,27 +1314,27 @@ export default function ArtisanDashboardPage() {
               {allPhotos.length === 0 ? (
                 <div
                   onClick={() => portfolioInputRef.current?.click()}
-                  style={{border:'2px dashed #E2E8F0',borderRadius:'16px',padding:'64px',textAlign:'center',cursor:'pointer',background:'#F5F7FA'}}
+                  style={{border:'2px dashed var(--ui-border)',borderRadius:'16px',padding:'64px',textAlign:'center',cursor:'pointer',background:'var(--ui-canvas)'}}
                 >
-                  <Camera size={40} style={{margin:'0 auto 16px',color:'#E2E8F0'}} />
-                  <p style={{fontWeight:600,color:'#3D4852',fontSize:'15px',marginBottom:'8px'}}>Aucune photo pour l'instant</p>
-                  <p style={{color:'#6B7280',fontSize:'13px'}}>Les photos de vos missions terminées apparaîtront ici automatiquement.<br/>Vous pouvez aussi en ajouter manuellement pour illustrer votre travail.</p>
+                  <Camera size={40} style={{margin:'0 auto 16px',color:'var(--ui-border)'}} />
+                  <p style={{fontWeight:600,color:'var(--ui-ink)',fontSize:'15px',marginBottom:'8px'}}>Aucune photo pour l'instant</p>
+                  <p style={{color:'var(--ui-muted)',fontSize:'13px'}}>Les photos de vos missions terminées apparaîtront ici automatiquement.<br/>Vous pouvez aussi en ajouter manuellement pour illustrer votre travail.</p>
                 </div>
               ) : (
                 <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
                   {allPhotos.map((p, i) => (
-                    <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'12px',overflow:'hidden',background:'#F5F7FA',cursor:'pointer'}}
+                    <div key={i} style={{position:'relative',aspectRatio:'1',borderRadius:'12px',overflow:'hidden',background:'var(--ui-canvas)',cursor:'pointer'}}
                     onClick={() => { if (confirmDeletePhoto === p.url) setConfirmDeletePhoto(null) }}>
                       <img src={p.url} alt={p.category} style={{width:'100%',height:'100%',objectFit:'cover'}} />
                       {/* Confirmation overlay */}
                       {confirmDeletePhoto === p.url && p.source === 'manual' && (
                         <div style={{position:'absolute',inset:0,background:'rgba(239,68,68,0.92)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',padding:'12px'}}>
                           <span style={{color:'white',fontSize:'11px',fontWeight:700,textAlign:'center'}}>Supprimer cette photo ?</span>
-                          <button onClick={e => { e.stopPropagation(); removePortfolioPhoto(p.url) }}
+                          <button className="afrione-action" onClick={e => { e.stopPropagation(); removePortfolioPhoto(p.url) }}
                             style={{padding:'6px 16px',background:'white',color:'#ef4444',border:'none',borderRadius:'8px',fontWeight:700,fontSize:'12px',cursor:'pointer'}}>
                             Confirmer
                           </button>
-                          <button onClick={e => { e.stopPropagation(); setConfirmDeletePhoto(null) }}
+                          <button className="afrione-action" onClick={e => { e.stopPropagation(); setConfirmDeletePhoto(null) }}
                             style={{background:'none',border:'none',color:'rgba(255,255,255,0.8)',fontSize:'11px',cursor:'pointer'}}>
                             Annuler
                           </button>
@@ -1342,7 +1342,7 @@ export default function ArtisanDashboardPage() {
                       )}
                       <div style={{position:'absolute',inset:0,background:'linear-gradient(transparent 40%,rgba(61,72,82,0.75))',display:'flex',flexDirection:'column',justifyContent:'space-between',padding:'8px',pointerEvents: confirmDeletePhoto === p.url ? 'none' : 'auto'}}>
                         {p.source === 'manual' && (
-                          <button
+                          <button className="afrione-action afrione-action--icon"
                             onClick={e => { e.stopPropagation(); removePortfolioPhoto(p.url) }}
                             style={{alignSelf:'flex-end',width:'24px',height:'24px',background:'rgba(0,0,0,0.4)',border:'none',borderRadius:'50%',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'white'}}
                           >
@@ -1362,18 +1362,18 @@ export default function ArtisanDashboardPage() {
                   {/* Zone d'ajout rapide */}
                   <div
                     onClick={() => portfolioInputRef.current?.click()}
-                    style={{aspectRatio:'1',borderRadius:'12px',border:'2px dashed #E2E8F0',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',cursor:'pointer',background:'#F5F7FA',transition:'all 0.2s'}}
+                    style={{aspectRatio:'1',borderRadius:'12px',border:'2px dashed var(--ui-border)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',cursor:'pointer',background:'var(--ui-canvas)',transition:'all 0.2s'}}
                   >
-                    <Plus size={24} style={{color:'#E2E8F0'}} />
-                    <span style={{fontSize:'12px',color:'#6B7280'}}>Ajouter</span>
+                    <Plus size={24} style={{color:'var(--ui-border)'}} />
+                    <span style={{fontSize:'12px',color:'var(--ui-muted)'}}>Ajouter</span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Info box */}
-            <div style={{padding:'16px',background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',fontSize:'13px',color:'#6B7280',lineHeight:'1.6'}}>
-              💡 <strong style={{color:'#3D4852'}}>Comment fonctionne votre portfolio ?</strong><br/>
+            <div style={{padding:'16px',background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',fontSize:'13px',color:'var(--ui-muted)',lineHeight:'1.6'}}>
+              💡 <strong style={{color:'var(--ui-ink)'}}>Comment fonctionne votre portfolio ?</strong><br/>
               Les photos "AVANT / APRÈS" que vous prenez à la fin de chaque mission sont automatiquement ajoutées ici.<br/>
               Vous pouvez aussi uploader des photos de missions passées pour enrichir votre profil dès aujourd'hui.
             </div>
@@ -1384,12 +1384,12 @@ export default function ArtisanDashboardPage() {
         {tab === 'wallet' && (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'32px',textAlign:'center'}}>
-              <div style={{fontSize:'13px',color:'#6B7280',fontFamily:'Tahoma',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.1em'}}>Solde disponible</div>
-              <div className="font-display" style={{fontSize:'52px',fontWeight:700,color:'#3D4852',marginBottom:'4px'}}>
+              <div style={{fontSize:'13px',color:'var(--ui-muted)',fontFamily: 'var(--font-body)',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.1em'}}>Solde disponible</div>
+              <div className="font-display" style={{fontSize:'52px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'4px'}}>
                 {(wallet?.balance_available || 0).toLocaleString()}
               </div>
-              <div style={{color:'#6B7280',marginBottom:'24px',fontFamily:'Tahoma',fontSize:'14px'}}>FCFA</div>
-              <button className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
+              <div style={{color:'var(--ui-muted)',marginBottom:'24px',fontFamily: 'var(--font-body)',fontSize:'14px'}}>FCFA</div>
+              <button className="btn-primary afrione-action" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
                 Retirer vers Wave
               </button>
             </div>
@@ -1400,38 +1400,38 @@ export default function ArtisanDashboardPage() {
                 { label: 'Missions', value: completedMissions.length, color: 'gradient', suffix: '' },
               ].map(item => (
                 <div key={item.label} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px',textAlign:'center'}}>
-                  <div style={{fontSize:'11px',color:'#6B7280',marginBottom:'6px'}}>{item.label}</div>
+                  <div style={{fontSize:'11px',color:'var(--ui-muted)',marginBottom:'6px'}}>{item.label}</div>
                   <div className={`font-display${item.color === 'gradient' ? ' afrione-gradient-text' : ''}`} style={{fontSize:'20px',fontWeight:700,color:item.color === 'gradient' ? undefined : item.color}}>{item.value.toLocaleString()}</div>
-                  {'suffix' in item ? null : <div style={{fontSize:'10px',color:'#6B7280'}}>FCFA</div>}
+                  {'suffix' in item ? null : <div style={{fontSize:'10px',color:'var(--ui-muted)'}}>FCFA</div>}
                 </div>
               ))}
             </div>
 
             {/* Historique des transactions */}
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',overflow:'hidden'}}>
-              <div style={{padding:'16px 20px',borderBottom:'1px solid #E2E8F0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                <h3 style={{fontWeight:700,fontSize:'15px',color:'#3D4852'}}>Historique</h3>
-                <span style={{fontSize:'12px',color:'#6B7280'}}>{completedMissions.length} mission{completedMissions.length !== 1 ? 's' : ''}</span>
+              <div style={{padding:'16px 20px',borderBottom:'1px solid var(--ui-border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <h3 style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}>Historique</h3>
+                <span style={{fontSize:'12px',color:'var(--ui-muted)'}}>{completedMissions.length} mission{completedMissions.length !== 1 ? 's' : ''}</span>
               </div>
               {completedMissions.length === 0 ? (
-                <div style={{textAlign:'center',padding:'32px',color:'#6B7280',fontSize:'13px'}}>
+                <div style={{textAlign:'center',padding:'32px',color:'var(--ui-muted)',fontSize:'13px'}}>
                   Aucune mission terminée pour l'instant
                 </div>
               ) : (
                 <div>
                   {completedMissions.slice(0, 10).map((m: any, i: number) => (
-                    <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'14px 20px',borderBottom: i < Math.min(completedMissions.length, 10) - 1 ? '1px solid #F5F7FA' : 'none'}}>
+                    <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'14px 20px',borderBottom: i < Math.min(completedMissions.length, 10) - 1 ? '1px solid var(--ui-canvas)' : 'none'}}>
                       <div style={{width:'36px',height:'36px',background:'rgba(43,107,62,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:'16px'}}>✅</div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:600,fontSize:'13px',color:'#3D4852'}}>{m.category || 'Intervention'}</div>
-                        <div style={{fontSize:'11px',color:'#6B7280',marginTop:'2px'}}>
+                        <div style={{fontWeight:600,fontSize:'13px',color:'var(--ui-ink)'}}>{m.category || 'Intervention'}</div>
+                        <div style={{fontSize:'11px',color:'var(--ui-muted)',marginTop:'2px'}}>
                           {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                         </div>
                       </div>
                       {m.total_price > 0 && (
                         <div style={{textAlign:'right',flexShrink:0}}>
-                          <div style={{fontWeight:700,fontSize:'14px',color:'#2B6B3E',fontFamily:'Tahoma'}}>+{m.total_price.toLocaleString()}</div>
-                          <div style={{fontSize:'10px',color:'#6B7280'}}>FCFA</div>
+                          <div style={{fontWeight:700,fontSize:'14px',color:'#2B6B3E',fontFamily: 'var(--font-body)'}}>+{m.total_price.toLocaleString()}</div>
+                          <div style={{fontSize:'10px',color:'var(--ui-muted)'}}>FCFA</div>
                         </div>
                       )}
                     </div>

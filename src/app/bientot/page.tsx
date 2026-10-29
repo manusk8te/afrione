@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 
-const syne = { fontFamily: "'Syne', sans-serif" }
+const syne = { fontFamily: "'Satoshi', sans-serif" }
 const BALL_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4'
 
 export default function Bientot() {

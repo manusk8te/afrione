@@ -3,8 +3,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Wallet, Phone, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 
-const NEU_SHADOW = '6px 6px 16px rgba(163,177,198,0.55), -4px -4px 12px rgba(255,255,255,0.9)'
-const NEU_SMALL  = '4px 4px 8px rgba(163,177,198,0.45), -3px -3px 6px rgba(255,255,255,0.9)'
+const NEU_SHADOW = 'var(--ui-shadow-card)'
+const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const TRANSACTIONS = [
   { id: 't1', type: 'credit', label: 'Mission #AF-2847 · Kouadio B.', amount: 17160, date: 'Aujourd\'hui 18h30', status: 'completed' },
@@ -29,16 +29,16 @@ export default function PortefeuillePage() {
   }
 
   return (
-    <div className="min-h-screen" style={{background:'#F5F7FA'}}>
+    <div className="min-h-screen" style={{background:'var(--ui-canvas)'}}>
       {/* Header bar */}
-      <div style={{background:'#FFFFFF',borderBottom:'1px solid #E2E8F0',boxShadow:NEU_SMALL}}>
+      <div style={{background:'#FFFFFF',borderBottom:'1px solid var(--ui-border)',boxShadow:NEU_SMALL}}>
         <div className="page-container py-4 flex items-center gap-3 max-w-2xl">
-          <Link href="/artisan-space/dashboard" style={{padding:'4px',borderRadius:'8px',display:'flex',alignItems:'center',color:'#6B7280',textDecoration:'none'}}>
+          <Link href="/artisan-space/dashboard" style={{padding:'4px',borderRadius:'8px',display:'flex',alignItems:'center',color:'var(--ui-muted)',textDecoration:'none'}}>
             <ArrowLeft size={18} />
           </Link>
           <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
             <Wallet size={18} className="afrione-gradient-text" />
-            <div className="font-display font-bold" style={{color:'#3D4852'}}>Mon Portefeuille</div>
+            <div className="font-display font-bold" style={{color:'var(--ui-ink)'}}>Mon Portefeuille</div>
           </div>
         </div>
       </div>
@@ -48,16 +48,16 @@ export default function PortefeuillePage() {
 
           {/* Balance card */}
           <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'24px',marginBottom:'24px',textAlign:'center'}}>
-            <p style={{fontFamily:'Tahoma',fontSize:'12px',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'8px'}}>Solde disponible</p>
-            <p className="font-display" style={{fontSize:'48px',fontWeight:700,color:'#3D4852',marginBottom:'4px'}}>
+            <p style={{fontFamily: 'var(--font-body)',fontSize:'12px',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:'8px'}}>Solde disponible</p>
+            <p className="font-display" style={{fontSize:'48px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'4px'}}>
               {balance.toLocaleString()}
             </p>
-            <p style={{fontFamily:'Tahoma',fontSize:'14px',color:'#8B95A5'}}>FCFA</p>
+            <p style={{fontFamily: 'var(--font-body)',fontSize:'14px',color:'#8B95A5'}}>FCFA</p>
 
             {pending > 0 && (
               <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginTop:'16px',fontSize:'14px'}}>
                 <Clock size={14} color="#C9A84C" />
-                <span style={{color:'#6B7280'}}>{pending.toLocaleString()} FCFA en attente de validation</span>
+                <span style={{color:'var(--ui-muted)'}}>{pending.toLocaleString()} FCFA en attente de validation</span>
               </div>
             )}
 
@@ -67,8 +67,8 @@ export default function PortefeuillePage() {
                 { label: 'En séquestre', value: '8 800 FCFA' },
                 { label: 'Total retraits', value: '30 000 FCFA' },
               ].map(s => (
-                <div key={s.label} style={{background:'#F5F7FA',borderRadius:'12px',padding:'12px',boxShadow:NEU_SMALL}}>
-                  <div style={{color:'#3D4852',fontWeight:600,fontSize:'14px'}}>{s.value}</div>
+                <div key={s.label} style={{background:'var(--ui-canvas)',borderRadius:'12px',padding:'12px',boxShadow:NEU_SMALL}}>
+                  <div style={{color:'var(--ui-ink)',fontWeight:600,fontSize:'14px'}}>{s.value}</div>
                   <div style={{color:'#8B95A5',fontSize:'12px',marginTop:'2px'}}>{s.label}</div>
                 </div>
               ))}
@@ -76,7 +76,7 @@ export default function PortefeuillePage() {
 
             <button
               onClick={() => setShowWithdraw(true)}
-              className="mt-6 w-full afrione-gradient text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="mt-6 w-full afrione-gradient text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 afrione-action"
               style={{marginTop:'24px'}}
             >
               <ArrowUpRight size={16} /> Retirer vers Wave
@@ -88,32 +88,32 @@ export default function PortefeuillePage() {
             <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',border:'2px solid rgba(232,93,38,0.2)',marginBottom:'24px'}}>
               {withdrawStep === 'form' && (
                 <div>
-                  <h3 className="font-display font-bold" style={{color:'#3D4852',marginBottom:'16px'}}>Retrait Wave</h3>
+                  <h3 className="font-display font-bold" style={{color:'var(--ui-ink)',marginBottom:'16px'}}>Retrait Wave</h3>
                   <div className="space-y-4">
                     <div>
-                      <label style={{display:'block',fontSize:'12px',fontFamily:'Tahoma',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Numéro Wave</label>
+                      <label style={{display:'block',fontSize:'12px',fontFamily: 'var(--font-body)',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Numéro Wave</label>
                       <div style={{display:'flex',gap:'8px'}}>
-                        <div style={{background:'#F5F7FA',border:'1.5px solid #E2E8F0',borderRadius:'12px',padding:'12px',fontSize:'14px',fontFamily:'Tahoma',flexShrink:0,color:'#3D4852',boxShadow:NEU_SMALL}}>🇨🇮 +225</div>
-                        <input type="tel" value={withdrawPhone} onChange={e => setWithdrawPhone(e.target.value)}
+                        <div style={{background:'var(--ui-canvas)',border:'1.5px solid var(--ui-border)',borderRadius:'12px',padding:'12px',fontSize:'14px',fontFamily: 'var(--font-body)',flexShrink:0,color:'var(--ui-ink)',boxShadow:NEU_SMALL}}>🇨🇮 +225</div>
+                        <input className="afrione-field" type="tel" value={withdrawPhone} onChange={e => setWithdrawPhone(e.target.value)}
                           placeholder="07 00 00 00 00"
-                          style={{flex:1,padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'12px',fontFamily:'Tahoma',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF'}} />
+                          style={{flex:1,padding:'12px',border:'1.5px solid var(--ui-border)',borderRadius:'12px',fontFamily: 'var(--font-body)',fontSize:'14px',color:'var(--ui-ink)',outline:'none',background:'#FFFFFF'}} />
                       </div>
                     </div>
                     <div>
-                      <label style={{display:'block',fontSize:'12px',fontFamily:'Tahoma',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Montant (FCFA)</label>
-                      <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)}
+                      <label style={{display:'block',fontSize:'12px',fontFamily: 'var(--font-body)',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Montant (FCFA)</label>
+                      <input className="afrione-field" type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)}
                         placeholder={`Max : ${balance.toLocaleString()} FCFA`}
-                        style={{width:'100%',padding:'12px',border:'1.5px solid #E2E8F0',borderRadius:'12px',fontSize:'14px',color:'#3D4852',outline:'none',background:'#FFFFFF',boxSizing:'border-box'}} />
+                        style={{width:'100%',padding:'12px',border:'1.5px solid var(--ui-border)',borderRadius:'12px',fontSize:'14px',color:'var(--ui-ink)',outline:'none',background:'#FFFFFF',boxSizing:'border-box'}} />
                     </div>
                     <div style={{display:'flex',gap:'12px'}}>
                       <button onClick={handleWithdraw} disabled={!withdrawPhone || !withdrawAmount}
-                        className="btn-primary flex-1 disabled:opacity-40"
+                        className="btn-primary flex-1 disabled:opacity-40 afrione-action"
                         style={{flex:1,opacity:(!withdrawPhone || !withdrawAmount) ? 0.4 : 1}}>
                         Confirmer
                       </button>
-                      <button
+                      <button className="afrione-action"
                         onClick={() => setShowWithdraw(false)}
-                        style={{flex:1,padding:'12px',background:'#FFFFFF',color:'#6B7280',border:'1.5px solid #E2E8F0',borderRadius:'12px',cursor:'pointer',fontWeight:600,fontSize:'14px',boxShadow:NEU_SMALL}}
+                        style={{flex:1,padding:'12px',background:'#FFFFFF',color:'var(--ui-muted)',border:'1.5px solid var(--ui-border)',borderRadius:'12px',cursor:'pointer',fontWeight:600,fontSize:'14px',boxShadow:NEU_SMALL}}
                       >
                         Annuler
                       </button>
@@ -124,17 +124,17 @@ export default function PortefeuillePage() {
               {withdrawStep === 'processing' && (
                 <div style={{textAlign:'center',padding:'16px 0'}}>
                   <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'0 auto 12px'}} />
-                  <p style={{fontWeight:600,color:'#3D4852'}}>Traitement en cours...</p>
-                  <p style={{fontSize:'14px',color:'#6B7280'}}>Connexion à Wave Business</p>
+                  <p style={{fontWeight:600,color:'var(--ui-ink)'}}>Traitement en cours...</p>
+                  <p style={{fontSize:'14px',color:'var(--ui-muted)'}}>Connexion à Wave Business</p>
                 </div>
               )}
               {withdrawStep === 'done' && (
                 <div style={{textAlign:'center',padding:'16px 0'}}>
                   <CheckCircle size={40} style={{color:'#2B6B3E',margin:'0 auto 12px'}} />
-                  <p style={{fontWeight:600,color:'#3D4852'}}>Retrait effectué !</p>
-                  <p style={{fontSize:'14px',color:'#6B7280'}}>{parseInt(withdrawAmount).toLocaleString()} FCFA envoyés</p>
+                  <p style={{fontWeight:600,color:'var(--ui-ink)'}}>Retrait effectué !</p>
+                  <p style={{fontSize:'14px',color:'var(--ui-muted)'}}>{parseInt(withdrawAmount).toLocaleString()} FCFA envoyés</p>
                   <button onClick={() => { setShowWithdraw(false); setWithdrawStep('form') }}
-                    className="mt-4 text-sm afrione-gradient-text hover:underline"
+                    className="mt-4 text-sm afrione-gradient-text hover:underline afrione-action"
                     style={{marginTop:'16px',background:'none',border:'none',cursor:'pointer',fontSize:'14px'}}>Fermer</button>
                 </div>
               )}
@@ -143,7 +143,7 @@ export default function PortefeuillePage() {
 
           {/* Transactions */}
           <div>
-            <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'#3D4852',marginBottom:'16px'}}>Historique</h2>
+            <h2 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'16px'}}>Historique</h2>
             <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
               {TRANSACTIONS.map(t => (
                 <div key={t.id} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'16px',padding:'16px',display:'flex',alignItems:'center',gap:'16px'}}>
@@ -157,7 +157,7 @@ export default function PortefeuillePage() {
                       : <ArrowUpRight size={18} className="afrione-gradient-text" />}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:500,color:'#3D4852',fontSize:'14px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.label}</div>
+                    <div style={{fontWeight:500,color:'var(--ui-ink)',fontSize:'14px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.label}</div>
                     <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'2px'}}>
                       <span style={{fontSize:'12px',color:'#8B95A5'}}>{t.date}</span>
                       {t.status === 'pending' && (

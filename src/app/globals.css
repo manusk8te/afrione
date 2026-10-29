@@ -20,10 +20,19 @@
   --white:   #FAFAF5;
   --border:  #D8D2C4;
 
+  --ui-canvas: #F5F7FA;
+  --ui-surface: #FFFFFF;
+  --ui-border: #E2E8F0;
+  --ui-ink: #3D4852;
+  --ui-muted: #6B7280;
+  --ui-shadow-soft: 2px 3px 8px rgba(97,113,134,.10);
+  --ui-shadow-card: 3px 5px 16px rgba(97,113,134,.12);
+  --ui-shadow-inset: inset 0 1px 3px rgba(97,113,134,.12);
+
   /* Radius scale — délibéré, pas uniforme */
   --r-xs:   4px;    /* séparateurs, underlines */
-  --r-sm:   6px;    /* boutons, inputs */
-  --r-md:   10px;   /* cartes, panneaux */
+  --r-sm:   8px;    /* boutons, inputs */
+  --r-md:   12px;   /* cartes, panneaux */
   --r-lg:   16px;   /* conteneurs larges, hero panels */
   --r-pill: 999px;  /* tags, badges, chips */
 
@@ -62,7 +71,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Satoshi', sans-serif;
   letter-spacing: -0.025em;
-  line-height: 0.95;
+  line-height: 1.12;
   font-weight: 700;
 }
 p { line-height: 1.65; }
@@ -70,23 +79,6 @@ p { line-height: 1.65; }
 /* ─── Boutons — radius 6px : sérieux, pas bubbly ─────────────────────────── */
 .btn-primary {
   background-color: #E85D26;
-  background-image:
-    radial-gradient(circle at var(--ag-x1) var(--ag-y1), #FFD580 0px, transparent var(--ag-s1)),
-    radial-gradient(circle at var(--ag-x2) var(--ag-y2), #B03010 0px, transparent var(--ag-s2)),
-    radial-gradient(circle at var(--ag-x3) var(--ag-y3), #C9A84C 0px, transparent var(--ag-s3)),
-    radial-gradient(circle at var(--ag-x4) var(--ag-y4), #FF6B35 0px, transparent var(--ag-s4)),
-    radial-gradient(circle at var(--ag-x5) var(--ag-y5), #8B2500 0px, transparent var(--ag-s5));
-  animation:
-    ag-blob1 5s   ease-in-out infinite,
-    ag-blob2 6s   ease-in-out infinite,
-    ag-blob3 5.5s ease-in-out infinite,
-    ag-blob4 6.5s ease-in-out infinite,
-    ag-blob5 4s   ease-in-out infinite,
-    ag-size1 3.5s ease-in-out infinite,
-    ag-size2 4.2s ease-in-out infinite,
-    ag-size3 3.8s ease-in-out infinite,
-    ag-size4 4.6s ease-in-out infinite,
-    ag-size5 3s   ease-in-out infinite;
   color: white;
   font-family: 'Satoshi', sans-serif;
   font-weight: 700;
@@ -102,7 +94,7 @@ p { line-height: 1.65; }
   text-decoration: none;
 }
 .btn-primary:hover  { opacity: 0.88; }
-.btn-primary:active { transform: scale(0.97); }
+.btn-primary:active { transform: none; }
 
 .btn-secondary {
   background: #0F1410;
@@ -413,3 +405,48 @@ p { line-height: 1.65; }
 .afrione-brand__name { font-family:var(--font-display); font-size:23px; font-weight:700; letter-spacing:-.04em; line-height:1; }
 .afrione-brand--inverse { color:#fff; }
 @media(max-width:600px) { .afrione-brand__name { font-size:21px; } .afrione-brand__symbol, .afrione-brand__symbol img { width:48px; height:32px; } }
+
+/* Shared actions: restrained controls; animated gradients remain on large backgrounds. */
+:where(.afrione-action) {
+  align-items:center; justify-content:center; gap:7px;
+  min-height:40px; padding:9px 14px; border:1px solid var(--ui-border);
+  background:var(--ui-surface); color:var(--ui-ink); font-family:var(--font-body);
+  font-size:14px; font-weight:600; line-height:1.35; text-decoration:none; cursor:pointer;
+}
+.afrione-action { border-radius:8px !important; box-shadow:none !important; background-image:none !important; animation:none !important; transition:background-color .15s,border-color .15s,opacity .15s; }
+.afrione-action--icon { min-height:0; padding:7px; flex-shrink:0; }
+.afrione-action:disabled { cursor:not-allowed; opacity:.5; }
+.afrione-action:focus-visible, .input:focus-visible, select:focus-visible, textarea:focus-visible { outline:3px solid rgba(232,93,38,.35); outline-offset:3px; }
+.afrione-action:not(:disabled):hover { filter:brightness(.97); }
+.afrione-action svg { flex-shrink:0; display:inline-block; vertical-align:middle; }
+.afrione-form-stack { display:flex; flex-direction:column; gap:14px; }
+.afrione-form-stack label { font-size:13px; font-weight:500; line-height:1.5; }
+.afrione-form-stack label > :is(input:not([type=radio]):not([type=checkbox]),textarea,select) { display:block; margin-top:6px; font-weight:400; }
+.afrione-form-stack :is(p,small) { font-weight:400; }
+.afrione-form-stack fieldset { border:1px solid var(--ui-border); border-radius:12px; padding:12px; }
+.afrione-form-stack legend { font-size:13px; font-weight:600; padding:0 4px; }
+.afrione-form-stack :is([type=radio],[type=checkbox]) { accent-color:var(--accent); margin-right:6px; }
+.afrione-admin-content { min-width:0; }
+@media(max-width:767px) { .afrione-admin-content { padding:20px 16px !important; } }
+
+:where(.afrione-field) { font-family:var(--font-body); font-size:14px; line-height:1.5; padding:10px 12px; border:1px solid var(--ui-border); color:var(--ui-ink); background:var(--ui-surface); }
+.afrione-field { border-radius:8px !important; transition:border-color .15s,box-shadow .15s; }
+.afrione-field:focus { border-color:var(--accent); outline:2px solid rgba(232,93,38,.14); outline-offset:1px; }
+.afrione-records { max-width:800px; margin:0 auto; padding:100px 20px 48px; }
+.afrione-records h1 { font-size:clamp(24px,4vw,32px); margin-bottom:16px; }
+.afrione-records article { background:var(--ui-surface); border:1px solid var(--ui-border); box-shadow:var(--ui-shadow-soft); }
+.afrione-records article h2 { font-size:20px; margin-bottom:10px; }
+.afrione-records article p { margin:8px 0; color:var(--ui-muted); }
+.afrione-records article a { display:inline-flex; margin-top:8px; color:#B7471B; font-size:14px; font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+.afrione-receipt { border:1px solid var(--ui-border); box-shadow:var(--ui-shadow-card); }
+.afrione-receipt h1 { font-size:28px; margin:12px 0 16px; }
+.afrione-receipt p { margin:10px 0; }
+.afrione-receipt section { border-top:1px solid var(--ui-border); padding-top:12px; margin-top:16px; }
+
+.afrione-action { transform:none !important; font-family:var(--font-body) !important; font-weight:600 !important; }
+.afrione-form-stack br { display:none; }
+.afrione-form-stack label { display:block; }
+.afrione-form-stack fieldset label { margin-top:8px; }
+.afrione-summary h3 { font-size:20px; margin-bottom:14px; }
+.afrione-summary p { margin:8px 0; }
+.afrione-summary > strong { display:block; font-family:var(--font-display); font-size:26px; margin:14px 0; }
