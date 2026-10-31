@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { clientApi } from '@/lib/client-api'
 import toast from 'react-hot-toast'
 
-export function DiscussionAgreement({ missionId, role, initialScope, onDiscussion }: {
-  missionId: string; role: string; initialScope: string; onDiscussion: (enabled: boolean) => void
+export function DiscussionAgreement({ missionId, role, initialScope, onDiscussion, refreshKey=0 }: {
+  missionId: string; role: string; initialScope: string; onDiscussion: (enabled: boolean) => void; refreshKey?:number
 }) {
   const [agreement, setAgreement] = useState<any>(null)
   const [loaded, setLoaded] = useState(false)
@@ -17,6 +17,7 @@ export function DiscussionAgreement({ missionId, role, initialScope, onDiscussio
   const [supplies, setSupplies] = useState('excluded')
   const [discussion, setDiscussion] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [editingAction,setEditingAction]=useState<'propose'|'counter'>('propose')
   const [confirmed, setConfirmed] = useState(false)
   useEffect(() => { setScope(previous => previous || initialScope) }, [initialScope])
   useEffect(() => { setConfirmed(false) }, [agreement?.version])
@@ -33,11 +34,11 @@ export function DiscussionAgreement({ missionId, role, initialScope, onDiscussio
     load()
     const timer = window.setInterval(load,10000)
     return () => { cancelled=true; window.clearInterval(timer) }
-  }, [missionId, onDiscussion])
-  async function act(action: 'confirm'|'propose'|'accept'|'reject') {
+  }, [missionId, onDiscussion,refreshKey])
+  async function act(action: 'confirm'|'propose'|'accept'|'reject'|'counter'|'accept_counter') {
     setBusy(true)
     try {
-      const payload = action==='confirm' ? { scope, discussion } : action==='propose' ? {scope,reason,amount:Number(amount),supplies} : {}
+      const payload = action==='confirm' ? { scope, discussion } : ['propose','counter'].includes(action) ? {scope,reason,amount:Number(amount),supplies} : {}
       const response = await clientApi('/api/warroom/agreement', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:missionId,action,version:agreement?.version||0,payload})})
       const result=await response.json()
       if (!response.ok) throw Error(result.error||'Accord non enregistré')
@@ -65,24 +66,27 @@ export function DiscussionAgreement({ missionId, role, initialScope, onDiscussio
     {agreement && <>
       <p style={{whiteSpace:'pre-wrap'}}>{agreement.scope}</p>
       <small>Version {agreement.version} · {agreement.discussion?'Discussion activée':'Sans discussion libre : devis et rectificatifs uniquement'}</small>
-      {role==='artisan' && !editing && <p><button className="afrione-action" disabled={busy||failed} onClick={()=>{setScope(agreement.scope);setEditing(true)}}>Proposer un rectificatif</button></p>}
-      {editing && role==='artisan' && <div>
+      {role==='artisan' && !editing && <p><button className="afrione-action" disabled={busy||failed} onClick={()=>{setEditingAction('propose');setScope(agreement.scope);setEditing(true)}}>Proposer un rectificatif</button></p>}
+      {editing && (role==='artisan'||editingAction==='counter') && <div>
         <label>Périmètre corrigé<textarea className="afrione-field" style={field} maxLength={4000} value={scope} onChange={e=>setScope(e.target.value)}/></label>
         <label>Constat et justification<textarea className="afrione-field" style={field} maxLength={2000} value={reason} onChange={e=>setReason(e.target.value)}/></label>
         <label>Nouveau montant de la prestation, FCFA<input className="afrione-field" style={field} type="number" min={1} max={100000000} value={amount} onChange={e=>setAmount(e.target.value)}/></label>
         <label>Fournitures du rectificatif<select className="afrione-field" style={field} value={supplies} onChange={e=>setSupplies(e.target.value)}><option value="excluded">Non comprises, à chiffrer séparément</option><option value="included">Comprises dans ce montant</option></select></label>
         <p>Ce montant remplace le prix de la prestation. Les produits sélectionnés comme suppléments restent séparés. Aucun ajustement ne s’applique avant acceptation.</p>
-        <button className="afrione-action" disabled={busy||failed||scope.trim().length<10||reason.trim().length<10||!Number.isInteger(Number(amount))||Number(amount)<=0} onClick={()=>act('propose')}>Envoyer pour accord</button>{' '}
+        <button className="afrione-action" disabled={busy||failed||scope.trim().length<10||reason.trim().length<10||!Number.isInteger(Number(amount))||Number(amount)<=0} onClick={()=>act(editingAction)}>Envoyer pour accord</button>{' '}
         <button className="afrione-action" disabled={busy} onClick={()=>setEditing(false)}>Annuler</button>
       </div>}
       {agreement.pending && <div style={{padding:12,background:'#FFF4DF',marginTop:12}}>
         <strong>Rectificatif en attente</strong><p style={{whiteSpace:'pre-wrap'}}>{agreement.pending.scope}</p><p>Justification : {agreement.pending.reason}</p>
         <p>{Number(agreement.pending.amount).toLocaleString('fr')} FCFA · fournitures {agreement.pending.supplies==='included'?'comprises':'non comprises'}</p>
-        {role==='client' && <><label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> J’accepte le périmètre corrigé et ce nouveau montant.</label><br/>
+        {role==='client' && agreement.pending.proposed_role!=='client' && <><label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> J’accepte le périmètre corrigé et ce nouveau montant.</label><br/>
           <button className="afrione-action btn-primary" disabled={busy||failed||!confirmed} onClick={()=>act('accept')}>Accepter le rectificatif</button>{' '}<button className="afrione-action" disabled={busy||failed} onClick={()=>act('reject')}>Refuser, conserver l’accord précédent</button></>}
+        {role==='client' && agreement.pending.proposed_role!=='client' && <button className="afrione-action" disabled={busy||failed} onClick={()=>{setEditingAction('counter');setScope(agreement.pending.scope);setAmount(String(agreement.pending.amount));setSupplies(agreement.pending.supplies);setEditing(true)}}>Proposer un autre prix</button>}
+        {role==='client' && agreement.pending.proposed_role==='client' && <p>En attente de réponse du prestataire à votre contre-proposition.</p>}
+        {role==='artisan' && agreement.pending.proposed_role==='client' && <><button className="btn-primary afrione-action" disabled={busy||failed} onClick={()=>act('accept_counter')}>Accepter la contre-proposition</button> <button className="afrione-action" disabled={busy||failed} onClick={()=>act('reject')}>Refuser la contre-proposition</button></>}
       </div>}
       {role==='client' && !agreement.pending && <p><Link href={`/mode-select?mission=${missionId}`}>Voir le devis actualisé et la simulation de paiement</Link></p>}
-      <details><summary>Historique des accords ({agreement.history.length})</summary>{agreement.history.map((event:any,i:number)=><p key={i}>{new Date(event.at).toLocaleString('fr')} · {{confirm:'Demande confirmée',propose:'Rectificatif proposé',accept:'Rectificatif accepté',reject:'Rectificatif refusé'}[event.action as string]}<br/>{event.payload?.reason || event.payload?.scope}{event.payload?.amount ? ` · ${event.payload.amount} FCFA` : ''}</p>)}</details>
+      <details><summary>Historique des accords ({agreement.history.length})</summary>{agreement.history.map((event:any,i:number)=><p key={i}>{new Date(event.at).toLocaleString('fr')} · {{confirm:'Demande confirmée',propose:'Rectificatif proposé',accept:'Rectificatif accepté',reject:'Rectificatif refusé',counter:'Contre-proposition du client',accept_counter:'Contre-proposition approuvée par le prestataire'}[event.action as string]}<br/>{event.payload?.reason || event.payload?.scope}{event.payload?.amount ? ` · ${event.payload.amount} FCFA` : ''}</p>)}</details>
     </>}
   </section>
 }

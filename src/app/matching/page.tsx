@@ -1,4 +1,5 @@
 'use client'
+import {clientApi} from '@/lib/client-api'
 import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -93,41 +94,10 @@ function MatchingContent() {
       const artisan = artisans.find(a => a.id === selected)
       let targetMissionId = missionId
 
-      if (missionId) {
-        const { data: saved, error } = await supabase
-          .from('missions')
-          .update({ artisan_id: selected, status: 'negotiation' })
-          .eq('id', missionId).eq('client_id',userId).select('id').maybeSingle()
-        if(error || !saved)throw Error('Sélection non enregistrée')
-      } else {
-        const { data: mission, error } = await supabase
-          .from('missions')
-          .insert({
-            client_id: userId,
-            artisan_id: selected,
-            status: 'negotiation',
-            category,
-            quartier: missionQuartier,
-          })
-          .select()
-          .single()
-        if (error || !mission) throw Error('La mission n’a pas pu être enregistrée')
-        targetMissionId = mission.id
-      }
-
-      // Notifier l'artisan par push
-      if (artisan?.user_id) {
-        fetch('/api/push-send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: artisan.user_id,
-            title: 'AfriOne — Nouvelle mission !',
-            body: `Un client vous a sélectionné pour : ${category}`,
-            url: `https://afrione-sepia.vercel.app/warroom/${targetMissionId}`,
-          }),
-        }).catch(() => {})
-      }
+      const response=await clientApi('/api/mission/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_provider',mission_id:missionId||undefined,artisan_id:selected,quartier:missionQuartier})})
+      const result=await response.json()
+      if(!response.ok)throw Error(result.error||'Sélection refusée')
+      targetMissionId=result.mission.id
 
       if (targetMissionId) router.push(`/warroom/${targetMissionId}`)
     } catch {

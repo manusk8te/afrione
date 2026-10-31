@@ -45,7 +45,10 @@ export async function POST(request: Request) {
   const secret = process.env.WAVE_WEBHOOK_SECRET
 
   // Verify signature in production
-  if (secret && !verifyWaveSignature(rawBody, signature, secret)) {
+  if (!secret) return Response.json({error:'Paiement réel non configuré'},{status:503})
+  let valid=false
+  try {valid=verifyWaveSignature(rawBody,signature,secret)} catch {}
+  if (!valid) {
     console.error('[Wave Webhook] Invalid signature')
     return Response.json({ error: 'Invalid signature' }, { status: 401 })
   }

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { releaseEscrow, refundEscrow } from '@/lib/escrow'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export const dynamic = 'force-dynamic'
 
 
 // GET /api/admin/data?type=kyc|artisans|missions|transactions
 export async function GET(req: NextRequest) {
+  const access=await requireAdmin(req);if(!access.ok)return access.res
   const type = req.nextUrl.searchParams.get('type')
 
   if (type === 'kyc' || type === 'artisans') {
@@ -91,6 +92,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/admin/data  { action, artisanId, kycId?, favor? }
 export async function POST(req: NextRequest) {
+  const access=await requireAdmin(req);if(!access.ok)return access.res
   const body = await req.json()
   const { action, artisanId, kycId, missionId, favor, adminId } = body
 
@@ -149,39 +151,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
-  if (action === 'revert_litige') {
-    await supabaseAdmin.from('missions').update({ status: 'en_cours' }).eq('id', missionId)
-    await supabaseAdmin.from('chat_history').insert({ mission_id: missionId, sender_id: adminId, sender_role: 'admin', text: "⚖️ L'administrateur AfriOne a examiné le litige et décidé de poursuivre la mission. Le litige est clôturé.", type: 'system' })
-    return NextResponse.json({ ok: true })
-  }
-
+  if (action === 'revert_litige') return NextResponse.json({error:'Un litige ne se ferme pas sans décision motivée.'},{status:409})
   if (action === 'close_litige') {
-    const { data: litigeMission } = await supabaseAdmin
-      .from('missions').select('artisan_id').eq('id', missionId).single()
-    const artisanId = litigeMission?.artisan_id || null
-
-    // Résolution de litige : on n'annonce pas la décision dans le chat si
-    // l'argent n'a pas bougé. L'admin doit voir l'échec, pas un faux succès.
-    const mouvement = favor === 'artisan'
-      ? await releaseEscrow(missionId, artisanId)
-      : await refundEscrow(missionId, artisanId)
-
-    if (!mouvement.ok) {
-      return NextResponse.json(
-        { error: "Le mouvement d'escrow a échoué — le litige reste ouvert.", detail: mouvement.motif },
-        { status: 500 },
-      )
-    }
-
-    if (favor !== 'artisan') {
-      await supabaseAdmin.from('missions').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', missionId)
-    }
-
-    const msg = favor === 'client'
-      ? "⚖️ Litige résolu par l'admin — décision en faveur du client. Remboursement effectué."
-      : "⚖️ Litige résolu par l'admin — décision en faveur de l'artisan. Paiement validé et libéré."
-    await supabaseAdmin.from('chat_history').insert({ mission_id: missionId, sender_id: adminId, sender_role: 'admin', text: msg, type: 'system' })
-    return NextResponse.json({ ok: true })
+    const {data,error}=await supabaseAdmin.rpc('mission_workflow_action',{mid:missionId,actor:access.userId,operation:'resolve_dispute',payload:{resolution:favor==='artisan'?'release':'refund',reason:body.reason}})
+    if(error)return NextResponse.json({error:error.message},{status:409})
+    return NextResponse.json({ok:true,mission:data,note:'Décision enregistrée ; tout mouvement financier réel nécessite une confirmation du prestataire de paiement.'})
   }
 
   return NextResponse.json({ error: 'action inconnue' }, { status: 400 })

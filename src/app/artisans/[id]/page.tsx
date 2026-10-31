@@ -1,4 +1,6 @@
 'use client'
+import {useRef} from 'react'
+import {clientApi} from '@/lib/client-api'
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -14,6 +16,7 @@ const NEU_SHADOW = 'var(--ui-shadow-card)'
 const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 export default function ArtisanProfilePage() {
+  const bookingKey=useRef<string|null>(null)
   const params = useParams()
   const isMobile = useIsMobile()
   const id = params.id as string
@@ -109,24 +112,15 @@ export default function ArtisanProfilePage() {
   const handleReserver = async () => {
     if (!currentUserId) { router.push('/auth'); return }
     if (existingMission) { router.push(`/warroom/${existingMission.id}`); return }
+    if(reserving)return
     setReserving(true)
-    const { data: mission, error } = await supabase
-      .from('missions')
-      .insert({
-        client_id: currentUserId,
-        artisan_id: id,
-        status: 'negotiation',
-        category: artisan?.metier || 'Intervention',
-        quartier: 'Abidjan',
-      })
-      .select()
-      .single()
-    if (error) {
-      toast.error('Impossible de créer la mission. Veuillez réessayer.')
-      setReserving(false)
-      return
-    }
-    if (mission) router.push(`/warroom/${mission.id}`)
+    bookingKey.current ||= crypto.randomUUID()
+    try {
+      const response=await clientApi('/api/mission/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_provider',request_id:bookingKey.current,artisan_id:artisan.id,quartier:'Cocody'})})
+      const result=await response.json()
+      if(!response.ok)throw Error(result.error||'Réservation refusée')
+      router.push(`/warroom/${result.mission.id}`)
+    } catch(error) { alert(error instanceof Error?error.message:'Réservation refusée') }
     setReserving(false)
   }
 

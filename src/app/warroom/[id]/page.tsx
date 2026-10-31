@@ -1,4 +1,5 @@
 'use client'
+import MissionWorkflow from '@/components/warroom/MissionWorkflow'
 import { clientApi } from '@/lib/client-api'
 import { DiscussionAgreement } from '@/components/warroom/DiscussionAgreement'
 export const dynamic = 'force-dynamic'
@@ -171,6 +172,8 @@ export default function WarRoomPage() {
   // Modal paiement Wave (avant scheduling)
   const [showPayment, setShowPayment]       = useState(false)
   const [payStep, setPayStep]               = useState<'form'|'processing'|'success'>('form')
+  const [agreementRefresh,setAgreementRefresh]=useState(0)
+  const mergeWorkflowMission=useCallback((patch:any)=>setMission((previous:any)=>({...previous,...patch})),[])
   const [pendingAmount, setPendingAmount]   = useState(0)
   const [wavePhone, setWavePhone]           = useState('')
 
@@ -224,7 +227,7 @@ export default function WarRoomPage() {
    * distinction de rôle) laissait le client écrire `en_route` ou `en_cours`.
    */
   const transition = useCallback(async (
-    action: 'start_now' | 'schedule' | 'start_tracking' | 'arrived' | 'done' | 'dispute',
+    action: 'confirm_arrival' | 'start_now' | 'schedule' | 'start_tracking' | 'arrived' | 'done' | 'dispute',
     extra: Record<string, any> = {},
   ): Promise<boolean> => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -710,6 +713,15 @@ export default function WarRoomPage() {
     await loadPricingSuggestion()
   }
 
+  const publishProposal=async(amount:number,description:string,action='propose')=>{
+    const read=await clientApi(`/api/warroom/agreement?mission_id=${missionId}`,{cache:'no-store'}); const current=await read.json()
+    if(!read.ok||!current.agreement)throw Error('Le client doit confirmer le périmètre dans le bloc Périmètre et accord.')
+    const scope=description.trim().length>=10?description.trim():current.agreement.scope
+    const response=await clientApi('/api/warroom/agreement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:missionId,action,version:current.agreement.version,payload:{scope,reason:description.trim().length>=10?description.trim():'Proposition de tarif après analyse de la demande.',amount,supplies:'excluded'}})})
+    const result=await response.json();if(!response.ok)throw Error(result.error||'Proposition refusée')
+    setAgreementRefresh(v=>v+1);toast.success('Proposition envoyée. Accord explicite requis dans Périmètre et accord.')
+  }
+
   // Envoyer un devis — prix IA + extras matériaux, non modifiable par l'artisan
   const sendDevis = async () => {
     if (!guard('send_quote')) return
@@ -722,26 +734,16 @@ export default function WarRoomPage() {
     if (!pricing) return
     const amount   = pricing.estimate + extraMat
     setActing(true)
-    const payload = JSON.stringify({ amount, description: devisDesc.trim(), calculated_by: 'afrione_agent' })
-    const { error } = await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id,
-      sender_role: role, text: payload, type: 'devis',
-    })
-    if (error) { toast.error('Erreur envoi devis.'); setActing(false); return }
-    const rid = getRecipientId(mission, user.id)
-    if (rid) notifyOther(`Devis AfriOne : ${amount.toLocaleString('fr')} FCFA`, rid)
+    try { await publishProposal(amount,devisDesc) }
+    catch(error){toast.error(error instanceof Error?error.message:'Devis refusé');setActing(false);return}
     setShowDevis(false)
     setDevisDesc('')
     setActing(false)
   }
 
   // Client accepte le devis → paiement Wave d'abord
-  const acceptDevis = (amount: number) => {
-    if (!guard('pay_mission')) return
-    if (!window.confirm(`Confirmer le périmètre décrit dans ce devis et le montant de ${amount.toLocaleString('fr')} FCFA ? Le paiement reste une simulation.`)) return
-    setPendingAmount(amount)
-    setPayStep('form')
-    setShowPayment(true)
+  const acceptDevis = (_amount:number) => {
+    toast('Confirmez la dernière proposition dans le bloc Périmètre et accord, puis ouvrez le devis actualisé.')
   }
 
   // Paiement Wave confirmé → escrow + scheduling
@@ -766,7 +768,7 @@ export default function WarRoomPage() {
     setSchedMode(null)
   }
 
-  // Intervention maintenant → en_route → redirect suivi.
+  // Le client confirme le rendez-vous ; le prestataire déclarera son départ.
   // Le statut, le message système et la notification sont posés par l'API,
   // qui revérifie que c'est bien le client de la mission qui demande.
   const confirmNow = async () => {
@@ -775,7 +777,7 @@ export default function WarRoomPage() {
     const ok = await transition('start_now')
     setActing(false)
     if (!ok) return
-    setMission((prev: any) => ({ ...prev, status: 'en_route' }))
+    setMission((prev: any) => ({ ...prev, status: 'scheduled' }))
     setShowScheduling(false)
     router.push(`/suivi/${missionId}`)
   }
@@ -823,15 +825,10 @@ export default function WarRoomPage() {
   const acceptCounterProposal = async (amount: number) => {
     if (!guard('answer_counter_offer')) return
     setActing(true)
-    const payload = JSON.stringify({ amount, description: `Tarif convenu : ${amount.toLocaleString()} FCFA` })
-    const { error } = await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id,
-      sender_role: role, text: payload, type: 'devis',
-    })
-    if (!error) {
-      const rid = getRecipientId(mission, user.id)
-      if (rid) notifyOther(`Tarif accepté : ${amount.toLocaleString()} FCFA — vous pouvez confirmer le paiement.`, rid)
-    }
+    try {
+      const read=await clientApi(`/api/warroom/agreement?mission_id=${missionId}`,{cache:'no-store'});const current=await read.json()
+      const response=await clientApi('/api/warroom/agreement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:missionId,action:'accept_counter',version:current.agreement?.version,payload:{}})});const result=await response.json();if(!response.ok)throw Error(result.error);setAgreementRefresh(v=>v+1)
+    } catch(error){toast.error(error instanceof Error?error.message:'Contre-proposition refusée')}
     setActing(false)
   }
 
@@ -855,12 +852,8 @@ export default function WarRoomPage() {
     if (withCounter) {
       const amount = parseInt(counterAmount.replace(/\D/g, ''))
       if (amount > 0) {
-        const payload = JSON.stringify({ amount, description: `Contre-proposition client : ${amount.toLocaleString()} FCFA` })
-        await supabase.from('chat_history').insert({
-          mission_id: missionId, sender_id: user.id,
-          sender_role: role, text: payload, type: 'devis',
-        })
-        if (rid) notifyOther(`Contre-proposition : ${amount.toLocaleString()} FCFA`, rid)
+        try {await publishProposal(amount,`Contre-proposition motivée : ${amount.toLocaleString()} FCFA`,role==='client'?'counter':'propose')}
+        catch(error){toast.error(error instanceof Error?error.message:'Contre-proposition refusée');setActing(false);return}
         toast('Contre-proposition envoyée.')
       } else {
         toast.error('Montant invalide')
@@ -1200,26 +1193,9 @@ export default function WarRoomPage() {
     if (!total || total <= 0) { toast.error('Montant invalide'); return }
     const { baseEstimate, matSuggests, timeAdjs, extraMatTotal, extraLaborTotal } = proposalDraft || {}
 
-    const payload = JSON.stringify({
-      base_estimate:     baseEstimate,
-      extra_materials:   matSuggests,
-      time_adjustments:  timeAdjs,
-      extra_mat_total:   extraMatTotal,
-      extra_labor_total: extraLaborTotal,
-      total,
-      decomp: pricingSuggestion?.decomp,
-    })
     setActing(true)
-    setShowProposalConfirm(false)
-    const { error } = await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id,
-      sender_role: role, text: payload, type: 'price_proposal',
-    })
-    if (!error) {
-      const rid = getRecipientId(mission, user.id)
-      if (rid) notifyOther(`Proposition finale : ${total.toLocaleString('fr')} FCFA — validez pour confirmer`, rid)
-      setShowDevis(false)
-    }
+    try {await publishProposal(total,`${diagData?.ai_summary||'Prestation demandée'} — proposition incluant les ajustements discutés.`);setShowProposalConfirm(false);setShowDevis(false)}
+    catch(error){toast.error(error instanceof Error?error.message:'Proposition refusée')}
     setActing(false)
   }
 
@@ -2083,7 +2059,8 @@ export default function WarRoomPage() {
 
       {/* Zone messages */}
       <div style={{flex:1,overflowY:'auto',padding:'16px',width:'100%',maxWidth:704,margin:'0 auto',minHeight:0}}>
-            <DiscussionAgreement missionId={missionId as string} role={role} initialScope={diagData?.ai_summary || ''} onDiscussion={setDiscussionEnabled}/>
+            <MissionWorkflow missionId={missionId as string} role={role} onMission={mergeWorkflowMission}/>
+            <DiscussionAgreement missionId={missionId as string} role={role} initialScope={diagData?.ai_summary || ''} onDiscussion={setDiscussionEnabled} refreshKey={agreementRefresh}/>
         <div style={{maxWidth:'672px',margin:'0 auto',display:'flex',flexDirection:'column',gap:'10px'}}>
           {loading ? (
             <div style={{textAlign:'center',padding:'40px'}}>

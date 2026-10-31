@@ -1,4 +1,5 @@
 'use client'
+import {clientApi} from '@/lib/client-api'
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -72,7 +73,7 @@ export default function AdminDashboard() {
   const triggerScrape = async () => {
     setScraping(true)
     try {
-      const res = await fetch('/api/admin/scrape-prices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const res = await clientApi('/api/admin/scrape-prices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
       const d = await res.json()
       flash(d.summary || `✓ ${d.updated} prix Jumia mis à jour`)
     } catch { flash('Erreur scraping Jumia') }
@@ -90,14 +91,14 @@ export default function AdminDashboard() {
     }
 
     const [statsRes, missionsRes, kycRes, txRes, litigesRes, usersRes, entreprisesRes, questRes, casCRes] = await Promise.all([
-      fetch('/api/admin/data?type=stats').then(r => r.json()),
-      fetch('/api/admin/data?type=missions').then(r => r.json()),
-      fetch('/api/admin/data?type=kyc').then(r => r.json()),
-      fetch('/api/admin/data?type=transactions').then(r => r.json()),
-      fetch('/api/admin/data?type=litiges').then(r => r.json()),
-      fetch('/api/admin/data?type=users').then(r => r.json()),
-      fetch('/api/admin/data?type=entreprises').then(r => r.json()),
-      fetch('/api/admin/questionnaire').then(r => r.json()),
+      clientApi('/api/admin/data?type=stats').then(r => r.json()),
+      clientApi('/api/admin/data?type=missions').then(r => r.json()),
+      clientApi('/api/admin/data?type=kyc').then(r => r.json()),
+      clientApi('/api/admin/data?type=transactions').then(r => r.json()),
+      clientApi('/api/admin/data?type=litiges').then(r => r.json()),
+      clientApi('/api/admin/data?type=users').then(r => r.json()),
+      clientApi('/api/admin/data?type=entreprises').then(r => r.json()),
+      clientApi('/api/admin/questionnaire').then(r => r.json()),
       supabase.from('cas_c_reports').select('id, reviewed_by_admin, refund_decision, refund_amount, missions(mode, category, insurance_taken, total_price)').then(r => r.data || []),
     ])
 
@@ -160,29 +161,25 @@ export default function AdminDashboard() {
 
   const revertLitige = async () => {
     if (!selectedLitige || !adminId) return
-    setActingLitige(true)
-    await adminAction({ action: 'revert_litige', missionId: selectedLitige.id, adminId })
-    flash('Mission rétablie en cours ✓')
-    setActingLitige(false)
-    setSelectedLitige(null)
-    loadAll()
+    flash('Un litige nécessite une décision motivée ; aucune reprise automatique.')
   }
 
   const closeLitige = async (favor: 'client' | 'artisan') => {
     if (!selectedLitige || !adminId) return
+    const reason=window.prompt('Motif détaillé de la décision (au moins 10 caractères)')?.trim()
+    if(!reason||reason.length<10){flash('Une justification détaillée est obligatoire.');return}
     setActingLitige(true)
-    await adminAction({ action: 'close_litige', missionId: selectedLitige.id, adminId, favor })
-    if (favor === 'artisan' && (selectedLitige.total_price || 0) > 0) {
-      supabase.rpc('release_escrow', { p_mission_id: selectedLitige.id })
-    }
-    flash(`Litige résolu — ${favor === 'client' ? 'remboursement' : 'paiement artisan'} ✓`)
+    const response=await adminAction({action:'close_litige',missionId:selectedLitige.id,favor,reason})
+    const result=await response.json()
+    if(!response.ok){flash(result.error||'Décision refusée');setActingLitige(false);return}
+    flash('Décision enregistrée — mouvement financier en attente de confirmation PSP.')
     setActingLitige(false)
     setSelectedLitige(null)
     loadAll()
   }
 
   const adminAction = async (body: object) =>
-    fetch('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    clientApi('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
   const approveKyc = async (artisanId: string, kycId?: string) => {
     await adminAction({ action: 'approve_kyc', artisanId, kycId })
@@ -947,12 +944,12 @@ export default function AdminDashboard() {
                 : entreprises.filter(e => e.kyc_status === entreprisesFilter)
 
               const approveEntreprise = async (id: string) => {
-                await fetch('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_entreprise', entrepriseId: id }) })
+                await clientApi('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_entreprise', entrepriseId: id }) })
                 setEntreprises(es => es.map(e => e.id === id ? { ...e, kyc_status: 'approved', is_active: true } : e))
                 flash('✓ Entreprise approuvée')
               }
               const rejectEntreprise = async (id: string) => {
-                await fetch('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject_entreprise', entrepriseId: id }) })
+                await clientApi('/api/admin/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject_entreprise', entrepriseId: id }) })
                 setEntreprises(es => es.map(e => e.id === id ? { ...e, kyc_status: 'rejected', is_active: false } : e))
                 flash('Entreprise rejetée')
               }
@@ -1242,7 +1239,7 @@ export default function AdminDashboard() {
 
               const handleApprove = async (q: any) => {
                 setQuestActing(q.id)
-                await fetch('/api/admin/questionnaire', {
+                await clientApi('/api/admin/questionnaire', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ action: 'approve', submissionId: q.id, adminEmail: adminName }),
@@ -1255,7 +1252,7 @@ export default function AdminDashboard() {
               const handleReject = async (q: any) => {
                 setQuestActing(q.id)
                 const note = rejectNoteMap[q.id] || ''
-                await fetch('/api/admin/questionnaire', {
+                await clientApi('/api/admin/questionnaire', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ action: 'reject', submissionId: q.id, adminEmail: adminName, adminNotes: note }),

@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/lib/supabase'
 
 /** Vérifie le Bearer token Supabase et exige le rôle admin. */
-export async function requireAdmin(req: NextRequest): Promise<{ ok: true } | { ok: false; res: NextResponse }> {
+export async function requireAdmin(req: NextRequest): Promise<{ ok: true; userId:string } | { ok: false; res: NextResponse }> {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '').trim()
   if (!token) return { ok: false, res: NextResponse.json({ error: 'Non authentifié' }, { status: 401 }) }
 
@@ -19,5 +19,5 @@ export async function requireAdmin(req: NextRequest): Promise<{ ok: true } | { o
   if (caller?.role !== 'admin') {
     return { ok: false, res: NextResponse.json({ error: 'Réservé aux admins' }, { status: 403 }) }
   }
-  return { ok: true }
+  return { ok: true,userId:user.id }
 }

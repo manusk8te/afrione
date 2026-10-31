@@ -1,6 +1,8 @@
 'use client'
+import {clientApi} from '@/lib/client-api'
+import MissionWorkflow from '@/components/warroom/MissionWorkflow'
 export const dynamic = 'force-dynamic'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Navigation, MapPin, CheckCircle, Clock, Camera, Upload, AlertCircle, MessageCircle, X } from 'lucide-react'
@@ -57,6 +59,7 @@ export default function MissionLivePage() {
   const router = useRouter()
 
   const [mission, setMission]         = useState<any>(null)
+  const mergeWorkflowMission = useCallback((patch: any) => setMission((previous: any) => ({ ...previous, ...patch })), [])
   const [user, setUser]               = useState<any>(null)
   // `null` tant que le serveur n'a pas tranché : aucune action de terrain ne
   // doit apparaître pendant l'aller-retour. La valeur initiale 'client' faisait
@@ -309,9 +312,9 @@ export default function MissionLivePage() {
     const ok = await transition('arrived')
     setActing(false)
     if (!ok) return
-    setMission((prev: any) => ({ ...prev, status: 'en_cours' }))
+    setMission((prev:any)=>({...prev,artisan_arrived_at:new Date().toISOString()}))
     setTab('photos')
-    toast.success("Mission démarrée !")
+    toast.success("Arrivée déclarée : attendez la confirmation du client.")
   }
 
   const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -331,16 +334,10 @@ export default function MissionLivePage() {
   }
 
   const saveProof = async () => {
-    if (!proofAfterUrls.length) { toast.error('Ajoutez au moins une photo'); return }
+    if (!proofAfterUrls.length || proofNotes.trim().length<10) { toast.error('Ajoutez une photo et un compte rendu d’au moins 10 caractères'); return }
     if (!guard('upload_proof')) return
-    const { data: existing } = await supabase.from('proof_of_work').select('id').eq('mission_id', missionId).maybeSingle()
-    const payload = { mission_id: missionId, photo_after_urls: proofAfterUrls, artisan_notes: proofNotes.trim() || null }
-    if (existing) await supabase.from('proof_of_work').update(payload).eq('mission_id', missionId)
-    else await supabase.from('proof_of_work').insert(payload)
-    await supabase.from('chat_history').insert({
-      mission_id: missionId, sender_id: user.id, sender_role: role,
-      text: JSON.stringify({ urls: proofAfterUrls, notes: proofNotes.trim() }), type: 'proof',
-    })
+    const response=await clientApi('/api/mission/proof',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:missionId,photos:proofAfterUrls,notes:proofNotes.trim()})})
+    const result=await response.json();if(!response.ok){toast.error(result.error||'Preuves refusées');return}
     setProofSaved(true)
     toast.success('Photos enregistrées !')
   }
@@ -354,7 +351,7 @@ export default function MissionLivePage() {
     setMission((prev: any) => ({
       ...prev,
       status: 'pending_validation',
-      validation_deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      validation_deadline: null,
     }))
     toast.success('Mission marquée terminée — en attente de validation client.')
   }
@@ -369,18 +366,8 @@ export default function MissionLivePage() {
       body: JSON.stringify({ mission_id: missionId }),
     })
     if (res.ok) {
-      const amount = mission?.total_price || 0
-      setMission((prev: any) => ({ ...prev, status: 'completed' }))
-      await supabase.from('chat_history').insert({
-        mission_id: missionId, sender_id: user.id, sender_role: role,
-        text: `Mission validée par le client ✅ — ${amount > 0 ? `${amount.toLocaleString()} FCFA libérés à l'artisan.` : 'Paiement libéré.'}`,
-        type: 'system',
-      })
-      if (mission?.artisan_pros?.user_id) {
-        fetch('/api/push-send', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: mission.artisan_pros.user_id, title: 'AfriOne — Paiement libéré !', body: 'Le client a validé la mission. Le paiement est maintenant disponible sur votre wallet.', url: `https://afrione-sepia.vercel.app/artisan-space/portefeuille` }) }).catch(() => {})
-      }
-      toast.success('Mission validée ! Paiement libéré.')
+      setMission((prev:any)=>({...prev,status:'completed'}))
+      toast.success('Mission validée. Le statut du versement financier est suivi séparément.')
       router.push(`/warroom/${missionId}`)
     } else {
       toast.error('Erreur de validation. Réessayez.')
@@ -449,6 +436,7 @@ export default function MissionLivePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#FFFFFF', color: 'var(--ui-ink)' }}>
 
+      <div style={{maxWidth:704,width:'100%',margin:'0 auto',padding:16}}><MissionWorkflow missionId={missionId as string} role={role} onMission={mergeWorkflowMission}/></div>
       {/* MODAL LITIGE */}
       {showLitige && (
         <div onClick={() => setShowLitige(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -764,7 +752,7 @@ export default function MissionLivePage() {
           confirmDone ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', fontSize: '13px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>
-                ⚠️ Le client recevra une notification pour valider. L'escrow reste bloqué jusqu'à sa validation (max 24h). Confirmer ?
+                ⚠️ Le client recevra une notification pour valider. Aucun versement ne doit être annoncé sans confirmation du prestataire de paiement. Confirmer ?
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button className="afrione-action" onClick={() => setConfirmDone(false)} style={{ flex: 1, padding: '13px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '12px', color: 'var(--ui-muted)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', boxShadow: NEU_SM }}>
@@ -811,7 +799,7 @@ export default function MissionLivePage() {
             <div>
               <div style={{ fontSize: '13px', fontWeight: 700, color: '#E85D26' }}>En attente de validation client</div>
               <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '2px' }}>
-                {countdown ? `Auto-validation dans ${countdown}` : 'Le client a 24h pour valider ou contester'}
+                {countdown ? `Auto-validation dans ${countdown}` : 'En attente de validation ou de contestation du client'}
               </div>
             </div>
           </div>
@@ -824,14 +812,14 @@ export default function MissionLivePage() {
                 {artisanName} a terminé la mission ✅
               </div>
               <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
-                Validez maintenant pour libérer le paiement
-                {countdown ? ` · Auto-validation dans ${countdown}` : ' · Auto-validation dans 24h'}
+                Confirmez les travaux réalisés
+                {countdown ? ` · Auto-validation dans ${countdown}` : ' · Pas de validation automatique'}
               </div>
             </div>
             <button className="afrione-action" onClick={validateMission} disabled={validating} style={{ width: '100%', padding: '15px', background: '#2B6B3E', color: 'white', border: 'none', borderRadius: '14px', fontSize: '15px', fontWeight: 700, cursor: validating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: validating ? 0.6 : 1 }}>
               {validating
                 ? <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Validation…</>
-                : <><CheckCircle size={18} /> Valider et libérer le paiement →</>
+                : <><CheckCircle size={18} /> Valider les travaux →</>
               }
             </button>
             <button className="afrione-action" onClick={() => setShowLitige(true)} style={{ width: '100%', padding: '13px', background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '14px', color: '#ef4444', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -844,7 +832,7 @@ export default function MissionLivePage() {
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
               <CheckCircle size={20} color="#2B6B3E" />
-              <span style={{ fontWeight: 700, fontSize: '15px', color: '#2B6B3E' }}>Mission validée — paiement libéré !</span>
+              <span style={{ fontWeight: 700, fontSize: '15px', color: '#2B6B3E' }}>Mission validée — statut financier à consulter</span>
             </div>
             <Link href={`/warroom/${missionId}`} className="afrione-gradient-text" style={{ fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
               {role === 'client' ? 'Laisser un avis →' : 'Voir le récapitulatif →'}

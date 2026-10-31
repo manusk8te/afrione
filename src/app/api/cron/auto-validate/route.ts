@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   // Vérification du secret Vercel Cron
   const secret = process.env.CRON_SECRET
+  if (!secret) return NextResponse.json({error:'Validation automatique désactivée'},{status:503})
   if (secret) {
     const auth = req.headers.get('authorization') || ''
     if (auth !== `Bearer ${secret}`) {
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
     .from('missions')
     .select('id, artisan_id, client_id, total_price, artisan_pros(user_id)')
     .eq('status', 'pending_validation')
+    .lt('logic_version',2)
     .lt('validation_deadline', now)
 
   if (error) {
