@@ -8,7 +8,7 @@ import {
   ArrowRight, Shield, Zap, Star, CheckCircle, ChevronRight, Building2,
   Droplets, Hammer, Paintbrush, Ruler, Wind, Lock, LayoutGrid,
   Cpu, Users, CreditCard, Camera, Wrench, MapPin, Clock,
-  ChevronDown, ChevronUp, Play,
+  ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -148,13 +148,13 @@ export default function HomePage() {
   const body = { fontFamily: "'Inter', sans-serif" } as const
 
   return (
-    <div style={{ background: W, color: T1, minHeight: '100vh' }}>
+    <div className="afrione-home" style={{ background: W, color: T1, minHeight: '100vh' }}>
       <Navbar />
 
       {/* ━━━━ HERO — fond orange animé ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="afrione-gradient" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      <section className="afrione-gradient home-hero" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         <div className="flex-1 flex flex-col page-container">
-          <div className="flex-1 flex flex-col items-center justify-center text-center pt-32 pb-10 px-4">
+          <div className="home-hero-content flex-1 flex flex-col items-center justify-center text-center pt-32 pb-10 px-4">
             <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col items-center w-full">
 
               {/* Badge */}
@@ -177,19 +177,12 @@ export default function HomePage() {
                 Votre chantier, géré de bout en bout à Abidjan.
               </motion.p>
 
-              {/* CTAs */}
-              <motion.div variants={fadeUp} className="flex flex-wrap gap-3 justify-center" style={{ marginBottom: '56px' }}>
-                <Link className="afrione-action" href="/diagnostic"
-                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 700, color: '#E85D26', textDecoration: 'none', cursor: 'pointer', background: 'white', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', transition: 'transform 0.2s, box-shadow 0.2s' }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)' }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)' }}>
-                  Décrire mon problème <ArrowRight size={16} />
+              <motion.div variants={fadeUp} className="home-hero-actions">
+                <Link className="home-hero-action home-hero-action-primary" href="/diagnostic">
+                  Décrire mon problème <ArrowRight size={16} aria-hidden="true" />
                 </Link>
-                <Link className="afrione-action" href="/artisans"
-                  style={{ ...syne, padding: '13px 28px', fontSize: '15px', fontWeight: 600, color: 'rgba(255,255,255,0.9)', textDecoration: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '999px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', transition: 'background 0.2s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.28)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)'}>
-                  <Play size={13} style={{ fill: 'currentColor' }} /> Voir les artisans
+                <Link className="home-hero-action" href="/artisans">
+                  Voir les artisans <ChevronRight size={16} aria-hidden="true" />
                 </Link>
               </motion.div>
 
@@ -217,14 +210,11 @@ export default function HomePage() {
                 <p style={{ ...mono, fontSize: '10px', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>
                   Accès direct
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="home-trade-links">
                   {SERVICES.map(({ Icon, label, metier }) => (
-                    <Link className="afrione-action" key={metier} href={`/artisans?metier=${encodeURIComponent(metier)}`}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '7px 14px', borderRadius: '999px', fontSize: '13px', color: 'rgba(255,255,255,0.88)', textDecoration: 'none', cursor: 'pointer', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', transition: 'background 0.15s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.28)'}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)'}>
-                      <Icon size={12} />
-                      {label}
+                    <Link className="home-trade-link" key={metier} href={`/artisans?metier=${encodeURIComponent(metier)}`}>
+                      <Icon size={16} aria-hidden="true" />
+                      <span>{label}</span>
                     </Link>
                   ))}
                 </div>
@@ -270,7 +260,7 @@ export default function HomePage() {
                       display: 'block', position: 'relative',
                       textDecoration: 'none', cursor: 'pointer',
                       background: '#101820', borderRadius: '22px',
-                      overflow: 'visible', aspectRatio: '1 / 1',
+                      overflow: 'hidden', aspectRatio: '1 / 1',
                       boxShadow: NEU_SHADOW,
                       transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out',
                     }}
@@ -290,20 +280,20 @@ export default function HomePage() {
                     }}>
 
                     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '22px' }}>
-                      <img src={photo} alt={`Artisan AfriOne — ${label}`} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, filter: tone, transition: 'transform 0.55s ease-out, filter 0.3s ease-out' }} />
+                      <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, filter: tone, transition: 'transform 0.55s ease-out, filter 0.3s ease-out' }} />
                       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(5,9,13,0.58) 0%, rgba(5,9,13,0.46) 52%, rgba(5,9,13,0.82) 100%)', transition: 'background 0.3s ease' }} />
                     </div>
 
-                    <div style={{ position: 'absolute', inset: '18px 14px 64px', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: '14px 6px 48px', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
                       <div>
-                        <div style={{ ...syne, fontWeight: 750, fontSize: 'clamp(18px, 2vw, 28px)', color: 'white', letterSpacing: '-0.035em', textShadow: '0 2px 18px rgba(0,0,0,0.48)' }}>{label}</div>
+                        <div style={{ ...syne, fontWeight: 750, fontSize: 'clamp(16px, 2vw, 28px)', color: 'white', letterSpacing: '-0.035em', textShadow: '0 2px 18px rgba(0,0,0,0.48)' }}>{label}</div>
                         <div style={{ width: '28px', height: '2px', borderRadius: '99px', background: '#F06A2A', margin: '10px auto 0' }} />
                       </div>
                     </div>
 
-                    <div className="afrione-gradient" style={{ position: 'absolute', width: '76px', height: '44px', right: '-7px', bottom: '14px', borderRadius: '14px 0 0 14px', display: 'grid', placeItems: 'center', color: 'white', boxShadow: '0 8px 22px rgba(232,93,38,0.38)' }}>
-                      <ArrowRight size={21} />
-                    </div>
+                    <span className="home-trade-arrow" aria-hidden="true">
+                      <ArrowRight size={18} />
+                    </span>
 
                   </Link>
                 </motion.div>

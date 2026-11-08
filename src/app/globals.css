@@ -519,3 +519,55 @@ p { line-height: 1.65; }
     overscroll-behavior: contain;
   }
 }
+
+.home-hero-actions, .home-trade-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.home-hero-actions {
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+.home-hero-action, .home-trade-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, .44);
+  border-radius: 12px;
+  color: #fff;
+  background: rgba(83, 29, 8, .27);
+  font-weight: 650;
+  text-decoration: none;
+}
+.home-hero-action { justify-content: center; padding: 12px 20px; font-size: 15px; }
+.home-hero-action-primary { background: #fff; color: #a63815; }
+.home-trade-link { padding: 8px 12px; font-size: 13px; }
+.home-hero-action svg, .home-trade-link svg { flex-shrink: 0; }
+.home-hero-action:focus-visible, .home-trade-link:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+.home-trade-arrow {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: #a63815;
+}
+
+@media (max-width: 640px) {
+  .afrione-home { overflow-x: clip; }
+  .home-hero { min-height: auto !important; }
+  .home-hero-content { padding-top: calc(92px + env(safe-area-inset-top)); padding-bottom: 16px; }
+  .home-hero-actions { display: grid; width: min(100%, 320px); margin-bottom: 12px; }
+  .home-trade-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-trade-link { min-width: 0; }
+}
