@@ -38,8 +38,14 @@ export default function ArtisanProfilePage() {
         .from('artisan_pros')
         .select('*, users!artisan_pros_user_id_fkey(id, name, avatar_url, quartier, phone)')
         .eq('id', id)
-        .single()
-      if (!artisanData) { setLoading(false); return }
+        .eq('is_test', false)
+        .maybeSingle()
+      if (!artisanData) {
+        const { data } = await supabase.rpc('list_demo_artisans', { profile_id: id })
+        setArtisan(data?.[0] ?? null)
+        setLoading(false)
+        return
+      }
       setArtisan(artisanData)
       setUser(artisanData.users)
 
@@ -106,6 +112,22 @@ export default function ArtisanProfilePage() {
         <p style={{ fontSize: '48px' }}>404</p>
         <Link href="/artisans" className="afrione-gradient-text">← Retour</Link>
       </div>
+    </div>
+  )
+
+  if (artisan.is_test) return (
+    <div style={{ minHeight: '100dvh', background: 'var(--ui-canvas)', color: 'var(--ui-ink)' }}>
+      <Navbar />
+      <main style={{ maxWidth: 640, margin: '0 auto', padding: '112px 16px 40px' }}>
+        <Link href="/artisans" style={{ color: '#963716' }}>← Retour aux artisans</Link>
+        <article style={{ background: 'white', border: '1px solid var(--ui-border)', borderRadius: 20, padding: 24, marginTop: 20 }}>
+          <span style={{ color: '#963716', fontSize: 13, fontWeight: 700 }}>Profil de test</span>
+          <h1 style={{ margin: '8px 0', fontSize: 28, fontWeight: 800 }}>{artisan.users?.name}</h1>
+          <p style={{ color: 'var(--ui-muted)' }}>{artisan.metier} · {artisan.users?.quartier}</p>
+          <p style={{ margin: '16px 0' }}>{artisan.bio}</p>
+          <p style={{ color: 'var(--ui-muted)' }}>Profil fictif non réservable.</p>
+        </article>
+      </main>
     </div>
   )
 

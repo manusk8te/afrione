@@ -7,7 +7,7 @@ import { Search, Star, MapPin, Clock, Building2, Droplets, Zap, Paintbrush, Hamm
 import { supabase } from '@/lib/supabase'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const METIERS = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Serrurerie', 'Carrelage']
+const METIERS = ['Tous', 'Plomberie', 'Électricité', 'Peinture', 'Maçonnerie', 'Menuiserie', 'Climatisation', 'Serrurerie', 'Carrelage', 'Chauffeur', 'Ménage', 'Cuisine', 'Coiffure']
 const METIER_ICON_MAP: Record<string, React.ElementType> = {
   'Plomberie': Droplets, 'Électricité': Zap, 'Peinture': Paintbrush,
   'Maçonnerie': Hammer, 'Menuiserie': Ruler, 'Climatisation': Wind,
@@ -52,14 +52,18 @@ function ArtisansDirectory() {
 
   useEffect(() => {
     const fetchArtisans = async () => {
-      const { data, error } = await supabase
-        .from('artisan_pros')
-        .select(`*, users!artisan_pros_user_id_fkey(name, quartier, avatar_url), entreprises(id, name)`)
-        .eq('kyc_status', 'approved')
-        .order('rating_avg', { ascending: false })
+      const [directory, demos] = await Promise.all([
+        supabase
+          .from('artisan_pros')
+          .select(`*, users!artisan_pros_user_id_fkey(name, quartier, avatar_url), entreprises(id, name)`)
+          .eq('kyc_status', 'approved')
+          .eq('is_test', false)
+          .order('rating_avg', { ascending: false }),
+        supabase.rpc('list_demo_artisans'),
+      ])
 
-      if (error) setLoadError(true)
-      else setArtisans(data || [])
+      if (directory.error) setLoadError(true)
+      else setArtisans([...(directory.data ?? []), ...(demos.data ?? [])])
       setLoading(false)
     }
     fetchArtisans()
@@ -71,6 +75,8 @@ function ArtisansDirectory() {
     const matchMetier = metier === 'Tous' || normalizeMetier(a.metier) === requestedMetier
     return matchSearch && matchMetier
   })
+
+  const demoCount = filtered.filter(a => a.is_test).length
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)' }}>
@@ -91,7 +97,7 @@ function ArtisansDirectory() {
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Trouvez votre artisan</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>
-            {loading ? 'Chargement...' : loadError ? 'Annuaire indisponible' : `${filtered.length} professionnel${filtered.length > 1 ? 's' : ''} vérifié${filtered.length > 1 ? 's' : ''} à Abidjan`}
+            {loading ? 'Chargement...' : loadError ? 'Annuaire indisponible' : `${filtered.length - demoCount} profils professionnels à Abidjan${demoCount ? ` · ${demoCount} profils de test` : ''}`}
           </p>
         </div>
       </section>
@@ -158,6 +164,16 @@ function ArtisansDirectory() {
                 const coverPhoto = a.portfolio?.[0] || null
                 const avatarUrl = a.users?.avatar_url || null
                 const name = a.users?.name || a.metier || 'Artisan'
+                if (a.is_test) return (
+                  <Link key={a.id} href={`/artisans/${a.id}`} style={{ textDecoration: 'none', color: 'var(--ui-ink)' }}>
+                    <article style={{ background: 'white', borderRadius: 20, border: '1px solid var(--ui-border)', padding: 20, boxShadow: NEU_SHADOW }}>
+                      <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: 20, background: '#FFF3EE', color: '#963716', fontSize: 12, fontWeight: 700 }}>Profil de test</span>
+                      <h3 style={{ margin: '12px 0 4px', fontSize: 18, fontWeight: 800 }}>{name}</h3>
+                      <p style={{ fontSize: 14, color: 'var(--ui-muted)' }}>{a.metier} · {a.users?.quartier}</p>
+                      <p style={{ marginTop: 8, fontSize: 14 }}>{a.bio}</p>
+                    </article>
+                  </Link>
+                )
                 const rating = a.rating_avg || 0
                 const stars = Math.round(rating)
 
