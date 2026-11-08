@@ -571,3 +571,72 @@ p { line-height: 1.65; }
   .home-trade-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-trade-link { min-width: 0; }
 }
+
+.diagnostic-result-content {
+  padding-top: calc(88px + env(safe-area-inset-top)) !important;
+}
+.diagnostic-result {
+  display: grid;
+  gap: 14px;
+  font-family: var(--font-body);
+  color: var(--ui-ink);
+}
+.diagnostic-price {
+  background: linear-gradient(125deg, #963716, #bd421d);
+  color: #fff;
+  border-radius: 20px;
+  padding: clamp(20px, 5vw, 32px);
+}
+.diagnostic-price-brand {
+  font-weight: 650;
+  font-size: 14px;
+}
+.diagnostic-price-amount {
+  margin: 12px 0 6px;
+  font-size: clamp(32px, 9vw, 56px);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+.diagnostic-price-amount span { font-size: .45em; letter-spacing: 0; }
+.diagnostic-price p:not(.diagnostic-price-brand), .diagnostic-price details { font-size: 14px; }
+.diagnostic-price details { margin-top: 10px; }
+.diagnostic-price-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  color: #963716;
+  background: #fff;
+  border: 0;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.diagnostic-price-action:disabled { opacity: .6; }
+.diagnostic-result-panel {
+  background: #fff;
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  padding: 16px;
+  min-width: 0;
+}
+.diagnostic-result-panel h2 { margin: 0 0 8px; font-size: 19px; font-weight: 750; }
+.diagnostic-result-panel p { line-height: 1.55; }
+.diagnostic-result summary { cursor: pointer; font-weight: 700; }
+.diagnostic-edit { margin-top: 12px; }
+.diagnostic-edit summary { color: #963716; padding: 10px 0; }
+.diagnostic-result-panel form { display: grid; gap: 8px; margin-top: 8px; }
+.diagnostic-result-panel .afrione-field { width: 100%; max-width: 100%; }
+.diagnostic-result-facts { display: grid; gap: 6px; margin: 12px 0; }
+.diagnostic-result-facts div { display: flex; gap: 12px; justify-content: space-between; }
+.diagnostic-result-facts dt { color: var(--ui-muted); }
+.diagnostic-result-facts dd { margin: 0; text-align: right; }
+.diagnostic-result-photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.diagnostic-result-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+.diagnostic-result-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
+.diagnostic-result-footer button { display: inline-flex; align-items: center; gap: 6px; color: var(--ui-muted); }
+.diagnostic-result-footer a { color: #963716; }

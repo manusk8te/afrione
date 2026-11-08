@@ -5,7 +5,7 @@ import { parseDuree } from '@/lib/duration'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Camera, Send, RotateCcw, CheckCircle, Zap, AlertCircle, Clock, Wrench, X, ChevronRight } from 'lucide-react'
+import { Camera, Send, RotateCcw, CheckCircle, Zap, X, ChevronRight } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import DiagnosticProducts from '@/components/pricing/DiagnosticProducts'
 import ClientQuote from '@/components/pricing/ClientQuote'
@@ -66,12 +66,7 @@ function pricingBlockReason(diagnostic: DiagResult) {
   return null
 }
 
-const URGENCY = {
-  low:       { label: 'Pas urgent', color: '#2B6B3E', bg: 'rgba(43,107,62,0.08)' },
-  medium:    { label: 'Normal',     color: '#C9A84C', bg: 'rgba(201,168,76,0.08)' },
-  high:      { label: 'Urgent',     color: '#E85D26', bg: 'rgba(232,93,38,0.08)' },
-  emergency: { label: 'Urgence !',  color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
-}
+const URGENCY = { low: 'Pas urgent', medium: 'Normal', high: 'Urgent', emergency: 'Urgence' }
 
 const EXAMPLES = [
   "Ma fuite d'eau sous l'évier de cuisine s'aggrave depuis ce matin",
@@ -339,7 +334,9 @@ export default function DiagnosticPage() {
       // Le prix suit le diagnostic. Sans ce recalcul forcé, une précision qui
       // changeait la durée ou les matériaux laissait le montant inchangé.
       await fetchPricing(affine, true)
-    } catch {}
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Impossible de mettre à jour la demande.')
+    }
     setRefining(false)
   }
 
@@ -358,7 +355,7 @@ export default function DiagnosticPage() {
       <Navbar />
 
       {/* ── VIDEO BANNER ───────────────────────────────────────────── */}
-      <div className="mobile-diagnostic-banner" style={{ position: 'relative', overflow: 'hidden', height: '210px', marginTop: '64px' }}>
+      {step !== 'confirming' && <div className="mobile-diagnostic-banner" style={{ position: 'relative', overflow: 'hidden', height: '210px', marginTop: '64px' }}>
         <video autoPlay muted loop playsInline
           src={DIAG_VIDEO}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
@@ -377,7 +374,7 @@ export default function DiagnosticPage() {
         <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 20px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '12px' }}>
             <Zap size={12} color="white" />
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>DIAGNOSTIC IA</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>DIAGNOSTIC AFRIONE</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, color: 'white', margin: '0 0 8px', textShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
             {step === 'input'       ? 'Décrivez votre problème'  :
@@ -392,24 +389,11 @@ export default function DiagnosticPage() {
                                      "Résumé · Estimation de prix · Fiche technique"}
           </p>
         </div>
-      </div>
+      </div>}
 
-      <div className="mobile-diagnostic-content" style={{ maxWidth: '680px', margin: '0 auto', padding: '32px 16px 64px', position: 'relative' }}>
+      <div className={'mobile-diagnostic-content' + (step === 'confirming' ? ' diagnostic-result-content' : '')} style={{ maxWidth: '680px', margin: '0 auto', padding: '32px 16px 64px', position: 'relative' }}>
 
-        {/* Orange decorative squares in white area */}
-        <div style={{ position: 'absolute', top: '4%',  right: '-24px', width: 58, height: 58, background: 'rgba(232,93,38,0.07)', borderRadius: 14, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '35%', left: '-22px',  width: 42, height: 42, border: '2px solid rgba(232,93,38,0.11)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-10deg)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '68%', right: '-16px', width: 26, height: 26, background: 'rgba(232,93,38,0.09)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
-
-        {/* Back link */}
-        <div style={{ marginBottom: '20px' }}>
-          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#8B95A5', fontSize: '13px', textDecoration: 'none' }}>
-            <ArrowLeft size={14} /> Retour
-          </Link>
-        </div>
-
-        {/* ══ ÉTAPE 1 : Input ══ */}
-        <Link href="/diagnostics" style={{display:'block',marginBottom:16,color:'#B45309'}}>Mes diagnostics enregistrés</Link>
+        {step !== 'confirming' && <Link href="/diagnostics" style={{ display: 'block', marginBottom: 16, color: '#963716' }}>Mes diagnostics</Link>}
         {step === 'input' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
@@ -512,7 +496,7 @@ export default function DiagnosticPage() {
               <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {/* Question */}
                 <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '12px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px', fontFamily: 'var(--font-body)' }}>IA · Question {i + 1}</div>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px', fontFamily: 'var(--font-body)' }}>Question {i + 1}</div>
                   <p style={{ fontSize: '14px', color: 'var(--ui-ink)', margin: 0, lineHeight: '1.4' }}>{item.question}</p>
                 </div>
                 {/* Réponse */}
@@ -528,7 +512,7 @@ export default function DiagnosticPage() {
             {currentQ && !loading && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '14px 14px 14px 4px', padding: '14px 16px', alignSelf: 'flex-start', maxWidth: '85%' }}>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '5px', fontFamily: 'var(--font-body)' }}>IA · Question {qa.length + 1}</div>
+                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, marginBottom: '5px', fontFamily: 'var(--font-body)' }}>Question {qa.length + 1}</div>
                   <p style={{ fontSize: '15px', color: 'var(--ui-ink)', margin: 0, lineHeight: '1.5' }}>{currentQ.question}</p>
                   {currentQ.rationale && <p style={{fontSize:12,color:'#64748B',marginTop:8}}>{currentQ.rationale}</p>}
                 </div>
@@ -643,187 +627,81 @@ export default function DiagnosticPage() {
           </div>
         )}
 
-        {/* ══ ÉTAPE 4 : Résultat + confirmation ══ */}
         {step === 'confirming' && result && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <main className="diagnostic-result">
+            <ClientQuote
+              key={result.mission_id}
+              missionId={result.mission_id}
+              revision={quoteRevision + (pricing?.estimate ?? 0)}
+              estimate={pricing?.estimate}
+              estimating={pricingLoading}
+              reason={pricingUnavailableReason}
+            />
 
-            {/* Résumé IA */}
-            <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid rgba(232,93,38,0.3)', padding: '22px', boxShadow: NEU_SHADOW }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                <div className="afrione-gradient" style={{ width: '34px', height: '34px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Zap size={16} color="white" />
-                </div>
-                <div>
-                  <div className="afrione-gradient-text" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', fontFamily: 'var(--font-body)' }}>ANALYSE IA</div>
-                  <div style={{ fontSize: '11px', color: '#8B95A5' }}>Résumé de votre situation</div>
-                </div>
-              </div>
-              <p style={{ fontSize: '15px', color: 'var(--ui-ink)', lineHeight: '1.7', margin: 0 }}>{result.summary}</p>
-            </div>
+            <section className="diagnostic-result-panel">
+              <h2>Résumé de votre demande</h2>
+              <p>{result.summary}</p>
+              <details className="diagnostic-edit">
+                <summary>Modifier ma demande</summary>
+                <form onSubmit={event => { event.preventDefault(); void refineResult() }}>
+                  <label htmlFor="diagnostic-refinement">Que souhaitez-vous corriger ou ajouter ?</label>
+                  <textarea id="diagnostic-refinement" className="afrione-field" rows={3}
+                    value={refineText} onChange={event => setRefineText(event.target.value)}
+                    placeholder="Exemple : la fuite vient du tuyau sous l’évier." />
+                  <button className="btn-primary afrione-action" disabled={!refineText.trim() || refining}>
+                    {refining ? 'Mise à jour…' : 'Mettre à jour'}
+                  </button>
+                </form>
+              </details>
+            </section>
 
-            {result.product_requirements?.length ? <section style={{background:'#FFF',padding:20,borderRadius:16,border:'1px solid var(--ui-border)'}}>
-              <h3 style={{fontWeight:700}}>Choisir les fournitures adaptées</h3>
-              <p style={{fontSize:12,color:'#64748B'}}>On vérifie d’abord la compatibilité, puis les caractéristiques utiles et votre préférence. Le prix seul ne définit pas la qualité ; garantie et caractéristiques devront être vérifiées sur la fiche produit.</p>
-              {result.product_requirements.map((r,i)=><div key={i} style={{marginTop:12,fontSize:13}}>
-                <strong>{r.item}</strong>
-                {!!r.confirmed_specs.length && <p>Établi : {r.confirmed_specs.join(' · ')}</p>}
-                {!!r.unknown_specs.length && <p>À confirmer : {r.unknown_specs.join(' · ')}</p>}
-                {!!r.selection_criteria.length && <p>Critères de choix : {r.selection_criteria.join(' · ')}</p>}
-              </div>)}
-            </section> : null}
-
-            {/* Infos clés */}
-            <div className="mobile-diagnostic-facts" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-              {[
-                { icon: <Wrench size={18} color="#E85D26" />, label: 'Catégorie',  value: result.category,          color: 'var(--ui-ink)' },
-                { icon: <span aria-hidden="true" style={{ display: 'block', width: 10, height: 10, borderRadius: '50%', background: urgConf.color, margin: '4px auto' }} />, label: 'Urgence', value: urgConf.label, color: urgConf.color },
-                { icon: <Clock size={18} color="#C9A84C" />, label: 'Durée',       value: result.duration_estimate || 'À confirmer', color: 'var(--ui-ink)' },
-              ].map(k => (
-                <div key={k.label} style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
-                  <div style={{ marginBottom: '8px' }}>{k.icon}</div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: k.color, lineHeight: '1.2' }}>{k.value}</div>
-                  <div style={{ fontSize: '10px', color: '#8B95A5', fontFamily: 'var(--font-body)', marginTop: '3px' }}>{k.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {pricing?.price_context && (
-              <details style={{ padding: '12px 16px', background: '#fff', border: '1px solid var(--ui-border)', borderRadius: 12 }}>
-                <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Détail du calcul</summary>
-                <PriceContextCard context={pricing.price_context} applied={pricing.applied_estimator === 'context_v4'} />
+            {(result.items_needed.length > 0 || !!result.product_requirements?.length) && (
+              <details className="diagnostic-result-panel diagnostic-disclosure">
+                <summary>Fournitures</summary>
+                {!!result.product_requirements?.length && (
+                  <ul>{result.product_requirements.map(item => (
+                    <li key={item.item}><strong>{item.item}</strong>{item.unknown_specs.length > 0 && <p>À confirmer · {item.unknown_specs.join(' · ')}</p>}</li>
+                  ))}</ul>
+                )}
+                <DiagnosticProducts key={result.mission_id} missionId={result.mission_id} items={result.items_needed}
+                  onChanged={() => setQuoteRevision(value => value + 1)} />
               </details>
             )}
 
-            {/* Proposition réellement calculée par le moteur sélectionné */}
-            <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid var(--ui-border)', boxShadow: NEU_SHADOW }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'var(--font-body)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>ESTIMATION DES TRAVAUX</span>
-              </div>
-
-              {pricingLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-                  <span style={{ color: '#8B95A5', fontSize: '13px' }}>Calcul de l’estimation…</span>
-                  <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'var(--font-body)' }}>
-                    Prix en cours de calcul
-                  </span>
-                </div>
-              ) : !pricing && pricingUnavailableReason ? (
-                <p role="status" style={{ fontSize: '13px', lineHeight: 1.6 }}>{pricingUnavailableReason}</p>
-              ) : pricingError ? (
-                <div role="status" style={{ color: 'var(--ui-muted)', fontSize: '13px', lineHeight: 1.6 }}>
-                  <p style={{ margin: '0 0 10px' }}>{pricingError}</p>
-                  <label style={{ display: 'block', marginBottom: '10px' }}>
-                    Préciser votre demande
-                    <input className="afrione-field" value={pricingClarification} onChange={e => setPricingClarification(e.target.value)} maxLength={1000} placeholder="Exemple : la surface est de 25 m²"
-                      style={{ display: 'block', width: '100%', padding: '10px', border: '1px solid #CBD5E1', borderRadius: '10px', marginTop: '5px' }} />
-                  </label>
-                  <button className="afrione-action" type="button" onClick={() => fetchPricing(result, true)} style={{ color: '#C95024', fontWeight: 600 }}>Réessayer l’estimation</button>
-                </div>
-              ) : pricing ? (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                    <span className="afrione-gradient-text" style={{ fontFamily: 'var(--font-body)', fontSize: '36px', fontWeight: 700, lineHeight: 1 }}>{pricing.estimate.toLocaleString('fr')}</span>
-                    <span style={{ color: '#8B95A5', fontSize: '13px', fontFamily: 'var(--font-body)' }}>FCFA</span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'var(--font-body)', marginBottom: '16px' }}>
-                    {pricing.applied_estimator === 'context_v4' ? 'Proposition par analogie · à confirmer par devis' : `[${pricing.interval.low.toLocaleString('fr')} – ${pricing.interval.high.toLocaleString('fr')}] ±8%`}
-                  </div>
-                  {!result.duration_estimate && (!result.mission_status || pricing.price_context?.hours === 2) && (
-                    <p style={{ fontSize: '13px', color: 'var(--ui-muted)', margin: '0 0 12px' }}>
-                      Durée de calcul par défaut : 2 h, à confirmer avec le prestataire.
-                    </p>
-                  )}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                    {pricing.applied_estimator !== 'context_v4' && ([
-                      { key: 'labor' as const,     label: "Main-d'œuvre", color: '#E85D26' },
-                      { key: 'materials' as const, label: 'Matériaux',    color: '#C9A84C' },
-                      { key: 'transport' as const, label: 'Transport',    color: '#2B6B3E' },
-                      { key: 'premium' as const,   label: 'Com.+Ass.',    color: '#8B95A5' },
-                    ]).map(({ key, label, color }) => {
-                      const val = pricing.decomp[key] ?? 0
-                      const pct = pricing.estimate > 0 ? Math.round(val / pricing.estimate * 100) : 0
-                      return (
-                        <div key={key}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                            <span style={{ fontSize: '10px', color: 'var(--ui-muted)' }}>{label}</span>
-                            <span style={{ fontSize: '10px', color: 'var(--ui-muted)', fontFamily: 'var(--font-body)' }}>{pct}% · {val.toLocaleString('fr')} FCFA</span>
-                          </div>
-                          <div style={{ height: '3px', background: 'var(--ui-canvas)', borderRadius: '2px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '2px' }} />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </>
-              ) : (
-                <div>
-                  {!result.duration_estimate && <p style={{ fontSize: '13px', margin: '0 0 10px' }}>Durée de calcul par défaut : 2 h, à confirmer avec le prestataire.</p>}
-                  <button className="afrione-action" type="button" onClick={() => fetchPricing(result)} style={{ color: '#C95024', fontWeight: 600 }}>
-                    Calculer l’estimation
-                  </button>
+            <details className="diagnostic-result-panel diagnostic-disclosure">
+              <summary>Détails de l’intervention</summary>
+              <dl className="diagnostic-result-facts">
+                <div><dt>Métier</dt><dd>{result.category}</dd></div>
+                <div><dt>Urgence</dt><dd>{urgConf}</dd></div>
+                <div><dt>Durée</dt><dd>{result.duration_estimate || 'À confirmer'}</dd></div>
+              </dl>
+              {pricing?.price_context && <PriceContextCard context={pricing.price_context} applied={pricing.applied_estimator === 'context_v4'} />}
+              {pricingError && <form onSubmit={event => { event.preventDefault(); void fetchPricing(result, true) }}>
+                <p role="status">{pricingError}</p>
+                <label htmlFor="diagnostic-price-refinement">Informations pour recalculer le prix</label>
+                <input id="diagnostic-price-refinement" className="afrione-field" maxLength={1000}
+                  value={pricingClarification} onChange={event => setPricingClarification(event.target.value)} />
+                <button className="afrione-action" disabled={pricingLoading}>Réessayer le calcul</button>
+              </form>}
+              {!pricing && !pricingLoading && !pricingUnavailableReason && !pricingError &&
+                <button className="afrione-action" type="button" onClick={() => fetchPricing(result)}>Calculer le prix</button>}
+              {photos.length > 0 && (
+                <div className="diagnostic-result-photos">
+                  {photos.map((url, index) => <img key={url + index} src={url} alt={`Photo de la demande ${index + 1}`} />)}
                 </div>
               )}
+            </details>
 
-              <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', margin: '12px 0 0' }}>
-                {pricing
-                  ? (pricing.applied_estimator === 'context_v4' ? 'Fournitures, transport et frais à préciser avec le prestataire ; aucun ajout automatique.' : 'Calcul horaire indicatif · montant à confirmer par devis')
-                  : "Prix à confirmer par un prestataire"}
-              </p>
+            <div className="diagnostic-result-footer">
+              <button className="afrione-action" type="button" onClick={() => {
+                router.replace('/diagnostic', { scroll: false })
+                setStep('input'); setResult(null); setQA([]); setPhotos([]); setText('')
+                setRefineText(''); setPricing(null)
+                window.scrollTo(0, 0)
+              }}><RotateCcw size={15} /> Nouveau diagnostic</button>
+              <Link href="/diagnostics">Mes diagnostics</Link>
             </div>
-
-            <DiagnosticProducts key={`products:${result.mission_id}`} missionId={result.mission_id} items={result.items_needed} onChanged={()=>setQuoteRevision(v=>v+1)} />
-            <ClientQuote key={`quote:${result.mission_id}:${quoteRevision}`} missionId={result.mission_id} revision={quoteRevision+(pricing?.estimate??0)} />
-
-            {/* Photos jointes */}
-            {photos.length > 0 && (
-              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>VOS PHOTOS JOINTES</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                  {photos.map((url, i) => (
-                    <img key={i} src={url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px' }} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Affiner */}
-            <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1.5px dashed var(--ui-border)', boxShadow: NEU_SMALL }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: '#8B95A5', marginBottom: '10px' }}>
-                Ce résumé n'est pas exact ? Précisez :
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input className="afrione-field" type="text" value={refineText} onChange={e => setRefineText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && refineResult()}
-                  placeholder="Ex : c'est en fait le robinet de la salle de bain…"
-                  style={{ flex: 1, padding: '11px 14px', borderRadius: '12px', border: '1.5px solid var(--ui-border)', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: 'var(--ui-ink)', background: '#FFFFFF' }}
-                />
-                <button className="afrione-action" onClick={refineResult} disabled={!refineText.trim() || refining} style={{
-                  padding: '11px 16px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '12px',
-                  cursor: 'pointer', fontWeight: 600, fontSize: '13px', opacity: (!refineText.trim() || refining) ? 0.4 : 1, whiteSpace: 'nowrap',
-                }}>
-                  {refining ? '…' : 'Affiner'}
-                </button>
-              </div>
-            </div>
-
-            <button className="afrione-action" onClick={() => { router.replace('/diagnostic',{scroll:false}); setStep('input'); setResult(null); setQA([]); setPhotos([]); setText(''); setRefineText(''); setPricing(null);  }} style={{
-              padding: '13px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '14px',
-              fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: 'var(--ui-muted)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              boxShadow: NEU_SMALL,
-            }}>
-              <RotateCcw size={14} /> Recommencer
-            </button>
-
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '14px', padding: '14px' }}>
-              <AlertCircle size={14} color="#C9A84C" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <p style={{ fontSize: '12px', color: 'var(--ui-muted)', margin: 0, lineHeight: '1.6' }}>
-                Ce résumé et la fiche technique seront envoyés automatiquement à l'artisan pour qu'il arrive préparé.
-              </p>
-            </div>
-          </div>
+          </main>
         )}
       </div>
     </div>

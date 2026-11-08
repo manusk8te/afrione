@@ -25,8 +25,7 @@ export default function DiagnosticProducts({missionId,items,onChanged}:{missionI
  async function configure(chosen:any){setBusy(chosen.item);try{const d=drafts[chosen.item]??chosen;const r=await clientApi('/api/diagnostic-products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'configure',mission_id:missionId,item:chosen.item,quantity:Number(d.quantity),billing_mode:d.billing_mode??'unresolved',unit_confirmed:!!d.unit_confirmed,exclusion_confirmed:!!d.exclusion_confirmed})});const body=await r.json();if(!r.ok)throw Error(body.error);setSelected(rows=>rows.map(p=>p.item===chosen.item?body.product:p));setMessage('Quantité et périmètre enregistrés.');onChanged?.()}catch(e){setMessage(e instanceof Error?e.message:'Enregistrement impossible')}finally{setBusy(null)}}
  function changeDraft(chosen:any,patch:any){setDrafts(d=>({...d,[chosen.item]:{...(d[chosen.item]??chosen),...patch}}))}
  if(!names.length)return null
- return <section aria-label="Choix des produits" style={{background:'#FFF',border:'1px solid var(--ui-border)',borderRadius:20,padding:20}}>
-  <h3 style={{fontWeight:700}}>Fournitures</h3>
+ return <section aria-label="Choix des produits" style={{marginTop:12}}>
   <p style={{fontSize:14,color:'var(--ui-muted)'}}>Prix relevés chez les fournisseurs. Le choix est facultatif et la compatibilité se confirme avec l’artisan.</p>
   {locked&&<p>Le reçu simulé est figé : les choix sont conservés en lecture seule.</p>}{loading&&<p role="status">Recherche de produits adaptés…</p>}
   {message&&<p role="status" style={{fontSize:13,marginTop:8}}>{message}</p>}
@@ -39,7 +38,7 @@ export default function DiagnosticProducts({missionId,items,onChanged}:{missionI
  <button className="afrione-action" type="button" disabled={locked||busy===row.name} onClick={()=>configure(chosen)}>Enregistrer</button></div></details>
 <button className="afrione-action" type="button" disabled={locked||busy===row.name} onClick={()=>choose(row.name)}>Retirer ce choix</button></div>}
    {!locked&&<details style={{marginTop:10}}><summary>Préciser la recherche</summary><div style={{display:'flex',gap:8,marginTop:8}}><input className="afrione-field" aria-label={`Préciser ${row.name}`} maxLength={120} value={queries[row.name]??row.name} onChange={e=>setQueries(q=>({...q,[row.name]:e.target.value}))} style={{border:'1px solid #CBD5E1',borderRadius:8,padding:8,minWidth:0,flex:1}}/><button className="afrione-action" type="button" disabled={locked||busy===row.name} onClick={()=>search(row.name)}>Rechercher</button></div></details>}
-   {row.note && <p style={{fontSize:13,color:'var(--ui-muted)',marginTop:8}}>{row.note}</p>}
+   {row.note && (loading || row.offers?.length || chosen) && <p style={{fontSize:13,color:'var(--ui-muted)',marginTop:8}}>{row.note}</p>}
    {!!row.offers?.length && (() => {
     const offers = row.offers.slice(0, 6)
     const renderOffer = (offer: any) => <article key={offer.source_url} style={{padding:12,border:'1px solid var(--ui-border)',borderRadius:12,marginTop:8}}>
