@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   // Récupérer la mission
   const { data: mission } = await supabaseAdmin
     .from('missions')
-    .select('status, client_id, category')
+    .select('status, client_id, category, is_test')
     .eq('id', mission_id)
     .single()
 
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
       .select('id')
       .eq('kyc_status', 'approved')
       .eq('is_available', true)
+      .eq('is_test', mission.is_test === true)
       .limit(1)
       .single()
     artisanId = artisan?.id ?? null

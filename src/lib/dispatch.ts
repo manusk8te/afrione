@@ -21,15 +21,6 @@ export const DISPATCH_GRACE_SECONDS = 5
 
 // ── Trouver TOUS les artisans qualifiés pour la mission ───────────────────────
 
-// Le dispatch branchait autrefois sur l'email du client : un compte @afrione.ci
-// ou de rôle admin ne diffusait qu'à trois artisans écrits en dur
-// (test.plombier / test.elec / test.peintre @afrione.ci). Deux conséquences :
-//   1. tester depuis un compte admin n'empruntait PAS le chemin de production,
-//      donc ne testait rien de réel ;
-//   2. ces trois comptes ayant été supprimés, le broadcast retournait zéro
-//      candidat et la mission était annulée sur-le-champ.
-// Le matching se comporte désormais de façon identique pour tous les clients.
-
 const ARTISAN_SELECT = `
   id, user_id, metier,
   rating_avg, rating_count, mission_count, response_time_min,
@@ -40,7 +31,7 @@ const ARTISAN_SELECT = `
 export async function findAllCandidates(missionId: string): Promise<any[]> {
   const { data: mission } = await supabaseAdmin
     .from('missions')
-    .select('category, quartier, client_id')
+    .select('category, quartier, client_id, is_test')
     .eq('id', missionId)
     .single()
 
@@ -78,16 +69,12 @@ export async function findAllCandidates(missionId: string): Promise<any[]> {
       .map((a: any) => ({ ...a, _score: scoreArtisan(a, missionQuartier) }))
       .sort((a: any, b: any) => b._score - a._score)
 
-  // ── Broadcast à TOUS les artisans disponibles du métier demandé ─────────
-  // Filtre par métier de la mission (normalisé), notif simultanée à tous,
-  // premier qui accepte prend la mission. Fallback sans filtre si aucun
-  // spécialiste libre — mieux vaut un artisan du mauvais corps de métier
-  // que zéro artisan.
   const { data: allCandidates } = await supabaseAdmin
     .from('artisan_pros')
     .select(ARTISAN_SELECT)
     .eq('kyc_status', 'approved')
     .eq('is_available', true)
+    .eq('is_test', mission.is_test === true)
     .limit(200)
 
   const matched = (allCandidates ?? []).filter(a => normalizeMetier(a.metier) === missionMetier)

@@ -34,12 +34,14 @@ function MatchingContent() {
 
       // Resolve mission quartier for proximity scoring
       let resolvedQuartier = searchParams.get('quartier') || 'Cocody'
+      let isTestMission = false
       if (missionId) {
         const { data: m } = await supabase
           .from('missions')
-          .select('quartier')
+          .select('quartier, is_test')
           .eq('id', missionId)
           .single()
+        isTestMission = m?.is_test === true && session.user.app_metadata.afrione_test === true
         if (m?.quartier) resolvedQuartier = m.quartier
       }
       setMissionQuartier(resolvedQuartier)
@@ -54,8 +56,9 @@ function MatchingContent() {
           .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
           .eq('kyc_status', 'approved')
           .eq('is_available', true)
+          .eq('is_test', isTestMission)
           .limit(100),
-        supabase
+        isTestMission ? Promise.resolve({ data: [] }) : supabase
           .from('entreprises')
           .select('id, name, description, banner_url, logo_url, secteurs, quartiers, artisan_pros(id)')
           .eq('kyc_status', 'approved')
@@ -84,7 +87,7 @@ function MatchingContent() {
       setLoading(false)
     }
     load()
-  }, [category])
+  }, [category, missionId, router, searchParams])
 
   const confirm = async () => {
     if (!selected) return
