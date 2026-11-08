@@ -26,23 +26,43 @@ export default function DiagnosticProducts({missionId,items,onChanged}:{missionI
  function changeDraft(chosen:any,patch:any){setDrafts(d=>({...d,[chosen.item]:{...(d[chosen.item]??chosen),...patch}}))}
  if(!names.length)return null
  return <section aria-label="Choix des produits" style={{background:'#FFF',border:'1px solid var(--ui-border)',borderRadius:20,padding:20}}>
-  <h3 style={{fontWeight:700}}>Fournitures et prix fournisseurs</h3>
-  <p style={{fontSize:12,color:'#64748B'}}>Ouvrez la fiche pour vérifier le modèle et le conditionnement, puis ajoutez votre choix à la demande. La compatibilité reste à confirmer avec le prestataire. Cette sélection ne déclenche aucun achat. Seuls les suppléments dont le périmètre et la quantité sont confirmés entrent dans le total ; les autres nécessitent un devis.</p>
+  <h3 style={{fontWeight:700}}>Fournitures</h3>
+  <p style={{fontSize:14,color:'var(--ui-muted)'}}>Prix relevés chez les fournisseurs. Le choix est facultatif et la compatibilité se confirme avec l’artisan.</p>
   {locked&&<p>Le reçu simulé est figé : les choix sont conservés en lecture seule.</p>}{loading&&<p role="status">Recherche de produits adaptés…</p>}
   {message&&<p role="status" style={{fontSize:13,marginTop:8}}>{message}</p>}
   {results.map(row=>{const chosen=selected.find(p=>p.item===row.name);return <div key={row.name} style={{borderTop:'1px solid var(--ui-border)',marginTop:16,paddingTop:12}}>
    <strong>{row.name}</strong>
-   {chosen&&<div style={{background:'#F0FDF4',padding:12,borderRadius:10,marginTop:8}}><strong>Ajouté au diagnostic</strong><p><a href={chosen.offer.source_url} target="_blank" rel="noopener noreferrer" style={{textDecoration:'underline'}}>{chosen.offer.name} — {chosen.offer.source}</a></p><p>{chosen.offer.price.toLocaleString('fr-FR')} FCFA / {chosen.offer.unit}</p><small>Prix consulté le {new Date(chosen.offer.observed_at).toLocaleString('fr-FR')}</small><div style={{display:'grid',gap:8,margin:'10px 0'}}>
+   {chosen&&<div style={{background:'#F0FDF4',padding:12,borderRadius:10,marginTop:8}}><strong>Ajouté au diagnostic</strong><p><a href={chosen.offer.source_url} target="_blank" rel="noopener noreferrer" style={{textDecoration:'underline'}}>{chosen.offer.name} — {chosen.offer.source}</a></p><p>{chosen.offer.price.toLocaleString('fr-FR')} FCFA / {chosen.offer.unit}</p><details style={{marginTop:8}}><summary>Quantité et prise en charge</summary><div style={{display:'grid',gap:8,margin:'10px 0'}}>
  <label>Nombre d’articles / conditionnements vendus <input className="afrione-field" aria-label={`Quantité ${row.name}`} type="number" min={1} max={100000} value={drafts[row.name]?.quantity??chosen.quantity} onChange={e=>changeDraft(chosen,{quantity:e.target.value})}/></label>
  <label>Prise en charge <select className="afrione-field" aria-label={`Prise en charge ${row.name}`} value={drafts[row.name]?.billing_mode??chosen.billing_mode??'unresolved'} onChange={e=>changeDraft(chosen,{billing_mode:e.target.value})}><option value="unresolved">À confirmer avec le prestataire</option><option value="included">Déjà compris dans la prestation</option><option value="client_supplied">Acheté / fourni séparément par moi</option><option value="additional">Supplément confirmé avec le prestataire</option></select></label>
  {(drafts[row.name]?.billing_mode??chosen.billing_mode)==='additional'&&<><label><input type="checkbox" checked={!!(drafts[row.name]?.unit_confirmed??chosen.unit_confirmed)} onChange={e=>changeDraft(chosen,{unit_confirmed:e.target.checked})}/> Je confirme la quantité et le conditionnement publié, sans conversion implicite.</label><label><input type="checkbox" checked={!!(drafts[row.name]?.exclusion_confirmed??chosen.exclusion_confirmed)} onChange={e=>changeDraft(chosen,{exclusion_confirmed:e.target.checked})}/> Le prestataire a confirmé que ce produit n’est pas compris dans son prix de prestation.</label></>}
- <button className="afrione-action" type="button" disabled={locked||busy===row.name} onClick={()=>configure(chosen)}>Enregistrer quantité et prise en charge</button></div>
+ <button className="afrione-action" type="button" disabled={locked||busy===row.name} onClick={()=>configure(chosen)}>Enregistrer</button></div></details>
 <button className="afrione-action" type="button" disabled={locked||busy===row.name} onClick={()=>choose(row.name)}>Retirer ce choix</button></div>}
-   <div style={{display:'flex',gap:8,marginTop:10}}><input className="afrione-field" aria-label={`Préciser ${row.name}`} maxLength={120} value={queries[row.name]??row.name} onChange={e=>setQueries(q=>({...q,[row.name]:e.target.value}))} style={{border:'1px solid #CBD5E1',borderRadius:8,padding:8,minWidth:0,flex:1}}/><button className="afrione-action" type="button" disabled={locked||busy===row.name} onClick={()=>search(row.name)}>Rechercher</button></div>
-   {row.comparison_references?.map((ref:any)=><p key={ref.url} style={{fontSize:12}}><a href={ref.url} target="_blank" rel="noopener noreferrer" style={{textDecoration:'underline'}}>{ref.source}</a> — {ref.note}</p>)}
-   <p style={{fontSize:12,color:'#64748B'}}>{row.note}</p>
-   {row.offers?.slice(0,6).map((offer:any)=><article key={offer.source_url} style={{padding:12,border:'1px solid var(--ui-border)',borderRadius:10,marginTop:8}}><a href={offer.source_url} target="_blank" rel="noopener noreferrer" style={{color:'#B45309',textDecoration:'underline'}}>{offer.name} — {offer.source} ↗</a>{offer.reference_only&&<p style={{fontSize:12,fontWeight:600}}>Repère fournisseur · compatibilité à confirmer</p>}<p>{offer.price.toLocaleString('fr-FR')} FCFA / {offer.unit}</p><p style={{fontSize:12}}>Marque annoncée : {offer.brand??'non renseignée'} · Référence : {offer.sku??'non renseignée'} · Garantie : {offer.warranty??'non renseignée'} · Disponibilité annoncée : {offer.stock_status==='available'?'en stock':offer.stock_status==='unavailable'?'indisponible':'à confirmer'}</p><small>Consulté le {new Date(offer.observed_at).toLocaleString('fr-FR')} · livraison à confirmer</small>{!offer.reference_only&&<div><button className="afrione-action" type="button" disabled={locked||busy===row.name||chosen?.offer.source_url===offer.source_url} onClick={()=>choose(row.name,offer)} style={{marginTop:8,padding:'8px 12px',borderRadius:8,background:'#E85D26',color:'white'}}>{chosen?.offer.source_url===offer.source_url?'Déjà ajouté':'Ajouter au diagnostic'}</button></div>}</article>)}
-   {!loading&&!row.offers?.length&&!chosen&&<p style={{fontSize:12}}>Vous pouvez préciser la référence et relancer la recherche, ou demander un devis au prestataire.</p>}
+   {!locked&&<details style={{marginTop:10}}><summary>Préciser la recherche</summary><div style={{display:'flex',gap:8,marginTop:8}}><input className="afrione-field" aria-label={`Préciser ${row.name}`} maxLength={120} value={queries[row.name]??row.name} onChange={e=>setQueries(q=>({...q,[row.name]:e.target.value}))} style={{border:'1px solid #CBD5E1',borderRadius:8,padding:8,minWidth:0,flex:1}}/><button className="afrione-action" type="button" disabled={locked||busy===row.name} onClick={()=>search(row.name)}>Rechercher</button></div></details>}
+   {row.note && <p style={{fontSize:13,color:'var(--ui-muted)',marginTop:8}}>{row.note}</p>}
+   {!!row.offers?.length && (() => {
+    const offers = row.offers.slice(0, 6)
+    const renderOffer = (offer: any) => <article key={offer.source_url} style={{padding:12,border:'1px solid var(--ui-border)',borderRadius:12,marginTop:8}}>
+    <a href={offer.source_url} target="_blank" rel="noopener noreferrer" style={{color:'#963716',textDecoration:'underline'}}>{offer.name}</a>
+    <p style={{margin:'4px 0',fontWeight:700}}>{offer.price.toLocaleString('fr-FR')} FCFA <span style={{fontWeight:400}}>/ {offer.unit}</span></p>
+    <p style={{fontSize:13,color:'var(--ui-muted)'}}>{offer.source}{offer.reference_only ? ' · Prix de référence' : ''}</p>
+    <details style={{fontSize:13,marginTop:6}}>
+     <summary>Détails du produit</summary>
+     <p>{[offer.brand,offer.sku,offer.warranty].filter(Boolean).join(' · ')}</p>
+     <p>Disponibilité {offer.stock_status==='available'?'en stock':offer.stock_status==='unavailable'?'indisponible':'à confirmer'}</p>
+     <p>Prix relevé le {new Date(offer.observed_at).toLocaleDateString('fr-FR')}</p>
+    </details>
+    {!offer.reference_only&&<button className="afrione-action" type="button" disabled={locked||busy===row.name||chosen?.offer.source_url===offer.source_url} onClick={()=>choose(row.name,offer)} style={{marginTop:8,padding:'8px 12px',borderRadius:8,background:'#E85D26',color:'white'}}>{chosen?.offer.source_url===offer.source_url?'Déjà ajouté':'Ajouter au diagnostic'}</button>}
+   </article>
+    return <>
+     {renderOffer(offers[0])}
+     {offers.length > 1 && <details style={{marginTop:8}}><summary>{offers.length - 1} autres offres</summary>{offers.slice(1).map(renderOffer)}</details>}
+    </>
+   })()}
+   {!loading&&!row.offers?.length&&!chosen&&<p style={{fontSize:13}}>Aucun prix fournisseur trouvé. Précisez la référence ou demandez un devis.</p>}
+   {!!row.comparison_references?.length&&<details style={{fontSize:13,marginTop:8}}><summary>Sources consultées</summary>
+    {row.comparison_references.map((ref:any)=><p key={ref.url}><a href={ref.url} target="_blank" rel="noopener noreferrer" style={{textDecoration:'underline'}}>{ref.source}</a> — {ref.note}</p>)}
+   </details>}
   </div>})}
  </section>
 }

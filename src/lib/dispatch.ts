@@ -1,7 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase'
-import { scoreArtisan } from '@/lib/scoring'
+import { listMatchingArtisans } from '@/lib/artisan-matching'
 import { sendPushToUser } from '@/lib/push'
-import { normalizeMetier } from '@/lib/metier'
 
 // Fenêtre de réponse de l'artisan. Configurable pour pouvoir dérouler un test
 // manuel à deux comptes sans courir : 60s suffisent à un artisan déjà sur son
@@ -21,65 +20,22 @@ export const DISPATCH_GRACE_SECONDS = 5
 
 // ── Trouver TOUS les artisans qualifiés pour la mission ───────────────────────
 
-const ARTISAN_SELECT = `
-  id, user_id, metier,
-  rating_avg, rating_count, mission_count, response_time_min,
-  years_experience, certifications, portfolio,
-  users!artisan_pros_user_id_fkey(quartier)
-`
+export async function findAllCandidates(missionId: string) {
+  const { data: mission, error } = await supabaseAdmin.from('missions')
+    .select('category, quartier, client_id, is_test').eq('id', missionId).single()
+  if (error) throw error
+  if (!mission?.category || !mission.client_id) return []
 
-export async function findAllCandidates(missionId: string): Promise<any[]> {
-  const { data: mission } = await supabaseAdmin
-    .from('missions')
-    .select('category, quartier, client_id, is_test')
-    .eq('id', missionId)
-    .single()
-
-  if (!mission) return []
-
-  const missionQuartier: string = mission.quartier || 'Cocody'
-
-  // Artisans déjà tentés (pour éviter les doublons si relance)
-  const { data: attempts } = await supabaseAdmin
-    .from('dispatch_attempts')
-    .select('artisan_id')
-    .eq('mission_id', missionId)
-
-  const triedIds: string[] = attempts?.map((a: any) => a.artisan_id) ?? []
-
-  // Le métier stocké en base a historiquement 2 conventions incompatibles
-  // ("Plomberie" via l'inscription artisan vs "Plombier" via d'anciens scripts
-  // de seed) — normalizeMetier() les ramène toutes à la même catégorie
-  // canonique pour un matching fiable, quelle que soit la valeur brute stockée.
-  const missionMetier = normalizeMetier(mission.category)
-
-  // Classement par score seul. Un email d'artisan était auparavant remonté de
-  // force en tête des missions de plomberie — un biais permanent sur de vraies
-  // missions. Il était de surcroît inopérant : ARTISAN_SELECT ne récupère pas
-  // users.email, donc la comparaison était toujours fausse.
-  // Un artisan ne reçoit jamais l'offre d'une mission qu'il a lui-même
-  // commandée. Rien ne l'excluait : un artisan qui passe commande dans son
-  // propre métier recevait sa propre urgence et pouvait se l'attribuer —
-  // avec, à la clé, une mission dont il est à la fois client et prestataire,
-  // et une commission prélevée sur lui-même.
-  const sortByScore = (list: any[]) =>
-    list
-      .filter((a: any) => a.user_id !== mission.client_id)
-      .filter((a: any) => !triedIds.includes(a.id))
-      .map((a: any) => ({ ...a, _score: scoreArtisan(a, missionQuartier) }))
-      .sort((a: any, b: any) => b._score - a._score)
-
-  const { data: allCandidates } = await supabaseAdmin
-    .from('artisan_pros')
-    .select(ARTISAN_SELECT)
-    .eq('kyc_status', 'approved')
-    .eq('is_available', true)
-    .eq('is_test', mission.is_test === true)
-    .limit(200)
-
-  const matched = (allCandidates ?? []).filter(a => normalizeMetier(a.metier) === missionMetier)
-
-  return sortByScore(matched)
+  const [{ data: attempts, error: attemptsError }, candidates] = await Promise.all([
+    supabaseAdmin.from('dispatch_attempts').select('artisan_id').eq('mission_id', missionId),
+    listMatchingArtisans(supabaseAdmin, {
+      category: mission.category, quartier: mission.quartier || 'Cocody',
+      clientId: mission.client_id, isTest: mission.is_test === true, mode: 'urgent',
+    }),
+  ])
+  if (attemptsError) throw attemptsError
+  const tried = new Set(attempts?.map(attempt => attempt.artisan_id))
+  return candidates.filter(candidate => !tried.has(candidate.id))
 }
 
 // ── Clore les tentatives encore ouvertes d'une mission ───────────────────────
@@ -137,13 +93,13 @@ export async function createDispatchAttempt(
 
 // ── Envoyer la notification urgente à un artisan ──────────────────────────────
 
-export async function sendUrgentNotification(userId: string, category: string) {
+export async function sendUrgentNotification(userId: string, category: string, timeoutSeconds: number) {
   const base  = process.env.VERCEL_ENV === 'production'
     ? 'https://www.afrioneapp.com'
     : process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.afrioneapp.com'
   const url   = `${base}/artisan-space/dashboard`
-  const title = '🚨 Mission Urgente !'
-  const body  = `${category} — Tu as ${DISPATCH_TIMEOUT_SECONDS}s pour accepter !`
+  const title = 'Nouvelle mission urgente'
+  const body  = `${category} — Tu as ${timeoutSeconds} s pour répondre.`
 
   // Web-push direct (même process) — plus de hop HTTP vers /api/push-send qui
   // partait vers la prod quand NEXT_PUBLIC_APP_URL manquait, ni d'appel
@@ -239,15 +195,18 @@ export async function startUrgentDispatch(
     }
   }
 
-  // Créer une tentative pour chaque candidat + notifier en parallèle
-  await Promise.all(
-    candidates.map((c: any, i: number) =>
-      createDispatchAttempt(missionId, c.id, i + 1, expiresAt)
-    )
+  const attempts = await Promise.all(
+    candidates.map((candidate, index) => createDispatchAttempt(missionId, candidate.id, index + 1, expiresAt))
   )
+  const recipients = candidates.filter((_, index) => attempts[index])
+  if (!recipients.length) {
+    await cancelAndRefund(missionId, clientId)
+    return { dispatched: false, reason: 'offers_not_saved' }
+  }
 
-  // Notifier tous les artisans en parallèle (fire-and-forget)
-  Promise.allSettled(candidates.map((c: any) => sendUrgentNotification(c.user_id, category)))
-
-  return { dispatched: true, count: candidates.length, expires_at: expiresAt }
+  const notifications = await Promise.allSettled(recipients.map(candidate =>
+    sendUrgentNotification(candidate.user_id, category, timeoutSeconds)
+  ))
+  const pushSent = notifications.filter(result => result.status === 'fulfilled' && result.value.sent).length
+  return { dispatched: true, count: recipients.length, expires_at: expiresAt, push_sent: pushSent }
 }

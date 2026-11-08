@@ -55,7 +55,7 @@ test(load ? 'Pic urgent AfriOne : 100 clients et 50 artisans' : 'Deux urgences s
   process.env.TS_NODE_COMPILER_OPTIONS = JSON.stringify({ module: 'commonjs', moduleResolution: 'node' })
   require('ts-node/register/transpile-only')
   const originalLoad = Module._load
-  let startUrgentDispatch, respond
+  let startUrgentDispatch, findAllCandidates, respond
   try {
     Module._load = function (name, ...args) {
       if (name === '@/lib/supabase') return { supabaseAdmin: admin }
@@ -68,7 +68,7 @@ test(load ? 'Pic urgent AfriOne : 100 clients et 50 artisans' : 'Deux urgences s
       if (name.startsWith('@/')) name = path.join(__dirname, '../src', name.slice(2))
       return originalLoad.call(this, name, ...args)
     }
-    ;({ startUrgentDispatch } = require('../src/lib/dispatch.ts'))
+    ;({ startUrgentDispatch, findAllCandidates } = require('../src/lib/dispatch.ts'))
     ;({ POST: respond } = require('../src/app/api/dispatch/respond/route.ts'))
   } finally {
     Module._load = originalLoad
@@ -139,6 +139,20 @@ test(load ? 'Pic urgent AfriOne : 100 clients et 50 artisans' : 'Deux urgences s
       missionIds.push(id)
       missions.push({ id, category, client, targets: artisans.filter(actor => actor.available && actor.category === category) })
     })
+
+    if (load) {
+      const mission = missions[0]
+      const newcomer = artisans.find(actor => actor.category === mission.category && !actor.available)
+      const before = await findAllCandidates(mission.id)
+      assert.ok(!before.some(candidate => candidate.id === newcomer.profileId))
+      await db(admin.from('artisan_pros').update({ is_available: true }).eq('id', newcomer.profileId))
+      try {
+        const refreshed = await findAllCandidates(mission.id)
+        assert.ok(refreshed.some(candidate => candidate.id === newcomer.profileId))
+      } finally {
+        await db(admin.from('artisan_pros').update({ is_available: false }).eq('id', newcomer.profileId))
+      }
+    }
 
     // Les autres clients consultent leur espace pendant le pic.
     const initialRequests = [

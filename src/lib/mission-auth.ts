@@ -36,7 +36,7 @@ function bearer(req: NextRequest): string {
 }
 
 /** Identité vérifiée auprès de Supabase, à partir du token de la requête. */
-export async function authenticate(req: NextRequest): Promise<{ userId: string } | null> {
+export async function authenticate(req: NextRequest): Promise<{ userId: string; isTest: boolean } | null> {
   const token = bearer(req)
   if (!token) return null
   const userClient = createClient(
@@ -44,7 +44,7 @@ export async function authenticate(req: NextRequest): Promise<{ userId: string }
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   )
   const { data: { user } } = await userClient.auth.getUser(token)
-  return user ? { userId: user.id } : null
+  return user ? { userId: user.id, isTest: user.app_metadata.afrione_test === true } : null
 }
 
 /**

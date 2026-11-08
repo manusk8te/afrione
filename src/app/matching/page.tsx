@@ -1,13 +1,12 @@
 'use client'
 import {clientApi} from '@/lib/client-api'
-import { Suspense, useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { ArrowLeft, Star, MapPin, Clock, CheckCircle, Zap, Shield, ChevronRight, Building2, Droplets, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Wrench } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { scoreArtisan } from '@/lib/scoring'
-import { normalizeMetier } from '@/lib/metier'
+import { listMatchingArtisans } from '@/lib/artisan-matching'
 import toast from 'react-hot-toast'
 
 function MatchingContent() {
@@ -21,86 +20,75 @@ function MatchingContent() {
   const [selected, setSelected] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState(false)
+  const bookingKey = useRef<string | null>(null)
+  const requestedQuartier = searchParams.get('quartier') || 'Cocody'
   const [missionQuartier, setMissionQuartier] = useState('Cocody')
 
   useEffect(() => {
+    let active = true
+    let refreshing = false
     const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { router.replace('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)); return }
-      setUserId(session.user.id)
-
-      const missionMetier = normalizeMetier(category)
-
-      // Resolve mission quartier for proximity scoring
-      let resolvedQuartier = searchParams.get('quartier') || 'Cocody'
-      let isTestMission = false
-      if (missionId) {
-        const { data: m } = await supabase
-          .from('missions')
-          .select('quartier, is_test')
-          .eq('id', missionId)
-          .single()
-        isTestMission = m?.is_test === true && session.user.app_metadata.afrione_test === true
-        if (m?.quartier) resolvedQuartier = m.quartier
+      if (refreshing || !active) return
+      refreshing = true
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          if (active) router.replace('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search))
+          return
+        }
+        const { data: mission, error } = missionId
+          ? await supabase.from('missions').select('category, quartier, is_test').eq('id', missionId).single()
+          : { data: null, error: null }
+        if (error) throw error
+        const resolvedCategory = mission?.category || category
+        const quartier = mission?.quartier || requestedQuartier
+        const isTest = mission?.is_test === true && session.user.app_metadata.afrione_test === true
+        const [candidates, companies] = await Promise.all([
+          listMatchingArtisans(supabase, { category: resolvedCategory, quartier, clientId: session.user.id, isTest, mode: 'standard' }),
+          isTest ? Promise.resolve({ data: [] }) : supabase.from('entreprises')
+            .select('id, name, description, banner_url, logo_url, secteurs, quartiers, artisan_pros(id)')
+            .eq('kyc_status', 'approved').eq('is_active', true).contains('secteurs', [resolvedCategory]),
+        ])
+        if (!active) return
+        const shortlist = candidates.slice(0, 5)
+        setArtisans(shortlist)
+        setSelected(previous => shortlist.some(candidate => candidate.id === previous) ? previous : null)
+        setEntreprises(companies.data ?? [])
+        setMissionQuartier(quartier)
+        setLoadError(false)
+      } catch {
+        if (active) setLoadError(true)
+      } finally {
+        refreshing = false
+        if (active) setLoading(false)
       }
-      setMissionQuartier(resolvedQuartier)
-
-      // Artisans + entreprises en parallèle — le filtre métier est appliqué
-      // côté client via normalizeMetier() : la colonne metier a historiquement
-      // 2 conventions incompatibles ("Plomberie" vs "Plombier"), un ilike SQL
-      // simple en ratait la moitié.
-      const [artisanRes, entrepriseRes] = await Promise.all([
-        supabase
-          .from('artisan_pros')
-          .select('*, users!artisan_pros_user_id_fkey(name, avatar_url, quartier)')
-          .eq('kyc_status', 'approved')
-          .eq('is_available', true)
-          .eq('is_test', isTestMission)
-          .limit(100),
-        isTestMission ? Promise.resolve({ data: [] }) : supabase
-          .from('entreprises')
-          .select('id, name, description, banner_url, logo_url, secteurs, quartiers, artisan_pros(id)')
-          .eq('kyc_status', 'approved')
-          .eq('is_active', true)
-          .contains('secteurs', [category]),
-      ])
-
-      // Entreprises qui couvrent ce secteur
-      setEntreprises(entrepriseRes.data || [])
-
-      // Score and rank artisans client-side (dédoublonné par id — défensif
-      // contre un éventuel join en éventail futur)
-      const rankAndSet = (raw: any[]) => {
-        const seen = new Set<string>()
-        const unique = raw.filter(a => (seen.has(a.id) ? false : (seen.add(a.id), true)))
-        const scored = unique
-          .map(a => ({ ...a, _score: scoreArtisan(a, resolvedQuartier) }))
-          .sort((a, b) => b._score - a._score)
-          .slice(0, 5)
-        setArtisans(scored)
-      }
-
-      const allArtisans = artisanRes.data || []
-      const matched = allArtisans.filter(a => normalizeMetier(a.metier) === missionMetier)
-      rankAndSet(matched.filter(a => a.user_id !== session?.user.id))
-      setLoading(false)
     }
-    load()
-  }, [category, missionId, router, searchParams])
+    const refreshVisible = () => { if (!document.hidden) void load() }
+    bookingKey.current = null
+    setSelected(null)
+    setLoading(true)
+    void load()
+    const timer = window.setInterval(refreshVisible, 15_000)
+    document.addEventListener('visibilitychange', refreshVisible)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', refreshVisible)
+    }
+  }, [category, missionId, router, requestedQuartier])
 
   const confirm = async () => {
     if (!selected) return
     setConfirming(true)
 
     try {
-      const artisan = artisans.find(a => a.id === selected)
-      let targetMissionId = missionId
+      bookingKey.current ??= crypto.randomUUID()
 
-      const response=await clientApi('/api/mission/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_provider',mission_id:missionId||undefined,artisan_id:selected,quartier:missionQuartier})})
+      const response=await clientApi('/api/mission/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_provider',mission_id:missionId||undefined,request_id:bookingKey.current,artisan_id:selected,quartier:missionQuartier})})
       const result=await response.json()
       if(!response.ok)throw Error(result.error||'Sélection refusée')
-      targetMissionId=result.mission.id
+      const targetMissionId=result.mission.id
 
       if (targetMissionId) router.push(`/warroom/${targetMissionId}`)
     } catch {
@@ -133,7 +121,7 @@ function MatchingContent() {
             <ArrowLeft size={14} /> Retour
           </Link>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px', marginLeft: '12px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>MATCHING IA</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>CHOISIR UN ARTISAN</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Artisans disponibles</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>Sélectionnés selon votre quartier et votre besoin</p>
@@ -147,67 +135,18 @@ function MatchingContent() {
           <div style={{ position: 'absolute', top: '40%', left: '-20px', width: 40, height: 40, border: '2px solid rgba(232,93,38,0.12)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-8deg)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: '15%', right: '2%', width: 24, height: 24, background: 'rgba(232,93,38,0.1)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
 
-          {/* Structures entreprises — si la mission peut nécessiter plusieurs corps */}
-          {!loading && entreprises.length > 0 && (
-            <div style={{marginBottom:'32px'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
-                <Building2 size={16} style={{color:'#60a5fa'}} />
-                <span style={{fontSize:'13px',fontWeight:700,color:'var(--ui-ink)'}}>Structures professionnelles</span>
-                <span style={{fontSize:'11px',color:'#7A7A6E',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'2px 8px',borderRadius:'10px'}}>multi-corps d'état</span>
-              </div>
-              <div className="space-y-3">
-                {entreprises.map(e => (
-                  <Link key={e.id} href={`/entreprise-space/dashboard?id=${e.id}`} style={{textDecoration:'none',display:'block'}}>
-                    <div style={{borderRadius:'16px',padding:'0',border:'2px solid rgba(96,165,250,0.25)',background:'rgba(96,165,250,0.03)',overflow:'hidden',transition:'all 0.2s'}}
-                      onMouseEnter={el => { (el.currentTarget as HTMLElement).style.borderColor='#60a5fa'; (el.currentTarget as HTMLElement).style.background='rgba(96,165,250,0.06)' }}
-                      onMouseLeave={el => { (el.currentTarget as HTMLElement).style.borderColor='rgba(96,165,250,0.25)'; (el.currentTarget as HTMLElement).style.background='rgba(96,165,250,0.03)' }}>
-                      {e.banner_url && (
-                        <div style={{height:'80px',overflow:'hidden',background:'#1A1A1A'}}>
-                          <img src={e.banner_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover',opacity:0.7}} />
-                        </div>
-                      )}
-                      <div style={{padding:'16px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}}>
-                            <Building2 size={14} style={{color:'#60a5fa',flexShrink:0}} />
-                            <span style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}>{e.name}</span>
-                          </div>
-                          {e.description && (
-                            <p style={{fontSize:'12px',color:'#7A7A6E',margin:'0 0 8px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.description}</p>
-                          )}
-                          <div style={{display:'flex',flexWrap:'wrap',gap:'6px'}}>
-                            {(e.secteurs||[]).slice(0,4).map((s: string) => (
-                              <span key={s} style={{fontSize:'11px',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'2px 8px',borderRadius:'10px',color:'#60a5fa',fontWeight:500}}>{s}</span>
-                            ))}
-                          </div>
-                        </div>
-                        <div style={{textAlign:'right',flexShrink:0}}>
-                          <div style={{fontSize:'13px',fontWeight:700,color:'var(--ui-ink)'}}>{(e.artisan_pros||[]).length} artisan{(e.artisan_pros||[]).length !== 1 ? 's' : ''}</div>
-                          <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'2px'}}>dans l'équipe</div>
-                          <div style={{display:'flex',alignItems:'center',gap:'4px',marginTop:'8px',fontSize:'12px',color:'#60a5fa',fontWeight:600}}>
-                            Voir l'espace <ChevronRight size={12} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-              <div style={{height:'1px',background:'#D8D2C4',margin:'24px 0'}} />
-              <p style={{fontSize:'12px',color:'#7A7A6E',marginBottom:'16px'}}>Ou choisissez un artisan indépendant :</p>
-            </div>
-          )}
-
           {loading ? (
             <div style={{textAlign:'center',padding:'64px 0'}}>
               <div style={{width:'40px',height:'40px',border:'4px solid rgba(232,93,38,0.2)',borderTop:'4px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'0 auto 16px'}} />
               <p style={{color:'#7A7A6E',fontSize:'14px'}}>Recherche des meilleurs artisans...</p>
             </div>
+          ) : loadError && !artisans.length ? (
+            <p role="alert">La recherche est momentanément indisponible. Elle reprendra automatiquement.</p>
           ) : artisans.length === 0 ? (
             <div className="card" style={{textAlign:'center',padding:'48px'}}>
-              <p style={{fontSize:'48px',marginBottom:'16px'}}>😔</p>
+
               <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucun artisan disponible</h3>
-              <p style={{color:'#7A7A6E',fontSize:'14px',marginBottom:'24px'}}>Tous nos artisans {category} sont actuellement occupés.</p>
+              <p style={{color:'#7A7A6E',fontSize:'14px',marginBottom:'24px'}}>La liste se met à jour automatiquement quand un artisan du métier devient disponible.</p>
               <Link href="/artisans" className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
                 Voir tous les artisans
               </Link>
@@ -273,7 +212,7 @@ function MatchingContent() {
 
                         {idx === 0 && (
                           <div style={{display:'inline-flex',alignItems:'center',gap:'4px',marginTop:'10px',fontSize:'11px',color:'#C9A84C',background:'rgba(201,168,76,0.1)',padding:'3px 10px',borderRadius:'20px',fontWeight:600}}>
-                            ⭐ Meilleur match
+                            Meilleur match
                           </div>
                         )}
                       </div>
@@ -302,6 +241,56 @@ function MatchingContent() {
               </button>
             </>
           )}
+          {/* Structures entreprises — si la mission peut nécessiter plusieurs corps */}
+          {!loading && entreprises.length > 0 && (
+            <div style={{marginBottom:'32px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
+                <Building2 size={16} style={{color:'#60a5fa'}} />
+                <span style={{fontSize:'13px',fontWeight:700,color:'var(--ui-ink)'}}>Structures professionnelles</span>
+                <span style={{fontSize:'11px',color:'#7A7A6E',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'2px 8px',borderRadius:'10px'}}>multi-corps d'état</span>
+              </div>
+              <div className="space-y-3">
+                {entreprises.map(e => (
+                  <Link key={e.id} href={`/entreprise-space/dashboard?id=${e.id}`} style={{textDecoration:'none',display:'block'}}>
+                    <div style={{borderRadius:'16px',padding:'0',border:'2px solid rgba(96,165,250,0.25)',background:'rgba(96,165,250,0.03)',overflow:'hidden',transition:'all 0.2s'}}
+                      onMouseEnter={el => { (el.currentTarget as HTMLElement).style.borderColor='#60a5fa'; (el.currentTarget as HTMLElement).style.background='rgba(96,165,250,0.06)' }}
+                      onMouseLeave={el => { (el.currentTarget as HTMLElement).style.borderColor='rgba(96,165,250,0.25)'; (el.currentTarget as HTMLElement).style.background='rgba(96,165,250,0.03)' }}>
+                      {e.banner_url && (
+                        <div style={{height:'80px',overflow:'hidden',background:'#1A1A1A'}}>
+                          <img src={e.banner_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover',opacity:0.7}} />
+                        </div>
+                      )}
+                      <div style={{padding:'16px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}}>
+                            <Building2 size={14} style={{color:'#60a5fa',flexShrink:0}} />
+                            <span style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}>{e.name}</span>
+                          </div>
+                          {e.description && (
+                            <p style={{fontSize:'12px',color:'#7A7A6E',margin:'0 0 8px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.description}</p>
+                          )}
+                          <div style={{display:'flex',flexWrap:'wrap',gap:'6px'}}>
+                            {(e.secteurs||[]).slice(0,4).map((s: string) => (
+                              <span key={s} style={{fontSize:'11px',background:'rgba(96,165,250,0.1)',border:'1px solid rgba(96,165,250,0.2)',padding:'2px 8px',borderRadius:'10px',color:'#60a5fa',fontWeight:500}}>{s}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{textAlign:'right',flexShrink:0}}>
+                          <div style={{fontSize:'13px',fontWeight:700,color:'var(--ui-ink)'}}>{(e.artisan_pros||[]).length} artisan{(e.artisan_pros||[]).length !== 1 ? 's' : ''}</div>
+                          <div style={{fontSize:'11px',color:'#7A7A6E',marginTop:'2px'}}>dans l'équipe</div>
+                          <div style={{display:'flex',alignItems:'center',gap:'4px',marginTop:'8px',fontSize:'12px',color:'#60a5fa',fontWeight:600}}>
+                            Voir l'espace <ChevronRight size={12} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div style={{height:'1px',background:'#D8D2C4',margin:'24px 0'}} />
+            </div>
+          )}
+
         </div>
       </div>
     </div>

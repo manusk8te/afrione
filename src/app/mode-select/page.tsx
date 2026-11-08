@@ -122,7 +122,7 @@ function ModeSelectContent() {
                 « Chiffrement TLS 1.3 ») alors qu'aucun paiement n'était
                 effectué. Identité AfriOne neutre + mention explicite. */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'rgba(201,168,76,0.14)', border: '1px solid rgba(201,168,76,0.45)', borderRadius: '12px', marginBottom: '18px' }}>
-              <span style={{ fontSize: '15px', flexShrink: 0 }}>🧪</span>
+              <Shield size={16} aria-hidden="true" />
               <div style={{ flex: 1, fontSize: '11.5px', color: '#E8D9A8', lineHeight: 1.45, fontWeight: 600 }}>
                 MODE DÉMO — aucun paiement réel n'est effectué et aucun montant n'est débité.
               </div>
@@ -157,7 +157,7 @@ function ModeSelectContent() {
 
                 <p style={{color:'#CBD5E1',fontSize:13}}>Ce test ne nécessite aucun numéro mobile money et n’envoie aucun SMS.</p>
                 <div style={{ padding: '12px 14px', background: 'rgba(248,121,0,0.08)', border: '1px solid rgba(248,121,0,0.2)', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '24px' }}>
-                  <span style={{ fontSize: '14px', flexShrink: 0 }}>🔒</span>
+                  <Shield size={14} aria-hidden="true" />
                   <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
                     Démonstration : aucun fonds bloqué, aucun versement à un artisan.
                   </div>
@@ -211,7 +211,7 @@ function ModeSelectContent() {
                   {[
                     { label: 'Montant simulé', value: price ? `${price.toLocaleString()} FCFA` : 'À confirmer', color: 'white' },
                     { label: 'Type', value: 'Simulation AfriOne', color: 'rgba(255,255,255,0.8)' },
-                    { label: 'Statut', value: '🧪 Démo — non encaissé', color: '#C9A84C' },
+                    { label: 'Statut', value: 'Démo — non encaissé', color: '#C9A84C' },
                   ].map((row, i, arr) => (
                     <div key={row.label} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
                       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{row.label}</span>
@@ -308,12 +308,12 @@ function ModeSelectContent() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                   {[
-                    { icon: '⚡', text: 'Aucune intervention réelle déclenchée' },
-                    { icon: '🔒', text: 'Montant indicatif à confirmer avant une intervention réelle' },
-                    { icon: '💳', text: 'Paiement de démonstration — aucun fonds bloqué' },
-                  ].map(({ icon, text }) => (
+                    { text: 'Aucune intervention réelle déclenchée' },
+                    { text: 'Montant indicatif à confirmer avant une intervention réelle' },
+                    { text: 'Paiement de démonstration — aucun fonds bloqué' },
+                  ].map(({ text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '14px' }}>{icon}</span>
+                      <CheckCircle size={14} aria-hidden="true" />
                       <span style={{ ...body, fontSize: '13px', color: 'var(--ui-ink)' }}>{text}</span>
                     </div>
                   ))}
@@ -368,12 +368,12 @@ function ModeSelectContent() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                   {[
-                    { icon: '👥', text: 'Profils du métier, selon les disponibilités' },
-                    { icon: '💬', text: 'Discussion avant confirmation' },
-                    { icon: '🕐', text: 'Intervention planifiée à ta convenance' },
-                  ].map(({ icon, text }) => (
+                    { text: 'Profils du métier, selon les disponibilités' },
+                    { text: 'Discussion avant confirmation' },
+                    { text: 'Intervention planifiée à ta convenance' },
+                  ].map(({ text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '14px' }}>{icon}</span>
+                      <CheckCircle size={14} aria-hidden="true" />
                       <span style={{ ...body, fontSize: '13px', color: 'var(--ui-ink)' }}>{text}</span>
                     </div>
                   ))}

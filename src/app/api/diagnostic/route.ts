@@ -177,6 +177,7 @@ export async function POST(req: NextRequest) {
           .from('missions')
           .insert({
             client_id: user_id,
+            is_test: identity?.isTest === true,
             status:    'diagnostic',
             category:  result.category,
             quartier:  quartier || 'Abidjan',

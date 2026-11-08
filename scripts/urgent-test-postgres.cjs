@@ -40,8 +40,9 @@ class Query {
   gt(key, value) { return this.filter(key, '>', value) }
   in(key, values) { this.filters.push(identifier(key) + ' IN (' + values.map(literal).join(',') + ')'); return this }
   filter(key, op, value) { this.filters.push(identifier(key) + ' ' + op + ' ' + literal(value)); return this }
-  order(key, options) { this.sort = ' ORDER BY ' + identifier(key) + (options.ascending ? ' ASC' : ' DESC'); return this }
+  order(key, options = { ascending: true }) { this.sort = ' ORDER BY ' + identifier(key) + (options.ascending ? ' ASC' : ' DESC'); return this }
   limit(count) { this.max = ' LIMIT ' + Number(count); return this }
+  range(from, to) { this.max = ' LIMIT ' + (to - from + 1) + ' OFFSET ' + from; return this }
   single() { this.one = true; return this }
   maybeSingle() { return this.single() }
 
@@ -51,7 +52,7 @@ class Query {
     const assignments = Object.entries(values).map(([key, value]) => identifier(key) + '=' + literal(value))
     const projection = this.projection === 'id' || this.projection === '*' ? this.projection : '*'
     const joins = {
-      'users!artisan_pros_user_id_fkey(quartier)': ['users', 'user_id'],
+      'users!artisan_pros_user_id_fkey(name, avatar_url, quartier)': ['users', 'user_id'],
       'users!artisan_pros_user_id_fkey(name)': ['users', 'user_id'],
       'missions(category, total_price, quartier, mode)': ['missions', 'mission_id'],
     }

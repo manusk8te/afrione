@@ -66,35 +66,11 @@ function pricingBlockReason(diagnostic: DiagResult) {
   return null
 }
 
-function materialEmoji(name: string): string {
-  const n = name.toLowerCase()
-  if (/robinet|mitigeur|mélangeur/.test(n)) return '🚿'
-  if (/tuyau|tube|pvc|flexible/.test(n)) return '🔧'
-  if (/joint|torique|plomberie/.test(n)) return '🔩'
-  if (/siphon|bonde|collecteur/.test(n)) return '🔧'
-  if (/câble|fil électrique|conducteur/.test(n)) return '⚡'
-  if (/disjoncteur|différentiel|interrupteur/.test(n)) return '🔌'
-  if (/prise|tableau|bornier/.test(n)) return '🔌'
-  if (/ampoule|led|luminaire/.test(n)) return '💡'
-  if (/ciment|béton|mortier|sac/.test(n)) return '🧱'
-  if (/carrelage|dalle|faïence/.test(n)) return '🟦'
-  if (/peinture|laque|enduit|apprêt/.test(n)) return '🎨'
-  if (/rouleau|pinceau|bâche/.test(n)) return '🖌️'
-  if (/porte|fenêtre|volet/.test(n)) return '🚪'
-  if (/serrure|cadenas|verrou|clé/.test(n)) return '🔑'
-  if (/clim|climatiseur|filtre|réfrigérant/.test(n)) return '❄️'
-  if (/sable|gravier|parpaing/.test(n)) return '🧱'
-  if (/vis|boulon|cheville|écrou/.test(n)) return '🔩'
-  if (/taloche|truelle|spatule/.test(n)) return '🧱'
-  if (/bois|planche|contreplaqué/.test(n)) return '🪵'
-  return '🔧'
-}
-
 const URGENCY = {
-  low:       { label: 'Pas urgent', color: '#2B6B3E', bg: 'rgba(43,107,62,0.08)',  icon: '🟢' },
-  medium:    { label: 'Normal',     color: '#C9A84C', bg: 'rgba(201,168,76,0.08)', icon: '🟡' },
-  high:      { label: 'Urgent',     color: '#E85D26', bg: 'rgba(232,93,38,0.08)',  icon: '🟠' },
-  emergency: { label: 'Urgence !',  color: '#ef4444', bg: 'rgba(239,68,68,0.08)',  icon: '🔴' },
+  low:       { label: 'Pas urgent', color: '#2B6B3E', bg: 'rgba(43,107,62,0.08)' },
+  medium:    { label: 'Normal',     color: '#C9A84C', bg: 'rgba(201,168,76,0.08)' },
+  high:      { label: 'Urgent',     color: '#E85D26', bg: 'rgba(232,93,38,0.08)' },
+  emergency: { label: 'Urgence !',  color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
 }
 
 const EXAMPLES = [
@@ -471,7 +447,7 @@ export default function DiagnosticPage() {
             ) : (
               <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '14px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>
-                  📸 {photos.length} PHOTO{photos.length > 1 ? 'S' : ''} AJOUTÉE{photos.length > 1 ? 'S' : ''}
+                  {photos.length} PHOTO{photos.length > 1 ? 'S' : ''} AJOUTÉE{photos.length > 1 ? 'S' : ''}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                   {photos.map((url, i) => (
@@ -576,7 +552,7 @@ export default function DiagnosticPage() {
                       padding: '10px', background: '#FFFFFF', border: '1.5px dashed var(--ui-border)', borderRadius: '12px',
                       cursor: 'pointer', fontSize: '13px', color: '#8B95A5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     }}>
-                      ✏️ {showPrecise ? 'Masquer' : 'Autre réponse…'}
+                      {showPrecise ? 'Masquer' : 'Autre réponse…'}
                     </button>
                     {showPrecise && (
                       <input className="afrione-field" type="text" value={preciseText} onChange={e => { setPreciseText(e.target.value); setCurrentAnswer(e.target.value) }} placeholder="Décrivez en quelques mots…"
@@ -606,7 +582,7 @@ export default function DiagnosticPage() {
                       padding: '10px', background: '#FFFFFF', border: '1.5px dashed var(--ui-border)', borderRadius: '12px',
                       cursor: 'pointer', fontSize: '13px', color: '#8B95A5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     }}>
-                      ✏️ {showPrecise ? 'Masquer' : 'Préciser ma réponse'}
+                      {showPrecise ? 'Masquer' : 'Préciser ma réponse'}
                     </button>
                     {showPrecise && (
                       <input className="afrione-field" type="text" value={preciseText} onChange={e => setPreciseText(e.target.value)} placeholder="Précisez en quelques mots…"
@@ -700,7 +676,7 @@ export default function DiagnosticPage() {
             <div className="mobile-diagnostic-facts" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {[
                 { icon: <Wrench size={18} color="#E85D26" />, label: 'Catégorie',  value: result.category,          color: 'var(--ui-ink)' },
-                { icon: <span style={{ fontSize: '18px', lineHeight: 1 }}>{urgConf.icon}</span>, label: 'Urgence', value: urgConf.label, color: urgConf.color },
+                { icon: <span aria-hidden="true" style={{ display: 'block', width: 10, height: 10, borderRadius: '50%', background: urgConf.color, margin: '4px auto' }} />, label: 'Urgence', value: urgConf.label, color: urgConf.color },
                 { icon: <Clock size={18} color="#C9A84C" />, label: 'Durée',       value: result.duration_estimate || 'À confirmer', color: 'var(--ui-ink)' },
               ].map(k => (
                 <div key={k.label} style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', textAlign: 'center', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
@@ -711,21 +687,23 @@ export default function DiagnosticPage() {
               ))}
             </div>
 
-            {pricing?.price_context && <PriceContextCard context={pricing.price_context} applied={pricing.applied_estimator === 'context_v4'} />}
+            {pricing?.price_context && (
+              <details style={{ padding: '12px 16px', background: '#fff', border: '1px solid var(--ui-border)', borderRadius: 12 }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Détail du calcul</summary>
+                <PriceContextCard context={pricing.price_context} applied={pricing.applied_estimator === 'context_v4'} />
+              </details>
+            )}
 
             {/* Proposition réellement calculée par le moteur sélectionné */}
             <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '22px', border: '1px solid var(--ui-border)', boxShadow: NEU_SHADOW }}>
               <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '14px', fontFamily: 'var(--font-body)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>CALCUL INDICATIF AFRIONE</span>
-                {!pricingLoading && pricing && (
-                  <span style={{ fontSize: '9px', color: '#E85D26', fontFamily: 'var(--font-body)' }}>AGENT IA</span>
-                )}
+                <span>ESTIMATION DES TRAVAUX</span>
               </div>
 
               {pricingLoading ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '14px', height: '14px', border: '2px solid rgba(232,93,38,0.3)', borderTop: '2px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-                  <span style={{ color: '#8B95A5', fontSize: '13px' }}>Agent IA en cours…</span>
+                  <span style={{ color: '#8B95A5', fontSize: '13px' }}>Calcul de l’estimation…</span>
                   <span style={{ marginLeft: 'auto', color: '#8B95A5', fontSize: '11px', fontFamily: 'var(--font-body)' }}>
                     Prix en cours de calcul
                   </span>
@@ -798,24 +776,10 @@ export default function DiagnosticPage() {
             <DiagnosticProducts key={`products:${result.mission_id}`} missionId={result.mission_id} items={result.items_needed} onChanged={()=>setQuoteRevision(v=>v+1)} />
             <ClientQuote key={`quote:${result.mission_id}:${quoteRevision}`} missionId={result.mission_id} revision={quoteRevision+(pricing?.estimate??0)} />
 
-            {/* Matériel probable */}
-            {result.items_needed.length > 0 && (
-              <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>MATÉRIEL PROBABLE</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {result.items_needed.map(item => (
-                    <span key={item.name} className="afrione-gradient-text" style={{ fontSize: '12px', background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.15)', padding: '4px 12px', borderRadius: '20px', fontWeight: 500 }}>
-                      {item.qty > 1 ? `${item.qty}× ` : ''}{item.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Photos jointes */}
             {photos.length > 0 && (
               <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1px solid var(--ui-border)', boxShadow: NEU_SMALL }}>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>📸 VOS PHOTOS JOINTES</div>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.1em', marginBottom: '10px', fontFamily: 'var(--font-body)' }}>VOS PHOTOS JOINTES</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                   {photos.map((url, i) => (
                     <img key={i} src={url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '10px' }} />
@@ -827,7 +791,7 @@ export default function DiagnosticPage() {
             {/* Affiner */}
             <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '16px', border: '1.5px dashed var(--ui-border)', boxShadow: NEU_SMALL }}>
               <div style={{ fontSize: '12px', fontWeight: 600, color: '#8B95A5', marginBottom: '10px' }}>
-                ✏️ Ce résumé n'est pas exact ? Précisez :
+                Ce résumé n'est pas exact ? Précisez :
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input className="afrione-field" type="text" value={refineText} onChange={e => setRefineText(e.target.value)}

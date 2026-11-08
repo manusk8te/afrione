@@ -23,7 +23,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 /**
- * Composite Uber-style artisan score — 0 to 100.
+ * Base artisan score — 0 to 100. The matching mode adjusts the distance weight.
  *
  * Weights:
  *   40 pts — rating_avg       (0–5 → 0–40)
@@ -50,6 +50,7 @@ export function scoreArtisan(
     users?: { quartier?: string | null } | null
   },
   missionQuartier: string,
+  mode?: 'urgent' | 'standard',
 ): number {
   // ── Rating — 40 pts ──────────────────────────────────────────────────────
   const rating = Math.min(5, Math.max(0, artisan.rating_avg ?? 0))
@@ -89,5 +90,6 @@ export function scoreArtisan(
       ? 0
       : ((60 - responseMin) / 45) * 5
 
-  return ratingPts + proximityPts + profilePts + missionPts + speedPts
+  const proximityWeight = mode === 'urgent' ? 2 : mode === 'standard' ? 0.5 : 1
+  return ratingPts + proximityPts * proximityWeight + profilePts + missionPts + speedPts
 }
