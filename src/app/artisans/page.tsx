@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import { Search, Star, MapPin, Clock, Building2, Droplets, Zap, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Wrench } from 'lucide-react'
@@ -17,12 +18,37 @@ const NEU_SHADOW = 'var(--ui-shadow-card)'
 const NEU_HOVER  = 'var(--ui-shadow-card)'
 const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
+function normalizeMetier(value: string | null | undefined) {
+  return (value ?? '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 export default function ArtisansPage() {
+  return (
+    <Suspense fallback={<p role="status">Chargement de l’annuaire…</p>}>
+      <ArtisansDirectory />
+    </Suspense>
+  )
+}
+
+function ArtisansDirectory() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const isMobile = useIsMobile()
   const [artisans, setArtisans] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [metier, setMetier] = useState('Tous')
+  const [loadError, setLoadError] = useState(false)
+  const requestedMetier = normalizeMetier(searchParams.get('metier'))
+  const metier = METIERS.find(option => normalizeMetier(option) === requestedMetier) ?? 'Tous'
+
+  function selectMetier(value: string) {
+    if (value === metier) return
+    const params = new URLSearchParams(searchParams.toString())
+    if (value === 'Tous') params.delete('metier')
+    else params.set('metier', value)
+    const query = params.toString()
+    router.push(query ? `/artisans?${query}` : '/artisans', { scroll: false })
+  }
 
   useEffect(() => {
     const fetchArtisans = async () => {
@@ -32,7 +58,8 @@ export default function ArtisansPage() {
         .eq('kyc_status', 'approved')
         .order('rating_avg', { ascending: false })
 
-      if (!error) setArtisans(data || [])
+      if (error) setLoadError(true)
+      else setArtisans(data || [])
       setLoading(false)
     }
     fetchArtisans()
@@ -41,7 +68,7 @@ export default function ArtisansPage() {
   const filtered = artisans.filter(a => {
     const name = a.users?.name?.toLowerCase() || ''
     const matchSearch = !search || name.includes(search.toLowerCase())
-    const matchMetier = metier === 'Tous' || a.metier === metier
+    const matchMetier = metier === 'Tous' || normalizeMetier(a.metier) === requestedMetier
     return matchSearch && matchMetier
   })
 
@@ -64,7 +91,7 @@ export default function ArtisansPage() {
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Trouvez votre artisan</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>
-            {loading ? 'Chargement...' : `${filtered.length} professionnel${filtered.length > 1 ? 's' : ''} vérifié${filtered.length > 1 ? 's' : ''} à Abidjan`}
+            {loading ? 'Chargement...' : loadError ? 'Annuaire indisponible' : `${filtered.length} professionnel${filtered.length > 1 ? 's' : ''} vérifié${filtered.length > 1 ? 's' : ''} à Abidjan`}
           </p>
         </div>
       </section>
@@ -94,7 +121,7 @@ export default function ArtisansPage() {
           {/* Filtres métier */}
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '32px' }}>
             {METIERS.map(m => (
-              <button className="afrione-action" key={m} onClick={() => setMetier(m)} style={{
+              <button type="button" className="afrione-action" key={m} aria-pressed={metier === m} onClick={() => selectMetier(m)} style={{
                 flexShrink: 0, padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: 500,
                 cursor: 'pointer', transition: 'all 0.2s', border: 'none',
                 background: metier === m ? '#E85D26' : '#FFFFFF',
@@ -110,11 +137,15 @@ export default function ArtisansPage() {
             <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
               <div style={{ width: '40px', height: '40px', border: '4px solid rgba(232,93,38,0.2)', borderTop: '4px solid #E85D26', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
             </div>
+          ) : loadError ? (
+            <p role="alert" style={{ textAlign: 'center', padding: '80px 0' }}>
+              Impossible de charger l’annuaire. Réessayez dans quelques instants.
+            </p>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
               <p style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</p>
               <h3 className="font-display" style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)' }}>Aucun artisan trouvé</h3>
-              <p style={{ color: 'var(--ui-muted)', marginTop: '8px' }}>Essayez avec d'autres critères</p>
+              <p style={{ color: 'var(--ui-muted)', marginTop: '8px' }}>{!search && metier !== 'Tous' ? 'Aucun profil vérifié dans cette catégorie pour le moment.' : 'Essayez avec d’autres critères.'}</p>
             </div>
           ) : (
             <div style={{ position: 'relative' }}>

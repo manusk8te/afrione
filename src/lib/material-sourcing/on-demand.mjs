@@ -1,4 +1,4 @@
-import {parseProduct} from './public-catalogues.mjs'
+import {CATALOGUES,parseProduct} from './public-catalogues.mjs'
 // Only public search endpoints verified for these suppliers. URLs from callers are never fetched.
 export const LIVE_SOURCES = [
  {name:'ProduitBat',host:'produitbat.ci',path:'/detail/produit/',search:q=>`https://produitbat.ci/recherche?q=${encodeURIComponent(q)}`},
@@ -6,9 +6,24 @@ export const LIVE_SOURCES = [
  {name:'Quincaillerie Konaté & Frères',host:'quincaillerie-kf.com',path:'/produit/',search:q=>`https://quincaillerie-kf.com/?s=${encodeURIComponent(q)}&post_type=product`},
  {name:'IvoirElite',host:'ivoirelite.net',path:'.html',search:q=>`https://ivoirelite.net/recherche?controller=search&s=${encodeURIComponent(q)}`},
 ]
+// Public product examples for imprecise needs. Compatibility must be confirmed
+// before they can be treated as products for the mission.
+const WOOD_REFERENCES = [
+ {query:/^vis (?:a )?bois(?: adaptees)?$/, name:'Donya', productUrls:['https://www.dunya.ci/produits/produit/786/']},
+ {query:/^(?:produit de protection (?:pour |du )?bois|vernis bois|vernis interieur)$/, name:'ProduitBat', productUrls:['https://produitbat.ci/detail/produit/1734362130-Vernis-int-rieur-1l']},
+ {query:/^(?:bois (?:blanc )?fromager|fromager)$/, name:'Quincaillerie.ci', productUrls:[CATALOGUES['quincaillerie.ci'].products.find(([url])=>url.includes('/bois-blanc-fromager-'))[0]]},
+]
 const clean=s=>String(s).replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim()
-export const normalizeQuery=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9., -]/g,' ').replace(/\s+/g,' ').trim().slice(0,120)
-const tokens=s=>normalizeQuery(s).replace(/,/g,'.').match(/[a-z]+|\d+(?:\.\d+)?/g)?.filter(t=>!['de','du','des','la','le','les','un','une','pour','avec','en','a','et'].includes(t))??[]
+export function normalizeQuery(value) {
+ const query=String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+ const dimensions=/\b(?:carrelage|carreaux?)\b/.test(query)
+  ? query.replace(/\b(\d+)\s*(?:x|×|\/|sur)\s*(\d+)\b/g,'$1x$2')
+  : query
+ return dimensions.replace(/[^a-z0-9., -]/g,' ').replace(/\s+/g,' ').trim().slice(0,120)
+}
+const tokens=s=>normalizeQuery(s).replace(/,/g,'.').match(/\d+x\d+|[a-z]+|\d+(?:\.\d+)?/g)
+ ?.filter(t=>!['de','du','des','la','le','les','un','une','pour','avec','en','a','et'].includes(t))
+ .map(t=>['carreau','carreaux'].includes(t)?'carrelage':t)??[]
 export function productMatches(query,title){const wanted=tokens(query),actual=tokens(title);return wanted.length>0&&wanted.every(t=>actual.includes(t))}
 function produitBatProps(html){
  const encoded=html.match(/data-page="([^"]+)"/)?.[1];if(!encoded)throw Error('Catalogue ProduitBat absent')
@@ -33,6 +48,15 @@ export function discoverProducts(html,source,query){
 function visiblePrice(text){const m=clean(text).match(/^(\d{1,3}(?:[.\s]\d{3})+|\d+)\s*(?:F\s*)?CFA$/i);if(!m)throw Error('Montant FCFA unique absent');const price=Number(m[1].replace(/[.\s]/g,''));if(!Number.isSafeInteger(price)||price<=0)throw Error('Prix invalide');return price}
 export function parseLiveProduct(html,url){
  const host=new URL(url).hostname
+ if(host==='www.dunya.ci'){
+  const product=html.match(/<h1\b[^>]*class=["'][^"']*\bfs-5\b[^"']*["'][^>]*>([\s\S]*?)<\/h1>/i)
+  const name=clean(product?.[1]??'')
+  const details=product ? html.slice(product.index,product.index+14000) : ''
+  const amount=details.match(/<div class=["']flash-price["']>\s*([^<]+)<\/div>/i)?.[1]
+  const quantity=details.match(/bo[iî]te de (\d+) vis/i)?.[1]
+  if(!name||!amount||!quantity)throw Error('Prix ou conditionnement Donya absent')
+  return {name,price:visiblePrice(amount),currency:'XOF',unit:`boîte de ${quantity} vis`,stock_status:'unknown',url,extraction:'visible_product_price_and_pack'}
+ }
  if(host==='produitbat.ci'){
   const p=produitBatProps(html).product
   if(!p||new URL(url).pathname!==`/detail/produit/${p.slugProduct}`||typeof p.title!=='string')throw Error('Fiche ProduitBat différente')
@@ -57,11 +81,24 @@ export function parseLiveProduct(html,url){
 }
 /** @param {string} query @param {any} options */
 export async function searchPublicMaterials(query,options={}){
- const fetcher=options.fetcher??fetch;const sources=options.sources??LIVE_SOURCES.filter(s=>!(/\bciment\b/.test(normalizeQuery(query)))||['produitbat.ci','quincaillerie-kf.com'].includes(s.host));const signal=AbortSignal.timeout(12000)
+ const fetcher=options.fetcher??fetch
+ const sources=options.sources??LIVE_SOURCES.filter(s=>!(/\bciment\b/.test(normalizeQuery(query)))||['produitbat.ci','quincaillerie-kf.com'].includes(s.host))
+ const quinka=CATALOGUES['quinkashop.com']
+ const catalogues=!options.sources&&productMatches('carrelage',query)&&productMatches(query,'Carreau vitrifié Good Will 60/60')
+  ? [...sources,{name:quinka.name,productUrls:quinka.products.map(([url])=>url)}]
+  : sources
+ const references=options.sources?[]:WOOD_REFERENCES.filter(reference=>reference.query.test(normalizeQuery(query)))
+ const signal=AbortSignal.timeout(12000)
  async function page(url){const r=await fetcher(url,{signal,redirect:'manual',cache:'no-store',headers:{'User-Agent':'AfriOne-PriceLookup/1.0','Accept':'text/html'}});if(!r.ok)throw Error(`HTTP ${r.status}`);if(Number(r.headers.get('content-length')??0)>2000000)throw Error('Page trop volumineuse');const h=await r.text();if(h.length>2000000)throw Error('Page trop volumineuse');return h}
- const reports=await Promise.all(sources.map(async source=>{
-  try{const html=await page(source.search(query));const urls=discoverProducts(html,source,query)
-   const results=await Promise.allSettled(urls.map(async url=>{const p=parseLiveProduct(await page(url),url);if(!productMatches(query,p.name)||p.stock_status==='unavailable')throw Error('Produit non comparable ou indisponible');return {...p,source:source.name,source_url:url,unit:p.unit??'article vendu (conditionnement à confirmer)',observed_at:new Date().toISOString(),included_in_service_price:false,shipping_and_tax:'à confirmer',match_status:'title_tokens_match'}}))
+ const referenceResults=Promise.allSettled(references.flatMap(source=>source.productUrls.map(async url=>{
+   const product=parseLiveProduct(await page(url),url)
+   if(product.stock_status==='unavailable')throw Error('Produit indisponible')
+   const unit=product.unit??'article vendu (conditionnement à confirmer)'
+   return {...product,source:source.name,source_url:url,unit,observed_at:new Date().toISOString(),reference_only:true,included_in_service_price:false,shipping_and_tax:'à confirmer',match_status:'reference_only'}
+  })))
+ const reports=await Promise.all(catalogues.map(async source=>{
+  try{const urls=source.productUrls??discoverProducts(await page(source.search(query)),source,query)
+   const results=await Promise.allSettled(urls.map(async url=>{const p=parseLiveProduct(await page(url),url);if(!productMatches(query,p.name)||p.stock_status==='unavailable')throw Error('Produit non comparable ou indisponible');return {...p,source:source.name,source_url:url,unit:p.unit??'article vendu (conditionnement à confirmer)',observed_at:new Date().toISOString(),included_in_service_price:false,shipping_and_tax:'à confirmer',match_status:'title_tokens_match',reference_only:false}}))
    return {source:source.name,status:'checked',offers:results.flatMap(r=>r.status==='fulfilled'?[r.value]:[])}
   }catch{return {source:source.name,status:'unavailable',offers:[]}}
  }))
@@ -70,5 +107,6 @@ export async function searchPublicMaterials(query,options={}){
   {source:'BDCI — fournisseur ivoirien',url:'https://bdci-ci.com/product/iroko/',market:'Côte d’Ivoire',price_usable:false,note:'Fiche iroko, fournisseur à Abidjan ; aucun prix public constaté au contrôle du 29/10/2026.'}
  ]:[]
  const offers=reports.flatMap(r=>r.offers)
+ if(!offers.length)offers.push(...(await referenceResults).flatMap(result=>result.status==='fulfilled'?[result.value]:[]))
  return {query,found:offers.length>0,offers,comparison_references,sources_checked:reports.map(({source,status})=>({source,status})),checked_at:new Date().toISOString(),note:'Prix du produit vendu, correspondance et conditionnement à confirmer. Livraison et pose non ajoutées.'}
 }

@@ -444,9 +444,78 @@ p { line-height: 1.65; }
 .afrione-receipt section { border-top:1px solid var(--ui-border); padding-top:12px; margin-top:16px; }
 
 .afrione-action { transform:none !important; font-family:var(--font-body) !important; font-weight:600 !important; }
+
+@keyframes afrione-orbit-spin {
+  from { transform:translate(-50%,-50%) rotate(0deg) scale(1); }
+  50% { transform:translate(-50%,-50%) rotate(180deg) scale(1.04); }
+  to { transform:translate(-50%,-50%) rotate(360deg) scale(1); }
+}
+.afrione-orbit-logo {
+  position:absolute;
+  left:50%;
+  top:58%;
+  width:min(64vw,760px);
+  height:auto;
+  opacity:.075;
+  filter:saturate(.9);
+  pointer-events:none;
+  user-select:none;
+  animation:afrione-orbit-spin 34s linear infinite;
+  transform-origin:center;
+  z-index:0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .afrione-orbit-logo { animation:none; transform:translate(-50%,-50%); }
+}
 .afrione-form-stack br { display:none; }
 .afrione-form-stack label { display:block; }
 .afrione-form-stack fieldset label { margin-top:8px; }
 .afrione-summary h3 { font-size:20px; margin-bottom:14px; }
 .afrione-summary p { margin:8px 0; }
 .afrione-summary > strong { display:block; font-family:var(--font-display); font-size:26px; margin:14px 0; }
+
+@media (max-width: 640px) {
+  .mission-mobile {
+    padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-artisan,
+  .mobile-tracking,
+  .mobile-warroom {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .mission-mobile .afrione-action:not(.afrione-action--icon) { min-height: 44px; }
+  .mission-mobile .afrione-field { font-size: 16px !important; }
+
+  .mobile-diagnostic { overflow-x: clip; }
+  .mobile-diagnostic > nav { padding-top: env(safe-area-inset-top); }
+  .mobile-diagnostic-banner {
+    height: 144px !important;
+    margin-top: calc(64px + env(safe-area-inset-top)) !important;
+  }
+  .mobile-diagnostic-content { padding: 12px 16px 24px !important; }
+  .mobile-diagnostic-facts { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .mobile-diagnostic-facts > div {
+    padding: 10px 6px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-artisan-tabs {
+    flex-wrap: wrap;
+    overflow: visible !important;
+  }
+
+  .mobile-tracking { height: auto !important; min-height: 100dvh; }
+  .mobile-tracking-timeline { padding-inline: 12px !important; }
+  .mobile-tracking-timeline span { white-space: normal !important; text-align: center; }
+  .mobile-tracking-content { flex: none !important; }
+  .mobile-tracking-map { height: clamp(260px, 46svh, 460px) !important; }
+
+  .mobile-warroom-composer {
+    max-height: 50%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}

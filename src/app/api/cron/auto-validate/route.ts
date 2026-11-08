@@ -41,7 +41,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, processed: 0 })
   }
 
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://afrione-sepia.vercel.app'
+  const APP_URL = process.env.VERCEL_ENV === 'production'
+    ? 'https://www.afrioneapp.com'
+    : process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.afrioneapp.com'
   let processed = 0
 
   for (const mission of expired) {

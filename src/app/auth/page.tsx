@@ -11,6 +11,13 @@ import { safeAuthRedirect } from '@/lib/auth-recovery'
 const ORANGE = '#E85D26'
 const BRAND_GRAY = '#1A1A1A'
 
+function authEmailUrl(path: '/auth' | '/auth/reset') {
+  const origin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? window.location.origin
+    : 'https://www.afrioneapp.com'
+  return new URL(path, origin).href
+}
+
 const HERO_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_081238_406ed0e3-5d83-436e-a512-0bbff7ec5b95.mp4'
 
 const stagger = {
@@ -101,6 +108,7 @@ function AuthContent() {
   const [loading, setLoading]   = useState(false)
   const [authError, setAuthError] = useState('')
   const [recoverySent, setRecoverySent] = useState(false)
+  const [confirmationNotice, setConfirmationNotice] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -110,10 +118,15 @@ function AuthContent() {
 
   function showAuthError(error: unknown) {
     const message = error instanceof Error ? error.message : ''
-    const translated = message === 'Invalid login credentials'
+    const code = error instanceof Error && 'code' in error ? error.code : undefined
+    const translated = code === 'email_address_not_authorized'
+      ? 'Le service d’envoi n’autorise pas cette adresse. Contactez le support AfriOne.'
+      : code === 'over_email_send_rate_limit' || /email rate limit/i.test(message)
+      ? 'La limite d’envoi d’e-mails est atteinte. Attendez avant de réessayer.'
+      : message === 'Invalid login credentials'
       ? 'Email ou mot de passe incorrect.'
-      : message === 'Email not confirmed'
-      ? 'Confirmez votre adresse email avec le lien reçu avant de vous connecter.'
+      : code === 'email_not_confirmed' || message === 'Email not confirmed'
+      ? 'Confirmez votre adresse e-mail avant de vous connecter. Vous pouvez redemander le lien ci-dessous.'
       : /fetch|network/i.test(message)
       ? 'Le service de connexion est inaccessible. Vérifiez votre connexion et réessayez.'
       : message || 'La connexion a échoué. Réessayez.'
@@ -139,6 +152,7 @@ function AuthContent() {
 
   async function handlePasswordRecovery() {
     setAuthError('')
+    setConfirmationNotice('')
     if (!email.trim()) {
       setAuthError('Saisissez votre adresse email avant de demander un lien de récupération.')
       return
@@ -146,7 +160,7 @@ function AuthContent() {
     setLoading(true)
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/auth/reset`,
+        redirectTo: authEmailUrl('/auth/reset'),
       })
       if (error) throw error
       setRecoverySent(true)
@@ -160,18 +174,56 @@ function AuthContent() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
+    setAuthError('')
+    setConfirmationNotice('')
+    setRecoverySent(false)
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { full_name: `${firstName} ${lastName}`.trim() } },
-    })
-    if (error) {
-      toast.error(error.message)
-    } else {
-      toast.success('Compte créé ! Vérifiez votre email.')
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: { full_name: `${firstName} ${lastName}`.trim() },
+          emailRedirectTo: authEmailUrl('/auth'),
+        },
+      })
+      if (error) throw error
+      if (data.session) {
+        router.replace(redirectTo)
+        return
+      }
+      setPassword('')
       setTab('login')
+      setConfirmationNotice('Si cette adresse doit être confirmée, vérifiez votre boîte de réception et les indésirables. Si votre compte est déjà actif, vous pouvez vous connecter.')
+    } catch (error) {
+      showAuthError(error)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
+  }
+
+  async function handleResendConfirmation() {
+    setAuthError('')
+    setConfirmationNotice('')
+    setRecoverySent(false)
+    if (!email.trim()) {
+      setAuthError('Saisissez votre adresse e-mail pour demander un lien de confirmation.')
+      return
+    }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: { emailRedirectTo: authEmailUrl('/auth') },
+      })
+      if (error) throw error
+      setConfirmationNotice('Demande traitée. Si cette adresse attend une confirmation, vérifiez votre boîte de réception et les indésirables.')
+    } catch (error) {
+      showAuthError(error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -299,7 +351,13 @@ function AuthContent() {
                 <a href="/auth/reset" style={{ display: 'block', color: '#FFAA80', marginTop: 8 }}>J’ai reçu un code : le saisir ici</a>
               </div>
             )}
-            <InputGroup label="Adresse email" placeholder="vous@exemple.com" type="email" value={email} onChange={setEmail} />
+            {tab === 'login' && confirmationNotice && (
+              <p role="status" style={{ padding: 14, border: '1px solid #E85D26', borderRadius: 12, color: '#fff', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                {confirmationNotice}
+              </p>
+            )}
+            <InputGroup label="Adresse email" placeholder="vous@exemple.com" type="email" value={email}
+              onChange={value => { setEmail(value); setConfirmationNotice(''); setRecoverySent(false); setAuthError('') }} />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <InputGroup
@@ -315,6 +373,12 @@ function AuthContent() {
                   </button>
                 }
               />
+              {tab === 'login' && (
+                <button className="afrione-action" type="button" disabled={loading} onClick={handleResendConfirmation}
+                  style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: ORANGE, fontSize: 13, cursor: 'pointer' }}>
+                  Renvoyer le lien de confirmation
+                </button>
+              )}
               {tab === 'login' && (
                 <button className="afrione-action" type="button" disabled={loading} onClick={handlePasswordRecovery}
                   style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: ORANGE, fontSize: 13, cursor: 'pointer' }}>

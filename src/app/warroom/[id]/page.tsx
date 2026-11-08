@@ -256,7 +256,7 @@ export default function WarRoomPage() {
         user_id: recipientId,
         title: 'AfriOne — Nouveau message',
         body: text.length > 60 ? text.slice(0, 60) + '…' : text,
-        url: `https://afrione-sepia.vercel.app/warroom/${missionId}`,
+        url: `https://www.afrioneapp.com/warroom/${missionId}`,
       }),
     }).catch(() => {})
   }, [missionId])
@@ -1286,7 +1286,7 @@ export default function WarRoomPage() {
   }
 
   return (
-    <div style={{display:'flex',flexDirection:'column',height:'100dvh',background:'var(--ui-canvas)'}}>
+    <div className="mobile-warroom mission-mobile" style={{display:'flex',flexDirection:'column',height:'100dvh',background:'var(--ui-canvas)'}}>
 
       {/* ─── MODAL WAVE PAIEMENT (couleurs officielles Wave CI) ──── */}
       {showPayment && (
@@ -2768,7 +2768,7 @@ export default function WarRoomPage() {
 
       {/* Zone actions bas */}
       {!isClosed ? (
-        <div style={{background:'white',borderTop:'1px solid #D8D2C4',padding:'10px 16px',flexShrink:0}}>
+        <div className="mobile-warroom-composer" style={{background:'white',borderTop:'1px solid #D8D2C4',padding:'10px 16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
 
             {/* Artisan : Actions de discussion (negotiation/matching) */}
@@ -3039,8 +3039,8 @@ export default function WarRoomPage() {
             <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
               <input type="text" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
-                maxLength={4000} placeholder="Votre message…" className="input afrione-field" style={{flex:1}} />
-              <button onClick={send} disabled={loading || !input.trim() || sendStatus !== 'idle'} className="btn-primary afrione-action afrione-action--icon"
+                maxLength={4000} placeholder="Votre message…" aria-label="Votre message" className="input afrione-field" style={{flex:1,minWidth:0}} />
+              <button aria-label="Envoyer le message" onClick={send} disabled={loading || !input.trim() || sendStatus !== 'idle'} className="btn-primary afrione-action afrione-action--icon"
                 style={{
                   width:'44px',height:'44px',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',flexShrink:0,
                   cursor:(!input.trim()||sendStatus!=='idle')?'not-allowed':'pointer',

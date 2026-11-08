@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
  * ENV VARS required to go live:
  *   WAVE_API_KEY          → Bearer token from Wave Business dashboard
  *   WAVE_WEBHOOK_SECRET   → Secret to verify webhook signatures
- *   NEXT_PUBLIC_APP_URL   → e.g. https://afrione-sepia.vercel.app
+ *   NEXT_PUBLIC_APP_URL   → e.g. https://www.afrioneapp.com
  *
  * Current mode: SIMULATION (no API key → returns mock data)
  * ─────────────────────────────────────────────────────────────────────────────
@@ -26,7 +26,9 @@ export async function POST(request: Request) {
   const { mission_id, amount, description, client_phone } = body
 
   const apiKey = process.env.WAVE_API_KEY
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://afrione-sepia.vercel.app'
+  const appUrl = process.env.VERCEL_ENV === 'production'
+    ? 'https://www.afrioneapp.com'
+    : process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.afrioneapp.com'
 
   // ── MODE DÉMO ──────────────────────────────────────────────────────────────
   // Aucune clé Wave : on ne peut pas encaisser. Le parcours continue en mode

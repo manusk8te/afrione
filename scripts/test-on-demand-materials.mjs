@@ -13,3 +13,30 @@ test('ProduitBat : tonne explicite, prix nul ou variante refusés',()=>{const p=
 import {missingMaterialSpecs} from '../src/lib/material-sourcing/needs.mjs'
 test('mission : ne pas chercher un ciment ou un robinet générique',()=>{assert.ok(missingMaterialSpecs('ciment').length>=3);assert.ok(missingMaterialSpecs('robinet').length>=2);assert.deepEqual(missingMaterialSpecs('Ciment CPJ 32.5R la tonne'),[]);assert.deepEqual(missingMaterialSpecs('robinet mitigeur cuisine'),[])})
 test('ciment demandé : robinet et mauvaise classe refusés',()=>{assert.equal(productMatches('ciment CPJ 42.5','robinet mitigeur cuisine'),false);assert.equal(productMatches('ciment CPJ 42.5','Ciment CPJ 32.5'),false);assert.equal(productMatches('robinet mitigeur cuisine','robinet mitigeur douche'),false)})
+
+test('carrelage 60×60 : correspond à la fiche 60/60 et conserve le prix au m²', async () => {
+ const query = 'Carrelage 60×60'
+ const title = 'Carreau vitrifié Good Will 60/60'
+ const url = 'https://quinkashop.com/produit/carreau-vitrifie-good-will-6060'
+ assert.equal(productMatches(query, title), true)
+ assert.equal(productMatches('carrelage 60×120', title), false)
+ const result = await searchPublicMaterials(query, {
+  fetcher: async requested => requested === url
+   ? new Response(`<h1>${title}</h1><span class="text-4xl">5 500 FCFA</span><span>/ m2</span>`)
+   : new Response('', {status: 404}),
+ })
+ assert.equal(result.offers.length, 1)
+ assert.equal(result.offers[0].price, 5500)
+ assert.equal(result.offers[0].unit, 'm²')
+ assert.equal(result.offers[0].source_url, url)
+})
+
+test('une vis à bois générique retourne un repère par boîte, sans autoriser sa sélection', async () => {
+ const url = 'https://www.dunya.ci/produits/produit/786/'
+ const fiche = '<h1>LIVRAISON GRATUITE</h1><h1 class="fs-5 fw-normal">Vis à Bois Ø 3.5 x 50 mm</h1><div class="flash-price">5 500 FCFA</div><div class="flash-old-price">10 000 FCFA</div><p>Une boîte de 500 vis.</p>'
+ const fetcher = async requested => requested === url ? new Response(fiche) : new Response('', {status: 404})
+ const result = await searchPublicMaterials('Vis à bois adaptées', {fetcher})
+ assert.deepEqual(result.offers.map(o=>[o.price,o.unit,o.reference_only]), [[5500,'boîte de 500 vis',true]])
+ const otherSize = await searchPublicMaterials('Vis à bois 4 x 60 mm', {fetcher})
+ assert.deepEqual(otherSize.offers, [])
+})

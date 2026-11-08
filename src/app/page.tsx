@@ -34,16 +34,15 @@ function BlurText({ text, className, style }: { text: string; className?: string
 }
 
 /* ─── Static data ─────────────────────────────────────────────────────────── */
-/* Remplacer les URLs photo par vos propres images d'activité */
 const SERVICES = [
-  { Icon: Droplets,   label: 'Plomberie',     metier: 'Plomberie',     photo: 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=400&h=220&fit=crop&q=80' },
-  { Icon: Zap,        label: 'Électricité',   metier: 'Électricité',   photo: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&h=220&fit=crop&q=80' },
-  { Icon: Hammer,     label: 'Maçonnerie',    metier: 'Maçonnerie',    photo: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&h=220&fit=crop&q=80' },
-  { Icon: Paintbrush, label: 'Peinture',      metier: 'Peinture',      photo: 'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=400&h=220&fit=crop&q=80' },
-  { Icon: Ruler,      label: 'Menuiserie',    metier: 'Menuiserie',    photo: 'https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?w=400&h=220&fit=crop&q=80' },
-  { Icon: Wind,       label: 'Climatisation', metier: 'Climatisation', photo: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=220&fit=crop&q=80' },
-  { Icon: Lock,       label: 'Serrurerie',    metier: 'Serrurerie',    photo: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=220&fit=crop&q=80' },
-  { Icon: LayoutGrid, label: 'Carrelage',     metier: 'Carrelage',     photo: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400&h=220&fit=crop&q=80' },
+  { Icon: Droplets,   label: 'Plomberie',     metier: 'Plomberie',     photo: '/metier-plomberie.jpg',     position: '62% 78%', tone: 'contrast(1.04) saturate(0.88) sepia(0.04)' },
+  { Icon: Zap,        label: 'Électricité',   metier: 'Électricité',   photo: '/metier-electricite.jpg',   position: '64% 72%', tone: 'contrast(1.08) saturate(0.82) hue-rotate(-4deg)' },
+  { Icon: Hammer,     label: 'Maçonnerie',    metier: 'Maçonnerie',    photo: '/metier-maconnerie.jpg',    position: '66% 76%', tone: 'contrast(1.03) saturate(0.72) sepia(0.09)' },
+  { Icon: Paintbrush, label: 'Peinture',      metier: 'Peinture',      photo: '/metier-peinture.jpg',      position: '72% 73%', tone: 'contrast(1.02) saturate(0.78) brightness(1.03)' },
+  { Icon: Ruler,      label: 'Menuiserie',    metier: 'Menuiserie',    photo: '/metier-menuiserie.jpg',    position: '68% 77%', tone: 'contrast(1.06) saturate(0.86) sepia(0.06)' },
+  { Icon: Wind,       label: 'Climatisation', metier: 'Climatisation', photo: '/metier-climatisation.jpg', position: '73% 73%', tone: 'contrast(1.07) saturate(0.75) hue-rotate(4deg)' },
+  { Icon: Lock,       label: 'Serrurerie',    metier: 'Serrurerie',    photo: '/metier-serrurerie.jpg',    position: '70% 74%', tone: 'contrast(1.08) saturate(0.8)' },
+  { Icon: LayoutGrid, label: 'Carrelage',     metier: 'Carrelage',     photo: '/metier-carrelage.jpg',     position: '62% 80%', tone: 'contrast(1.04) saturate(0.68) sepia(0.05)' },
 ]
 
 const METIER_ICON_MAP: Record<string, React.ElementType> = {
@@ -99,7 +98,6 @@ export default function HomePage() {
   const [stats,           setStats]           = useState({ artisans: 500, missions: 2400, rating: 4.8, satisfaction: 98 })
   const [topArtisans,     setTopArtisans]     = useState<any[]>([])
   const [topEntreprises,  setTopEntreprises]  = useState<any[]>([])
-  const [serviceCounts,   setServiceCounts]   = useState<Record<string, number>>({})
   const [loadingArtisans, setLoadingArtisans] = useState(true)
 
   useEffect(() => {
@@ -108,20 +106,15 @@ export default function HomePage() {
         { count: artisanCount },
         { count: missionCount },
         { data: ratingsData },
-        { data: allArtisans },
       ] = await Promise.all([
         supabase.from('artisan_pros').select('id', { count: 'exact', head: true }).eq('kyc_status', 'approved'),
         supabase.from('missions').select('id',      { count: 'exact', head: true }).eq('status',     'completed'),
         supabase.from('artisan_pros').select('rating_avg').eq('kyc_status', 'approved').not('rating_avg', 'is', null),
-        supabase.from('artisan_pros').select('metier').eq('kyc_status', 'approved'),
       ])
       const ratings = ratingsData?.map((a: any) => a.rating_avg).filter(Boolean) || []
       const avgRating = ratings.length
         ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
         : 4.8
-      const counts: Record<string, number> = {}
-      allArtisans?.forEach((a: any) => { counts[a.metier] = (counts[a.metier] || 0) + 1 })
-      setServiceCounts(counts)
       setStats({ artisans: Math.max(artisanCount || 0, 500), missions: Math.max(missionCount || 0, 2400), rating: avgRating || 4.8, satisfaction: 98 })
     }
 
@@ -242,12 +235,23 @@ export default function HomePage() {
       </section>
 
       {/* ━━━━ CAPABILITIES / SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section style={{ background: W2, padding: '96px 0' }}>
-        <div className="page-container">
+      <section style={{ background: W2, padding: '0 0 96px', position: 'relative', overflow: 'hidden' }}>
+        <img
+          aria-hidden="true"
+          src="/afrione-logo-official.png"
+          alt=""
+          className="afrione-orbit-logo"
+        />
+        <div className="page-container" style={{ position: 'relative', zIndex: 1 }}>
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
 
-            <motion.div variants={fadeUp} style={{ marginBottom: '48px', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', width: '100vw' }}>
-              <img src="/services-hero.jpg" alt="Artisans AfriOne" style={{ width: '100%', display: 'block' }} />
+            <motion.div variants={fadeUp} style={{ marginBottom: '48px', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', width: '100vw', position: 'relative', overflow: 'hidden' }}>
+              <img
+                src="/afrione-services-4k.jpg"
+                alt="Un client accueille un artisan, à côté d’un téléphone affichant l’accueil AfriOne"
+                style={{ width: '100%', display: 'block' }}
+              />
+
             </motion.div>
 
             <motion.p variants={fadeUp} style={{ ...mono, fontSize: '11px', color: T3, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '20px' }}>
@@ -258,15 +262,15 @@ export default function HomePage() {
               Tous vos corps<br />de métier.
             </motion.h2>
 
-            <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-              {SERVICES.map(({ Icon, label, metier, photo }) => (
+            <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-5">
+              {SERVICES.map(({ label, metier, photo, position, tone }) => (
                 <motion.div key={label} variants={fadeUp}>
                   <Link href={`/artisans?metier=${encodeURIComponent(metier)}`}
                     style={{
-                      display: 'flex', flexDirection: 'column',
+                      display: 'block', position: 'relative',
                       textDecoration: 'none', cursor: 'pointer',
-                      background: W, borderRadius: '24px',
-                      overflow: 'hidden',
+                      background: '#101820', borderRadius: '22px',
+                      overflow: 'visible', aspectRatio: '1 / 1',
                       boxShadow: NEU_SHADOW,
                       transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out',
                     }}
@@ -285,33 +289,20 @@ export default function HomePage() {
                       if (img) img.style.transform = 'scale(1)'
                     }}>
 
-                    {/* ── Photo — moitié haute ── */}
-                    <div style={{ height: '150px', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
-                      {photo
-                        ? <img
-                            src={photo}
-                            alt={label}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.45s ease-out' }}
-                          />
-                        : <div className="afrione-gradient" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Icon size={36} color="rgba(255,255,255,0.45)" />
-                          </div>
-                      }
-                      {/* gradient au bas pour lisibilité */}
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50px', background: 'linear-gradient(to top, rgba(0,0,0,0.22), transparent)', pointerEvents: 'none' }} />
+                    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '22px' }}>
+                      <img src={photo} alt={`Artisan AfriOne — ${label}`} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, filter: tone, transition: 'transform 0.55s ease-out, filter 0.3s ease-out' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(5,9,13,0.58) 0%, rgba(5,9,13,0.46) 52%, rgba(5,9,13,0.82) 100%)', transition: 'background 0.3s ease' }} />
                     </div>
 
-                    {/* ── Contenu — moitié basse ── */}
-                    <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ width: '44px', height: '44px', borderRadius: '14px', boxShadow: NEU_INSET, background: W, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <div className="afrione-gradient rounded-xl flex items-center justify-center" style={{ width: '32px', height: '32px' }}>
-                          <Icon size={15} color="white" />
-                        </div>
+                    <div style={{ position: 'absolute', inset: '18px 14px 64px', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+                      <div>
+                        <div style={{ ...syne, fontWeight: 750, fontSize: 'clamp(18px, 2vw, 28px)', color: 'white', letterSpacing: '-0.035em', textShadow: '0 2px 18px rgba(0,0,0,0.48)' }}>{label}</div>
+                        <div style={{ width: '28px', height: '2px', borderRadius: '99px', background: '#F06A2A', margin: '10px auto 0' }} />
                       </div>
-                      <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: T1 }}>{label}</div>
-                      <div style={{ ...mono, fontSize: '10px', color: T3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        {serviceCounts[metier] ? `${serviceCounts[metier]} artisan${serviceCounts[metier] > 1 ? 's' : ''}` : 'Disponible'}
-                      </div>
+                    </div>
+
+                    <div className="afrione-gradient" style={{ position: 'absolute', width: '76px', height: '44px', right: '-7px', bottom: '14px', borderRadius: '14px 0 0 14px', display: 'grid', placeItems: 'center', color: 'white', boxShadow: '0 8px 22px rgba(232,93,38,0.38)' }}>
+                      <ArrowRight size={21} />
                     </div>
 
                   </Link>
@@ -372,7 +363,7 @@ export default function HomePage() {
             <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-60px' }}
               className="hidden md:block"
               style={{ borderRadius: '24px', overflow: 'hidden', position: 'sticky', top: '96px' }}>
-              <img src="/how-it-works.jpg" alt="AfriOne en action" style={{ width: '100%', display: 'block', objectFit: 'cover' }} />
+              <img src="/afrione-comment-ca-marche-4k.jpg" alt="Un électricien à côté d’un téléphone affichant le Centre d’aide AfriOne" style={{ width: '100%', display: 'block', objectFit: 'cover' }} />
             </motion.div>
 
           </div>

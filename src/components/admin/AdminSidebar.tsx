@@ -200,7 +200,7 @@ export default function AdminSidebar({
         flexShrink: 0,
       }} className="flex lg:hidden">
         <Link href="/" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '36px', background: 'transparent', borderRadius: '8px', marginRight: '8px', flexShrink: 0 }}>
-          <img src="/afrione-logo-transparent.png" alt="AfriOne" width={30} height={24} style={{objectFit:"contain"}} />
+          <img src="/afrione-logo-official.png" alt="AfriOne" width={30} height={24} style={{objectFit:"contain"}} />
         </Link>
         {ADMIN_NAV.map(item => renderItem(item, true))}
       </header>

@@ -2,7 +2,7 @@
  * Wave Webhook Handler
  * ─────────────────────────────────────────────────────────────────────────────
  * Configure this URL in Wave Business dashboard → Settings → Webhooks:
- *   https://afrione-sepia.vercel.app/api/wave-webhook
+ *   https://www.afrioneapp.com/api/wave-webhook
  *
  * Wave sends POST requests signed with HMAC-SHA256.
  * Verify with the header:  Wave-Signature: t=<timestamp>,v1=<hmac>

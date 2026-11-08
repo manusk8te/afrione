@@ -39,7 +39,7 @@ export async function POST(req:NextRequest){try{
  if(diagError||!diag)return NextResponse.json({error:'Diagnostic introuvable'},{status:404})
  if(!Array.isArray(diag.items_needed)||!diag.items_needed.includes(body.item)||!productMatches(body.item,body.query))return NextResponse.json({error:'Cette recherche ne correspond pas à une fourniture du diagnostic.'},{status:400})
  const result=await lookupMaterialOffers(body.query)
- const offer=result.offers.find(p=>p.source_url===body.offer_url)
+ const offer=result.offers.find(p=>!p.reference_only&&p.source_url===body.offer_url)
  if(!offer)return NextResponse.json({error:'Offre non retrouvée ou périmée. Relancez la recherche.'},{status:409})
  const {data,error}=await supabaseAdmin.from('diagnostic_product_selections').upsert({mission_id:body.mission_id,item:body.item,query:body.query,quantity:body.quantity,offer:{...offer,compatibility_status:'to_confirm',included_in_service_price:false},selected_by:access.viewer.userId,selected_at:new Date().toISOString()},{onConflict:'mission_id,item'}).select().single()
  if(error)throw error

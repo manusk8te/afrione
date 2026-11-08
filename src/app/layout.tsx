@@ -6,14 +6,14 @@ import DevPanel from '@/components/dev/DevPanel'
 
 export const metadata: Metadata = {
   title: 'AfriOne — Trouver le bon artisan, au bon prix',
-  icons: { icon: '/afrione-logo-transparent.png', apple: '/afrione-logo-transparent.png' },
+  icons: { icon: '/afrione-logo-official.png', apple: '/afrione-logo-official.png' },
   description: 'Plateforme de mise en relation entre artisans qualifiés et clients à Abidjan.',
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

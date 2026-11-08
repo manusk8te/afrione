@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       const {data,error}=await supabaseAdmin.from('diagnostics').select('id,raw_text').eq('mission_id',missionId).maybeSingle()
       if(error||!data)throw Error('Diagnostic introuvable pour préparer le devis')
       diag=data;try{context=JSON.parse(diag.raw_text||'{}')}catch{}
-      if(['onsite_required','urgent'].includes(context.diagnostic_status))return NextResponse.json({status:'informations_requises',total:null,error:'Le pré-diagnostic nécessite une vérification par le prestataire avant de chiffrer.'},{status:422})
+      if(context.diagnostic_status==='urgent')return NextResponse.json({status:'informations_requises',total:null,error:'Cette demande relève du parcours urgence.'},{status:422})
       if(Array.isArray(context.product_requirements)&&context.product_requirements.length)agentInput={...parsed.data,description:parsed.data.description+'\nCritères de fournitures issus du diagnostic (inconnues à confirmer, aucune gamme déduite du prix) : '+JSON.stringify(context.product_requirements).slice(0,3000)}
     }
     const result = await runPricingAgent(agentInput)

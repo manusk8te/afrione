@@ -434,9 +434,8 @@ export default function MissionLivePage() {
     (status === 'en_cours' || status === 'disputed') ? 1 : 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#FFFFFF', color: 'var(--ui-ink)' }}>
+    <div className="mobile-tracking mission-mobile" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#FFFFFF', color: 'var(--ui-ink)' }}>
 
-      <div style={{maxWidth:704,width:'100%',margin:'0 auto',padding:16}}><MissionWorkflow missionId={missionId as string} role={role} onMission={mergeWorkflowMission}/></div>
       {/* MODAL LITIGE */}
       {showLitige && (
         <div onClick={() => setShowLitige(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -502,7 +501,7 @@ export default function MissionLivePage() {
         )}
 
         {/* Timeline */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '12px 20px 14px', gap: 0 }}>
+        <div className="mobile-tracking-timeline" style={{ display: 'flex', alignItems: 'center', padding: '12px 20px 14px', gap: 0 }}>
           {STEPS.map((s, i) => {
             const done   = i < stepIndex
             const active = i === stepIndex
@@ -523,6 +522,8 @@ export default function MissionLivePage() {
         </div>
       </div>
 
+      <div style={{maxWidth:704,width:'100%',margin:'0 auto',padding:16}}><MissionWorkflow missionId={missionId as string} role={role} onMission={mergeWorkflowMission}/></div>
+
       {/* TABS */}
       <div style={{ flexShrink: 0, display: 'flex', background: 'var(--ui-canvas)', borderBottom: '1px solid var(--ui-border)', padding: '4px 12px', gap: '4px' }}>
         {[
@@ -537,11 +538,11 @@ export default function MissionLivePage() {
       </div>
 
       {/* CONTENU */}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+      <div className="mobile-tracking-content" style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
 
         {/* GPS */}
         {tab === 'gps' && (
-          <div style={{ height: '100%', position: 'relative' }}>
+          <div className="mobile-tracking-map" style={{ height: '100%', position: 'relative' }}>
             {mapsLoaded ? (
               <GoogleMap
                 mapContainerStyle={{ width: '100%', height: '100%' }}

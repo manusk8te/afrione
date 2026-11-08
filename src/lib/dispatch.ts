@@ -151,7 +151,9 @@ export async function createDispatchAttempt(
 // ── Envoyer la notification urgente à un artisan ──────────────────────────────
 
 export async function sendUrgentNotification(userId: string, category: string) {
-  const base  = process.env.NEXT_PUBLIC_APP_URL ?? 'https://afrione-sepia.vercel.app'
+  const base  = process.env.VERCEL_ENV === 'production'
+    ? 'https://www.afrioneapp.com'
+    : process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.afrioneapp.com'
   const url   = `${base}/artisan-space/dashboard`
   const title = '🚨 Mission Urgente !'
   const body  = `${category} — Tu as ${DISPATCH_TIMEOUT_SECONDS}s pour accepter !`

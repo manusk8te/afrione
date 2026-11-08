@@ -37,6 +37,7 @@ interface DiagResult {
   surface_m2?: number | null
   budget_client?: string | null
   mission_id?: string
+  mission_status?: string
 }
 
 interface PricingData {
@@ -48,12 +49,22 @@ interface PricingData {
   below_market?: boolean
   market_reference_fcfa?: number
   applied_estimator?: string
-  price_context?: PriceContextView | null
+  price_context?: (PriceContextView & { hours?: number }) | null
 }
 
 // Moyenne de la fourchette : le diagnostic annonce une estimation, pas un
 // devis. Cette copie locale ignorait les semaines. Voir src/lib/duration.ts.
 const parseDuration = (str: string): number => parseDuree(str, 'moyenne')
+
+function pricingBlockReason(diagnostic: DiagResult) {
+  if (diagnostic.mission_status && !['diagnostic', 'matching', 'negotiation'].includes(diagnostic.mission_status)) {
+    return 'Cette mission ne peut plus être recalculée.'
+  }
+  if (diagnostic.diagnostic_status === 'urgent') {
+    return 'Cette demande relève du parcours urgence.'
+  }
+  return null
+}
 
 function materialEmoji(name: string): string {
   const n = name.toLowerCase()
@@ -116,13 +127,14 @@ export default function DiagnosticPage() {
   const [refining, setRefining]       = useState(false)
   const [quoteRevision,setQuoteRevision]=useState(0)
   const [navigating, setNavigating]   = useState(false)
+  const pricingUnavailableReason = result ? pricingBlockReason(result) : null
   const photoInputRef = useRef<HTMLInputElement>(null)
   const bottomRef     = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        router.push('/auth?redirect=/diagnostic')
+        router.push(`/auth?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
         return
       }
       setUserId(session.user.id)
@@ -235,9 +247,13 @@ export default function DiagnosticPage() {
    *   le client voyait un diagnostic mis à jour sous un prix périmé.
    */
   const fetchPricing = async (diagResult: DiagResult, force = false) => {
-    if(!diagResult.duration_estimate || (diagResult.diagnostic_status && diagResult.diagnostic_status!=='preliminary')){
-      setPricing(null);setBasePricing(null);setPricingLoading(false)
-      setPricingError('Une vérification par le prestataire est nécessaire avant de chiffrer cette intervention.');return
+    const reason = pricingBlockReason(diagResult)
+    if (reason) {
+      setPricing(null)
+      setBasePricing(null)
+      setPricingLoading(false)
+      setPricingError(reason)
+      return
     }
     // Ne pas recalculer si un prix est déjà en cache pour cette session
     const cacheKey = `afrione_context_v4_saved_${JSON.stringify([diagResult.mission_id, diagResult.category, diagResult.summary, diagResult.technical_notes, diagResult.duration_estimate, diagResult.surface_m2, quartier, diagResult.urgency, pricingClarification])}`
@@ -265,7 +281,7 @@ export default function DiagnosticPage() {
             category:       diagResult.category,
             description:    [diagResult.summary, diagResult.technical_notes, pricingClarification ? `Précision du client : ${pricingClarification}` : '', diagResult.surface_m2 ? `Surface confirmée : ${diagResult.surface_m2} m²` : ''].filter(Boolean).join(' — '),
             urgency:        diagResult.urgency,
-            hours_estimate: parseDuration(diagResult.duration_estimate),
+            hours_estimate: parseDuration(diagResult.duration_estimate ?? ''),
             quartier:       quartier || 'Cocody',
             items_needed:   itemNames,
           }),
@@ -295,10 +311,10 @@ export default function DiagnosticPage() {
 
       } else {
         const failure = await pricingRes.json().catch(() => null)
-        setPricingError(failure?.status === 'informations_requises' ? failure.error : 'Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
+        setPricingError(failure?.status === 'informations_requises' ? failure.error : 'Le prix n’a pas pu être calculé. Demandez un prix ou réessayez.')
       }
     } catch {
-      setPricingError('Le prix n’a pas pu être confirmé. Demandez un devis ou réessayez.')
+      setPricingError('Le prix n’a pas pu être calculé. Demandez un prix ou réessayez.')
     }
     setPricingLoading(false)
   }
@@ -340,7 +356,7 @@ export default function DiagnosticPage() {
       })
       const data = await res.json()
       if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
-      const affine = { ...(result as DiagResult), ...data, urgency: safeUrgency(data.urgency) }
+      const affine = { ...(result as DiagResult), ...data, mission_status: undefined, urgency: safeUrgency(data.urgency) }
       setResult(affine)
       router.replace(`/diagnostic?mission=${affine.mission_id}`,{scroll:false})
       setRefineText('')
@@ -362,11 +378,11 @@ export default function DiagnosticPage() {
 
   // ─────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', position: 'relative', color: 'var(--ui-ink)' }}>
+    <div className="mobile-diagnostic mission-mobile" style={{ minHeight: '100dvh', background: 'var(--ui-canvas)', position: 'relative', color: 'var(--ui-ink)' }}>
       <Navbar />
 
       {/* ── VIDEO BANNER ───────────────────────────────────────────── */}
-      <div style={{ position: 'relative', overflow: 'hidden', height: '210px', marginTop: '64px' }}>
+      <div className="mobile-diagnostic-banner" style={{ position: 'relative', overflow: 'hidden', height: '210px', marginTop: '64px' }}>
         <video autoPlay muted loop playsInline
           src={DIAG_VIDEO}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
@@ -402,7 +418,7 @@ export default function DiagnosticPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '32px 16px 64px', position: 'relative' }}>
+      <div className="mobile-diagnostic-content" style={{ maxWidth: '680px', margin: '0 auto', padding: '32px 16px 64px', position: 'relative' }}>
 
         {/* Orange decorative squares in white area */}
         <div style={{ position: 'absolute', top: '4%',  right: '-24px', width: 58, height: 58, background: 'rgba(232,93,38,0.07)', borderRadius: 14, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
@@ -681,7 +697,7 @@ export default function DiagnosticPage() {
             </section> : null}
 
             {/* Infos clés */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            <div className="mobile-diagnostic-facts" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {[
                 { icon: <Wrench size={18} color="#E85D26" />, label: 'Catégorie',  value: result.category,          color: 'var(--ui-ink)' },
                 { icon: <span style={{ fontSize: '18px', lineHeight: 1 }}>{urgConf.icon}</span>, label: 'Urgence', value: urgConf.label, color: urgConf.color },
@@ -714,6 +730,8 @@ export default function DiagnosticPage() {
                     Prix en cours de calcul
                   </span>
                 </div>
+              ) : !pricing && pricingUnavailableReason ? (
+                <p role="status" style={{ fontSize: '13px', lineHeight: 1.6 }}>{pricingUnavailableReason}</p>
               ) : pricingError ? (
                 <div role="status" style={{ color: 'var(--ui-muted)', fontSize: '13px', lineHeight: 1.6 }}>
                   <p style={{ margin: '0 0 10px' }}>{pricingError}</p>
@@ -733,6 +751,11 @@ export default function DiagnosticPage() {
                   <div style={{ fontSize: '11px', color: '#8B95A5', fontFamily: 'var(--font-body)', marginBottom: '16px' }}>
                     {pricing.applied_estimator === 'context_v4' ? 'Proposition par analogie · à confirmer par devis' : `[${pricing.interval.low.toLocaleString('fr')} – ${pricing.interval.high.toLocaleString('fr')}] ±8%`}
                   </div>
+                  {!result.duration_estimate && (!result.mission_status || pricing.price_context?.hours === 2) && (
+                    <p style={{ fontSize: '13px', color: 'var(--ui-muted)', margin: '0 0 12px' }}>
+                      Durée de calcul par défaut : 2 h, à confirmer avec le prestataire.
+                    </p>
+                  )}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                     {pricing.applied_estimator !== 'context_v4' && ([
                       { key: 'labor' as const,     label: "Main-d'œuvre", color: '#E85D26' },
@@ -757,7 +780,12 @@ export default function DiagnosticPage() {
                   </div>
                 </>
               ) : (
-                <p>Le prix sera calculé à partir des références de prestations.</p>
+                <div>
+                  {!result.duration_estimate && <p style={{ fontSize: '13px', margin: '0 0 10px' }}>Durée de calcul par défaut : 2 h, à confirmer avec le prestataire.</p>}
+                  <button className="afrione-action" type="button" onClick={() => fetchPricing(result)} style={{ color: '#C95024', fontWeight: 600 }}>
+                    Calculer l’estimation
+                  </button>
+                </div>
               )}
 
               <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', margin: '12px 0 0' }}>
