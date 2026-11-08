@@ -164,16 +164,6 @@ function ArtisansDirectory() {
                 const coverPhoto = a.portfolio?.[0] || null
                 const avatarUrl = a.users?.avatar_url || null
                 const name = a.users?.name || a.metier || 'Artisan'
-                if (a.is_test) return (
-                  <Link key={a.id} href={`/artisans/${a.id}`} style={{ textDecoration: 'none', color: 'var(--ui-ink)' }}>
-                    <article style={{ background: 'white', borderRadius: 20, border: '1px solid var(--ui-border)', padding: 20, boxShadow: NEU_SHADOW }}>
-                      <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: 20, background: '#FFF3EE', color: '#963716', fontSize: 12, fontWeight: 700 }}>Profil de test</span>
-                      <h3 style={{ margin: '12px 0 4px', fontSize: 18, fontWeight: 800 }}>{name}</h3>
-                      <p style={{ fontSize: 14, color: 'var(--ui-muted)' }}>{a.metier} · {a.users?.quartier}</p>
-                      <p style={{ marginTop: 8, fontSize: 14 }}>{a.bio}</p>
-                    </article>
-                  </Link>
-                )
                 const rating = a.rating_avg || 0
                 const stars = Math.round(rating)
 
@@ -207,8 +197,8 @@ function ArtisansDirectory() {
                         )}
                         {/* Badges */}
                         <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
-                          <span style={{ fontSize: '11px', color: '#2B6B3E', background: 'rgba(240,255,244,0.95)', border: '1px solid rgba(43,107,62,0.3)', padding: '3px 10px', borderRadius: '20px', fontWeight: 600 }}>✓ Vérifié</span>
-                          {a.is_available && (
+                          {!a.is_test && <span style={{ fontSize: '11px', color: '#2B6B3E', background: 'rgba(240,255,244,0.95)', border: '1px solid rgba(43,107,62,0.3)', padding: '3px 10px', borderRadius: '20px', fontWeight: 600 }}>✓ Vérifié</span>}
+                          {!a.is_test && a.is_available && (
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#2B6B3E', background: 'rgba(240,255,244,0.95)', border: '1px solid rgba(43,107,62,0.3)', padding: '3px 10px', borderRadius: '20px', fontWeight: 600 }}>
                               <span style={{ width: '6px', height: '6px', background: '#2B6B3E', borderRadius: '50%', display: 'inline-block' }} /> Disponible
                             </span>
@@ -242,7 +232,15 @@ function ArtisansDirectory() {
                           </div>
                         )}
 
+                        {a.is_test && (
+                          <div style={{ margin: '12px 0', fontSize: 14, color: 'var(--ui-muted)' }}>
+                            <p>{a.bio}</p>
+                            <p style={{ marginTop: 4 }}>Profil de test.</p>
+                          </div>
+                        )}
+
                         {/* Étoiles */}
+                        {!a.is_test && <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
                           <div style={{ display: 'flex', gap: '2px' }}>
                             {Array.from({ length: 5 }).map((_, i) => (
@@ -269,6 +267,8 @@ function ArtisansDirectory() {
                             </div>
                           ))}
                         </div>
+
+                        </>}
 
                         {/* Portfolio preview (3 petites photos si dispo) */}
                         {a.portfolio?.length > 1 && (

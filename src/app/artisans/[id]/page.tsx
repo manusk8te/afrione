@@ -27,6 +27,7 @@ export default function ArtisanProfilePage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'avis'|'certifs'>('avis')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [testMissionId, setTestMissionId] = useState<string | null>(null)
   const [existingMission, setExistingMission] = useState<any>(null)
   const [reserving, setReserving] = useState(false)
   const [lightbox, setLightbox] = useState<{ photos: Photo[]; index: number } | null>(null)
@@ -42,7 +43,20 @@ export default function ArtisanProfilePage() {
         .maybeSingle()
       if (!artisanData) {
         const { data } = await supabase.rpc('list_demo_artisans', { profile_id: id })
-        setArtisan(data?.[0] ?? null)
+        const demo = data?.[0]
+        setArtisan(demo ?? null)
+        setUser(demo?.users ?? null)
+        setTestMissionId(null)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (demo && session?.user.app_metadata.afrione_test === true) {
+          setCurrentUserId(session.user.id)
+          const { data: mission } = await supabase.from('missions').select('id')
+            .eq('client_id', session.user.id).eq('is_test', true)
+            .eq('category', demo.metier).eq('mode', 'standard')
+            .in('status', ['diagnostic', 'matching']).is('artisan_id', null)
+            .limit(1).maybeSingle()
+          setTestMissionId(mission?.id ?? null)
+        }
         setLoading(false)
         return
       }
@@ -115,30 +129,15 @@ export default function ArtisanProfilePage() {
     </div>
   )
 
-  if (artisan.is_test) return (
-    <div style={{ minHeight: '100dvh', background: 'var(--ui-canvas)', color: 'var(--ui-ink)' }}>
-      <Navbar />
-      <main style={{ maxWidth: 640, margin: '0 auto', padding: '112px 16px 40px' }}>
-        <Link href="/artisans" style={{ color: '#963716' }}>← Retour aux artisans</Link>
-        <article style={{ background: 'white', border: '1px solid var(--ui-border)', borderRadius: 20, padding: 24, marginTop: 20 }}>
-          <span style={{ color: '#963716', fontSize: 13, fontWeight: 700 }}>Profil de test</span>
-          <h1 style={{ margin: '8px 0', fontSize: 28, fontWeight: 800 }}>{artisan.users?.name}</h1>
-          <p style={{ color: 'var(--ui-muted)' }}>{artisan.metier} · {artisan.users?.quartier}</p>
-          <p style={{ margin: '16px 0' }}>{artisan.bio}</p>
-          <p style={{ color: 'var(--ui-muted)' }}>Profil fictif non réservable.</p>
-        </article>
-      </main>
-    </div>
-  )
-
   const handleReserver = async () => {
+    if (artisan.is_test && (!testMissionId || !artisan.is_available)) return
     if (!currentUserId) { router.push('/auth'); return }
     if (existingMission) { router.push(`/warroom/${existingMission.id}`); return }
     if(reserving)return
     setReserving(true)
     bookingKey.current ||= crypto.randomUUID()
     try {
-      const response=await clientApi('/api/mission/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_provider',request_id:bookingKey.current,artisan_id:artisan.id,quartier:'Cocody'})})
+      const response=await clientApi('/api/mission/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'request_provider',request_id:bookingKey.current,mission_id:artisan.is_test ? testMissionId : undefined,artisan_id:artisan.id,quartier:'Cocody'})})
       const result=await response.json()
       if(!response.ok)throw Error(result.error||'Réservation refusée')
       router.push(`/warroom/${result.mission.id}`)
@@ -147,7 +146,7 @@ export default function ArtisanProfilePage() {
   }
 
   const name = user?.name || 'Artisan'
-  const avatarUrl = user?.avatar_url
+  const avatarUrl = user?.avatar_url || (artisan.is_test ? artisan.portfolio?.[0] : undefined)
   const rating = artisan.rating_avg || 0
   const stars = Math.round(rating)
 
@@ -275,7 +274,7 @@ export default function ArtisanProfilePage() {
                   {artisan.kyc_status === 'approved' && (
                     <span style={{ fontSize: '11px', color: '#2B6B3E', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.25)', padding: '3px 10px', borderRadius: '20px' }}>✓ KYC Vérifié</span>
                   )}
-                  {artisan.is_available && (
+                  {artisan.is_available && (!artisan.is_test || testMissionId) && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#2B6B3E', background: 'rgba(43,107,62,0.08)', border: '1px solid rgba(43,107,62,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
                       <span style={{ width: '6px', height: '6px', background: '#2B6B3E', borderRadius: '50%' }} /> Disponible
                     </span>
@@ -418,6 +417,7 @@ export default function ArtisanProfilePage() {
                 <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: NEU_SHADOW, border: '1.5px solid var(--ui-border)' }}>
                   <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '12px' }}>À propos</h2>
                   <p style={{ fontSize: '14px', color: 'var(--ui-muted)', lineHeight: '1.7' }}>{artisan.bio}</p>
+                  {artisan.is_test && <p style={{ marginTop: 8, fontSize: 13, color: 'var(--ui-muted)' }}>Profil de test.</p>}
                 </div>
               )}
 
@@ -540,7 +540,7 @@ export default function ArtisanProfilePage() {
                     </div>
                   ))}
                 </div>
-                <button onClick={handleReserver} disabled={reserving} className={(reserving ? '' : 'btn-primary') + ' afrione-action'} style={{
+                {(!artisan.is_test || (testMissionId && artisan.is_available)) && <button onClick={handleReserver} disabled={reserving} className={(reserving ? '' : 'btn-primary') + ' afrione-action'} style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   padding: '14px', background: reserving ? 'var(--ui-border)' : undefined, color: reserving ? 'var(--ui-muted)' : 'white',
                   border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '12px'
@@ -551,12 +551,13 @@ export default function ArtisanProfilePage() {
                     ? <><MessageCircle size={16} /> Continuer la conversation</>
                     : <><Zap size={16} /> Réserver cet artisan</>
                   }
-                </button>
-                {!existingMission && (
+                </button>}
+                {!artisan.is_test && !existingMission && (
                   <Link href={`/diagnostic?artisan=${id}`} className="btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '13px' }}>
                     Faire un diagnostic d'abord <ChevronRight size={14} />
                   </Link>
                 )}
+                {!artisan.is_test && (
                 <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1.5px solid var(--ui-border)', display: 'flex', gap: '8px' }}>
                   <button className="afrione-action" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: 'var(--ui-muted)', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', cursor: 'pointer', padding: '8px', borderRadius: '8px', boxShadow: NEU_SMALL }}>
                     <Phone size={14} /> Appeler
@@ -567,6 +568,7 @@ export default function ArtisanProfilePage() {
                     <MessageCircle size={14} /> {existingMission ? 'Ouvrir le chat' : 'Message'}
                   </button>
                 </div>
+                )}
               </div>
             </div>
           </div>
