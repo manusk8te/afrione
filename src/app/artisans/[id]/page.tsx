@@ -435,7 +435,7 @@ export default function ArtisanProfilePage() {
                   <h2 className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ui-ink)', marginBottom: '12px' }}>Spécialités</h2>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {artisan.specialties.map((s: string) => (
-                      <span key={s} className="afrione-gradient-text" style={{ padding: '6px 14px', background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.18)', borderRadius: '20px', fontSize: '13px', fontWeight: 500 }}>{s}</span>
+                      <span key={s}  style={{color:'#9a3412', padding: '6px 14px', background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.18)', borderRadius: '20px', fontSize: '13px', fontWeight: 500 }}>{s}</span>
                     ))}
                   </div>
                 </div>
@@ -569,9 +569,6 @@ export default function ArtisanProfilePage() {
                 )}
                 {!artisan.is_test && (
                 <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1.5px solid var(--ui-border)', display: 'flex', gap: '8px' }}>
-                  <button className="afrione-action" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: 'var(--ui-muted)', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', cursor: 'pointer', padding: '8px', borderRadius: '8px', boxShadow: NEU_SMALL }}>
-                    <Phone size={14} /> Appeler
-                  </button>
                   <button onClick={() => existingMission ? router.push(`/warroom/${existingMission.id}`) : handleReserver()}
                     className={(existingMission ? 'afrione-gradient-text' : '') + ' afrione-action'}
                     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '12px', color: existingMission ? undefined : 'var(--ui-muted)', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', cursor: 'pointer', padding: '8px', borderRadius: '8px', fontWeight: existingMission ? 600 : 400, boxShadow: NEU_SMALL }}>

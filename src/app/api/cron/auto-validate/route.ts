@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
             user_id: artisanUserId,
             title:   'AfriOne — Paiement libéré automatiquement',
             body:    'Le délai de 24h est écoulé. La mission a été validée et le paiement libéré.',
-            url:     `${APP_URL}/artisan-space/portefeuille`,
+            url:     `${APP_URL}/artisan-space/dashboard?tab=wallet`,
           }),
         }).catch(() => {})
       }

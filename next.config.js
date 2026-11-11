@@ -19,6 +19,7 @@ const nextConfig = {
       { source: '/admin/kyc', destination: '/admin', permanent: true },
       { source: '/admin/litiges', destination: '/admin', permanent: true },
       { source: '/artisan-space/planning', destination: '/artisan-space/dashboard', permanent: true },
+      { source: '/artisan-space/portefeuille', destination: '/artisan-space/dashboard?tab=wallet', permanent: true },
       { source: '/urgence', destination: '/mode-select', permanent: true },
       { source: '/onboarding', destination: '/mode-select', permanent: true },
       { source: '/payment/demo', destination: '/', permanent: true },

@@ -748,12 +748,12 @@ export default function AdminDashboard() {
                               {/* Documents */}
                               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                 {kycDoc?.cni_front_url && (
-                                  <a href={kycDoc.cni_front_url} target="_blank" rel="noreferrer" className="afrione-gradient-text" style={{ fontSize: '11px', textDecoration: 'none', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
+                                  <a href={kycDoc.cni_front_url} target="_blank" rel="noreferrer"  style={{color:'#9a3412', fontSize: '11px', textDecoration: 'none', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
                                      CNI Recto
                                   </a>
                                 )}
                                 {kycDoc?.cni_back_url && (
-                                  <a href={kycDoc.cni_back_url} target="_blank" rel="noreferrer" className="afrione-gradient-text" style={{ fontSize: '11px', textDecoration: 'none', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
+                                  <a href={kycDoc.cni_back_url} target="_blank" rel="noreferrer"  style={{color:'#9a3412', fontSize: '11px', textDecoration: 'none', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
                                      CNI Verso
                                   </a>
                                 )}
@@ -1094,8 +1094,8 @@ export default function AdminDashboard() {
                                 {/* Lien espace entreprise */}
                                 <div style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
                                   <a href={`/entreprise-space/dashboard?id=${e.id}`} target="_blank" rel="noreferrer"
-                                    className="afrione-gradient-text"
-                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '10px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
+                                    
+                                    style={{color:'#9a3412', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.2)', borderRadius: '10px', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>
                                     <ExternalLink size={12} /> Voir l'espace entreprise
                                   </a>
                                 </div>

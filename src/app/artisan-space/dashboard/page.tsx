@@ -53,6 +53,10 @@ export default function ArtisanDashboardPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
   const [tab, setTab] = useState('missions')
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('tab')
+    if (wanted && ['missions', 'messages', 'profile', 'portfolio', 'wallet'].includes(wanted)) setTab(wanted)
+  }, [])
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const { status: pushStatus, enable: enablePush } = usePushNotifications(currentUserId)
   const [enablingPush, setEnablingPush] = useState(false)
@@ -764,7 +768,7 @@ export default function ArtisanDashboardPage() {
       <div className="page-container" style={{padding:isMobile?'20px 16px 48px':'28px 32px 64px',maxWidth:'896px',position:'relative'}}>
 
         {/* Header card */}
-        <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'14px',flexWrap:isMobile?'wrap':'nowrap'}}>
+        <div className="acard" style={{padding:'20px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'14px',flexWrap:isMobile?'wrap':'nowrap'}}>
           <div
             onClick={() => fileInputRef.current?.click()}
             style={{width:'72px',height:'72px',borderRadius:'16px',overflow:'hidden',cursor:'pointer',border:'2px dashed var(--ui-border)',flexShrink:0,background:'var(--ui-canvas)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
@@ -988,7 +992,7 @@ export default function ArtisanDashboardPage() {
             {/* Offre urgente en tête de messagerie — 60s, premier qui accepte */}
             {urgentOfferCard}
             {conversations.length === 0 && !hasUrgentOffers ? (
-              <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'48px',textAlign:'center'}}>
+              <div className="acard" style={{padding:'48px',textAlign:'center'}}>
                 <MessageCircle size={40} style={{margin:'0 auto 16px',color:'var(--ui-border)'}} />
                 <h3 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucune conversation</h3>
                 <p style={{color:'var(--ui-muted)',fontSize:'14px'}}>Les messages de vos clients apparaîtront ici</p>
@@ -1051,7 +1055,7 @@ export default function ArtisanDashboardPage() {
           <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
 
             {/* Bio */}
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+            <div className="acard" style={{padding:'20px'}}>
               <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'12px'}}>Description / Bio</h3>
               <textarea className="afrione-field"
                 value={bio}
@@ -1064,7 +1068,7 @@ export default function ArtisanDashboardPage() {
             </div>
 
             {/* Tarif horaire et expérience — lus en priorité par le moteur de prix */}
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+            <div className="acard" style={{padding:'20px'}}>
               <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'4px'}}>Votre tarif</h3>
               <p style={{fontSize:'12.5px',color:'var(--ui-muted)',marginBottom:'16px',lineHeight:1.5}}>
                 Ce tarif sert de base au calcul des devis proposés sur vos missions. Sans lui, AfriOne applique le tarif moyen du marché pour votre métier.
@@ -1084,26 +1088,13 @@ export default function ArtisanDashboardPage() {
                   </div>
                   <div style={{fontSize:'11px',color:'#8B95A5',marginTop:'5px'}}>Minimum légal : 866 FCFA/h</div>
                 </div>
-                <div style={{flex:1,minWidth:'150px'}}>
-                  <label style={{fontSize:'11px',fontWeight:700,color:'var(--ui-muted)',display:'block',marginBottom:'6px',letterSpacing:'0.06em'}}>EXPÉRIENCE</label>
-                  <div style={{position:'relative'}}>
-                    <input className="afrione-field"
-                      type="text" inputMode="numeric"
-                      value={yearsExp || ''}
-                      onChange={e => setYearsExp(parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)}
-                      placeholder="5"
-                      style={{width:'100%',padding:'12px 44px 12px 12px',border:'1.5px solid var(--ui-border)',borderRadius:'10px',fontSize:'15px',fontWeight:600,color:'var(--ui-ink)',outline:'none',boxSizing:'border-box',background:'#FFFFFF'}}
-                    />
-                    <span style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',fontSize:'12px',color:'#8B95A5',fontWeight:600,pointerEvents:'none'}}>ans</span>
-                  </div>
-                  <div style={{fontSize:'11px',color:'#8B95A5',marginTop:'5px'}}>Affichée sur votre profil</div>
-                </div>
               </div>
             </div>
 
             {/* Infos de base */}
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+            <div className="acard" style={{padding:'20px'}}>
               <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'16px'}}>Informations</h3>
+              {questionnaireStatus === 'approved' ? (
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',background:'rgba(232,93,38,0.04)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'10px'}}>
                 <div>
                   <div style={{fontSize:'12px',color:'var(--ui-muted)',marginBottom:'2px'}}>Années d'expérience</div>
@@ -1114,14 +1105,30 @@ export default function ArtisanDashboardPage() {
                   <span style={{color:'#9CA3AF',fontWeight:400}}>validé par AfriOne</span>
                 </div>
               </div>
+              ) : (
+                <div>
+                  <label htmlFor="years-exp" style={{fontSize:'11px',fontWeight:700,color:'var(--ui-muted)',display:'block',marginBottom:'6px',letterSpacing:'0.06em'}}>ANNÉES D’EXPÉRIENCE</label>
+                  <div style={{position:'relative',maxWidth:'260px'}}>
+                    <input id="years-exp" className="afrione-field"
+                      type="text" inputMode="numeric"
+                      value={yearsExp || ''}
+                      onChange={e => setYearsExp(parseInt(e.target.value.replace(/\D/g, ''), 10) || 0)}
+                      placeholder="5"
+                      style={{width:'100%',padding:'12px 44px 12px 12px',border:'1.5px solid var(--ui-border)',borderRadius:'10px',fontSize:'16px',fontWeight:600,color:'var(--ui-ink)',outline:'none',boxSizing:'border-box'}}
+                    />
+                    <span style={{position:'absolute',right:'12px',top:'50%',transform:'translateY(-50%)',fontSize:'12px',color:'var(--ui-muted)',fontWeight:600,pointerEvents:'none'}}>ans</span>
+                  </div>
+                  <p style={{fontSize:'12px',color:'var(--ui-muted)',margin:'6px 0 0'}}>Affichée sur votre profil. Elle sera validée quand AfriOne approuvera votre questionnaire.</p>
+                </div>
+              )}
             </div>
 
             {/* Spécialités */}
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+            <div className="acard" style={{padding:'20px'}}>
               <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'12px'}}>Spécialités</h3>
               <div style={{display:'flex',flexWrap:'wrap',gap:'8px',marginBottom:'12px'}}>
                 {specialties.map(s => (
-                  <span key={s} className="afrione-gradient-text" style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 12px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'20px',fontSize:'13px'}}>
+                  <span key={s}  style={{color:'#9a3412',display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 12px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'20px',fontSize:'13px'}}>
                     {s}
                     <button onClick={() => setSpecialties(prev => prev.filter(x => x !== s))} className="afrione-gradient-text afrione-action" style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex'}}>
                       <X size={12} />
@@ -1148,7 +1155,7 @@ export default function ArtisanDashboardPage() {
             </div>
 
             {/* Zones d'intervention */}
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+            <div className="acard" style={{padding:'20px'}}>
               <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'12px'}}>
                 <MapPin size={16} className="afrione-gradient-text" style={{display:'inline',marginRight:'6px'}} />
                 Zones d'intervention (Abidjan)
@@ -1166,7 +1173,7 @@ export default function ArtisanDashboardPage() {
             </div>
 
             {/* Certifications */}
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+            <div className="acard" style={{padding:'20px'}}>
               <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'12px'}}>Certifications & Diplômes</h3>
               <div style={{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'12px'}}>
                 {certifications.map((c, i) => (
@@ -1196,7 +1203,7 @@ export default function ArtisanDashboardPage() {
             </div>
 
             {/* Mon entreprise */}
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+            <div className="acard" style={{padding:'20px'}}>
               <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px'}}>
                 <Building2 size={16} color="#60a5fa" /> Mon entreprise
               </h3>
@@ -1298,7 +1305,7 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET PORTFOLIO ===== */}
         {tab === 'portfolio' && (
           <div style={{display:'flex',flexDirection:'column',gap:'20px'}}>
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px'}}>
+            <div className="acard" style={{padding:'20px'}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}}>
                 <div>
                   <h3 className="font-display" style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)'}}>Galerie de réalisations</h3>
@@ -1389,15 +1396,16 @@ export default function ArtisanDashboardPage() {
         {/* ===== ONGLET WALLET ===== */}
         {tab === 'wallet' && (
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'32px',textAlign:'center'}}>
+            <div className="acard" style={{padding:'32px',textAlign:'center'}}>
               <div style={{fontSize:'13px',color:'var(--ui-muted)',fontFamily: 'var(--font-body)',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'0.1em'}}>Solde disponible</div>
               <div className="font-display" style={{fontSize:'52px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'4px'}}>
                 {(wallet?.balance_available || 0).toLocaleString()}
               </div>
               <div style={{color:'var(--ui-muted)',marginBottom:'24px',fontFamily: 'var(--font-body)',fontSize:'14px'}}>FCFA</div>
-              <button className="btn-primary afrione-action" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
-                Retirer vers Wave
-              </button>
+              <p style={{margin:'0 auto',maxWidth:'38ch',padding:'12px 14px',borderRadius:'14px',background:'#fff1e8',color:'#7a2e0e',fontSize:'13.5px',lineHeight:1.5}}>
+                Le retrait de votre solde n’est pas encore disponible dans l’application. Écrivez-nous depuis la page d’aide pour demander un virement.
+              </p>
+              <div style={{marginTop:'12px'}}><Link href="/aide" style={{color:'#9a3412',fontWeight:700,fontSize:'14px'}}>Ouvrir l’aide</Link></div>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'12px'}}>
               {[
@@ -1414,7 +1422,7 @@ export default function ArtisanDashboardPage() {
             </div>
 
             {/* Historique des transactions */}
-            <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',overflow:'hidden'}}>
+            <div className="acard" style={{overflow:'hidden'}}>
               <div style={{padding:'16px 20px',borderBottom:'1px solid var(--ui-border)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <h3 style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}>Historique</h3>
                 <span style={{fontSize:'12px',color:'var(--ui-muted)'}}>{completedMissions.length} mission{completedMissions.length !== 1 ? 's' : ''}</span>

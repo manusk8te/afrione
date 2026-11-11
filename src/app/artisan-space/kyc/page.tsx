@@ -219,7 +219,7 @@ export default function KYCPage() {
                     <div style={{flex:1}}>
                       <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
                         <span style={{fontWeight:700,color:'var(--ui-ink)',fontSize:'15px'}}>{doc.label}</span>
-                        {doc.required && <span className="afrione-gradient-text" style={{fontSize:'11px',background:'rgba(232,93,38,0.1)',padding:'2px 8px',borderRadius:'20px'}}>Obligatoire</span>}
+                        {doc.required && <span  style={{color:'#9a3412',fontSize:'11px',background:'rgba(232,93,38,0.1)',padding:'2px 8px',borderRadius:'20px'}}>Obligatoire</span>}
                         {uploaded && <span style={{fontSize:'11px',color:'#2B6B3E',background:'rgba(43,107,62,0.1)',padding:'2px 8px',borderRadius:'20px'}}>✓ Envoyé</span>}
                       </div>
                       <p style={{fontSize:'13px',color:'var(--ui-muted)',marginTop:'2px'}}>{doc.desc}</p>

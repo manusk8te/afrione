@@ -320,8 +320,8 @@ function MagasinCard({
         <div style={{ borderTop: '1px solid var(--ui-border)', padding: '14px 16px' }}>
           {!addingArticle ? (
             <button onClick={onStartAdd}
-              className="afrione-gradient-text afrione-action"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+              className=" afrione-action"
+              style={{color:'#9a3412', display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', background: 'rgba(232,93,38,0.08)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontWeight: 600, width: '100%', justifyContent: 'center' }}>
               <Plus size={14} /> Ajouter un article avec son prix
             </button>
           ) : (

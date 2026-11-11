@@ -274,3 +274,10 @@
 .notif__text { flex: 1; min-width: 0; display: grid; gap: 1px; }
 .notif__text strong { font-size: 14px; }
 .notif__text span { color: #65564b; font-size: 12.5px; }
+
+.acard {
+  border: 1px solid rgba(110, 72, 44, 0.12);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(60, 35, 20, 0.04);
+}
