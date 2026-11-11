@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { useRef, useState, type PointerEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
+import PaperWave from './PaperWave'
 
 type Props = {
   href: string
@@ -11,7 +12,7 @@ type Props = {
   photo: string
   position: string
   tone: string
-  /** Décale l'oscillation « feuille » pour que les cartes ne bougent pas en même temps. */
+  /** Décale la vague d'une carte à l'autre. */
   index: number
 }
 
@@ -20,21 +21,22 @@ const UNLOCK_AT = 0.72   // part de la piste à parcourir pour valider le glisse
 
 /**
  * Carte métier de l'accueil.
- * - Glisser la flèche de gauche à droite (comme « déverrouiller » un iPhone)
- *   ouvre la liste des artisans. Un simple tap ou Entrée marche aussi.
- * - Photo légèrement givrée, qui se dégivre au survol.
- * - Inclinaison 3D légère qui suit la souris + oscillation lente de « feuille ».
+ * - La photo ondule comme une feuille de papier (canvas, net en Retina).
+ *   L'ondulation s'accentue au survol ou à l'appui.
+ * - Glisser la flèche de gauche à droite ouvre la liste des artisans,
+ *   comme « déverrouiller » un iPhone. Un tap ou Entrée marche aussi.
+ * - Aucune transformation 3D sur la carte : texte et flèche restent nets.
  */
 export default function TradeCard({ href, label, photo, position, tone, index }: Props) {
   const router = useRouter()
   const bandRef = useRef<HTMLDivElement>(null)
   const drag = useRef<{ startX: number; max: number; moved: boolean } | null>(null)
-  const [x, setX] = useState(0)
-  const [dragging, setDragging] = useState(false)
-  const [tilt, setTilt] = useState({ rx: 0, ry: 0 })
   const suppressClick = useRef(false)
+  const [x, setX] = useState(0)
+  const [max, setMax] = useState(1)
+  const [dragging, setDragging] = useState(false)
+  const [active, setActive] = useState(false)
 
-  /* ── Glisser pour ouvrir ─────────────────────────────────────────────── */
   const onKnobDown = (e: PointerEvent<HTMLSpanElement>) => {
     const band = bandRef.current
     if (!band) return
@@ -42,15 +44,18 @@ export default function TradeCard({ href, label, photo, position, tone, index }:
     e.stopPropagation()
     e.currentTarget.setPointerCapture(e.pointerId)
     const pad = parseFloat(getComputedStyle(band).paddingLeft) || 6
-    drag.current = { startX: e.clientX - x, max: band.clientWidth - KNOB - pad * 2, moved: false }
+    const m = band.clientWidth - KNOB - pad * 2
+    drag.current = { startX: e.clientX - x, max: m, moved: false }
+    setMax(m)
     setDragging(true)
+    setActive(true)
   }
 
   const onKnobMove = (e: PointerEvent<HTMLSpanElement>) => {
     const d = drag.current
     if (!d) return
     const next = Math.max(0, Math.min(d.max, e.clientX - d.startX))
-    if (Math.abs(next) > 4) d.moved = true
+    if (next > 4) d.moved = true
     setX(next)
   }
 
@@ -58,6 +63,7 @@ export default function TradeCard({ href, label, photo, position, tone, index }:
     const d = drag.current
     drag.current = null
     setDragging(false)
+    setActive(false)
     if (!d) return
     if (d.moved) suppressClick.current = true
     if (x >= d.max * UNLOCK_AT) {
@@ -68,76 +74,47 @@ export default function TradeCard({ href, label, photo, position, tone, index }:
     }
   }
 
-  /* ── Inclinaison 3D : suit la souris, ou le doigt tant qu'il appuie ──── */
-  const pressed = useRef(false)
-  const tiltFrom = (e: PointerEvent<HTMLAnchorElement>, strength: number) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    const px = (e.clientX - r.left) / r.width
-    const py = (e.clientY - r.top) / r.height
-    setTilt({ rx: (0.5 - py) * 7 * strength, ry: (px - 0.5) * 9 * strength })
-  }
-  const onCardDown = (e: PointerEvent<HTMLAnchorElement>) => {
-    if (e.pointerType === 'mouse') return
-    pressed.current = true
-    tiltFrom(e, 1.3)
-  }
-  const onCardMove = (e: PointerEvent<HTMLAnchorElement>) => {
-    if (dragging) return
-    if (e.pointerType === 'mouse') tiltFrom(e, 1)
-    else if (pressed.current) tiltFrom(e, 1.3)
-  }
-  const onCardLeave = () => {
-    pressed.current = false
-    setTilt({ rx: 0, ry: 0 })
-  }
-
-  const progress = drag.current?.max ? x / drag.current.max : 0
+  const progress = Math.min(1, x / max)
 
   return (
-    <div className="home-trade-card__leaf" style={{ animationDelay: `${-index * 1.3}s` } as CSSProperties}>
-      <Link
-        href={href}
-        className="home-trade-card"
-        aria-label={`Voir les artisans : ${label}`}
-        data-dragging={dragging || undefined}
-        onPointerDown={onCardDown}
-        onPointerMove={onCardMove}
-        onPointerUp={onCardLeave}
-        onPointerCancel={onCardLeave}
-        onPointerLeave={onCardLeave}
-        onClick={e => {
-          if (suppressClick.current) {
-            e.preventDefault()
-            suppressClick.current = false
-          }
-        }}
-        style={{ '--rx': `${tilt.rx}deg`, '--ry': `${tilt.ry}deg` } as CSSProperties}
-      >
-        <div className="home-trade-card__media">
-          <img src={photo} alt="" style={{ objectPosition: position, '--tone': tone } as CSSProperties} />
-          <div className="home-trade-card__shade" />
-        </div>
+    <Link
+      href={href}
+      className="home-trade-card"
+      aria-label={`Voir les artisans : ${label}`}
+      data-dragging={dragging || undefined}
+      onPointerEnter={e => e.pointerType === 'mouse' && setActive(true)}
+      onPointerLeave={() => !dragging && setActive(false)}
+      onPointerDown={e => e.pointerType !== 'mouse' && setActive(true)}
+      onPointerUp={e => e.pointerType !== 'mouse' && setActive(false)}
+      onPointerCancel={() => setActive(false)}
+      onClick={e => {
+        if (suppressClick.current) {
+          e.preventDefault()
+          suppressClick.current = false
+        }
+      }}
+    >
+      <div className="home-trade-card__media">
+        <PaperWave src={photo} position={position} tone={tone} index={index} active={active} />
+        <div className="home-trade-card__shade" />
+      </div>
 
-        <div ref={bandRef} className="home-trade-card__band">
-          <span
-            className="home-trade-card__knob"
-            aria-hidden="true"
-            onPointerDown={onKnobDown}
-            onPointerMove={onKnobMove}
-            onPointerUp={onKnobUp}
-            onPointerCancel={onKnobUp}
-            style={{
-              transform: `translateX(${x}px)`,
-              transition: dragging ? 'none' : undefined,
-            }}
-          >
-            <ArrowRight size={17} />
-          </span>
-          <span className="home-trade-card__label" style={{ opacity: 1 - Math.min(1, progress * 1.4) }}>
-            {label}
-          </span>
-        </div>
-      </Link>
-    </div>
+      <div ref={bandRef} className="home-trade-card__band">
+        <span
+          className="home-trade-card__knob"
+          aria-hidden="true"
+          onPointerDown={onKnobDown}
+          onPointerMove={onKnobMove}
+          onPointerUp={onKnobUp}
+          onPointerCancel={onKnobUp}
+          style={{ transform: `translateX(${x}px)`, transition: dragging ? 'none' : undefined }}
+        >
+          <ArrowRight size={17} />
+        </span>
+        <span className="home-trade-card__label" style={{ opacity: 1 - Math.min(1, progress * 1.4) }}>
+          {label}
+        </span>
+      </div>
+    </Link>
   )
 }
