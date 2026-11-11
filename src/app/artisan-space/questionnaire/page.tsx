@@ -417,9 +417,9 @@ export default function ArtisanQuestionnairePage() {
             <label style={labelStyle}>Moyen de transport pour vos déplacements</label>
             <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
               {[
-                { id: 'pied',    label: '🚶 À pied'  },
-                { id: 'moto',    label: '🏍️ Moto'     },
-                { id: 'voiture', label: '🚗 Voiture'  },
+                { id: 'pied',    label: 'À pied'  },
+                { id: 'moto',    label: 'Moto'     },
+                { id: 'voiture', label: 'Voiture'  },
               ].map(({ id, label }) => (
                 <button className="afrione-action" key={id} onClick={() => setTransportMoyen(id)}
                   style={{

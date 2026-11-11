@@ -1,6 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
+import { Clock as UiClock } from 'lucide-react'
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -392,7 +393,7 @@ function EntrepriseDashboard() {
             {joinRequests.length > 0 && (
               <div style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '12px', padding: '16px', marginBottom: '8px' }}>
                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#C9A84C', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  ⏳ {joinRequests.length} demande{joinRequests.length > 1 ? 's' : ''} en attente
+                  <UiClock className="ui-glyph" aria-hidden="true" /> {joinRequests.length} demande{joinRequests.length > 1 ? 's' : ''} en attente
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {joinRequests.map(req => {

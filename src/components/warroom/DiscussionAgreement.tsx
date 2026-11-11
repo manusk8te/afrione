@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { clientApi } from '@/lib/client-api'
 import toast from 'react-hot-toast'
 
-export function DiscussionAgreement({ missionId, role, initialScope, onDiscussion, refreshKey=0 }: {
-  missionId: string; role: string; initialScope: string; onDiscussion: (enabled: boolean) => void; refreshKey?:number
+export function DiscussionAgreement({ missionId, role, initialScope, onDiscussion, refreshKey=0, inlineAdjustments=false }: {
+  missionId: string; role: string; initialScope: string; onDiscussion: (enabled: boolean) => void; refreshKey?:number; inlineAdjustments?:boolean
 }) {
   const [agreement, setAgreement] = useState<any>(null)
   const [loaded, setLoaded] = useState(false)
@@ -66,7 +66,7 @@ export function DiscussionAgreement({ missionId, role, initialScope, onDiscussio
     {agreement && <>
       <p style={{whiteSpace:'pre-wrap'}}>{agreement.scope}</p>
       <small>Version {agreement.version} · {agreement.discussion?'Discussion activée':'Sans discussion libre : devis et rectificatifs uniquement'}</small>
-      {role==='artisan' && !editing && <p><button className="afrione-action" disabled={busy||failed} onClick={()=>{setEditingAction('propose');setScope(agreement.scope);setEditing(true)}}>Proposer un rectificatif</button></p>}
+      {role==='artisan' && !editing && !inlineAdjustments && <p><button className="afrione-action" disabled={busy||failed} onClick={()=>{setEditingAction('propose');setScope(agreement.scope);setEditing(true)}}>Proposer un rectificatif</button></p>}
       {editing && (role==='artisan'||editingAction==='counter') && <div>
         <label>Périmètre corrigé<textarea className="afrione-field" style={field} maxLength={4000} value={scope} onChange={e=>setScope(e.target.value)}/></label>
         <label>Constat et justification<textarea className="afrione-field" style={field} maxLength={2000} value={reason} onChange={e=>setReason(e.target.value)}/></label>
@@ -76,7 +76,7 @@ export function DiscussionAgreement({ missionId, role, initialScope, onDiscussio
         <button className="afrione-action" disabled={busy||failed||scope.trim().length<10||reason.trim().length<10||!Number.isInteger(Number(amount))||Number(amount)<=0} onClick={()=>act(editingAction)}>Envoyer pour accord</button>{' '}
         <button className="afrione-action" disabled={busy} onClick={()=>setEditing(false)}>Annuler</button>
       </div>}
-      {agreement.pending && <div style={{padding:12,background:'#FFF4DF',marginTop:12}}>
+      {agreement.pending && !agreement.pending.adjustment_ids && <div style={{padding:12,background:'#FFF4DF',marginTop:12}}>
         <strong>Rectificatif en attente</strong><p style={{whiteSpace:'pre-wrap'}}>{agreement.pending.scope}</p><p>Justification : {agreement.pending.reason}</p>
         <p>{Number(agreement.pending.amount).toLocaleString('fr')} FCFA · fournitures {agreement.pending.supplies==='included'?'comprises':'non comprises'}</p>
         {role==='client' && agreement.pending.proposed_role!=='client' && <><label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> J’accepte le périmètre corrigé et ce nouveau montant.</label><br/>
@@ -85,7 +85,7 @@ export function DiscussionAgreement({ missionId, role, initialScope, onDiscussio
         {role==='client' && agreement.pending.proposed_role==='client' && <p>En attente de réponse du prestataire à votre contre-proposition.</p>}
         {role==='artisan' && agreement.pending.proposed_role==='client' && <><button className="btn-primary afrione-action" disabled={busy||failed} onClick={()=>act('accept_counter')}>Accepter la contre-proposition</button> <button className="afrione-action" disabled={busy||failed} onClick={()=>act('reject')}>Refuser la contre-proposition</button></>}
       </div>}
-      {role==='client' && !agreement.pending && <p><Link href={`/mode-select?mission=${missionId}`}>Voir le devis actualisé et la simulation de paiement</Link></p>}
+      {role==='client' && !agreement.pending && <p><Link href={`/warroom/${missionId}#paiement-wave`}>Voir le paiement après confirmation du devis</Link></p>}
       <details><summary>Historique des accords ({agreement.history.length})</summary>{agreement.history.map((event:any,i:number)=><p key={i}>{new Date(event.at).toLocaleString('fr')} · {{confirm:'Demande confirmée',propose:'Rectificatif proposé',accept:'Rectificatif accepté',reject:'Rectificatif refusé',counter:'Contre-proposition du client',accept_counter:'Contre-proposition approuvée par le prestataire'}[event.action as string]}<br/>{event.payload?.reason || event.payload?.scope}{event.payload?.amount ? ` · ${event.payload.amount} FCFA` : ''}</p>)}</details>
     </>}
   </section>

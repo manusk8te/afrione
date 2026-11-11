@@ -382,7 +382,7 @@ function SourceCard({
             )}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginTop: '2px' }}>
-            {source.quartier ? `📍 ${source.quartier}` : source.url ? source.url.replace(/^https?:\/\//, '').split('/')[0] : ''}
+            {source.quartier ? `${source.quartier}` : source.url ? source.url.replace(/^https?:\/\//, '').split('/')[0] : ''}
           </div>
         </div>
 
@@ -402,7 +402,7 @@ function SourceCard({
           )}
           <button className="afrione-action" onClick={onDelete}
             style={{ padding: '5px 8px', background: isConfirmingDelete ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.05)', border: `1px solid ${isConfirmingDelete ? 'rgba(239,68,68,0.4)' : 'rgba(239,68,68,0.15)'}`, borderRadius: '6px', color: '#f87171', fontSize: '11px', cursor: 'pointer', fontWeight: isConfirmingDelete ? 700 : 400, whiteSpace: 'nowrap' }}>
-            {isConfirmingDelete ? '⚠️ Confirmer ?' : <Trash2 size={11} />}
+            {isConfirmingDelete ? 'Confirmer ?' : <Trash2 size={11} />}
           </button>
           {expanded ? <ChevronUp size={14} color="#8B95A5" /> : <ChevronDown size={14} color="#8B95A5" />}
         </div>

@@ -95,12 +95,12 @@ export default function Navbar() {
     : { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontWeight: 600, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', color: 'white', transition: 'background 0.2s' }
 
   return (
-    <nav style={{
+    <nav className="site-navbar" data-hero={onOrange} style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999,
       transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
-      background:    scrolled ? 'rgba(255,255,255,0.97)' : 'transparent',
+      background:    onOrange ? 'transparent' : 'rgba(255,255,255,0.97)',
       backdropFilter: scrolled ? 'blur(14px)' : 'none',
-      borderBottom:  scrolled ? '1px solid var(--ui-border)' : 'none',
+      borderBottom:  onOrange ? 'none' : '1px solid var(--ui-border)',
     }}>
       <div className="page-container">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px' }}>
@@ -239,7 +239,7 @@ export default function Navbar() {
 
             {/* Hamburger */}
             {isMobile && (
-              <button className="afrione-action" onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', color: onOrange ? 'white' : 'var(--ui-ink)', transition: 'color 0.3s' }}>
+              <button className="afrione-action site-navbar-toggle" aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"} aria-expanded={menuOpen} aria-controls="site-mobile-menu" onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', display: 'flex', color: onOrange ? 'white' : 'var(--ui-ink)', transition: 'color 0.3s' }}>
                 {menuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             )}
@@ -248,7 +248,7 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div style={{ background: '#FFFFFF', borderTop: '1px solid var(--ui-border)', padding: '16px 0', boxShadow: '0 8px 24px rgba(0,0,0,0.06)' }}>
+          <div id="site-mobile-menu" className="site-mobile-menu">
             {links.map(l => (
               <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
                 style={{ display: 'block', padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: pathname === l.href ? '#E85D26' : 'var(--ui-ink)', textDecoration: 'none', borderRadius: '8px', transition: 'background 0.15s' }}

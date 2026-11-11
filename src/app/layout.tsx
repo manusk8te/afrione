@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthProvider>
           {children}
-          <Toaster position="top-right" />
+          <Toaster position="top-right" containerClassName="site-notifications" />
           <DevPanel />
         </AuthProvider>
       </body>

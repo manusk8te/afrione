@@ -1,4 +1,5 @@
 'use client'
+import { Search as UiSearch } from 'lucide-react'
 import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -149,16 +150,13 @@ function ArtisansDirectory() {
             </p>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <p style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</p>
+              <p style={{ fontSize: '48px', marginBottom: '16px' }}><UiSearch className="ui-glyph" aria-hidden="true" /></p>
               <h3 className="font-display" style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)' }}>Aucun artisan trouvé</h3>
               <p style={{ color: 'var(--ui-muted)', marginTop: '8px' }}>{!search && metier !== 'Tous' ? 'Aucun profil vérifié dans cette catégorie pour le moment.' : 'Essayez avec d’autres critères.'}</p>
             </div>
           ) : (
             <div style={{ position: 'relative' }}>
               {/* Orange decorative squares */}
-              <div style={{ position: 'absolute', top: '8%', right: '-16px', width: 56, height: 56, background: 'rgba(232,93,38,0.07)', borderRadius: 12, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
-              <div style={{ position: 'absolute', top: '40%', left: '-20px', width: 40, height: 40, border: '2px solid rgba(232,93,38,0.12)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-8deg)', pointerEvents: 'none' }} />
-              <div style={{ position: 'absolute', bottom: '15%', right: '2%', width: 24, height: 24, background: 'rgba(232,93,38,0.1)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(300px,1fr))', gap: '16px' }}>
               {filtered.map(a => {
                 const coverPhoto = a.portfolio?.[0] || null

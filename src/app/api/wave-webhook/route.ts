@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     }
 
     const totalAmount   = Number(amount)
-    // ⚠️ 12 % ici, 10 % dans /api/payment, 15 % dans dispatch/simulate-pay.
+    //  12 % ici, 10 % dans /api/payment, 15 % dans dispatch/simulate-pay.
     // Quatre taux en dur pour un seul modèle — voir docs/COMMISSIONS.md.
     const platformFee   = Math.round(totalAmount * 0.12)
     const artisanAmount = totalAmount - platformFee
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
         sender_id:   mission.client_id,
         sender_role: 'system',
         sender_type: 'afrione_system',
-        text:        `💳 Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé. Recherche d'un artisan en cours...`,
+        text:        `Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé. Recherche d'un artisan en cours...`,
         type:        'system',
       })
 
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
         sender_id:   mission?.client_id,
         sender_role: 'system',
         sender_type: 'afrione_system',
-        text:        `💳 Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé via Wave (réf. ${sessionId?.slice(0, 8)}). Fonds sécurisés jusqu'à la fin de la mission.`,
+        text:        `Paiement de ${totalAmount.toLocaleString('fr-FR')} FCFA confirmé via Wave (réf. ${sessionId?.slice(0, 8)}). Fonds sécurisés jusqu'à la fin de la mission.`,
         type:        'system',
       })
     }

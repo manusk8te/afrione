@@ -1,4 +1,5 @@
 'use client'
+import { Grid2X2 as UiGrid2X2, Hammer as UiHammer, HardHat as UiHardHat, KeyRound as UiKeyRound, Paintbrush as UiPaintbrush, Snowflake as UiSnowflake, Wrench as UiWrench, Zap as UiZap } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -9,14 +10,14 @@ const NEU_SHADOW = 'var(--ui-shadow-card)'
 const NEU_SMALL  = 'var(--ui-shadow-soft)'
 
 const METIERS = [
-  { id: 'Plomberie', label: 'Plomberie', icon: '🔧' },
-  { id: 'Électricité', label: 'Électricité', icon: '⚡' },
-  { id: 'Maçonnerie', label: 'Maçonnerie', icon: '🏗️' },
-  { id: 'Peinture', label: 'Peinture', icon: '🎨' },
-  { id: 'Menuiserie', label: 'Menuiserie', icon: '🪵' },
-  { id: 'Climatisation', label: 'Climatisation', icon: '❄️' },
-  { id: 'Serrurerie', label: 'Serrurerie', icon: '🔑' },
-  { id: 'Carrelage', label: 'Carrelage', icon: '🪟' },
+  { id: 'Plomberie', label: 'Plomberie', icon: <UiWrench className="ui-glyph" aria-hidden="true" /> },
+  { id: 'Électricité', label: 'Électricité', icon: <UiZap className="ui-glyph" aria-hidden="true" /> },
+  { id: 'Maçonnerie', label: 'Maçonnerie', icon: <UiHardHat className="ui-glyph" aria-hidden="true" /> },
+  { id: 'Peinture', label: 'Peinture', icon: <UiPaintbrush className="ui-glyph" aria-hidden="true" /> },
+  { id: 'Menuiserie', label: 'Menuiserie', icon: <UiHammer className="ui-glyph" aria-hidden="true" /> },
+  { id: 'Climatisation', label: 'Climatisation', icon: <UiSnowflake className="ui-glyph" aria-hidden="true" /> },
+  { id: 'Serrurerie', label: 'Serrurerie', icon: <UiKeyRound className="ui-glyph" aria-hidden="true" /> },
+  { id: 'Carrelage', label: 'Carrelage', icon: <UiGrid2X2 className="ui-glyph" aria-hidden="true" /> },
 ]
 
 const QUARTIERS = ['Cocody','Plateau','Marcory','Treichville','Yopougon','Adjamé','Abobo','Port-Bouët','Koumassi']
@@ -182,7 +183,7 @@ export default function ArtisanRegisterPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '12px', padding: '12px 16px', fontSize: '14px', fontFamily: 'monospace', flexShrink: 0 }}>
-                  🇨🇮 +225
+                   +225
                 </div>
                 <input className="afrione-field" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)}
                   placeholder="07 00 00 00 00" style={{ ...inputStyle, flex: 1, fontFamily: 'monospace' }} />
@@ -290,7 +291,7 @@ export default function ArtisanRegisterPage() {
             <div style={{ width: '80px', height: '80px', background: 'rgba(232,93,38,0.08)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
               <CheckCircle size={40} color="#E85D26" />
             </div>
-            <h2 style={{ fontWeight: 700, fontSize: '28px', color: 'var(--ui-ink)', marginBottom: '12px' }}>Compte créé ! 🎉</h2>
+            <h2 style={{ fontWeight: 700, fontSize: '28px', color: 'var(--ui-ink)', marginBottom: '12px' }}>Compte créé ! </h2>
             <p style={{ color: 'var(--ui-muted)', marginBottom: '32px' }}>Il ne reste plus qu'à vérifier votre identité pour activer votre profil</p>
             <Link href="/artisan-space/kyc" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '16px', width: '100%' }}>
               <Zap size={16} /> Envoyer mes documents KYC

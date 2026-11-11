@@ -1,4 +1,5 @@
 'use client'
+import { Building2 as UiBuilding2, Circle as UiCircle, Clapperboard as UiClapperboard, ClipboardList as UiClipboardList, CreditCard as UiCreditCard, FileText as UiFileText, Scale as UiScale, Search as UiSearch, ShieldCheck as UiShieldCheck, Wallet as UiWallet, Wrench as UiWrench, Zap as UiZap } from 'lucide-react'
 import {clientApi} from '@/lib/client-api'
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -132,7 +133,7 @@ export default function AdminDashboard() {
         payload => {
           if (payload.new?.status === 'disputed') {
             setLitigeNotif(true)
-            toast('⚠️ Nouveau litige ouvert !', {
+            toast('Nouveau litige ouvert !', {
               duration: 6000,
               style: { background: '#FFFFFF', color: 'var(--ui-ink)', border: '1px solid rgba(239,68,68,0.4)' },
             })
@@ -195,7 +196,7 @@ export default function AdminDashboard() {
 
   const revokeKyc = async (artisanId: string) => {
     await adminAction({ action: 'revoke_kyc', artisanId })
-    flash('↩ KYC révoqué — artisan repassé en attente')
+    flash('KYC révoqué — artisan repassé en attente')
     loadAll()
   }
 
@@ -203,7 +204,7 @@ export default function AdminDashboard() {
     const res = await adminAction({ action: 'set_role', userId, role })
     const data = await res.json()
     if (data.ok) {
-      flash(role === 'admin' ? '⭐ Utilisateur promu Admin' : role === 'artisan' ? 'Rôle → Artisan' : 'Rôle → Client')
+      flash(role === 'admin' ? 'Utilisateur promu Admin' : role === 'artisan' ? 'Rôle → Artisan' : 'Rôle → Client')
       loadAll()
     } else {
       flash('Erreur : ' + (data.error || 'inconnue'))
@@ -217,8 +218,8 @@ export default function AdminDashboard() {
   }
 
   const litigeReason = (msgs: any[]) => {
-    const m = msgs.find(m => m.type === 'system' && m.text?.startsWith('⚠️ Litige'))
-    return m?.text?.replace('⚠️ Litige signalé : ', '') || null
+    const m = msgs.find(m => m.type === 'system' && m.text?.startsWith('Litige'))
+    return m?.text?.replace('Litige signalé : ', '') || null
   }
 
   return (
@@ -309,9 +310,9 @@ export default function AdminDashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px' }}>
                   {/* Missions by mode */}
                   {[
-                    { mode: 'urgent',   label: 'Mode Urgent',   color: '#E85D26', icon: '⚡' },
-                    { mode: 'standard', label: 'Mode Standard', color: '#2B6B3E', icon: '📋' },
-                    { mode: 'libre',    label: 'Mode Libre',    color: 'var(--ui-muted)', icon: '🔍' },
+                    { mode: 'urgent',   label: 'Mode Urgent',   color: '#E85D26', icon: <UiZap className="ui-glyph" aria-hidden="true" /> },
+                    { mode: 'standard', label: 'Mode Standard', color: '#2B6B3E', icon: <UiClipboardList className="ui-glyph" aria-hidden="true" /> },
+                    { mode: 'libre',    label: 'Mode Libre',    color: 'var(--ui-muted)', icon: <UiSearch className="ui-glyph" aria-hidden="true" /> },
                   ].map(m => (
                     <div key={m.mode} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
                       <div style={{ fontSize: '20px', marginBottom: '8px' }}>{m.icon}</div>
@@ -326,28 +327,28 @@ export default function AdminDashboard() {
                 {/* Cas C + insurance metrics */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
                   <div style={{ background: '#FFFFFF', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
-                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>🎬</div>
+                    <div style={{ fontSize: '20px', marginBottom: '8px' }}><UiClapperboard className="ui-glyph" aria-hidden="true" /></div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#C9A84C', fontFamily: 'var(--font-display)' }}>
                       {casCReports.filter(r => !r.reviewed_by_admin).length}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>Cas C en attente</div>
                   </div>
                   <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
-                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>🛡️</div>
+                    <div style={{ fontSize: '20px', marginBottom: '8px' }}><UiShieldCheck className="ui-glyph" aria-hidden="true" /></div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-display)' }}>
                       {missions.filter(m => m.insurance_taken).length}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>Missions assurées</div>
                   </div>
                   <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
-                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>💰</div>
+                    <div style={{ fontSize: '20px', marginBottom: '8px' }}><UiWallet className="ui-glyph" aria-hidden="true" /></div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--ui-ink)', fontFamily: 'var(--font-display)' }}>
                       {(missions.filter(m => m.insurance_taken).length * 500).toLocaleString()}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--ui-muted)', marginTop: '4px', fontFamily: 'var(--font-body)', textTransform: 'uppercase' }}>FCFA assurance</div>
                   </div>
                   <div style={{ background: '#FFFFFF', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '16px', padding: '18px', boxShadow: NEU_SMALL }}>
-                    <div style={{ fontSize: '20px', marginBottom: '8px' }}>⚠️</div>
+                    <div style={{ fontSize: '20px', marginBottom: '8px' }}><UiCircle className="ui-glyph" aria-hidden="true" /></div>
                     <div style={{ fontSize: '24px', fontWeight: 700, color: '#ef4444', fontFamily: 'var(--font-display)' }}>
                       {artisans.filter((a: any) => (a.cas_c_count || 0) / Math.max(a.total_missions || 1, 1) > 0.1).length}
                     </div>
@@ -362,7 +363,7 @@ export default function AdminDashboard() {
                   borderRadius: '16px', cursor: scraping ? 'default' : 'pointer', textAlign: 'left',
                   opacity: scraping ? 0.7 : 1, transition: 'all 0.15s',
                 }}>
-                  <span style={{ fontSize: '20px' }}>{scraping ? '⏳' : '🛒'}</span>
+                  <span style={{ fontSize: '20px' }}>{scraping ? '' : ''}</span>
                   <div style={{ flex: 1 }}>
                     <div className="afrione-gradient-text" style={{ fontWeight: 700, fontSize: '14px' }}>
                       {scraping ? 'Synchronisation Jumia CI en cours…' : 'Synchroniser les prix Jumia CI'}
@@ -400,7 +401,7 @@ export default function AdminDashboard() {
                         <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'var(--ui-canvas)', borderRadius: '10px', border: '1px solid var(--ui-border)' }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ui-ink)' }}>{k.users?.name || '—'}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--ui-muted)' }}>{metierDisplay(k.metier).icon} {metierDisplay(k.metier).label} · {new Date(k.created_at).toLocaleDateString('fr-FR')}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--ui-muted)' }}>{metierDisplay(k.metier).label} · {new Date(k.created_at).toLocaleDateString('fr-FR')}</div>
                           </div>
                           <div style={{ display: 'flex', gap: '6px' }}>
                             <button className="afrione-action afrione-action--icon" onClick={() => approveKyc(k.id, k.kyc_security?.[0]?.id)} style={{ width: '28px', height: '28px', background: 'rgba(43,107,62,0.15)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2B6B3E' }}>
@@ -412,7 +413,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ))}
-                      {kycAll.filter(k => k.kyc_status === 'pending').length === 0 && <p style={{ fontSize: '13px', color: 'var(--ui-muted)', textAlign: 'center', padding: '24px 0' }}>Aucun KYC en attente 🎉</p>}
+                      {kycAll.filter(k => k.kyc_status === 'pending').length === 0 && <p style={{ fontSize: '13px', color: 'var(--ui-muted)', textAlign: 'center', padding: '24px 0' }}>Aucun KYC en attente </p>}
                     </div>
                   </div>
                 </div>
@@ -435,7 +436,7 @@ export default function AdminDashboard() {
 
                 {litiges.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--ui-muted)' }}>
-                    <p style={{ fontSize: '48px', marginBottom: '16px' }}>⚖️</p>
+                    <p style={{ fontSize: '48px', marginBottom: '16px' }}><UiScale className="ui-glyph" aria-hidden="true" /></p>
                     <p style={{ fontSize: '16px', color: 'var(--ui-ink)', fontWeight: 600, marginBottom: '8px' }}>Aucun litige en cours</p>
                     <p style={{ fontSize: '13px' }}>Tous les litiges ont été résolus.</p>
                   </div>
@@ -550,7 +551,7 @@ export default function AdminDashboard() {
                               {litigeMessages.slice(-8).map((msg: any, i: number) => {
                                 const isArtisan = msg.sender_role === 'artisan'
                                 const isSystem  = msg.type === 'system'
-                                const isLitigeMsg = msg.text?.startsWith('⚠️ Litige')
+                                const isLitigeMsg = msg.text?.startsWith('Litige')
                                 if (isSystem && !isLitigeMsg) return null
                                 return (
                                   <div key={i} style={{
@@ -565,10 +566,10 @@ export default function AdminDashboard() {
                                     <div className={!isLitigeMsg && isArtisan ? 'afrione-gradient-text' : ''} style={{ fontSize: '10px', fontWeight: 700, marginBottom: '4px',
                                       color: isLitigeMsg ? '#ef4444' : isArtisan ? undefined : '#2B6B3E',
                                     }}>
-                                      {isArtisan ? '🔧 ARTISAN' : '👤 CLIENT'}
+                                      {isArtisan ? 'ARTISAN' : 'CLIENT'}
                                     </div>
                                     <div style={{ fontSize: '13px', color: 'var(--ui-ink)', lineHeight: '1.4' }}>
-                                      {msg.text?.replace('⚠️ Litige signalé : ', '')}
+                                      {msg.text?.replace('Litige signalé : ', '')}
                                     </div>
                                   </div>
                                 )
@@ -578,7 +579,7 @@ export default function AdminDashboard() {
                               display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px',
                               color: '#8B95A5', textDecoration: 'none', fontSize: '12px',
                             }}>
-                              <ExternalLink size={12} /> Voir toute la conversation ↗
+                              <ExternalLink size={12} /> Voir toute la conversation
                             </Link>
                           </div>
                         )}
@@ -602,7 +603,7 @@ export default function AdminDashboard() {
                             }}
                           >
                             <RotateCcw size={17} />
-                            {actingLitige ? 'Traitement…' : '↩ Revenir en arrière — reprendre la mission'}
+                            {actingLitige ? 'Traitement…' : 'Revenir en arrière — reprendre la mission'}
                           </button>
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -640,7 +641,7 @@ export default function AdminDashboard() {
                             border: '1px solid var(--ui-border)',
                           }}>
                             {[
-                              { label: '↩ Revenir', desc: 'Mission reprend, litige clos' },
+                              { label: 'Revenir', desc: 'Mission reprend, litige clos' },
                               { label: 'Rembourser', desc: 'Escrow → client, mission terminée' },
                               { label: 'Payer artisan', desc: 'Escrow → artisan, mission terminée' },
                             ].map(h => (
@@ -705,7 +706,7 @@ export default function AdminDashboard() {
                     {shown.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '64px', color: 'var(--ui-muted)' }}>
                         <p style={{ fontSize: '40px', marginBottom: '12px' }}>
-                          {kycFilter === 'pending' ? '🎉' : kycFilter === 'approved' ? '✅' : '📋'}
+                          {kycFilter === 'pending' ? '' : kycFilter === 'approved' ? '' : ''}
                         </p>
                         <p style={{ fontSize: '15px' }}>
                           {kycFilter === 'pending' ? 'Aucun artisan en attente' : kycFilter === 'approved' ? 'Aucun artisan validé' : 'Aucun artisan rejeté'}
@@ -725,7 +726,7 @@ export default function AdminDashboard() {
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flexWrap: 'wrap' }}>
                             {/* Avatar */}
                             <div style={{ width: '44px', height: '44px', background: 'rgba(232,93,38,0.08)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0, overflow: 'hidden' }}>
-                              {k.users?.avatar_url ? <img src={k.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : '🔧'}
+                              {k.users?.avatar_url ? <img src={k.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : ''}
                             </div>
 
                             {/* Info */}
@@ -737,7 +738,7 @@ export default function AdminDashboard() {
                                 </span>
                               </div>
                               <div style={{ fontSize: '12px', color: 'var(--ui-muted)', marginBottom: '8px' }}>
-                                {metierDisplay(k.metier).icon} {metierDisplay(k.metier).label} · {k.users?.email || '—'} · Inscrit le {new Date(k.created_at).toLocaleDateString('fr-FR')}
+                                {metierDisplay(k.metier).label} · {k.users?.email || '—'} · Inscrit le {new Date(k.created_at).toLocaleDateString('fr-FR')}
                                 {kycDoc?.reviewed_at && (
                                   <span style={{ marginLeft: '8px', color: '#8B95A5' }}>
                                     · Traité le {new Date(kycDoc.reviewed_at).toLocaleDateString('fr-FR')}
@@ -748,17 +749,17 @@ export default function AdminDashboard() {
                               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                 {kycDoc?.cni_front_url && (
                                   <a href={kycDoc.cni_front_url} target="_blank" rel="noreferrer" className="afrione-gradient-text" style={{ fontSize: '11px', textDecoration: 'none', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
-                                    📄 CNI Recto ↗
+                                     CNI Recto
                                   </a>
                                 )}
                                 {kycDoc?.cni_back_url && (
                                   <a href={kycDoc.cni_back_url} target="_blank" rel="noreferrer" className="afrione-gradient-text" style={{ fontSize: '11px', textDecoration: 'none', background: 'rgba(232,93,38,0.07)', border: '1px solid rgba(232,93,38,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
-                                    📄 CNI Verso ↗
+                                     CNI Verso
                                   </a>
                                 )}
                                 {hasDiploma && (
                                   <a href={kycDoc.diploma_urls[0]} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#C9A84C', textDecoration: 'none', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', padding: '3px 10px', borderRadius: '20px' }}>
-                                    🎓 Diplôme ↗
+                                     Diplôme
                                   </a>
                                 )}
                                 {!hasCni && !hasDiploma && (
@@ -826,11 +827,11 @@ export default function AdminDashboard() {
                   {artisans.map(a => (
                     <div key={a.id} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: NEU_SMALL }}>
                       <div style={{ width: '40px', height: '40px', borderRadius: '10px', overflow: 'hidden', background: 'rgba(232,93,38,0.08)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {a.users?.avatar_url ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span>👷</span>}
+                        {a.users?.avatar_url ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span><UiCircle className="ui-glyph" aria-hidden="true" /></span>}
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ui-ink)' }}>{a.users?.name || '—'}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>{metierDisplay(a.metier).icon} {metierDisplay(a.metier).label} · {a.rating_avg?.toFixed(1) || '0.0'}⭐ · {a.mission_count || 0} missions</div>
+                        <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>{metierDisplay(a.metier).label} · {a.rating_avg?.toFixed(1) || '0.0'} · {a.mission_count || 0} missions</div>
                       </div>
                       <span style={{
                         fontSize: '11px', padding: '3px 10px', borderRadius: '20px',
@@ -921,7 +922,7 @@ export default function AdminDashboard() {
                     })}
                     {transactions.length === 0 && (
                       <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--ui-muted)' }}>
-                        <p style={{ fontSize: '36px', marginBottom: '12px' }}>💳</p>
+                        <p style={{ fontSize: '36px', marginBottom: '12px' }}><UiCreditCard className="ui-glyph" aria-hidden="true" /></p>
                         <p style={{ fontSize: '15px', color: 'var(--ui-ink)', fontWeight: 600, marginBottom: '8px' }}>Aucune transaction</p>
                         <p style={{ fontSize: '13px', lineHeight: '1.6' }}>Les transactions apparaissent ici quand un client effectue un paiement Wave/Orange pour une mission.</p>
                       </div>
@@ -985,7 +986,7 @@ export default function AdminDashboard() {
                   {/* Liste */}
                   {filtered.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--ui-muted)' }}>
-                      <p style={{ fontSize: '36px', marginBottom: '12px' }}>🏢</p>
+                      <p style={{ fontSize: '36px', marginBottom: '12px' }}><UiBuilding2 className="ui-glyph" aria-hidden="true" /></p>
                       <p style={{ fontSize: '15px', color: 'var(--ui-ink)', fontWeight: 600, marginBottom: '8px' }}>Aucune entreprise</p>
                       <p style={{ fontSize: '13px' }}>Les structures multi-artisans apparaîtront ici.</p>
                     </div>
@@ -1003,13 +1004,13 @@ export default function AdminDashboard() {
                               <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
                                 {e.logo_url
                                   ? <img src={e.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                  : <span style={{ fontSize: '20px' }}>🏢</span>}
+                                  : <span style={{ fontSize: '20px' }}><UiBuilding2 className="ui-glyph" aria-hidden="true" /></span>}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                                   <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--ui-ink)' }}>{e.name}</span>
                                   <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '20px', background: kycBg, color: kycColor, border: `1px solid ${kycColor}33` }}>
-                                    {e.kyc_status === 'approved' ? '✓ Approuvée' : e.kyc_status === 'rejected' ? '✗ Rejetée' : '⏳ En attente'}
+                                    {e.kyc_status === 'approved' ? '✓ Approuvée' : e.kyc_status === 'rejected' ? '✗ Rejetée' : 'En attente'}
                                   </span>
                                   {e.is_active && <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 9px', borderRadius: '20px', background: 'rgba(43,107,62,0.08)', color: '#2B6B3E', border: '1px solid rgba(43,107,62,0.2)' }}>● Active</span>}
                                 </div>
@@ -1073,11 +1074,11 @@ export default function AdminDashboard() {
                                       {artisans.map((a: any) => (
                                         <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 10px', background: '#FFFFFF', borderRadius: '10px', border: '1px solid var(--ui-border)' }}>
                                           <div style={{ width: '26px', height: '26px', borderRadius: '7px', background: 'rgba(232,93,38,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                                            {a.users?.avatar_url ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <span style={{ fontSize: '11px' }}>🔧</span>}
+                                            {a.users?.avatar_url ? <img src={a.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <span style={{ fontSize: '11px' }}><UiWrench className="ui-glyph" aria-hidden="true" /></span>}
                                           </div>
                                           <div>
                                             <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ui-ink)' }}>{a.users?.name || metierDisplay(a.metier).label}</div>
-                                            <div style={{ fontSize: '10px', color: 'var(--ui-muted)' }}>{metierDisplay(a.metier).icon} {metierDisplay(a.metier).label}</div>
+                                            <div style={{ fontSize: '10px', color: 'var(--ui-muted)' }}>{metierDisplay(a.metier).label}</div>
                                           </div>
                                           <span style={{ fontSize: '9px', padding: '1px 7px', borderRadius: '10px', fontWeight: 700,
                                             background: a.kyc_status === 'approved' ? 'rgba(43,107,62,0.1)' : 'rgba(201,168,76,0.1)',
@@ -1163,7 +1164,7 @@ export default function AdminDashboard() {
                           <div style={{ width: '42px', height: '42px', borderRadius: '10px', overflow: 'hidden', background: `${rs.color}15`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
                             {u.avatar_url
                               ? <img src={u.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                              : isAdmin ? '⭐' : isArtisan ? '🔧' : '👤'}
+                              : isAdmin ? '' : isArtisan ? '' : ''}
                           </div>
 
                           {/* Infos */}
@@ -1175,7 +1176,7 @@ export default function AdminDashboard() {
                               </span>
                               {artisan && (
                                 <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: 'var(--ui-canvas)', color: 'var(--ui-muted)', border: '1px solid var(--ui-border)' }}>
-                                  {metierDisplay(artisan.metier).icon} {metierDisplay(artisan.metier).label}
+                                  {metierDisplay(artisan.metier).label}
                                 </span>
                               )}
                             </div>
@@ -1263,7 +1264,7 @@ export default function AdminDashboard() {
               }
 
               const transportLabel = (t: string) =>
-                t === 'pied' ? '🚶 À pied' : t === 'moto' ? '🏍️ Moto' : t === 'voiture' ? '🚗 Voiture' : t
+                t === 'pied' ? 'À pied' : t === 'moto' ? 'Moto' : t === 'voiture' ? 'Voiture' : t
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1299,7 +1300,7 @@ export default function AdminDashboard() {
                   {/* Liste */}
                   {shown.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--ui-muted)' }}>
-                      <p style={{ fontSize: '40px', marginBottom: '12px' }}>📝</p>
+                      <p style={{ fontSize: '40px', marginBottom: '12px' }}><UiFileText className="ui-glyph" aria-hidden="true" /></p>
                       <p style={{ fontSize: '15px', color: 'var(--ui-ink)', fontWeight: 600 }}>
                         {questionnaireFilter === 'pending' ? 'Aucun questionnaire en attente' : questionnaireFilter === 'approved' ? 'Aucun questionnaire approuvé' : 'Aucun questionnaire rejeté'}
                       </p>
@@ -1321,7 +1322,7 @@ export default function AdminDashboard() {
                               onClick={() => setExpandedQuestionnaire(isExpanded ? null : q.id)}>
                               {/* Avatar */}
                               <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '20px', overflow: 'hidden' }}>
-                                {user?.avatar_url ? <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🔧'}
+                                {user?.avatar_url ? <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : ''}
                               </div>
 
                               {/* Info */}
@@ -1329,11 +1330,11 @@ export default function AdminDashboard() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
                                   <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)' }}>{user?.name || '—'}</span>
                                   <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', fontWeight: 700, background: statusBg, color: statusColor }}>
-                                    {q.status === 'approved' ? '✓ Approuvé' : q.status === 'rejected' ? '✗ Rejeté' : '⏳ En attente'}
+                                    {q.status === 'approved' ? '✓ Approuvé' : q.status === 'rejected' ? '✗ Rejeté' : 'En attente'}
                                   </span>
                                 </div>
                                 <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
-                                  {artisan ? `${metierDisplay(artisan.metier).icon} ${metierDisplay(artisan.metier).label}` : '—'} · {q.experience_years || '—'} ans d'exp · Taux : <strong style={{ color: 'var(--ui-ink)' }}>{q.hourly_rate_declared ? q.hourly_rate_declared.toLocaleString() + ' FCFA/h' : '—'}</strong>
+                                  {artisan ? `$${metierDisplay(artisan.metier).label}` : '—'} · {q.experience_years || '—'} ans d'exp · Taux : <strong style={{ color: 'var(--ui-ink)' }}>{q.hourly_rate_declared ? q.hourly_rate_declared.toLocaleString() + ' FCFA/h' : '—'}</strong>
                                 </div>
                                 <div style={{ fontSize: '11px', color: '#8B95A5', marginTop: '2px' }}>
                                   Soumis le {new Date(q.submitted_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}

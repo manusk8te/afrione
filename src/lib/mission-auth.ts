@@ -23,6 +23,7 @@ export interface MissionViewer {
     artisan_id: string | null
     artisan_user_id: string | null
     status: MissionStatus
+    is_test: boolean
     mode: string | null
   }
 }
@@ -70,7 +71,7 @@ export async function resolveMissionViewer(
 
   const { data: mission } = await supabaseAdmin
     .from('missions')
-    .select('id, client_id, artisan_id, status, mode, artisan_pros(user_id)')
+    .select('id, client_id, artisan_id, status, mode, is_test, artisan_pros(user_id)')
     .eq('id', missionId)
     .maybeSingle()
 
@@ -107,6 +108,7 @@ export async function resolveMissionViewer(
         artisan_id:      mission.artisan_id,
         artisan_user_id: artisanUserId,
         status:          mission.status as MissionStatus,
+        is_test:         mission.is_test === true,
         mode:            mission.mode ?? null,
       },
     },

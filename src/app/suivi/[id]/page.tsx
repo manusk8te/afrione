@@ -1,4 +1,5 @@
 'use client'
+import { Car as UiCar, Circle as UiCircle, Clock as UiClock, MapPin as UiMapPin } from 'lucide-react'
 import {clientApi} from '@/lib/client-api'
 import MissionWorkflow from '@/components/warroom/MissionWorkflow'
 export const dynamic = 'force-dynamic'
@@ -385,7 +386,7 @@ export default function MissionLivePage() {
     setMission((prev: any) => ({ ...prev, status: 'disputed' }))
     setShowLitige(false)
     setLitigeText('')
-    toast('Litige signalé. Notre équipe va examiner le cas.', { icon: '⚠️', duration: 5000 })
+    toast('Litige signalé. Notre équipe va examiner le cas.', { icon: <UiCircle className="ui-glyph" aria-hidden="true" />, duration: 5000 })
   }
 
   if (loading) return (
@@ -423,10 +424,10 @@ export default function MissionLivePage() {
   const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&layer=mapnik&marker=${clientPos[0]},${clientPos[1]}`
 
   const STEPS = [
-    { key: 'en_route',           label: 'En route',  icon: '🚗' },
-    { key: 'en_cours',           label: 'Sur place',  icon: '📍' },
-    { key: 'pending_validation', label: 'À valider',  icon: '⏳' },
-    { key: 'completed',          label: 'Terminé',    icon: '✅' },
+    { key: 'en_route',           label: 'En route',  icon: <UiCar className="ui-glyph" aria-hidden="true" /> },
+    { key: 'en_cours',           label: 'Sur place',  icon: <UiMapPin className="ui-glyph" aria-hidden="true" /> },
+    { key: 'pending_validation', label: 'À valider',  icon: <UiClock className="ui-glyph" aria-hidden="true" /> },
+    { key: 'completed',          label: 'Terminé',    icon: <UiCircle className="ui-glyph" aria-hidden="true" /> },
   ]
   const stepIndex =
     status === 'completed' ? 3 :
@@ -456,7 +457,7 @@ export default function MissionLivePage() {
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="afrione-action" onClick={() => setShowLitige(false)} style={{ flex: 1, padding: '12px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '12px', fontWeight: 600, fontSize: '14px', cursor: 'pointer', color: 'var(--ui-muted)', boxShadow: NEU_SM }}>Annuler</button>
               <button className="afrione-action" onClick={submitLitige} disabled={submittingLitige || !litigeText.trim()} style={{ flex: 2, padding: '12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', opacity: submittingLitige ? 0.6 : 1 }}>
-                {submittingLitige ? 'Envoi…' : '⚠️ Ouvrir le litige →'}
+                {submittingLitige ? 'Envoi…' : 'Ouvrir le litige →'}
               </button>
             </div>
           </div>
@@ -472,7 +473,7 @@ export default function MissionLivePage() {
           <div style={{ width: '36px', height: '36px', background: 'var(--ui-canvas)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', border: '1px solid var(--ui-border)', overflow: 'hidden', flexShrink: 0 }}>
             {mission?.artisan_pros?.users?.avatar_url
               ? <img src={mission.artisan_pros.users.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-              : '🔧'}
+              : ''}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{artisanName}</div>
@@ -492,7 +493,7 @@ export default function MissionLivePage() {
               background: role === 'artisan' ? 'rgba(232,93,38,0.09)' : role === 'admin' ? 'rgba(107,114,128,0.09)' : 'rgba(43,107,62,0.09)',
               border: `1px solid ${role === 'artisan' ? 'rgba(232,93,38,0.28)' : role === 'admin' ? 'rgba(107,114,128,0.28)' : 'rgba(43,107,62,0.28)'}`,
             }}>
-              {role === 'artisan' ? '🔧' : role === 'admin' ? '🛡️' : '👤'} {ROLE_LABEL[role]}
+              {role === 'artisan' ? '' : role === 'admin' ? '' : ''} {ROLE_LABEL[role]}
             </span>
             <span style={{ fontSize: '11.5px', color: 'var(--ui-muted)', lineHeight: 1.4, minWidth: 0 }}>
               {nextStepHint(role, status)}
@@ -527,9 +528,9 @@ export default function MissionLivePage() {
       {/* TABS */}
       <div style={{ flexShrink: 0, display: 'flex', background: 'var(--ui-canvas)', borderBottom: '1px solid var(--ui-border)', padding: '4px 12px', gap: '4px' }}>
         {[
-          { id: 'gps'    as const, label: '🗺️ GPS' },
-          { id: 'photos' as const, label: `📸 Photos${proofAfterUrls.length > 0 ? ` (${proofAfterUrls.length})` : ''}` },
-          { id: 'infos'  as const, label: 'ℹ️ Infos' },
+          { id: 'gps'    as const, label: 'GPS' },
+          { id: 'photos' as const, label: `Photos${proofAfterUrls.length > 0 ? ` (${proofAfterUrls.length})` : ''}` },
+          { id: 'infos'  as const, label: 'Infos' },
         ].map(t => (
           <button className="afrione-action" key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '10px 8px', background: tab === t.id ? '#FFFFFF' : 'transparent', border: tab === t.id ? '1px solid var(--ui-border)' : '1px solid transparent', borderRadius: '10px', color: tab === t.id ? '#E85D26' : 'var(--ui-muted)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: tab === t.id ? NEU_SM : 'none' }}>
             {t.label}
@@ -697,7 +698,6 @@ export default function MissionLivePage() {
                 { label: isArtisan ? 'Client' : 'Artisan', value: isArtisan ? clientName : `${artisanName} · ${artisanMetier}` },
                 { label: 'Quartier', value: quartier },
                 { label: 'Montant',  value: amount > 0 ? `${amount.toLocaleString()} FCFA` : '—' },
-                { label: 'Statut escrow', value: status === 'completed' ? 'Transféré ✓' : status === 'disputed' ? '⚠️ En litige' : status === 'pending_validation' ? '⏳ En attente de validation' : '🔒 Sécurisé' },
               ].map((item, i, arr) => (
                 <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid var(--ui-border)' : 'none' }}>
                   <span style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>{item.label}</span>
@@ -753,7 +753,7 @@ export default function MissionLivePage() {
           confirmDone ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', fontSize: '13px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>
-                ⚠️ Le client recevra une notification pour valider. Aucun versement ne doit être annoncé sans confirmation du prestataire de paiement. Confirmer ?
+                 Le client recevra une notification pour valider. Aucun versement ne doit être annoncé sans confirmation du prestataire de paiement. Confirmer ?
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button className="afrione-action" onClick={() => setConfirmDone(false)} style={{ flex: 1, padding: '13px', background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '12px', color: 'var(--ui-muted)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', boxShadow: NEU_SM }}>
@@ -810,7 +810,7 @@ export default function MissionLivePage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ padding: '14px 16px', background: 'rgba(43,107,62,0.06)', border: '1px solid rgba(43,107,62,0.2)', borderRadius: '14px' }}>
               <div style={{ fontWeight: 700, fontSize: '14px', color: '#2B6B3E', marginBottom: '3px' }}>
-                {artisanName} a terminé la mission ✅
+                {artisanName} a terminé la mission
               </div>
               <div style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
                 Confirmez les travaux réalisés

@@ -1,25 +1,26 @@
 'use client'
+import { Paintbrush as UiPaintbrush, ShieldCheck as UiShieldCheck, UserRound as UiUserRound, Wrench as UiWrench, Zap as UiZap } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 
 const TEST_ACCOUNTS = [
-  { label: 'Client',      emoji: '👤', email: 'test.client@afrione.ci',   password: 'AfriTest2024!', redirect: '/dashboard',             isArtisan: false },
-  { label: 'Plombier',    emoji: '🔧', email: 'test.plombier@afrione.ci', password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
-  { label: 'Électricien', emoji: '⚡', email: 'test.elec@afrione.ci',     password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
-  { label: 'Peintre',     emoji: '🎨', email: 'test.peintre@afrione.ci',  password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
-  { label: 'Admin',       emoji: '🛡️', email: 'test.admin@afrione.ci',    password: 'AfriTest2024!', redirect: '/admin',                  isArtisan: false },
+  { label: 'Client',      emoji: <UiUserRound className="ui-glyph" aria-hidden="true" />, email: 'test.client@afrione.ci',   password: 'AfriTest2024!', redirect: '/dashboard',             isArtisan: false },
+  { label: 'Plombier',    emoji: <UiWrench className="ui-glyph" aria-hidden="true" />, email: 'test.plombier@afrione.ci', password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
+  { label: 'Électricien', emoji: <UiZap className="ui-glyph" aria-hidden="true" />, email: 'test.elec@afrione.ci',     password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
+  { label: 'Peintre',     emoji: <UiPaintbrush className="ui-glyph" aria-hidden="true" />, email: 'test.peintre@afrione.ci',  password: 'AfriTest2024!', redirect: '/artisan-space/dashboard', isArtisan: true  },
+  { label: 'Admin',       emoji: <UiShieldCheck className="ui-glyph" aria-hidden="true" />, email: 'test.admin@afrione.ci',    password: 'AfriTest2024!', redirect: '/admin',                  isArtisan: false },
 ] as const
 
 const ARTISAN_ACCOUNTS = TEST_ACCOUNTS.filter(a => a.isArtisan)
 const ARTISAN_EMAILS   = ARTISAN_ACCOUNTS.map(a => a.email) as string[]
 
 const SCENARIOS = [
-  { label: '🚰 Fuite plomberie',  text: "Ma fuite d'eau sous l'évier de cuisine s'aggrave depuis ce matin, tache humide sur le mur" },
-  { label: '⚡ Panne électrique', text: "Le disjoncteur de ma chambre saute chaque fois que j'allume la clim, plus de courant dans la pièce" },
-  { label: '🎨 Peinture salon',   text: "Je veux peindre mon salon de 25m², les murs ont quelques petits trous à reboucher avant" },
-  { label: '🪟 Fenêtre bloquée',  text: "Ma fenêtre de chambre ne s'ouvre plus depuis les pluies, le gond est tordu" },
+  { label: 'Fuite plomberie',  text: "Ma fuite d'eau sous l'évier de cuisine s'aggrave depuis ce matin, tache humide sur le mur" },
+  { label: 'Panne électrique', text: "Le disjoncteur de ma chambre saute chaque fois que j'allume la clim, plus de courant dans la pièce" },
+  { label: 'Peinture salon',   text: "Je veux peindre mon salon de 25m², les murs ont quelques petits trous à reboucher avant" },
+  { label: 'Fenêtre bloquée',  text: "Ma fenêtre de chambre ne s'ouvre plus depuis les pluies, le gond est tordu" },
 ] as const
 
 const S = {
@@ -171,7 +172,7 @@ export default function DevPanel() {
     setForceMsg(null)
 
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setForceMsg('❌ Non connecté'); setBusy(null); return }
+    if (!session) { setForceMsg('Non connecté'); setBusy(null); return }
 
     const res = await fetch('/api/dev/force-accept', {
       method: 'POST',
@@ -186,9 +187,9 @@ export default function DevPanel() {
     setBusy(null)
 
     if (!res.ok) {
-      setForceMsg(`❌ ${data.error}`)
+      setForceMsg(`${data.error}`)
     } else {
-      setForceMsg('✅ Artisan simulé accepté !')
+      setForceMsg('Artisan simulé accepté !')
     }
   }
 
@@ -249,16 +250,16 @@ export default function DevPanel() {
         style={S.toggle}
         title="Dev Panel"
       >
-        {open ? '✕' : '⚙'}
+        {open ? '✕' : ''}
       </button>
 
       {open && (
         <div style={S.panel}>
           <div style={{ color: '#e85d26', fontWeight: 700, fontSize: 10, letterSpacing: 1.5, marginBottom: 8 }}>
-            ⚙ DEV PANEL
+             DEV PANEL
           </div>
           <div style={{ background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.35)', borderRadius: 6, padding: '6px 8px', marginBottom: 12, color: '#fbbf24', fontSize: 9.5, lineHeight: 1.5 }}>
-            ⚠️ Les boutons ci-dessous CHANGENT DE COMPTE : déconnexion puis
+             Les boutons ci-dessous CHANGENT DE COMPTE : déconnexion puis
             reconnexion sous une autre identité.
           </div>
 
@@ -288,11 +289,11 @@ export default function DevPanel() {
                 disabled={busy === 'force'}
                 style={{ ...S.btnForce, opacity: busy === 'force' ? 0.5 : 1, marginBottom: 6 }}
               >
-                {busy === 'force' ? '…' : '⚡ Force Accept (bypass)'}
+                {busy === 'force' ? '…' : 'Force Accept (bypass)'}
               </button>
 
               {forceMsg && (
-                <div style={{ fontSize: 10, color: forceMsg.startsWith('✅') ? '#4ade80' : '#f87171', marginBottom: 6 }}>
+                <div style={{ fontSize: 10, color: forceMsg.startsWith('') ? '#4ade80' : '#f87171', marginBottom: 6 }}>
                   {forceMsg}
                 </div>
               )}
@@ -336,21 +337,21 @@ export default function DevPanel() {
           {/* Urgence test en un clic (admin uniquement — l'API vérifie le rôle) */}
           {userRole === 'admin' && (
             <div style={S.section}>
-              <div style={{ ...S.label, color: '#f87171' }}>🚨 Urgence test → bascule artisan</div>
+              <div style={{ ...S.label, color: '#f87171' }}> Urgence test → bascule artisan</div>
               <div style={S.grid2}>
                 <button
                   onClick={() => launchUrgentAndSwitch('Plomberie', 'test.plombier@afrione.ci')}
                   disabled={busy === 'urgent'}
                   style={{ ...S.btnAcct, borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)', opacity: busy === 'urgent' ? 0.5 : 1 }}
                 >
-                  🔧 Plomberie
+                   Plomberie
                 </button>
                 <button
                   onClick={() => launchUrgentAndSwitch('Électricité', 'test.elec@afrione.ci')}
                   disabled={busy === 'urgent'}
                   style={{ ...S.btnAcct, borderColor: 'rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.1)', opacity: busy === 'urgent' ? 0.5 : 1 }}
                 >
-                  ⚡ Électricité
+                   Électricité
                 </button>
               </div>
               <div style={{ color: '#4b5563', fontSize: 9, marginTop: 4 }}>

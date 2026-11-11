@@ -11,6 +11,7 @@ export async function simulatePayment(req: NextRequest) {
   if (!resolved.ok) return resolved.res
   const { viewer } = resolved
   if (viewer.mission.client_id !== viewer.userId) return NextResponse.json({error:'Seul le client de cette mission peut simuler son paiement'},{status:403})
+  if (!viewer.mission.is_test) return NextResponse.json({error:'Ouvrez le paiement Jèko depuis votre mission.'},{status:409})
   const { data, error } = await supabaseAdmin.rpc(parsed.data.quote_revision?'simulate_client_payment_v2':'simulate_client_payment', {
    ...(parsed.data.quote_revision?{p_expected_revision:parsed.data.quote_revision}:{}),
    p_mission_id: parsed.data.mission_id, p_client_id: viewer.userId, p_expected_amount: parsed.data.amount ?? null,

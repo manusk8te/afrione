@@ -6,7 +6,8 @@ import { Zap, Clock, Users, ArrowRight, Shield, ChevronRight, CheckCircle } from
 import SuppliesNotice from '@/components/pricing/SuppliesNotice'
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
-import toast from 'react-hot-toast'
+import JekoCheckoutButton from '@/components/payment/JekoCheckoutButton'
+import { openJekoCheckout } from '@/lib/open-jeko-checkout'
 import { clientApi } from '@/lib/client-api'
 
 const NEU_SHADOW = 'var(--ui-shadow-card)'
@@ -21,8 +22,8 @@ function ModeSelectContent() {
   const router       = useRouter()
   const params       = useSearchParams()
   const missionId    = params.get('mission')
+  const preferredArtisan = params.get('artisan')
   const requestedCategory = params.get('category') || 'Intervention'
-  const priceParam   = params.get('price')
   const [quote,setQuote]=useState<{quote_revision?:string;category?:string;total:number|null;service_total:number|null;materials_total:number;needs_quote:boolean;sources:{id?:string;source_scope?:string;url?:string}[]}|null>(null)
   const [quoteError,setQuoteError]=useState('')
   const price=quote?.total??null
@@ -30,79 +31,55 @@ function ModeSelectContent() {
   const summary      = params.get('summary')
 
   const [loading,       setLoading]       = useState<'urgent' | 'standard' | null>(null)
-  const [userId,        setUserId]        = useState<string | null>(null)
-  const [currentMission, setCurrentMission] = useState<string | null>(null)
-  const [showWave,      setShowWave]      = useState(false)
-  const [wavePhone,     setWavePhone]     = useState('')
-  const [waveStep,      setWaveStep]      = useState<'form' | 'processing' | 'success'>('form')
+  const [workflow, setWorkflow] = useState<{
+    jeko_checkout_enabled: boolean
+    mission: { status: string; artisan_id: string | null; is_test: boolean; logic_version: number; provider_accepted_at: string | null; price_confirmed_version: number | null }
+  } | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push('/auth?redirect=' + encodeURIComponent(window.location.pathname + window.location.search)); return }
-      setUserId(session.user.id)
     })
-  }, [])
+  }, [router])
 
   useEffect(()=>{if(!missionId){setQuoteError('Commencez par un diagnostic pour obtenir un devis.');return}
     let active=true;clientApi(`/api/quote?mission_id=${encodeURIComponent(missionId)}`).then(async r=>{const result=await r.json();if(!r.ok)throw Error(result.error);if(active)setQuote(result)}).catch(e=>{if(active)setQuoteError(e.message)});return()=>{active=false}
   },[missionId])
 
-  // ── Mode Standard : comportement existant → matching ─────────────────────
-  const handleStandard = () => {
-    setLoading('standard')
-    const href = missionId
-      ? `/matching?mission=${missionId}&category=${encodeURIComponent(category)}`
-      : `/matching?category=${encodeURIComponent(category)}`
-    router.push(href)
-  }
+  useEffect(() => {
+    setWorkflow(null)
+    if (!missionId) return
+    let active = true
+    clientApi(`/api/mission/workflow?mission_id=${encodeURIComponent(missionId)}`)
+      .then(async response => {
+        if (response.ok && active) setWorkflow(await response.json())
+      }).catch(() => {})
+    return () => { active = false }
+  }, [missionId])
 
-  // ── Mode Urgent : créer mission → ouvrir modal Wave ─────────────────────
-  const handleUrgent = async () => {
-    if (!userId) { toast.error('Connecte-toi d\'abord'); return }
-    if (!price || !Number.isFinite(price) || price <= 0) { toast.error('Un devis est nécessaire avant de choisir le paiement urgent'); return }
-    setLoading('urgent')
-
-    try {
-      let resolvedMissionId = missionId
-
-      if (!resolvedMissionId) {
-        const { data: mission, error } = await supabase
-          .from('missions')
-          .insert({ client_id: userId, mode: 'urgent', category, status: 'diagnostic' })
-          .select('id')
-          .single()
-        if (error || !mission) { toast.error('Erreur création mission'); setLoading(null); return }
-        resolvedMissionId = mission.id
-      } else {
-        const { error } = await supabase.from('missions').update({ mode: 'urgent' }).eq('id', resolvedMissionId)
-        if(error) throw error
+  async function chooseMode(mode: 'urgent' | 'standard') {
+    setLoading(mode)
+    if (mode === 'urgent') {
+      try {
+        if (!missionId) throw new Error('Commencez par un diagnostic.')
+        setQuoteError('')
+        window.location.assign(await openJekoCheckout(missionId, true))
+      } catch (error) {
+        setQuoteError(error instanceof Error ? error.message : 'Le paiement Jèko est indisponible.')
+        setLoading(null)
       }
-
-      setCurrentMission(resolvedMissionId)
-      setLoading(null)
-      setWaveStep('form')
-      setShowWave(true)
-    } catch {
-      toast.error('Erreur réseau')
-      setLoading(null)
+      return
     }
+    const query = new URLSearchParams({ category, mode })
+    if (missionId) query.set('mission', missionId)
+    if (preferredArtisan) query.set('artisan', preferredArtisan)
+    router.push(`/matching?${query}`)
   }
 
-  // ── Confirmation paiement Wave (mock) ────────────────────────────────────
-  const confirmWave = async () => {
-    if (!currentMission || !price || !Number.isFinite(price) || price <= 0) return
-    setWaveStep('processing')
-
-    try {
-      const response = await clientApi('/api/dispatch/simulate-pay', {
-        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:currentMission,amount:price,...(quote?.quote_revision?{quote_revision:quote.quote_revision}:{})}),
-      })
-      const data=await response.json()
-      if(!response.ok || !data.ok || !data.receipt)throw Error(data.error || 'Simulation non enregistrée')
-      setWaveStep('success')
-    } catch(error) { toast.error(error instanceof Error ? error.message : 'Simulation indisponible');setWaveStep('form') }
-  }
-  const afterWave=()=>{setShowWave(false);router.push(`/payment/success?mission=${currentMission}`)}
+  const assigned = workflow?.mission.artisan_id
+  const payable = workflow?.jeko_checkout_enabled && workflow.mission.status === 'negotiation'
+    && !workflow.mission.is_test && workflow.mission.logic_version >= 2
+    && workflow.mission.provider_accepted_at && workflow.mission.price_confirmed_version && price
 
   const displayPrice = price
     ? `${price.toLocaleString('fr-FR')} FCFA`
@@ -111,127 +88,6 @@ function ModeSelectContent() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--ui-canvas)', color: 'var(--ui-ink)' }}>
       <Navbar />
-
-      {/* ── Modal Wave ─────────────────────────────────────────────────────── */}
-      {showWave && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
-          <div style={{ width: '100%', maxWidth: '380px', background: 'linear-gradient(180deg,#1A1D2E 0%,#0D0F1C 100%)', borderRadius: '28px', padding: '28px 24px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
-
-            {/* Bandeau MODE DÉMO — jamais masqué, à toutes les étapes.
-                L'écran imitait auparavant l'application Wave (logo, couleurs,
-                « Chiffrement TLS 1.3 ») alors qu'aucun paiement n'était
-                effectué. Identité AfriOne neutre + mention explicite. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'rgba(201,168,76,0.14)', border: '1px solid rgba(201,168,76,0.45)', borderRadius: '12px', marginBottom: '18px' }}>
-              <Shield size={16} aria-hidden="true" />
-              <div style={{ flex: 1, fontSize: '11.5px', color: '#E8D9A8', lineHeight: 1.45, fontWeight: 600 }}>
-                MODE DÉMO — aucun paiement réel n'est effectué et aucun montant n'est débité.
-              </div>
-            </div>
-
-            <SuppliesNotice sources={quote?.sources} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Zap size={17} color="white" />
-                </div>
-                <span style={{ color: 'white', fontWeight: 700, fontSize: '15px' }}>AfriOne — Paiement</span>
-              </div>
-              {waveStep === 'form' && (
-                <button className="afrione-action" onClick={() => setShowWave(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>✕</button>
-              )}
-            </div>
-
-            {/* Étape 1 — Formulaire */}
-            {waveStep === 'form' && (
-              <>
-                <div style={{ textAlign: 'center', padding: '20px 0 16px' }}>
-                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Montant total</div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '8px' }}>
-                    <span style={{ color: 'white', fontSize: '52px', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1, fontFamily: 'var(--font-body)' }}>{price?.toLocaleString() ?? 'À confirmer'}</span>
-                    <span style={{ color: '#E85D26', fontSize: '18px', fontWeight: 700 }}>FCFA</span>
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '6px' }}>Urgent · {category}</div>
-                </div>
-
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '0 0 20px' }} />
-
-                <p style={{color:'#CBD5E1',fontSize:13}}>Ce test ne nécessite aucun numéro mobile money et n’envoie aucun SMS.</p>
-                <div style={{ padding: '12px 14px', background: 'rgba(248,121,0,0.08)', border: '1px solid rgba(248,121,0,0.2)', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '24px' }}>
-                  <Shield size={14} aria-hidden="true" />
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
-                    Démonstration : aucun fonds bloqué, aucun versement à un artisan.
-                  </div>
-                </div>
-
-                <button className="afrione-action"
-                  onClick={confirmWave}
-
-                  style={{ width: '100%', padding: '18px', background: true ? 'linear-gradient(135deg,#E85D26,#ff7043)' : 'rgba(255,255,255,0.08)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.2px', cursor: true ? 'pointer' : 'default', boxShadow: true ? '0 8px 28px rgba(232,93,38,0.45)' : 'none', transition: 'all 0.2s' }}
-                >
-                  Simuler le paiement
-                </button>
-                <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>
-                  Démonstration — l'encaissement Wave n'est pas encore activé
-                </div>
-              </>
-            )}
-
-            {/* Étape 2 — Processing */}
-            {waveStep === 'processing' && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '280px', gap: '24px' }}>
-                <div style={{ position: 'relative', width: '80px', height: '80px' }}>
-                  <div style={{ position: 'absolute', inset: 0, border: '3px solid rgba(232,93,38,0.12)', borderRadius: '50%' }} />
-                  <div style={{ position: 'absolute', inset: 0, border: '3px solid transparent', borderTopColor: '#E85D26', borderRadius: '50%', animation: 'spin 0.85s linear infinite' }} />
-                  <div style={{ position: 'absolute', inset: '10px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(232,93,38,0.3)' }}>
-                    <Zap size={24} color="white" />
-                  </div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ color: 'white', fontWeight: 700, fontSize: '18px', marginBottom: '8px' }}>Simulation en cours…</div>
-                  <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>Aucun montant n'est débité</div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {[0, 1, 2].map(i => (
-                    <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#E85D26', opacity: 0.4, animation: `pulse 1.2s ease-in-out ${i * 0.35}s infinite` }} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Étape 3 — Succès */}
-            {waveStep === 'success' && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '8px' }}>
-                <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg,#E85D26,#ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 0 0 14px rgba(232,93,38,0.07), 0 0 0 28px rgba(232,93,38,0.03)' }}>
-                  <CheckCircle size={44} color="white" strokeWidth={2.5} />
-                </div>
-                <div style={{ color: 'white', fontSize: '22px', fontWeight: 900, marginBottom: '4px', letterSpacing: '-0.5px' }}>Paiement simulé</div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', marginBottom: '24px' }}>Aucun montant n'a été débité</div>
-
-                <div style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', overflow: 'hidden', marginBottom: '20px' }}>
-                  {[
-                    { label: 'Montant simulé', value: price ? `${price.toLocaleString()} FCFA` : 'À confirmer', color: 'white' },
-                    { label: 'Type', value: 'Simulation AfriOne', color: 'rgba(255,255,255,0.8)' },
-                    { label: 'Statut', value: 'Démo — non encaissé', color: '#C9A84C' },
-                  ].map((row, i, arr) => (
-                    <div key={row.label} style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{row.label}</span>
-                      <span style={{ color: row.color, fontSize: '13px', fontWeight: 600, fontFamily: row.label === 'Numéro saisi' ? 'Tahoma' : undefined }}>{row.value}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <button className="afrione-action"
-                  onClick={afterWave}
-                  style={{ width: '100%', padding: '18px', background: 'linear-gradient(135deg,#E85D26,#ff7043)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 28px rgba(232,93,38,0.4)', letterSpacing: '-0.2px' }}
-                >
-                  Voir mon reçu de simulation →
-                </button>
-              </div>
-            )}
-
-          </div>
-        </div>
-      )}
 
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}`}</style>
 
@@ -255,6 +111,12 @@ function ModeSelectContent() {
           </p>
         </div>
 
+        {assigned && missionId ? (
+          <section className="card" style={{ padding: 20 }}>
+            {payable ? <JekoCheckoutButton missionId={missionId} /> : <p>Le paiement Jèko est disponible après confirmation du devis.</p>}
+            <p><Link href={`/warroom/${encodeURIComponent(missionId)}#paiement-jeko`}>Retour à la mission</Link></p>
+          </section>
+        ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
           {/* ── Résumé IA diagnostic ──────────────────────────────────────── */}
@@ -275,7 +137,7 @@ function ModeSelectContent() {
 
           {/* ── Mode URGENT ────────────────────────────────────────────────── */}
           <button className="afrione-action"
-            onClick={handleUrgent}
+            onClick={() => chooseMode('urgent')}
             disabled={!!loading||!price}
             style={{
               width: '100%', textAlign: 'left', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
@@ -300,17 +162,15 @@ function ModeSelectContent() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                   <span style={{ ...syne, fontWeight: 800, fontSize: '20px', color: 'var(--ui-ink)' }}>Mode Urgent</span>
-                  <span style={{ ...mono, fontSize: '9px', color: '#E85D26', background: 'rgba(232,93,38,0.1)', border: '1px solid rgba(232,93,38,0.25)', borderRadius: '20px', padding: '2px 8px', letterSpacing: '0.08em' }}>DÉMONSTRATION</span>
                 </div>
                 <p style={{ ...body, fontSize: '14px', color: 'var(--ui-muted)', lineHeight: 1.6, margin: '0 0 16px' }}>
-                  Teste la confirmation du devis et le paiement. Aucun artisan ne sera envoyé pendant cette démonstration.
+                  Les artisans disponibles les plus pertinents reçoivent ta demande. Le premier qui accepte est affecté à ton intervention.
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                   {[
-                    { text: 'Aucune intervention réelle déclenchée' },
-                    { text: 'Montant indicatif à confirmer avant une intervention réelle' },
-                    { text: 'Paiement de démonstration — aucun fonds bloqué' },
+                    { text: 'Choisis ton moyen de paiement sur Jèko' },
+                    { text: 'Suis l’artisan sur AfriOne dès qu’il accepte' },
                   ].map(({ text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckCircle size={14} aria-hidden="true" />
@@ -324,10 +184,10 @@ function ModeSelectContent() {
                     <div style={{ ...mono, fontSize: '22px', fontWeight: 700, color: '#E85D26' }}>
                       {displayPrice}
                     </div>
-                    <div style={{ ...mono, fontSize: '10px', color: '#8B95A5', marginTop: '2px' }}>Estimation · paiement simulé</div>
+                    <div style={{ ...mono, fontSize: '10px', color: '#8B95A5', marginTop: '2px' }}>Montant à payer</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #E85D26, #ff7043)', borderRadius: '12px', padding: '10px 16px' }}>
-                    <span style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white' }}>Payer maintenant</span>
+                    <span style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'white' }}>Payer avec Jèko</span>
                     <ArrowRight size={16} color="white" />
                   </div>
                 </div>
@@ -337,7 +197,7 @@ function ModeSelectContent() {
 
           {/* ── Mode STANDARD ──────────────────────────────────────────────── */}
           <button className="afrione-action"
-            onClick={handleStandard}
+            onClick={() => chooseMode('standard')}
             disabled={!!loading}
             style={{
               width: '100%', textAlign: 'left', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
@@ -370,7 +230,7 @@ function ModeSelectContent() {
                   {[
                     { text: 'Profils du métier, selon les disponibilités' },
                     { text: 'Discussion avant confirmation' },
-                    { text: 'Intervention planifiée à ta convenance' },
+                    { text: 'Paiement sécurisé sur Jèko du devis' },
                   ].map(({ text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckCircle size={14} aria-hidden="true" />
@@ -412,7 +272,7 @@ function ModeSelectContent() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', paddingTop: '8px' }}>
             {[
               { Icon: Shield, text: 'KYC vérifié' },
-              { Icon: Clock,  text: 'Aucun débit réel' },
+              { Icon: Clock,  text: 'Paiement après devis' },
               { Icon: Zap,    text: 'Paiement sécurisé' },
             ].map(({ Icon, text }) => (
               <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -422,6 +282,7 @@ function ModeSelectContent() {
             ))}
           </div>
         </div>
+        )}
       </div>
     </div>
   )

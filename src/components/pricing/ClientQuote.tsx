@@ -11,13 +11,15 @@ type Quote = {
   service_total?: number | null
   materials_total?: number
   payment_simulation_id?: string | null
+  checkout?: { id: string; status: string; amount: number; urgent_before_matching: boolean } | null
   quote_request?: { status?: string }
 }
 
 export default function ClientQuote({
-  missionId, revision = 0, estimate, estimating, reason,
+  missionId, revision = 0, estimate, estimating, reason, preferredArtisan,
 }: {
   missionId?: string
+  preferredArtisan?: string | null
   revision?: number
   estimate?: number
   estimating?: boolean
@@ -65,8 +67,9 @@ export default function ClientQuote({
     }
   }
 
-  const amount = quote?.total || estimate
+  const amount = quote?.checkout?.amount || quote?.total || estimate
   const category = encodeURIComponent(quote?.category ?? '')
+  const artisanQuery = preferredArtisan ? `&artisan=${encodeURIComponent(preferredArtisan)}` : ''
   const calculating = !amount && (loading || estimating)
 
   return (
@@ -75,7 +78,7 @@ export default function ClientQuote({
       <h1 className="diagnostic-price-amount" aria-live="polite">
         {amount ? <>{amount.toLocaleString('fr-FR')} <span>FCFA</span></> : calculating ? 'Calcul du prix…' : 'Prix à confirmer'}
       </h1>
-      {amount ? <p>Estimation de votre intervention</p> : !calculating && reason && <p>{reason}</p>}
+      {amount ? <p>{quote?.checkout?.status === 'paid' ? 'Montant payé sur Jèko' : 'Estimation de votre intervention'}</p> : !calculating && reason && <p>{reason}</p>}
       {!!quote?.materials_total && (
         <details>
           <summary>Détail du prix</summary>
@@ -84,12 +87,18 @@ export default function ClientQuote({
         </details>
       )}
       {message && <p role="status">{message}</p>}
-      {quote?.payment_simulation_id ? (
+      {quote?.checkout ? (
+        <Link className="diagnostic-price-action" href={quote.checkout.status === 'paid' && quote.checkout.urgent_before_matching
+          ? `/dispatch/${missionId}?paid=jeko`
+          : `/payment/jeko?mission=${missionId}&checkout=${quote.checkout.id}`}>
+          {quote.checkout.status === 'paid' ? 'Suivre mon intervention' : 'Reprendre le paiement Jèko'} <ArrowRight size={16} />
+        </Link>
+      ) : quote?.payment_simulation_id ? (
         <Link className="diagnostic-price-action" href={`/payment/success?mission=${missionId}`}>Voir le reçu <ArrowRight size={16} /></Link>
       ) : quote?.total ? (
-        <Link className="diagnostic-price-action" href={`/mode-select?mission=${missionId}&category=${category}`}>Choisir une intervention <ArrowRight size={16} /></Link>
+        <Link className="diagnostic-price-action" href={`/mode-select?mission=${missionId}&category=${category}${artisanQuery}`}>Choisir une intervention <ArrowRight size={16} /></Link>
       ) : requestSaved ? (
-        <Link className="diagnostic-price-action" href={`/matching?mission=${missionId}&category=${category}`}>Choisir un artisan <ArrowRight size={16} /></Link>
+        <Link className="diagnostic-price-action" href={`/matching?mission=${missionId}&category=${category}${artisanQuery}`}>Choisir un artisan <ArrowRight size={16} /></Link>
       ) : !calculating && (
         <button className="diagnostic-price-action" type="button" disabled={busy || !missionId} onClick={requestQuote}>
           {busy ? 'Enregistrement…' : 'Demander un prix'} <ArrowRight size={16} />

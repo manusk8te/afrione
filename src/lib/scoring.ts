@@ -22,6 +22,23 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+function knownQuartier(quartier: string) {
+  const key = Object.keys(QUARTIER_COORDS).find(name =>
+    name.localeCompare(quartier.trim(), 'fr', { sensitivity: 'base' }) === 0,
+  )
+  return key ? QUARTIER_COORDS[key] : null
+}
+
+export function urgentDistanceKm(quartier: string, artisanQuartier: string, position?: { lat?: number; lng?: number } | null) {
+  const origin = knownQuartier(quartier)
+  const destination = position && typeof position.lat === 'number' && typeof position.lng === 'number'
+    && Number.isFinite(position.lat) && Number.isFinite(position.lng)
+    && Math.abs(position.lat) <= 90 && Math.abs(position.lng) <= 180
+    ? [position.lat, position.lng]
+    : knownQuartier(artisanQuartier)
+  return origin && destination ? haversineKm(origin[0], origin[1], destination[0], destination[1]) : null
+}
+
 /**
  * Base artisan score — 0 to 100. The matching mode adjusts the distance weight.
  *

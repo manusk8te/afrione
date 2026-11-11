@@ -141,7 +141,7 @@ export default function PrestationPage() {
               {/* Add item */}
               <div style={{ background: '#FFFFFF', boxShadow: NEU_SHADOW, borderRadius: '20px', padding: '20px', marginBottom: '24px' }}>
                 <h3 style={{ fontWeight: 600, color: 'var(--ui-ink)', fontSize: '14px', marginBottom: '12px' }}>Ajouter un élément</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div className="afrione-responsive-form-grid">
                   <select className="afrione-field" value={newType} onChange={e => setNewType(e.target.value as any)}
                     style={{ background: '#FFFFFF', border: '1.5px solid var(--ui-border)', borderRadius: '10px', padding: '10px 12px', fontSize: '14px', color: 'var(--ui-ink)', outline: 'none' }}>
                     <option value="main_oeuvre">Main d'œuvre</option>

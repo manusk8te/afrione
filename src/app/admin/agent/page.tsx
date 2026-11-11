@@ -1,4 +1,5 @@
 'use client'
+import { Circle as UiCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { RefreshCw, ChevronDown, ChevronRight, CheckCircle, XCircle, ExternalLink, Clock } from 'lucide-react'
 import AdminSidebar from '@/components/admin/AdminSidebar'
@@ -22,10 +23,10 @@ type AgentRun = {
 }
 
 const TOOL_ICONS: Record<string, string> = {
-  get_pricing_data:      '📊',
-  search_material_price: '🔍',
-  get_artisan_rate:      '👷',
-  calculate_final_price: '🧮',
+  get_pricing_data:      '',
+  search_material_price: '',
+  get_artisan_rate:      '',
+  calculate_final_price: '',
 }
 
 function JsonBlock({ data }: { data: any }) {
@@ -170,7 +171,7 @@ export default function AdminAgentPage() {
 
                       {run.error && (
                         <div style={{ fontSize: '12px', color: '#dc2626', background: 'rgba(220,38,38,0.06)', padding: '8px 12px', borderRadius: '10px' }}>
-                          ❌ {run.error}
+                          <UiCircle className="ui-glyph" aria-hidden="true" /> {run.error}
                         </div>
                       )}
 
@@ -191,7 +192,7 @@ export default function AdminAgentPage() {
                           {(run.steps || []).filter(s => s.type === 'tool_call' || s.type === 'tool_result').map((s, i) => (
                             <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                               <span style={{ fontSize: '13px', flexShrink: 0, marginTop: '4px' }}>
-                                {s.type === 'tool_call' ? (TOOL_ICONS[s.name || ''] || '🛠') : '↩️'}
+                                {s.type === 'tool_call' ? (TOOL_ICONS[s.name || ''] || '') : ''}
                               </span>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: '11px', fontWeight: 600, color: s.type === 'tool_call' ? 'var(--ui-ink)' : 'var(--ui-muted)', marginBottom: '3px' }}>
@@ -203,7 +204,7 @@ export default function AdminAgentPage() {
                           ))}
                           {toolCalls.length === 0 && (
                             <div style={{ fontSize: '12px', color: '#d97706', background: 'rgba(217,119,6,0.06)', padding: '8px 12px', borderRadius: '10px' }}>
-                              ⚠️ Aucun appel d'outil — l'agent a répondu sans consulter les données terrain (prix potentiellement inventé).
+                               Aucun appel d'outil — l'agent a répondu sans consulter les données terrain (prix potentiellement inventé).
                             </div>
                           )}
                         </div>
@@ -212,7 +213,7 @@ export default function AdminAgentPage() {
                       {/* Output final */}
                       <div>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: '#8B95A5', letterSpacing: '0.08em', marginBottom: '6px' }}>
-                          RÉPONSE FINALE {run.parse_ok ? '(JSON valide)' : '(⚠️ parse échoué — brut)'}
+                          RÉPONSE FINALE {run.parse_ok ? '(JSON valide)' : '( parse échoué — brut)'}
                         </div>
                         <JsonBlock data={run.output} />
                       </div>

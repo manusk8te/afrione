@@ -1,25 +1,26 @@
 'use client'
+import { BarChart3 as UiBarChart3, Bot as UiBot, Building2 as UiBuilding2, Circle as UiCircle, Clapperboard as UiClapperboard, ClipboardList as UiClipboardList, CreditCard as UiCreditCard, FileText as UiFileText, FlaskConical as UiFlaskConical, Scale as UiScale, Store as UiStore, Users as UiUsers, UsersRound as UiUsersRound, Wallet as UiWallet, Wrench as UiWrench } from 'lucide-react'
 import Brand from '@/components/brand/Brand'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Zap } from 'lucide-react'
 
 export const ADMIN_NAV = [
-  { id: 'overview',     label: "Vue d'ensemble", short: 'Vue',          icon: '📊' },
-  { id: 'litiges',      label: 'Litiges',         short: 'Litiges',      icon: '⚖️' },
-  { id: 'kyc',          label: 'Validations KYC', short: 'KYC',          icon: '🪪' },
-  { id: 'missions',     label: 'Missions',         short: 'Missions',     icon: '📋' },
-  { id: 'artisans',     label: 'Artisans',         short: 'Artisans',     icon: '🔧' },
-  { id: 'questionnaire', label: 'Questionnaires',  short: 'Q&A',          icon: '📝' },
-  { id: 'entreprises',  label: 'Entreprises',      short: 'Entrep.',      icon: '🏢' },
-  { id: 'transactions', label: 'Transactions',     short: 'Transactions', icon: '💳' },
-  { id: 'utilisateurs', label: 'Utilisateurs',     short: 'Users',        icon: '👥' },
-  { id: 'prix',         label: 'Prix matériaux',   short: 'Prix',         icon: '💰', href: '/admin/prix' },
-  { id: 'sources',      label: 'Sources de prix',  short: 'Sources',      icon: '🏪', href: '/admin/sources' },
-  { id: 'cas-c',        label: 'Cas Complexes',     short: 'CasC',         icon: '🎬', href: '/admin/cas-c-review' },
-  { id: 'shadow-test',  label: 'Shadow Test IA',    short: 'Shadow',       icon: '🧪', href: '/admin/shadow-test' },
-  { id: 'agent',        label: 'Agent IA — Runs',   short: 'Agent',        icon: '🤖', href: '/admin/agent' },
-  { id: 'comptes',      label: 'Comptes & Test',    short: 'Comptes',      icon: '🎭', href: '/admin/comptes' },
+  { id: 'overview',     label: "Vue d'ensemble", short: 'Vue',          icon: <UiBarChart3 className="ui-glyph" aria-hidden="true" /> },
+  { id: 'litiges',      label: 'Litiges',         short: 'Litiges',      icon: <UiScale className="ui-glyph" aria-hidden="true" /> },
+  { id: 'kyc',          label: 'Validations KYC', short: 'KYC',          icon: <UiCircle className="ui-glyph" aria-hidden="true" /> },
+  { id: 'missions',     label: 'Missions',         short: 'Missions',     icon: <UiClipboardList className="ui-glyph" aria-hidden="true" /> },
+  { id: 'artisans',     label: 'Artisans',         short: 'Artisans',     icon: <UiWrench className="ui-glyph" aria-hidden="true" /> },
+  { id: 'questionnaire', label: 'Questionnaires',  short: 'Q&A',          icon: <UiFileText className="ui-glyph" aria-hidden="true" /> },
+  { id: 'entreprises',  label: 'Entreprises',      short: 'Entrep.',      icon: <UiBuilding2 className="ui-glyph" aria-hidden="true" /> },
+  { id: 'transactions', label: 'Transactions',     short: 'Transactions', icon: <UiCreditCard className="ui-glyph" aria-hidden="true" /> },
+  { id: 'utilisateurs', label: 'Utilisateurs',     short: 'Users',        icon: <UiUsers className="ui-glyph" aria-hidden="true" /> },
+  { id: 'prix',         label: 'Prix matériaux',   short: 'Prix',         icon: <UiWallet className="ui-glyph" aria-hidden="true" />, href: '/admin/prix' },
+  { id: 'sources',      label: 'Sources de prix',  short: 'Sources',      icon: <UiStore className="ui-glyph" aria-hidden="true" />, href: '/admin/sources' },
+  { id: 'cas-c',        label: 'Cas Complexes',     short: 'CasC',         icon: <UiClapperboard className="ui-glyph" aria-hidden="true" />, href: '/admin/cas-c-review' },
+  { id: 'shadow-test',  label: 'Shadow Test IA',    short: 'Shadow',       icon: <UiFlaskConical className="ui-glyph" aria-hidden="true" />, href: '/admin/shadow-test' },
+  { id: 'agent',        label: 'Agent IA — Runs',   short: 'Agent',        icon: <UiBot className="ui-glyph" aria-hidden="true" />, href: '/admin/agent' },
+  { id: 'comptes',      label: 'Comptes & Test',    short: 'Comptes',      icon: <UiUsersRound className="ui-glyph" aria-hidden="true" />, href: '/admin/comptes' },
 ]
 
 interface Props {

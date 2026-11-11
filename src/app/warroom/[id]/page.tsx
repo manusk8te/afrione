@@ -1,42 +1,23 @@
 'use client'
+import { CalendarDays as UiCalendarDays, Car as UiCar, Circle as UiCircle, ClipboardList as UiClipboardList, Clock3 as UiClock3, FlaskConical as UiFlaskConical, LockKeyhole as UiLockKeyhole, MapPin as UiMapPin, Package as UiPackage, ReceiptText as UiReceiptText, Scale as UiScale, Sparkles as UiSparkles, Wallet as UiWallet, Zap as UiZap } from 'lucide-react'
 import MissionWorkflow from '@/components/warroom/MissionWorkflow'
+import { systemMessageText } from '@/lib/ui-text'
 import { clientApi } from '@/lib/client-api'
+import QuoteAdjustments from '@/components/warroom/QuoteAdjustments'
 import { DiscussionAgreement } from '@/components/warroom/DiscussionAgreement'
 export const dynamic = 'force-dynamic'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, Star, Camera, Plus } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle, X, Zap, Clock, Star, Camera, Plus, FileText, ChevronDown, Phone, MessageCircle, Wrench } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase'
 import {
-  resolveMissionRole, can, denialReason, nextStepHint, ROLE_LABEL,
+  resolveMissionRole, can, denialReason, nextStepHint,
   type MissionRole, type MissionAction,
 } from '@/lib/mission-roles'
 import { parseDuree } from '@/lib/duration'
 import toast from 'react-hot-toast'
-
-function materialEmoji(name: string): string {
-  const n = name.toLowerCase()
-  if (/robinet|mitigeur|mélangeur/.test(n)) return '🚿'
-  if (/tuyau|tube|pvc|flexible/.test(n)) return '🔧'
-  if (/joint|torique/.test(n)) return '🔩'
-  if (/siphon|bonde/.test(n)) return '🔧'
-  if (/câble|fil électrique/.test(n)) return '⚡'
-  if (/disjoncteur|différentiel|interrupteur/.test(n)) return '🔌'
-  if (/prise|tableau/.test(n)) return '🔌'
-  if (/ampoule|led/.test(n)) return '💡'
-  if (/ciment|béton|mortier|sac/.test(n)) return '🧱'
-  if (/carrelage|dalle|faïence/.test(n)) return '🟦'
-  if (/peinture|laque|enduit|apprêt/.test(n)) return '🎨'
-  if (/rouleau|pinceau|bâche/.test(n)) return '🖌️'
-  if (/porte|fenêtre/.test(n)) return '🚪'
-  if (/serrure|cadenas|verrou/.test(n)) return '🔑'
-  if (/clim|climatiseur|filtre/.test(n)) return '❄️'
-  if (/vis|boulon|cheville/.test(n)) return '🔩'
-  if (/bois|planche/.test(n)) return '🪵'
-  return '🔧'
-}
 
 // Postgres refuse certaines écritures sur missions pour des raisons métier
 // précises. Les afficher toutes en « Erreur. » a coûté une journée de
@@ -68,17 +49,17 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   // 'diagnostic' et 'dispatching' manquaient : toute mission dans ces états
   // retombait sur le libellé par défaut « En discussion », alors que personne
   // n'est encore en face.
-  diagnostic:  { label: '📝 Diagnostic en cours',     color: 'var(--ui-muted)', bg: 'rgba(122,122,110,0.1)' },
-  dispatching: { label: '📡 Recherche d\'un artisan', color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
-  negotiation: { label: '💬 En discussion',          color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
-  matching:    { label: '🔔 Nouvelle demande',        color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
-  scheduled:   { label: '📅 Intervention programmée', color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
-  en_route:    { label: '🚗 En route',                color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
-  en_cours:    { label: '⚡ Mission en cours',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
-  payment:     { label: '💳 Paiement',               color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
-  pending_validation: { label: '⏳ En attente de validation', color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
-  completed:   { label: '✅ Mission terminée',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)'  },
-  disputed:    { label: '⚠️ Litige en cours',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)'  },
+  diagnostic:  { label: 'Diagnostic en cours',     color: 'var(--ui-muted)', bg: 'rgba(122,122,110,0.1)' },
+  dispatching: { label: 'Recherche d\'un artisan', color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
+  negotiation: { label: 'En discussion',          color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
+  matching:    { label: 'Nouvelle demande',        color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
+  scheduled:   { label: 'Intervention programmée', color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
+  en_route:    { label: 'En route',                color: '#E85D26', bg: 'rgba(232,93,38,0.1)'  },
+  en_cours:    { label: 'Mission en cours',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
+  payment:     { label: 'Paiement',               color: '#C9A84C', bg: 'rgba(201,168,76,0.12)' },
+  pending_validation: { label: 'En attente de validation', color: '#2B6B3E', bg: 'rgba(43,107,62,0.12)' },
+  completed:   { label: 'Mission terminée',        color: '#2B6B3E', bg: 'rgba(43,107,62,0.1)'  },
+  disputed:    { label: 'Litige en cours',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)'  },
   cancelled:   { label: '✗ Annulée',                 color: 'var(--ui-muted)', bg: 'rgba(122,122,110,0.1)' },
 }
 
@@ -124,7 +105,8 @@ export default function WarRoomPage() {
 
   // Fiche technique diagnostic
   const [diagData, setDiagData]           = useState<any>(null)
-  const [showDiagPanel, setShowDiagPanel] = useState(true)
+  const [showDiagPanel, setShowDiagPanel] = useState(false)
+  const [showMissionDetails, setShowMissionDetails] = useState(false)
 
   // Noms réels des participants (bypass RLS via mission-brief API)
   const [participants, setParticipants] = useState<{
@@ -548,6 +530,13 @@ export default function WarRoomPage() {
   }, [missionId])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages.length])
+
+  const standardDiscussion = mission?.mode !== 'urgent'
+  const needsAcceptance = role === 'artisan' && mission?.status === 'negotiation' && !mission.provider_accepted_at
+  const canPayQuote = role === 'client' && mission?.status === 'negotiation' && !!mission.price_confirmed_version
+  useEffect(() => {
+    if (needsAcceptance || canPayQuote || window.location.hash === '#paiement-jeko') setShowMissionDetails(true)
+  }, [needsAcceptance, canPayQuote, missionId])
 
   const [discussionEnabled, setDiscussionEnabled] = useState(true)
 
@@ -1257,7 +1246,7 @@ export default function WarRoomPage() {
   const otherSub      = isArtisan ? 'Client' : artisanMetier
   // Une mission annulée et une mission terminée se ressemblent en base mais
   // n'ont rien à voir pour le client : les confondre lui affichait
-  // « ✅ Mission terminée » et lui demandait de noter un artisan qui n'est
+  // «  Mission terminée » et lui demandait de noter un artisan qui n'est
   // jamais venu, juste après un remboursement.
   const isCompleted = status === 'completed'
   const isCancelled = status === 'cancelled'
@@ -1286,7 +1275,7 @@ export default function WarRoomPage() {
   }
 
   return (
-    <div className="mobile-warroom mission-mobile" style={{display:'flex',flexDirection:'column',height:'100dvh',background:'var(--ui-canvas)'}}>
+    <div className="mobile-warroom mission-mobile afrione-conversation" style={{display:'flex',flexDirection:'column',height:'100dvh',background:'var(--ui-canvas)'}}>
 
       {/* ─── MODAL WAVE PAIEMENT (couleurs officielles Wave CI) ──── */}
       {showPayment && (
@@ -1299,7 +1288,7 @@ export default function WarRoomPage() {
               explicite. */}
           <div style={{flexShrink:0,padding:'14px 20px 0'}}>
             <div style={{display:'flex',alignItems:'center',gap:'9px',padding:'11px 13px',background:'rgba(201,168,76,0.14)',border:'1px solid rgba(201,168,76,0.45)',borderRadius:'12px'}}>
-              <span style={{fontSize:'15px',flexShrink:0}}>🧪</span>
+              <span style={{fontSize:'15px',flexShrink:0}}><UiFlaskConical className="ui-glyph" aria-hidden="true" /></span>
               <div style={{flex:1,fontSize:'11.5px',color:'#E8D9A8',lineHeight:1.45,fontWeight:600}}>
                 MODE DÉMO — aucun paiement réel n'est effectué et aucun montant n'est débité.
               </div>
@@ -1372,7 +1361,7 @@ export default function WarRoomPage() {
                     transition:'border-color 0.2s',
                   }}>
                     <div style={{padding:'15px 16px',borderRight:'1px solid rgba(0,0,0,0.1)',fontSize:'14px',color:'var(--ui-muted)',whiteSpace:'nowrap',flexShrink:0}}>
-                      🇨🇮 +225
+                       +225
                     </div>
                     <input className="afrione-field"
                       type="tel"
@@ -1391,7 +1380,7 @@ export default function WarRoomPage() {
 
                 {/* Info escrow — orange Wave */}
                 <div style={{padding:'12px 14px',background:'rgba(248,121,0,0.08)',border:'1px solid rgba(248,121,0,0.2)',borderRadius:'12px',display:'flex',gap:'10px',alignItems:'flex-start',marginBottom:'24px'}}>
-                  <span style={{fontSize:'15px',flexShrink:0}}>🔒</span>
+                  <span style={{fontSize:'15px',flexShrink:0}}><UiLockKeyhole className="ui-glyph" aria-hidden="true" /></span>
                   <div style={{fontSize:'12px',color:'rgba(255,255,255,0.45)',lineHeight:'1.6'}}>
                     Les fonds sont sécurisés par AfriOne et transférés à l'artisan uniquement après validation de la mission.
                   </div>
@@ -1477,7 +1466,7 @@ export default function WarRoomPage() {
                   </div>
                   <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between'}}>
                     <span style={{color:'#8B95A5',fontSize:'12px'}}>Statut</span>
-                    <span style={{color:'#E85D26',fontSize:'13px',fontWeight:700}}>🧪 Démo — non encaissé</span>
+                    <span style={{color:'#E85D26',fontSize:'13px',fontWeight:700}}> Démo — non encaissé</span>
                   </div>
                 </div>
 
@@ -1517,14 +1506,14 @@ export default function WarRoomPage() {
                 <p style={{fontSize:'13px',color:'var(--ui-muted)',marginBottom:'24px'}}>Le devis est accepté. Choisissez le moment.</p>
                 <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
                   <button onClick={confirmNow} disabled={acting} className="btn-primary afrione-action" style={{padding:'18px 16px',border:'none',borderRadius:'16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'14px',textAlign:'left',opacity:acting?0.6:1,color:'white'}}>
-                    <span style={{fontSize:'32px',lineHeight:1}}>⚡</span>
+                    <span style={{fontSize:'32px',lineHeight:1}}><UiZap className="ui-glyph" aria-hidden="true" /></span>
                     <div>
                       <div style={{fontWeight:700,fontSize:'15px'}}>Maintenant</div>
                       <div style={{fontSize:'12px',opacity:0.8,marginTop:'2px'}}>L'artisan part immédiatement — suivi GPS activé</div>
                     </div>
                   </button>
                   <button className="afrione-action" onClick={() => setSchedMode('later')} style={{padding:'18px 16px',background:'var(--ui-canvas)',color:'var(--ui-ink)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'16px',cursor:'pointer',display:'flex',alignItems:'center',gap:'14px',textAlign:'left'}}>
-                    <span style={{fontSize:'32px',lineHeight:1}}>📅</span>
+                    <span style={{fontSize:'32px',lineHeight:1}}><UiCalendarDays className="ui-glyph" aria-hidden="true" /></span>
                     <div>
                       <div style={{fontWeight:700,fontSize:'15px'}}>Programmer</div>
                       <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'2px'}}>Choisir une date et une heure</div>
@@ -1563,7 +1552,7 @@ export default function WarRoomPage() {
                   />
                   {schedDate && schedTime && (
                     <div style={{marginTop:'10px',padding:'10px 14px',background:'rgba(232,93,38,0.12)',borderRadius:'10px',fontSize:'13px',color:'#E85D26',fontWeight:600}}>
-                      📅 {new Date(`${schedDate}T${schedTime}`).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à {schedTime}
+                      <UiCalendarDays className="ui-glyph" aria-hidden="true" /> {new Date(`${schedDate}T${schedTime}`).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à {schedTime}
                     </div>
                   )}
                 </div>
@@ -1582,66 +1571,49 @@ export default function WarRoomPage() {
       )}
       {/* ──────────────────────────────────────────────────────────── */}
 
-      {/* Header */}
-      <div style={{background:'#FFFFFF',borderBottom:'1px solid #EDE8DE',color:'var(--ui-ink)',flexShrink:0}}>
-        <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 14px',maxWidth:'672px',margin:'0 auto'}}>
-          <Link href={isArtisan ? '/artisan-space/dashboard' : '/dashboard'} style={{color:'var(--ui-ink)',display:'flex',alignItems:'center',flexShrink:0}}>
-            <ArrowLeft size={20} />
+      <header className="afrione-conversation-header">
+        <div className="warroom-header-content">
+          <Link className="warroom-icon-button" href={isArtisan ? '/artisan-space/dashboard' : '/dashboard'} aria-label="Retour aux missions">
+            <ArrowLeft size={19} />
           </Link>
-          {/* Avatar cercle comme WhatsApp */}
-          <div style={{width:'42px',height:'42px',background:'#F5F0E8',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',overflow:'hidden',flexShrink:0,border:'2px solid #EDE8DE'}}>
-            {otherAvatar
-              ? <img src={otherAvatar} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
-              : isArtisan ? '👤' : '🔧'}
+          <div className="warroom-avatar" aria-hidden="true">
+            {otherAvatar ? <img src={otherAvatar} alt="" /> : String(otherName || '').trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase()}
           </div>
-          {/* Nom + sous-titre — zone principale */}
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,fontSize:'16px',color:'#1A1A1A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',lineHeight:'1.2'}}>
-              {loading ? '…' : otherName}
-            </div>
-            <div style={{fontSize:'12px',color:statusInfo.color,fontWeight:500,marginTop:'1px',display:'flex',alignItems:'center',gap:'5px'}}>
-              <span style={{display:'inline-block',width:'7px',height:'7px',borderRadius:'50%',background:statusInfo.color,flexShrink:0}} />
-              {statusInfo.label.replace(/^[^\w\s]*\s*/,'')}
-            </div>
+          <div className="warroom-participant">
+            <div className="warroom-participant-name">{loading ? 'Conversation' : otherName}</div>
+            <div className="warroom-participant-status"><i />{statusInfo.label.replace(/^[^\w\s]*\s*/, '')}</div>
           </div>
-          {/* Actions à droite */}
           {allow('view_other_phone') && !isArtisan && artisanPhone && (
-            <a href={`tel:${artisanPhone}`} style={{background:'rgba(43,107,62,0.1)',border:'1px solid rgba(43,107,62,0.3)',borderRadius:'50%',width:'36px',height:'36px',color:'#2B6B3E',fontSize:'17px',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',textDecoration:'none'}} title={`Appeler ${artisanName}`}>
-              📞
-            </a>
+            <a className="warroom-icon-button" href={`tel:${artisanPhone}`} aria-label={`Appeler ${artisanName}`}><Phone size={17} /></a>
           )}
-          {/* La fiche technique était réservée à l'artisan : le client ne
-              pouvait pas relire le diagnostic qu'il avait lui-même produit. */}
-          {allow('view_diagnostic') && diagData && !showDiagPanel && (
-            <button className="afrione-action" onClick={() => setShowDiagPanel(true)} style={{background:'rgba(232,93,38,0.1)',border:'1px solid rgba(232,93,38,0.3)',borderRadius:'8px',padding:'5px 9px',cursor:'pointer',color:'#E85D26',fontSize:'11px',fontWeight:700,flexShrink:0}}>
-              📋 Fiche
-            </button>
+          {allow('view_diagnostic') && diagData && (
+            <button type="button" className="warroom-icon-button afrione-action afrione-action--icon" aria-label="Ouvrir le diagnostic"
+              onClick={() => setShowDiagPanel(open => !open)} aria-expanded={showDiagPanel}><FileText size={18} /></button>
           )}
+          <button type="button" className="afrione-action afrione-conversation-details-button"
+            aria-expanded={showMissionDetails} aria-controls="conversation-mission-details"
+            onClick={() => setShowMissionDetails(open => !open)}>
+            <span>Devis et suivi</span><ChevronDown size={15} aria-hidden="true" />
+          </button>
         </div>
+      </header>
 
-        {/* Qui suis-je, et que dois-je faire maintenant ?
-            Rien nulle part ne le disait — l'utilisateur devait le déduire des
-            boutons affichés, c'est-à-dire de la chose même qui était fausse. */}
-        {roleReady && (
-          <div style={{
-            maxWidth:'672px',margin:'0 auto',padding:'0 14px 9px',
-            display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap',
-          }}>
-            <span style={{
-              fontSize:'10.5px',fontWeight:700,letterSpacing:'0.04em',
-              padding:'3px 9px',borderRadius:'20px',flexShrink:0,
-              color:      role === 'artisan' ? '#E85D26' : role === 'admin' ? 'var(--ui-muted)' : '#2B6B3E',
-              background: role === 'artisan' ? 'rgba(232,93,38,0.09)' : role === 'admin' ? 'rgba(107,114,128,0.09)' : 'rgba(43,107,62,0.09)',
-              border:`1px solid ${role === 'artisan' ? 'rgba(232,93,38,0.28)' : role === 'admin' ? 'rgba(107,114,128,0.28)' : 'rgba(43,107,62,0.28)'}`,
-            }}>
-              {role === 'artisan' ? '🔧' : role === 'admin' ? '🛡️' : '👤'} {ROLE_LABEL[role]}
-            </span>
-            <span style={{fontSize:'11.5px',color:'var(--ui-muted)',lineHeight:1.4,minWidth:0}}>
-              {nextStepHint(role, status)}
-            </span>
+      {!showMissionDetails && (
+        <aside className="warroom-overview" aria-label="Résumé de la mission">
+          <div className="warroom-overview-card">
+            <span className="warroom-raised-icon"><Wrench size={22} strokeWidth={1.75} /></span>
+            <h2>{mission?.category || 'Votre intervention'}</h2>
+            {mission?.quartier && <p>{mission.quartier}</p>}
+            <div className="warroom-overview-status"><span>Statut</span><strong>{statusInfo.label.replace(/^[^\w\s]*\s*/, '')}</strong></div>
+            {!!mission?.total_price && <div className="warroom-overview-status"><span>{mission.price_confirmed_version ? 'Prestation confirmée' : 'Estimation'}</span><strong>{Number(mission.total_price).toLocaleString('fr-FR')} FCFA</strong></div>}
+            <button type="button" className="warroom-overview-action" onClick={() => setShowMissionDetails(true)}>
+              Ouvrir le devis et le suivi <ChevronDown size={16} />
+            </button>
           </div>
-        )}
-      </div>
+          {roleReady && <p className="warroom-overview-hint">{nextStepHint(role, status)}</p>}
+        </aside>
+      )}
+
 
       {/* Bannière mission active → suivi ou validation.
           Conditionnée à `view_gps` : elle s'affichait à quiconque ouvrait la
@@ -1656,7 +1628,7 @@ export default function WarRoomPage() {
               L'artisan est celui qui doit AGIR (démarrer le GPS, signaler son
               arrivée, terminer) : le libellé lui dit maintenant quoi faire. */}
           <div style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'13px',fontWeight:700}}>
-            <span>{status === 'en_route' ? '🚗' : status === 'pending_validation' ? '⏳' : '⚡'}</span>
+            {status === 'pending_validation' ? <Clock size={16} /> : <Zap size={16} />}
             <span>
               {role === 'admin'
                 ? 'Suivi de la mission — observation'
@@ -1678,7 +1650,7 @@ export default function WarRoomPage() {
         <div style={{background:'#FFFFFF',borderTop:'2px solid #C9A84C',padding:'14px 16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
-              <span style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>📦 Matériau non prévu</span>
+              <span style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}> Matériau non prévu</span>
               <button className="afrione-action" onClick={() => { setShowMatSuggest(false); setSuggestStep('input'); setSuggestPreview(null) }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ui-muted)'}}><X size={16}/></button>
             </div>
 
@@ -1698,7 +1670,7 @@ export default function WarRoomPage() {
                 </div>
                 <button className="afrione-action" onClick={previewMatSuggest} disabled={lookingUp || !suggestName.trim()}
                   style={{width:'100%',padding:'10px',background:suggestName.trim()?'#C9A84C':'#D8D2C4',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:suggestName.trim()?'pointer':'default',opacity:lookingUp?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
-                  {lookingUp ? <><div style={{width:'12px',height:'12px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> Recherche prix IA…</> : '🔍 Chercher le prix'}
+                  {lookingUp ? <><div style={{width:'12px',height:'12px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> Recherche prix IA…</> : 'Chercher le prix'}
                 </button>
               </>
             )}
@@ -1715,7 +1687,7 @@ export default function WarRoomPage() {
                         onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
                     ) : (
                       <div style={{width:'52px',height:'52px',borderRadius:'8px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'22px',flexShrink:0}}>
-                        {materialEmoji(suggestName)}
+                        <UiPackage className="ui-glyph" aria-hidden="true" />
                       </div>
                     )}
                     <div style={{flex:1,minWidth:0}}>
@@ -1729,7 +1701,7 @@ export default function WarRoomPage() {
                           <span style={{fontSize:'11px',color:'var(--ui-muted)'}}>FCFA</span>
                         </div>
                       ) : (
-                        <div style={{fontSize:'12px',color:'#E85D26',fontWeight:600,marginTop:'4px'}}>⚠️ Prix non trouvé — à discuter</div>
+                        <div style={{fontSize:'12px',color:'#E85D26',fontWeight:600,marginTop:'4px'}}> Prix non trouvé — à discuter</div>
                       )}
                     </div>
                   </div>
@@ -1749,7 +1721,7 @@ export default function WarRoomPage() {
                   </button>
                   <button className="afrione-action" onClick={sendMatSuggest} disabled={lookingUp}
                     style={{flex:2,padding:'9px',background:'#C9A84C',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:'pointer',opacity:lookingUp?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'5px'}}>
-                    {lookingUp ? <><div style={{width:'12px',height:'12px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> Envoi…</> : '📤 Envoyer au client'}
+                    {lookingUp ? <><div style={{width:'12px',height:'12px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}}/> Envoi…</> : 'Envoyer au client'}
                   </button>
                 </div>
               </div>
@@ -1763,7 +1735,7 @@ export default function WarRoomPage() {
         <div style={{background:'#FFFFFF',borderTop:'2px solid #E85D26',padding:'14px 16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'10px'}}>
-              <span style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>⏱ Requalifier le temps</span>
+              <span style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}> Requalifier le temps</span>
               <button className="afrione-action" onClick={() => setShowTimeAdj(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ui-muted)'}}><X size={16}/></button>
             </div>
             {pricingSuggestion && (
@@ -1799,7 +1771,7 @@ export default function WarRoomPage() {
         <div style={{background:'white',borderBottom:'2px solid #E85D26',padding:'16px',flexShrink:0}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
-              <span style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}>💰 Proposer un devis</span>
+              <span style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}> Proposer un devis</span>
               <button className="afrione-action" onClick={() => setShowDevis(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ui-muted)'}}>
                 <X size={18} />
               </button>
@@ -1848,7 +1820,7 @@ export default function WarRoomPage() {
                     const hasVendor = !hasPhoto && std?.vendor_quartier
                     return (
                       <div key={item} style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 10px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px'}}>
-                        {/* Visuel : photo Jumia cliquable ou emoji produit */}
+                        {/* Visuel : photo Jumia ou icône de matériau */}
                         {hasPhoto && std?.source_url ? (
                           <a href={std.source_url} target="_blank" rel="noreferrer" style={{flexShrink:0,display:'block',lineHeight:0}}>
                             <img src={std.photo_url} alt={item} style={{width:'36px',height:'36px',borderRadius:'6px',objectFit:'cover',background:'#EDE8DE',display:'block'}}
@@ -1856,7 +1828,7 @@ export default function WarRoomPage() {
                           </a>
                         ) : (
                           <div style={{width:'36px',height:'36px',borderRadius:'6px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.25)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',flexShrink:0}}>
-                            {materialEmoji(item)}
+                            <UiPackage className="ui-glyph" aria-hidden="true" />
                           </div>
                         )}
                         <div style={{flex:1,minWidth:0}}>
@@ -1869,7 +1841,7 @@ export default function WarRoomPage() {
                           )}
                           {hasVendor && std?.km_to_client != null && (
                             <div style={{fontSize:'10px',color: std.km_to_client <= 3 ? '#2B6B3E' : '#7A7A6E',marginTop:'1px'}}>
-                              📍 {std.vendor_quartier} · {std.km_to_client} km du client
+                              <UiMapPin className="ui-glyph" aria-hidden="true" /> {std.vendor_quartier} · {std.km_to_client} km du client
                             </div>
                           )}
                           {!hasPhoto && !hasVendor && (
@@ -1900,7 +1872,7 @@ export default function WarRoomPage() {
             {/* Économies vs marché */}
             {pricingSuggestion?.below_market && pricingSuggestion.savings_vs_market && pricingSuggestion.savings_vs_market > 0 && (
               <div style={{background:'rgba(43,107,62,0.06)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'10px',padding:'8px 12px',marginBottom:'10px',display:'flex',alignItems:'center',gap:'8px'}}>
-                <span style={{fontSize:'16px'}}>💰</span>
+                <span style={{fontSize:'16px'}}><UiWallet className="ui-glyph" aria-hidden="true" /></span>
                 <div style={{fontSize:'11px',color:'#2B6B3E',fontWeight:600}}>
                   Client économise <span style={{fontFamily: 'var(--font-body)'}}>{pricingSuggestion.savings_vs_market.toLocaleString('fr')} FCFA</span> vs marché traditionnel
                 </div>
@@ -1920,7 +1892,7 @@ export default function WarRoomPage() {
                     return ((pricingSuggestion?.estimate ?? 0) + matExtra).toLocaleString('fr')
                   })()} FCFA
                 </span>
-                <span style={{fontSize:'10px',color:'#9CA3AF',fontFamily: 'var(--font-body)'}}>🔒 Fixé par AfriOne</span>
+                <span style={{fontSize:'10px',color:'#9CA3AF',fontFamily: 'var(--font-body)'}}> Fixé par AfriOne</span>
               </div>
               {pricingSuggestion && (
                 <div style={{fontSize:'10px',color:'#9CA3AF',marginTop:'4px'}}>
@@ -1952,7 +1924,7 @@ export default function WarRoomPage() {
           <div style={{maxWidth:'672px',margin:'0 auto',padding:'10px 14px'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'8px'}}>
               <div style={{display:'flex',alignItems:'center',gap:'7px'}}>
-                <span style={{fontSize:'13px'}}>📋</span>
+                <span style={{fontSize:'13px'}}><UiClipboardList className="ui-glyph" aria-hidden="true" /></span>
                 <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily: 'var(--font-body)'}}>FICHE TECHNIQUE — DIAGNOSTIC CLIENT</span>
               </div>
               <button className="afrione-action" onClick={() => setShowDiagPanel(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ui-muted)',padding:'2px',lineHeight:0}}>
@@ -1972,7 +1944,7 @@ export default function WarRoomPage() {
               </div>
               <div style={{background:'var(--ui-canvas)',borderRadius:'8px',padding:'7px 8px',textAlign:'center'}}>
                 <div style={{fontSize:'11px',fontWeight:700,color: diagData.urgency === 'emergency' ? '#ef4444' : diagData.urgency === 'high' ? '#E85D26' : diagData.urgency === 'medium' ? '#C9A84C' : '#2B6B3E',marginBottom:'1px'}}>
-                  {diagData.urgency === 'emergency' ? '🔴 URGENCE' : diagData.urgency === 'high' ? '🟠 Urgent' : diagData.urgency === 'medium' ? '🟡 Normal' : '🟢 Faible'}
+                  {diagData.urgency === 'emergency' ? 'URGENCE' : diagData.urgency === 'high' ? 'Urgent' : diagData.urgency === 'medium' ? 'Normal' : 'Faible'}
                 </div>
                 <div style={{fontSize:'9px',color:'#9CA3AF',fontFamily: 'var(--font-body)'}}>URGENCE</div>
               </div>
@@ -2004,7 +1976,7 @@ export default function WarRoomPage() {
                   const proxBd    = std?.km_to_client <= 3 ? 'rgba(43,107,62,0.3)' : 'rgba(107,114,128,0.2)'
                   return (
                     <div key={item} style={{display:'flex',alignItems:'center',gap:'7px',padding:'6px 8px',background:'var(--ui-canvas)',borderRadius:'8px'}}>
-                      {/* Visuel : photo Jumia cliquable ou emoji */}
+                      {/* Visuel : photo Jumia ou icône */}
                       {isJumia && std?.photo_url ? (
                         <a href={std.source_url} target="_blank" rel="noreferrer" style={{flexShrink:0,display:'block',lineHeight:0}}>
                           <img src={std.photo_url} alt={item} style={{width:'28px',height:'28px',borderRadius:'5px',objectFit:'cover',background:'rgba(255,255,255,0.1)',display:'block'}}
@@ -2012,7 +1984,7 @@ export default function WarRoomPage() {
                         </a>
                       ) : (
                         <div style={{width:'28px',height:'28px',borderRadius:'5px',background:'rgba(201,168,76,0.1)',border:'1px solid rgba(201,168,76,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px',flexShrink:0}}>
-                          {materialEmoji(item)}
+                          <UiPackage className="ui-glyph" aria-hidden="true" />
                         </div>
                       )}
                       {/* Nom */}
@@ -2025,7 +1997,7 @@ export default function WarRoomPage() {
                       )}
                       {isPhysical && (
                         <span style={{fontSize:'9px',color:proxColor,background:proxBg,padding:'2px 7px',borderRadius:'20px',border:`1px solid ${proxBd}`,flexShrink:0,whiteSpace:'nowrap'}}>
-                          📍 {std.vendor_quartier}{std.km_to_client != null ? ` · ${std.km_to_client}km` : ''}
+                          <UiMapPin className="ui-glyph" aria-hidden="true" /> {std.vendor_quartier}{std.km_to_client != null ? ` · ${std.km_to_client}km` : ''}
                         </span>
                       )}
                       {!isJumia && !isPhysical && (
@@ -2050,21 +2022,54 @@ export default function WarRoomPage() {
 
             {diagData.duration_estimate && (
               <div style={{marginTop:'6px',fontSize:'10px',color:'var(--ui-muted)',fontFamily: 'var(--font-body)'}}>
-                ⏱ Durée estimée : {diagData.duration_estimate}
+                 Durée estimée : {diagData.duration_estimate}
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Zone messages */}
-      <div style={{flex:1,overflowY:'auto',padding:'16px',width:'100%',maxWidth:704,margin:'0 auto',minHeight:0}}>
-            <MissionWorkflow missionId={missionId as string} role={role} onMission={mergeWorkflowMission}/>
-            <DiscussionAgreement missionId={missionId as string} role={role} initialScope={diagData?.ai_summary || ''} onDiscussion={setDiscussionEnabled} refreshKey={agreementRefresh}/>
+      <div id="conversation-mission-details" className="afrione-conversation-details" hidden={!showMissionDetails}>
+        <MissionWorkflow missionId={missionId as string} role={role} onMission={mergeWorkflowMission}/>
+        <DiscussionAgreement missionId={missionId as string} role={role} initialScope={diagData?.ai_summary || ''} onDiscussion={setDiscussionEnabled} refreshKey={agreementRefresh} inlineAdjustments={standardDiscussion}/>
+            {/* Client : annuler la mission. Dernier de la barre, discret —
+                c'est une sortie, pas une action du parcours. */}
+            {allow('cancel_mission') && (
+              showCancelConfirm ? (
+                <div style={{marginBottom:'8px',display:'flex',flexDirection:'column',gap:'8px'}}>
+                  <div style={{padding:'12px 14px',background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px',fontSize:'12.5px',color:'#ef4444',fontWeight:600,textAlign:'center'}}>
+                    Confirmer l’annulation de la mission ?
+                  </div>
+                  <div style={{display:'flex',gap:'8px'}}>
+                    <button className="afrione-action" onClick={() => setShowCancelConfirm(false)} disabled={cancelling} style={{flex:1,padding:'11px',background:'white',border:'1.5px solid #D8D2C4',borderRadius:'10px',color:'var(--ui-muted)',fontWeight:600,fontSize:'13px',cursor:'pointer'}}>
+                      Non, continuer
+                    </button>
+                    <button className="afrione-action" onClick={cancelMission} disabled={cancelling} style={{flex:1,padding:'11px',background:'#ef4444',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:cancelling?'not-allowed':'pointer',opacity:cancelling?0.6:1}}>
+                      {cancelling ? 'Annulation…' : 'Oui, annuler'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{marginBottom:'8px',textAlign:'center'}}>
+                  <button className="afrione-action" onClick={() => setShowCancelConfirm(true)} style={{background:'none',border:'none',color:'var(--ui-muted)',fontSize:'12px',fontWeight:600,cursor:'pointer',textDecoration:'underline',padding:'4px'}}>
+                    Annuler la mission
+                  </button>
+                </div>
+              )
+            )}
+
+      </div>
+
+      <div className="afrione-conversation-thread" aria-label="Messages de la mission">
         <div style={{maxWidth:'672px',margin:'0 auto',display:'flex',flexDirection:'column',gap:'10px'}}>
           {loading ? (
             <div style={{textAlign:'center',padding:'40px'}}>
               <div style={{width:'32px',height:'32px',border:'3px solid rgba(232,93,38,0.2)',borderTop:'3px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'0 auto'}} />
+            </div>
+          ) : messages.length === 0 && standardDiscussion ? (
+            <div className="warroom-thread-empty">
+              <span className="warroom-raised-icon"><MessageCircle size={22} strokeWidth={1.75} /></span>
+              <p>{isArtisan ? 'Posez vos questions pour préciser l’intervention.' : 'Échangez avec votre artisan sur l’intervention.'}</p>
             </div>
           ) : messages.length === 0 ? (
             <div style={{display:'flex',flexDirection:'column',gap:'10px',paddingTop:'8px'}}>
@@ -2075,7 +2080,7 @@ export default function WarRoomPage() {
                   background:'linear-gradient(135deg,#E85D26,#C9A84C)',
                   display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',
                   boxShadow:'0 2px 8px rgba(232,93,38,0.25)',
-                }}>✨</div>
+                }}><UiSparkles className="ui-glyph" aria-hidden="true" /></div>
                 <div style={{flex:1}}>
                   <div style={{
                     background:'white',border:'1.5px solid #D8D2C4',
@@ -2101,10 +2106,10 @@ export default function WarRoomPage() {
                           <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
                             <span style={{fontSize:'11px',background:'rgba(232,93,38,0.08)',border:'1px solid rgba(232,93,38,0.2)',padding:'2px 9px',borderRadius:'20px',color:'#E85D26',fontWeight:600}}>{diagData.category}</span>
                             <span style={{fontSize:'11px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.2)',padding:'2px 9px',borderRadius:'20px',color:'#C9A84C',fontWeight:600}}>
-                              {diagData.urgency === 'emergency' ? '🔴 Urgence' : diagData.urgency === 'high' ? '🟠 Urgent' : diagData.urgency === 'medium' ? '🟡 Normal' : '🟢 Faible'}
+                              {diagData.urgency === 'emergency' ? 'Urgence' : diagData.urgency === 'high' ? 'Urgent' : diagData.urgency === 'medium' ? 'Normal' : 'Faible'}
                             </span>
                             {diagData.duration_estimate && (
-                              <span style={{fontSize:'11px',background:'rgba(0,0,0,0.04)',border:'1px solid rgba(0,0,0,0.08)',padding:'2px 9px',borderRadius:'20px',color:'var(--ui-muted)'}}>⏱ {diagData.duration_estimate}</span>
+                              <span style={{fontSize:'11px',background:'rgba(0,0,0,0.04)',border:'1px solid rgba(0,0,0,0.08)',padding:'2px 9px',borderRadius:'20px',color:'var(--ui-muted)'}}><UiClock3 className="ui-glyph" aria-hidden="true" /> {diagData.duration_estimate}</span>
                             )}
                           </div>
                           {diagData.items_needed?.length > 0 && (
@@ -2188,7 +2193,7 @@ export default function WarRoomPage() {
                         AFRIONE
                       </div>
                       <p style={{ fontSize: '13px', color: 'var(--ui-ink)', fontStyle: 'italic', margin: 0, lineHeight: 1.5 }}>
-                        {msg.text}
+                        {systemMessageText(msg.text)}
                       </p>
                       <div style={{ fontSize: '10px', color: '#8B95A5', marginTop: '4px', fontFamily: 'var(--font-body)' }}>
                         {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
@@ -2204,7 +2209,7 @@ export default function WarRoomPage() {
               return (
                 <div key={msg.id} style={{textAlign:'center',padding:'8px 0'}}>
                   <span style={{fontSize:'12px',color:'var(--ui-muted)',background:'rgba(122,122,110,0.1)',padding:'6px 14px',borderRadius:'20px',display:'inline-block'}}>
-                    {msg.text}
+                    {systemMessageText(msg.text)}
                   </span>
                 </div>
               )
@@ -2307,7 +2312,7 @@ export default function WarRoomPage() {
               let brief: any = {}
               try { brief = JSON.parse(msg.text) } catch {}
               const urgencyColor: Record<string, string> = { low:'#2B6B3E', medium:'#C9A84C', high:'#E85D26', emergency:'#ef4444' }
-              const urgencyIcon: Record<string, string> = { low:'🟢', medium:'🟡', high:'🟠', emergency:'🔴' }
+              const urgencyIcon: Record<string, string> = { low:'', medium:'', high:'', emergency:'' }
               const urg = brief.urgency || 'medium'
               return (
                 <div key={msg.id} style={{padding:'4px 0'}}>
@@ -2319,7 +2324,7 @@ export default function WarRoomPage() {
                     {/* En-tête fiche */}
                     <div style={{background:'#FFFFFF',padding:'14px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
                       <div style={{width:'32px',height:'32px',background:'rgba(232,93,38,0.2)',borderRadius:'9px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                        <span style={{fontSize:'16px'}}>📋</span>
+                        <span style={{fontSize:'16px'}}><UiClipboardList className="ui-glyph" aria-hidden="true" /></span>
                       </div>
                       <div>
                         <div style={{fontSize:'11px',fontWeight:700,color:'#E85D26',letterSpacing:'0.1em',fontFamily: 'var(--font-body)'}}>FICHE TECHNIQUE</div>
@@ -2371,7 +2376,7 @@ export default function WarRoomPage() {
                       {/* Photos client */}
                       {(brief.photos||[]).length > 0 && (
                         <div>
-                          <div style={{fontSize:'9px',fontWeight:700,color:'var(--ui-muted)',letterSpacing:'0.1em',marginBottom:'6px',fontFamily: 'var(--font-body)'}}>📸 PHOTOS DU CLIENT</div>
+                          <div style={{fontSize:'9px',fontWeight:700,color:'var(--ui-muted)',letterSpacing:'0.1em',marginBottom:'6px',fontFamily: 'var(--font-body)'}}> PHOTOS DU CLIENT</div>
                           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'5px'}}>
                             {brief.photos.map((url: string, i: number) => (
                               <a key={i} href={url} target="_blank" rel="noreferrer" style={{display:'block',aspectRatio:'1',borderRadius:'8px',overflow:'hidden',background:'#EDE8DE'}}>
@@ -2413,7 +2418,7 @@ export default function WarRoomPage() {
                   <div style={{maxWidth:'86%',background:'white',border:'1.5px solid rgba(201,168,76,0.45)',borderRadius:'16px',overflow:'hidden',boxShadow:'0 2px 12px rgba(201,168,76,0.08)'}}>
                     {/* Header */}
                     <div style={{background:'rgba(201,168,76,0.08)',padding:'8px 14px',display:'flex',gap:'8px',alignItems:'center',borderBottom:'1px solid rgba(201,168,76,0.12)'}}>
-                      <span style={{fontSize:'14px'}}>📦</span>
+                      <span style={{fontSize:'14px'}}><UiPackage className="ui-glyph" aria-hidden="true" /></span>
                       <span style={{fontSize:'10px',fontWeight:700,color:'#C9A84C',fontFamily: 'var(--font-body)',letterSpacing:'0.1em'}}>MATÉRIAU NON PRÉVU</span>
                       {d.source && (
                         <span style={{marginLeft:'auto',fontSize:'9px',padding:'2px 7px',borderRadius:'10px',background:'rgba(232,93,38,0.08)',color:'#E85D26',fontWeight:600,border:'1px solid rgba(232,93,38,0.2)'}}>
@@ -2432,7 +2437,7 @@ export default function WarRoomPage() {
                         </a>
                       ) : (
                         <div style={{width:'72px',height:'72px',borderRadius:'10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px',flexShrink:0}}>
-                          {materialEmoji(d.name)}
+                          <UiPackage className="ui-glyph" aria-hidden="true" />
                         </div>
                       )}
 
@@ -2470,7 +2475,7 @@ export default function WarRoomPage() {
                             )}
                           </div>
                         ) : (
-                          <div style={{fontSize:'12px',color:'#E85D26',fontWeight:600}}>⚠️ Prix non trouvé — à discuter</div>
+                          <div style={{fontSize:'12px',color:'#E85D26',fontWeight:600}}> Prix non trouvé — à discuter</div>
                         )}
                       </div>
                     </div>
@@ -2487,7 +2492,7 @@ export default function WarRoomPage() {
                     {canRespond && (
                       <div style={{borderTop:'1px solid rgba(201,168,76,0.12)'}}>
                         <div style={{padding:'8px 14px',background:'rgba(232,93,38,0.04)',display:'flex',gap:'8px',alignItems:'flex-start'}}>
-                          <span style={{fontSize:'13px',flexShrink:0}}>⚠️</span>
+                          <span style={{fontSize:'13px',flexShrink:0}}><UiCircle className="ui-glyph" aria-hidden="true" /></span>
                           <p style={{fontSize:'11px',color:'var(--ui-muted)',margin:0,lineHeight:'1.55'}}>
                             Prix estimatif non validé par AfriOne. Acceptez si le tarif vous convient, ou refusez et demandez des précisions à votre artisan.
                           </p>
@@ -2527,7 +2532,7 @@ export default function WarRoomPage() {
                 <div key={msg.id} style={{padding:'6px 0'}}>
                   <div style={{background:'white',border:'1.5px solid rgba(232,93,38,0.35)',borderRadius:'14px',overflow:'hidden',maxWidth:'90%'}}>
                     <div style={{background:'rgba(232,93,38,0.06)',padding:'8px 14px',borderBottom:'1px solid rgba(232,93,38,0.12)'}}>
-                      <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily: 'var(--font-body)',letterSpacing:'0.1em'}}>⏱ TEMPS SUPPLÉMENTAIRE — NON CONFIRMÉ</div>
+                      <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily: 'var(--font-body)',letterSpacing:'0.1em'}}> TEMPS SUPPLÉMENTAIRE — NON CONFIRMÉ</div>
                     </div>
                     <div style={{padding:'12px 14px'}}>
                       <div style={{fontSize:'15px',color:'var(--ui-ink)',fontWeight:700,marginBottom:'4px'}}>
@@ -2540,11 +2545,11 @@ export default function WarRoomPage() {
                       {canDiscuss && (
                         <div style={{marginTop:'8px',padding:'8px 10px',background:'rgba(232,93,38,0.04)',borderRadius:'8px',border:'1px solid rgba(232,93,38,0.12)'}}>
                           <p style={{fontSize:'11px',color:'var(--ui-muted)',margin:'0 0 8px',lineHeight:'1.55'}}>
-                            ⚠️ Ce supplément n'est pas encore validé par AfriOne. Discutez avec votre artisan avant d'accepter le devis final.
+                             Ce supplément n'est pas encore validé par AfriOne. Discutez avec votre artisan avant d'accepter le devis final.
                           </p>
                           <button className="afrione-action" onClick={() => setInput(`Concernant les ${d.extra_hours}h supplémentaires — pouvez-vous préciser ce qui a nécessité ce temps additionnel ?`)}
                             style={{padding:'7px 12px',background:'none',border:'1px solid rgba(232,93,38,0.4)',borderRadius:'8px',color:'#E85D26',fontWeight:600,fontSize:'11px',cursor:'pointer'}}>
-                            💬 Demander une explication
+                             Demander une explication
                           </button>
                         </div>
                       )}
@@ -2565,7 +2570,7 @@ export default function WarRoomPage() {
                   <div style={{background:'white',border:'2px solid var(--ui-border)',borderRadius:'18px',overflow:'hidden',maxWidth:'94%',boxShadow:'0 4px 20px rgba(0,0,0,0.1)'}}>
                     {/* Header */}
                     <div style={{background:'#FFFFFF',padding:'12px 18px',display:'flex',alignItems:'center',gap:'10px'}}>
-                      <span style={{fontSize:'18px'}}>⚖️</span>
+                      <span style={{fontSize:'18px'}}><UiScale className="ui-glyph" aria-hidden="true" /></span>
                       <div>
                         <div style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily: 'var(--font-body)',letterSpacing:'0.1em'}}>PROPOSITION FINALE · VALIDATION REQUISE</div>
                         <div style={{fontSize:'11px',color:'var(--ui-muted)',marginTop:'1px'}}>Construit depuis diagnostic + ajustements discutés</div>
@@ -2574,20 +2579,20 @@ export default function WarRoomPage() {
                     <div style={{padding:'16px 18px',display:'flex',flexDirection:'column',gap:'7px'}}>
                       {/* Base */}
                       <div style={{display:'flex',justifyContent:'space-between',fontSize:'13px'}}>
-                        <span style={{color:'var(--ui-muted)'}}>📋 Devis diagnostic initial</span>
+                        <span style={{color:'var(--ui-muted)'}}> Devis diagnostic initial</span>
                         <span style={{fontFamily: 'var(--font-body)',color:'var(--ui-ink)',fontWeight:600}}>{(d.base_estimate||0).toLocaleString('fr')} F</span>
                       </div>
                       {/* Extra materials */}
                       {(d.extra_materials||[]).map((m: any, i: number) => (
                         <div key={`em${i}`} style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}>
-                          <span style={{color:'#C9A84C'}}>📦 {m.qty>1?`${m.qty}× `:''}{m.name}</span>
+                          <span style={{color:'#C9A84C'}}><UiPackage className="ui-glyph" aria-hidden="true" /> {m.qty>1?`${m.qty}× `:''}{m.name}</span>
                           <span style={{fontFamily: 'var(--font-body)',color:'#C9A84C',fontWeight:600}}>+{(m.total||0).toLocaleString('fr')} F</span>
                         </div>
                       ))}
                       {/* Time adjustments */}
                       {(d.time_adjustments||[]).map((t: any, i: number) => (
                         <div key={`ta${i}`} style={{display:'flex',justifyContent:'space-between',fontSize:'12px'}}>
-                          <span style={{color:'#E85D26'}}>⏱ Temps +{t.extra_hours}h</span>
+                          <span style={{color:'#E85D26'}}> Temps +{t.extra_hours}h</span>
                           <span style={{fontFamily: 'var(--font-body)',color:'#E85D26',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
                         </div>
                       ))}
@@ -2632,7 +2637,7 @@ export default function WarRoomPage() {
                 <div key={msg.id} style={{padding:'4px 0'}}>
                   <div style={{background:'white',border:'2px solid #2B6B3E',borderRadius:'16px',overflow:'hidden',maxWidth:'92%',boxShadow:'0 2px 10px rgba(43,107,62,0.08)'}}>
                     <div style={{background:'rgba(43,107,62,0.07)',padding:'10px 16px',borderBottom:'1px solid rgba(43,107,62,0.12)',display:'flex',alignItems:'center',gap:'8px'}}>
-                      <span style={{fontSize:'14px'}}>🧾</span>
+                      <span style={{fontSize:'14px'}}><UiReceiptText className="ui-glyph" aria-hidden="true" /></span>
                       <div>
                         <div style={{fontSize:'10px',fontWeight:700,color:'#2B6B3E',letterSpacing:'0.1em',fontFamily: 'var(--font-body)'}}>MATÉRIAUX ACHETÉS — ARTISAN</div>
                         <div style={{fontSize:'11px',color:'var(--ui-muted)',marginTop:'1px'}}>Main d'œuvre fixée · seuls les matériaux sont justifiés ici</div>
@@ -2641,13 +2646,13 @@ export default function WarRoomPage() {
                     <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:'8px'}}>
                       {upd.diag_change_note && (
                         <div style={{background:'rgba(232,93,38,0.06)',border:'1px solid rgba(232,93,38,0.2)',borderRadius:'10px',padding:'8px 12px',fontSize:'12px',color:'var(--ui-ink)',lineHeight:'1.5'}}>
-                          <span style={{fontWeight:700,color:'#E85D26'}}>⚠️ Diagnostic modifié : </span>{upd.diag_change_note}
+                          <span style={{fontWeight:700,color:'#E85D26'}}> Diagnostic modifié : </span>{upd.diag_change_note}
                         </div>
                       )}
                       {/* Main d'œuvre fixe */}
                       {laborFixed > 0 && (
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 10px',background:'rgba(201,168,76,0.07)',borderRadius:'8px'}}>
-                          <span style={{fontSize:'12px',color:'var(--ui-muted)'}}>🔧 Main d'œuvre (fixe)</span>
+                          <span style={{fontSize:'12px',color:'var(--ui-muted)'}}> Main d'œuvre (fixe)</span>
                           <span style={{fontFamily: 'var(--font-body)',fontSize:'13px',fontWeight:700,color:'#C9A84C'}}>{laborFixed.toLocaleString('fr')} F</span>
                         </div>
                       )}
@@ -2670,26 +2675,22 @@ export default function WarRoomPage() {
               )
             }
 
-            // Message texte normal
             return (
-              <div key={msg.id} style={{display:'flex',gap:'8px',flexDirection:isMe?'row-reverse':'row',alignItems:'flex-end'}}>
-                {!isMe && (
-                  <div style={{width:'28px',height:'28px',background:'#FFFFFF',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',flexShrink:0}}>🔧</div>
-                )}
-                <div style={{
-                  maxWidth:'78%',padding:'10px 14px',borderRadius:'16px',fontSize:'14px',lineHeight:'1.5',
-                  background:isMe?'#E85D26':'white',color:isMe?'white':'var(--ui-ink)',
-                  borderBottomRightRadius:isMe?'4px':'16px',borderBottomLeftRadius:isMe?'16px':'4px',
-                  border:isMe?'none':'1px solid #D8D2C4',
-                }}>
-                  {msg.text}
-                  <div style={{fontSize:'10px',marginTop:'4px',opacity:0.65,textAlign:isMe?'right':'left'}}>
-                    {new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
-                  </div>
+              <div key={msg.id} className={`afrione-chat-row${isMe ? ' afrione-chat-row--own' : ''}`}>
+                <div className="afrione-chat-bubble">
+                  <span>{msg.text}</span>
+                  <time dateTime={msg.created_at}>
+                    {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </time>
                 </div>
               </div>
             )
           })}
+          {standardDiscussion && roleReady && (
+            <QuoteAdjustments missionId={missionId as string} role={role}
+              editable={mission?.status === 'negotiation' && !!mission.provider_accepted_at}
+              openDetails={() => setShowMissionDetails(true)} onChange={() => setAgreementRefresh(value => value + 1)} />
+          )}
           <div ref={bottomRef} />
         </div>
       </div>
@@ -2699,7 +2700,7 @@ export default function WarRoomPage() {
         <div style={{background:'white',borderTop:'2px solid #2B6B3E',padding:'16px',flexShrink:0,maxHeight:'70vh',overflowY:'auto'}}>
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
-              <span style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}>🧾 Matériaux achetés</span>
+              <span style={{fontWeight:700,fontSize:'15px',color:'var(--ui-ink)'}}> Matériaux achetés</span>
               <button className="afrione-action" onClick={() => setShowMatUpdate(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ui-muted)'}}><X size={18}/></button>
             </div>
 
@@ -2760,7 +2761,7 @@ export default function WarRoomPage() {
 
             <button className="afrione-action" onClick={sendMatUpdate} disabled={sendingMatUpdate || !purchasedMats.length}
               style={{width:'100%',padding:'12px',background:purchasedMats.length?'#2B6B3E':'#D8D2C4',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:purchasedMats.length?'pointer':'default',opacity:sendingMatUpdate?0.6:1}}>
-              {sendingMatUpdate ? 'Envoi…' : '📤 Envoyer au client →'}
+              {sendingMatUpdate ? 'Envoi…' : 'Envoyer au client →'}
             </button>
           </div>
         </div>
@@ -2768,11 +2769,11 @@ export default function WarRoomPage() {
 
       {/* Zone actions bas */}
       {!isClosed ? (
-        <div className="mobile-warroom-composer" style={{background:'white',borderTop:'1px solid #D8D2C4',padding:'10px 16px',flexShrink:0}}>
+        <div className="mobile-warroom-composer warroom-composer">
           <div style={{maxWidth:'672px',margin:'0 auto'}}>
 
             {/* Artisan : Actions de discussion (negotiation/matching) */}
-            {allow('send_quote') && !showDevis && !showMatSuggest && !showTimeAdj && (
+            {!standardDiscussion && allow('send_quote') && !showDevis && !showMatSuggest && !showTimeAdj && (
               <div style={{marginBottom:'8px',display:'flex',gap:'6px',flexWrap:'wrap'}}>
                 {/* Matériau non prévu */}
                 <button className="afrione-action" onClick={() => { setShowMatSuggest(true); setShowTimeAdj(false); loadPricingSuggestion() }} style={{
@@ -2780,7 +2781,7 @@ export default function WarRoomPage() {
                   border:'1px dashed #C9A84C',borderRadius:'10px',color:'#C9A84C',
                   fontWeight:600,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
                 }}>
-                  📦 Matériau non prévu
+                   Matériau non prévu
                 </button>
                 {/* Requalifier le temps */}
                 <button className="afrione-action" onClick={() => { setShowTimeAdj(true); setShowMatSuggest(false); loadPricingSuggestion() }} style={{
@@ -2788,7 +2789,7 @@ export default function WarRoomPage() {
                   border:'1px dashed rgba(232,93,38,0.6)',borderRadius:'10px',color:'#E85D26',
                   fontWeight:600,fontSize:'12px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'5px',
                 }}>
-                  ⏱ +Temps
+                   +Temps
                 </button>
                 {/* Proposition finale (si des ajustements existent) ou devis simple */}
                 {messages.some(m => m.type === 'material_suggest' || m.type === 'time_adjust') ? (
@@ -2797,7 +2798,7 @@ export default function WarRoomPage() {
                     fontWeight:700,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                     opacity: acting ? 0.6 : 1,
                   }}>
-                    ⚖️ {acting ? 'Envoi…' : 'Lancer la proposition finale'}
+                    <UiScale className="ui-glyph" aria-hidden="true" /> {acting ? 'Envoi…' : 'Lancer la proposition finale'}
                   </button>
                 ) : (
                   <button className="afrione-action" onClick={openDevis} style={{
@@ -2805,7 +2806,7 @@ export default function WarRoomPage() {
                     border:'1px dashed #E85D26',borderRadius:'10px',color:'#E85D26',
                     fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                   }}>
-                    💰 Proposer un devis
+                     Proposer un devis
                   </button>
                 )}
               </div>
@@ -2819,7 +2820,7 @@ export default function WarRoomPage() {
                   border:'1px dashed #2B6B3E',borderRadius:'10px',color:'#2B6B3E',
                   fontWeight:600,fontSize:'13px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                 }}>
-                  🧾 Déclarer les matériaux achetés
+                   Déclarer les matériaux achetés
                 </button>
               </div>
             )}
@@ -2828,25 +2829,25 @@ export default function WarRoomPage() {
             {showProposalConfirm && proposalDraft && allow('send_final_proposal') && (
               <div style={{marginBottom:'8px',background:'white',border:'2px solid var(--ui-border)',borderRadius:'16px',overflow:'hidden'}}>
                 <div style={{background:'#FFFFFF',padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                  <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily: 'var(--font-body)',letterSpacing:'0.1em'}}>⚖️ CONFIRMATION PROPOSITION</span>
+                  <span style={{fontSize:'10px',fontWeight:700,color:'#E85D26',fontFamily: 'var(--font-body)',letterSpacing:'0.1em'}}> CONFIRMATION PROPOSITION</span>
                   <button className="afrione-action" onClick={() => setShowProposalConfirm(false)} style={{background:'none',border:'none',color:'var(--ui-muted)',cursor:'pointer',padding:'2px'}}>
                     <X size={14}/>
                   </button>
                 </div>
                 <div style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:'6px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'var(--ui-muted)'}}>
-                    <span>📋 Devis diagnostic</span>
+                    <span> Devis diagnostic</span>
                     <span style={{fontFamily: 'var(--font-body)',fontWeight:600,color:'var(--ui-ink)'}}>{(proposalDraft.baseEstimate||0).toLocaleString('fr')} F</span>
                   </div>
                   {(proposalDraft.matSuggests||[]).map((m: any, i: number) => (
                     <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#C9A84C'}}>
-                      <span>📦 {m.qty>1?`${m.qty}× `:''}{m.name}</span>
+                      <span><UiPackage className="ui-glyph" aria-hidden="true" /> {m.qty>1?`${m.qty}× `:''}{m.name}</span>
                       <span style={{fontFamily: 'var(--font-body)',fontWeight:600}}>+{(m.total||0).toLocaleString('fr')} F</span>
                     </div>
                   ))}
                   {(proposalDraft.timeAdjs||[]).map((t: any, i: number) => (
                     <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#E85D26'}}>
-                      <span>⏱ +{t.extra_hours}h</span>
+                      <span> +{t.extra_hours}h</span>
                       <span style={{fontFamily: 'var(--font-body)',fontWeight:600}}>+{(t.labor_impact||0).toLocaleString('fr')} F</span>
                     </div>
                   ))}
@@ -2882,7 +2883,7 @@ export default function WarRoomPage() {
                   border:'none',borderRadius:'12px',fontWeight:700,fontSize:'14px',cursor:'pointer',
                   display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
                 }}>
-                  📅 Choisir le moment de l'intervention →
+                   Choisir le moment de l'intervention →
                 </button>
               </div>
             )}
@@ -2890,7 +2891,7 @@ export default function WarRoomPage() {
             {/* Artisan : le client n'a pas encore fixé la date (payment) */}
             {isArtisan && status === 'payment' && (
               <div style={{marginBottom:'8px',padding:'12px 14px',background:'rgba(43,107,62,0.06)',border:'1px solid rgba(43,107,62,0.25)',borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
-                <span style={{fontSize:'20px'}}>💰</span>
+                <span style={{fontSize:'20px'}}><UiWallet className="ui-glyph" aria-hidden="true" /></span>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:'13px',color:'#2B6B3E'}}>Paiement reçu en escrow</div>
                   <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'2px'}}>Le client choisit le moment de l'intervention.</div>
@@ -2901,7 +2902,7 @@ export default function WarRoomPage() {
             {/* Les deux : bandeau date programmée (scheduled) */}
             {status === 'scheduled' && (
               <div style={{marginBottom:'8px',padding:'12px 14px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.35)',borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px'}}>
-                <span style={{fontSize:'20px'}}>📅</span>
+                <span style={{fontSize:'20px'}}><UiCalendarDays className="ui-glyph" aria-hidden="true" /></span>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:'13px',color:'var(--ui-ink)'}}>Intervention programmée</div>
                   <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'2px'}}>
@@ -2930,7 +2931,7 @@ export default function WarRoomPage() {
                   display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',
                   opacity: acting ? 0.6 : 1,
                 }}>
-                  🚗 {acting ? 'Démarrage…' : "Démarrer le suivi →"}
+                  <UiCar className="ui-glyph" aria-hidden="true" /> {acting ? 'Démarrage…' : "Démarrer le suivi →"}
                 </button>
               </div>
             )}
@@ -2943,7 +2944,7 @@ export default function WarRoomPage() {
                   width:'100%',padding:'12px',color:'white',
                   borderRadius:'12px',fontWeight:700,fontSize:'14px',textDecoration:'none',
                 }}>
-                  🚗 Voir le suivi en direct →
+                   Voir le suivi en direct →
                 </Link>
               </div>
             )}
@@ -2952,7 +2953,7 @@ export default function WarRoomPage() {
             {showCounterProposal && (allow('counter_offer') || allow('answer_counter_offer')) && (
               <div style={{marginBottom:'10px',background:'white',border:'2px solid #E85D26',borderRadius:'14px',overflow:'hidden'}}>
                 <div style={{background:'rgba(232,93,38,0.06)',padding:'10px 14px',borderBottom:'1px solid rgba(232,93,38,0.15)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                  <span style={{fontWeight:700,fontSize:'13px',color:'#E85D26'}}>💬 Refuser le devis</span>
+                  <span style={{fontWeight:700,fontSize:'13px',color:'#E85D26'}}> Refuser le devis</span>
                   <button className="afrione-action" onClick={() => { setShowCounterProposal(false); setCounterAmount('') }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ui-muted)',padding:'2px',lineHeight:0}}><X size={14}/></button>
                 </div>
                 <div style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:'10px'}}>
@@ -2982,42 +2983,13 @@ export default function WarRoomPage() {
               </div>
             )}
 
-            {/* Client : annuler la mission. Dernier de la barre, discret —
-                c'est une sortie, pas une action du parcours. */}
-            {allow('cancel_mission') && (
-              showCancelConfirm ? (
-                <div style={{marginBottom:'8px',display:'flex',flexDirection:'column',gap:'8px'}}>
-                  <div style={{padding:'12px 14px',background:'rgba(239,68,68,0.06)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px',fontSize:'12.5px',color:'#ef4444',fontWeight:600,textAlign:'center'}}>
-                    ⚠️ La mission sera annulée
-                    {status === 'payment' || status === 'scheduled'
-                      ? ' et votre paiement intégralement remboursé.'
-                      : '.'} Confirmer ?
-                  </div>
-                  <div style={{display:'flex',gap:'8px'}}>
-                    <button className="afrione-action" onClick={() => setShowCancelConfirm(false)} disabled={cancelling} style={{flex:1,padding:'11px',background:'white',border:'1.5px solid #D8D2C4',borderRadius:'10px',color:'var(--ui-muted)',fontWeight:600,fontSize:'13px',cursor:'pointer'}}>
-                      Non, continuer
-                    </button>
-                    <button className="afrione-action" onClick={cancelMission} disabled={cancelling} style={{flex:1,padding:'11px',background:'#ef4444',color:'white',border:'none',borderRadius:'10px',fontWeight:700,fontSize:'13px',cursor:cancelling?'not-allowed':'pointer',opacity:cancelling?0.6:1}}>
-                      {cancelling ? 'Annulation…' : 'Oui, annuler'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{marginBottom:'8px',textAlign:'center'}}>
-                  <button className="afrione-action" onClick={() => setShowCancelConfirm(true)} style={{background:'none',border:'none',color:'var(--ui-muted)',fontSize:'12px',fontWeight:600,cursor:'pointer',textDecoration:'underline',padding:'4px'}}>
-                    Annuler la mission
-                  </button>
-                </div>
-              )
-            )}
-
             {/* Label résumé pré-rempli (client uniquement).
                 role-display: étiquette au-dessus du champ de saisie, l'envoi
                 reste gardé par `send_message`. */}
             {role === 'client' && prefillMsg && input === prefillMsg && (
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px',padding:'6px 10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.25)',borderRadius:'8px'}}>
                 <span style={{fontSize:'11px',color:'#C9A84C',fontWeight:600,display:'flex',alignItems:'center',gap:'5px'}}>
-                  📋 Message pré-rédigé — envoyez-le ou modifiez-le
+                  Message prérempli · vous pouvez le modifier
                 </span>
                 <button className="afrione-action" onClick={() => setInput('')} style={{background:'none',border:'none',cursor:'pointer',color:'var(--ui-muted)',padding:'0',lineHeight:0}}>
                   <X size={12} />
@@ -3032,17 +3004,17 @@ export default function WarRoomPage() {
             {!allow('send_message') || !discussionEnabled ? (
               <div style={{padding:'11px 14px',background:'#F5F0E8',border:'1px solid #D8D2C4',borderRadius:'12px',fontSize:'12.5px',color:'var(--ui-muted)',textAlign:'center'}}>
                 {role === 'admin'
-                  ? '🛡️ Mode administrateur — conversation en lecture seule.'
+                  ? 'Conversation en lecture seule.'
                   : !discussionEnabled ? "Sans discussion libre : utilisez les devis et rectificatifs ci-dessus." : "La conversation est close pour cette mission."}
               </div>
             ) : (
             <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
               <input type="text" value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
-                maxLength={4000} placeholder="Votre message…" aria-label="Votre message" className="input afrione-field" style={{flex:1,minWidth:0}} />
-              <button aria-label="Envoyer le message" onClick={send} disabled={loading || !input.trim() || sendStatus !== 'idle'} className="btn-primary afrione-action afrione-action--icon"
+                maxLength={4000} placeholder="Votre message…" aria-label="Votre message" className="input afrione-field afrione-conversation-input" style={{flex:1,minWidth:0}} />
+              <button aria-label="Envoyer le message" onClick={send} disabled={loading || !input.trim() || sendStatus !== 'idle'} className="btn-primary afrione-action afrione-action--icon warroom-send-button"
                 style={{
-                  width:'44px',height:'44px',color:'white',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',border:'none',flexShrink:0,
+                  width:'44px',height:'44px',color:'white',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:'none',flexShrink:0,
                   cursor:(!input.trim()||sendStatus!=='idle')?'not-allowed':'pointer',
                   opacity:(input.trim()&&sendStatus==='idle')||sendStatus!=='idle'?1:0.4,
                   background: sendStatus==='sent' ? '#2B6B3E' : undefined,
@@ -3135,7 +3107,7 @@ export default function WarRoomPage() {
                 </div>
                 {rating > 0 && (
                   <div style={{textAlign:'center',fontSize:'13px',fontWeight:600,color:'#C9A84C',marginBottom:'14px'}}>
-                    {['','😞 Décevant','😐 Peut mieux faire','🙂 Correct','😊 Très bien','🤩 Excellent !'][rating]}
+                    {['','Décevant','Peut mieux faire','Correct','Très bien','Excellent !'][rating]}
                   </div>
                 )}
 

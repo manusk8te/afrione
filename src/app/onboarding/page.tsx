@@ -1,4 +1,5 @@
 'use client'
+import { Circle as UiCircle, Wrench as UiWrench } from 'lucide-react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -162,8 +163,8 @@ export default function OnboardingPage() {
             <p style={{ color: 'var(--ui-muted)', fontSize: '14px', marginBottom: '32px' }}>Votre expérience sera adaptée à votre profil</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
-                { id: 'client', icon: '🏠', title: 'Un client', desc: 'Je cherche un artisan pour mes besoins' },
-                { id: 'artisan', icon: '🔧', title: 'Un artisan', desc: 'Je propose mes services aux clients' },
+                { id: 'client', icon: <UiCircle className="ui-glyph" aria-hidden="true" />, title: 'Un client', desc: 'Je cherche un artisan pour mes besoins' },
+                { id: 'artisan', icon: <UiWrench className="ui-glyph" aria-hidden="true" />, title: 'Un artisan', desc: 'Je propose mes services aux clients' },
               ].map(r => (
                 <button className="afrione-action"
                   key={r.id}

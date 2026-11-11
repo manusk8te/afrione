@@ -54,13 +54,13 @@ const METIER_ICON_MAP: Record<string, React.ElementType> = {
 const STEPS = [
   { num: '01', title: 'Décrivez votre besoin',  desc: "L'IA analyse votre problème et estime le prix en quelques secondes.", Icon: Cpu        },
   { num: '02', title: 'Choisissez un artisan',  desc: 'Profils sélectionnés selon votre quartier et votre budget.',           Icon: Users      },
-  { num: '03', title: 'Confirmez & payez',       desc: "Paiement sécurisé Wave. Les fonds sont bloqués jusqu'à la fin.",       Icon: CreditCard },
+  { num: '03', title: 'Confirmez & payez',       desc: "Réglez votre intervention sur la page sécurisée de Jèko.",       Icon: CreditCard },
   { num: '04', title: 'Mission validée',         desc: "Validez la photo de fin de chantier et notez l'artisan.",             Icon: Camera     },
 ]
 
 const FAQ_ITEMS = [
   { q: "Comment les artisans sont-ils vérifiés ?",   a: "Chaque artisan passe une vérification d'identité et de compétences avant d'être admis. Nous contrôlons leurs documents, leurs qualifications et vérifions leurs antécédents professionnels." },
-  { q: "Comment fonctionne le paiement ?",           a: "Vous payez via Wave au moment de la réservation. Les fonds sont bloqués sur un compte séquestre jusqu'à la fin de la mission et libérés uniquement après votre validation." },
+  { q: "Comment fonctionne le paiement ?",           a: "Une fois le devis confirmé, le bouton Payer avec Jèko ouvre le checkout Jèko. Le statut du paiement apparaît ensuite dans votre mission." },
   { q: "Combien de temps pour trouver un artisan ?", a: "En général moins de 30 minutes après votre demande. Un artisan qualifié de votre quartier vous contacte directement par téléphone ou via l'application." },
   { q: "Que faire si je ne suis pas satisfait ?",    a: "Chaque mission est notée. Si la prestation ne correspond pas, notre équipe intervient sous 24h pour trouver une solution ou procéder au remboursement." },
   { q: "Dans quels quartiers êtes-vous disponibles ?", a: "Nous couvrons Cocody, Plateau, Marcory, Yopougon, Adjamé, Abobo, Treichville et leurs environs. La couverture s'étend régulièrement." },
@@ -68,8 +68,8 @@ const FAQ_ITEMS = [
 
 const TRUST_PILLARS = [
   { Icon: Shield,     title: 'Artisans vérifiés KYC', desc: "Chaque artisan passe une vérification d'identité et de compétence avant d'être admis sur la plateforme.",          stat: '100% contrôlés',   color: '#2B6B3E' },
-  { Icon: CreditCard, title: 'Escrow Wave',            desc: "Votre argent est sécurisé jusqu'à la fin de la mission. Libéré uniquement après votre validation.",                stat: 'Paiement garanti', color: '#E85D26' },
-  { Icon: Star,       title: 'Qualité garantie',       desc: 'Chaque mission est notée. Les artisans sous 3/5 sont automatiquement suspendus de la plateforme.',                stat: '4.8★ en moyenne',  color: '#C9A84C' },
+  { Icon: CreditCard, title: 'Paiement Jèko',          desc: "Le paiement passe par Jèko. Vous retrouvez sa confirmation dans votre mission.",                               stat: 'Confirmation en ligne', color: '#E85D26' },
+  { Icon: Star,       title: 'Qualité garantie',       desc: 'Chaque mission est notée. Les artisans sous 3/5 sont automatiquement suspendus de la plateforme.',                stat: '4.8 en moyenne',  color: '#C9A84C' },
   { Icon: Clock,      title: 'Réponse en 30 min',      desc: 'Un artisan qualifié de votre quartier vous contacte en moins de 30 minutes après votre demande.',                 stat: 'Rapide et local',  color: '#C8B49A' },
 ]
 
@@ -138,7 +138,7 @@ export default function HomePage() {
 
   const STATS_DISPLAY = [
     { value: `${stats.artisans}+`,                  label: 'Artisans vérifiés' },
-    { value: `${stats.rating}★`,                    label: 'Note moyenne'       },
+    { value: `${stats.rating}`,                    label: 'Note moyenne'       },
     { value: `${stats.missions.toLocaleString()}+`, label: 'Missions réalisées' },
     { value: `${stats.satisfaction}%`,              label: 'Clients satisfaits' },
   ]
@@ -173,7 +173,7 @@ export default function HomePage() {
               {/* Subtitle */}
               <motion.p variants={fadeUp}
                 style={{ ...body, fontSize: '16px', maxWidth: '52ch', color: 'rgba(255,255,255,0.82)', marginBottom: '40px', lineHeight: 1.65 }}>
-                Artisans vérifiés KYC, prix transparents, paiement sécurisé via Wave.
+                Artisans vérifiés KYC, prix transparents, paiement sécurisé via Jèko.
                 Votre chantier, géré de bout en bout à Abidjan.
               </motion.p>
 
@@ -197,7 +197,7 @@ export default function HomePage() {
                 {[
                   { Icon: Shield,      text: 'Artisans vérifiés KYC' },
                   { Icon: Zap,         text: 'Réponse en 30 min'     },
-                  { Icon: CheckCircle, text: 'Paiement sécurisé Wave' },
+                  { Icon: CheckCircle, text: 'Paiement sécurisé Jèko' },
                 ].map(({ Icon, text }) => (
                   <div key={text} className="flex items-center gap-2">
                     <Icon size={13} style={{ color: 'rgba(255,255,255,0.7)' }} />
@@ -663,7 +663,7 @@ export default function HomePage() {
                 Rejoignez des centaines<br />d'artisans à Abidjan.
               </h2>
               <p style={{ ...body, fontSize: '15px', color: 'rgba(255,255,255,0.78)', lineHeight: 1.6, marginBottom: '32px', maxWidth: '38ch' }}>
-                Inscription gratuite. Accédez à vos premiers clients qualifiés dès aujourd'hui. Paiement garanti par AfriOne.
+                Inscription gratuite. Accédez à vos premiers clients et suivez vos missions sur AfriOne.
               </p>
               <Link className="afrione-action" href="/auth"
                 style={{
@@ -798,7 +798,7 @@ export default function HomePage() {
               © 2025 AFRIONE · Abidjan, Côte d'Ivoire · Tous droits réservés
             </p>
             <p style={{ ...mono, fontSize: '11px', color: T3 }}>
-              Artisans vérifiés · Paiement Wave · KYC
+              Artisans vérifiés · Paiement sécurisé par Jèko · KYC
             </p>
           </div>
         </div>

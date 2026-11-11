@@ -300,7 +300,7 @@ function AuthContent() {
           {/* Header */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <h2 style={{ fontSize: 28, fontWeight: 500, letterSpacing: '-0.03em', color: '#fff', margin: 0 }}>
-              {tab === 'login' ? 'Bon retour 👋' : 'Créer un profil'}
+              {tab === 'login' ? 'Bon retour ' : 'Créer un profil'}
             </h2>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
               {tab === 'login'

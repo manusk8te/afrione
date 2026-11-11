@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
         mission_id:  mission.id,
         sender_id:   mission.client_id,
         sender_role: 'system',
-        text:        '✅ Mission auto-validée — aucune réponse du client sous 24h. Paiement libéré automatiquement.',
+        text:        'Mission auto-validée — aucune réponse du client sous 24h. Paiement libéré automatiquement.',
         type:        'system',
       })
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { resolveMissionViewer } from '@/lib/mission-auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { cancelAndRefund, closeAttempts, DISPATCH_GRACE_SECONDS } from '@/lib/dispatch'
+import { cancelAndRefund, closeAttempts, DISPATCH_GRACE_SECONDS, startPaidUrgentDispatch } from '@/lib/dispatch'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +14,12 @@ export async function POST(req: NextRequest) {
 
   if (!mission_id) return NextResponse.json({ error: 'mission_id requis' }, { status: 400 })
 
+  const access = await resolveMissionViewer(req, mission_id)
+  if (!access.ok) return access.res
+  if (access.viewer.mission.client_id !== access.viewer.userId) {
+    return NextResponse.json({ error: 'Réservé au client de la mission' }, { status: 403 })
+  }
+
   const { data: mission } = await supabaseAdmin
     .from('missions')
     .select('id, mode, status, client_id, category')
@@ -21,6 +28,33 @@ export async function POST(req: NextRequest) {
 
   if (!mission) return NextResponse.json({ error: 'Mission introuvable' }, { status: 404 })
   if (mission.mode !== 'urgent') return NextResponse.json({ ok: true, skipped: true })
+
+  const { data: jeko, error: paymentError } = await supabaseAdmin.from('jeko_checkouts').select('id')
+    .eq('mission_id', mission_id).eq('status', 'paid').eq('urgent_before_matching', true).maybeSingle()
+  if (paymentError) return NextResponse.json({ error: 'Suivi indisponible' }, { status: 503 })
+  if (jeko) {
+    if (mission.status === 'payment') {
+      try {
+        await startPaidUrgentDispatch(mission_id, mission.category)
+      } catch {
+        return NextResponse.json({ error: 'Suivi indisponible' }, { status: 503 })
+      }
+    }
+    if (mission.status === 'dispatching') {
+      const { error } = await supabaseAdmin.rpc('stop_paid_urgent_dispatch', { mid: mission_id })
+      if (error) return NextResponse.json({ error: 'Suivi indisponible' }, { status: 503 })
+    }
+    const [current, attempts] = await Promise.all([
+      supabaseAdmin.from('missions').select('status,artisan_id').eq('id', mission_id).single(),
+      supabaseAdmin.from('dispatch_attempts').select('expires_at')
+        .eq('mission_id', mission_id).is('response', null).order('expires_at', { ascending: false }).limit(1),
+    ])
+    if (current.error || attempts.error) return NextResponse.json({ error: 'Suivi indisponible' }, { status: 503 })
+    return NextResponse.json({
+      jeko: true, category: mission.category, status: current.data.status,
+      assigned: !!current.data.artisan_id, expiresAt: attempts.data[0]?.expires_at ?? null,
+    })
+  }
 
   // Si déjà acceptée, ne rien faire
   if (mission.status !== 'dispatching') {

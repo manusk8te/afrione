@@ -235,7 +235,7 @@ export function runMonteCarlo(input: PricingInput): PricingResult {
   const rng = makePRNG((Date.now() * Math.random() * 0xffffff) | 0)
 
   // ── 1. Labor (Gamma) ──────────────────────────────────────────────────────
-  // Si tarif artisan déclaré + alpha diagnostic → taux juste SMIG×2 ↔ tarif déclaré
+  // Si tarif artisan déclaré + alpha diagnostic → taux juste SMIG×2  tarif déclaré
   // Sinon → tarif_horaire brut (fallback DB)
   const hourlyRate = (input.artisanDeclaredRate && input.alpha != null)
     ? effectiveHourlyRate(input.artisanDeclaredRate, input.alpha)

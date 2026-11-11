@@ -1,4 +1,5 @@
 'use client'
+import { Bell as UiBell, Paintbrush as UiPaintbrush, ShieldCheck as UiShieldCheck, UserRound as UiUserRound, Wrench as UiWrench, Zap as UiZap } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, LogIn, RefreshCw, CheckCircle, XCircle, Bell } from 'lucide-react'
@@ -12,11 +13,11 @@ const NEU_SMALL  = 'var(--ui-shadow-soft)'
 const TEST_PASSWORD = 'AfriTest2024!'
 
 const TEST_ACCOUNTS = [
-  { label: 'Client Test',      emoji: '👤', email: 'test.client@afrione.ci',   role: 'client',  redirect: '/dashboard' },
-  { label: 'Plombier Test',    emoji: '🔧', email: 'test.plombier@afrione.ci', role: 'artisan', redirect: '/artisan-space/dashboard' },
-  { label: 'Électricien Test', emoji: '⚡', email: 'test.elec@afrione.ci',     role: 'artisan', redirect: '/artisan-space/dashboard' },
-  { label: 'Peintre Test',     emoji: '🎨', email: 'test.peintre@afrione.ci',  role: 'artisan', redirect: '/artisan-space/dashboard' },
-  { label: 'Admin Test',       emoji: '🛡️', email: 'test.admin@afrione.ci',    role: 'admin',   redirect: '/admin' },
+  { label: 'Client Test',      emoji: <UiUserRound className="ui-glyph" aria-hidden="true" />, email: 'test.client@afrione.ci',   role: 'client',  redirect: '/dashboard' },
+  { label: 'Plombier Test',    emoji: <UiWrench className="ui-glyph" aria-hidden="true" />, email: 'test.plombier@afrione.ci', role: 'artisan', redirect: '/artisan-space/dashboard' },
+  { label: 'Électricien Test', emoji: <UiZap className="ui-glyph" aria-hidden="true" />, email: 'test.elec@afrione.ci',     role: 'artisan', redirect: '/artisan-space/dashboard' },
+  { label: 'Peintre Test',     emoji: <UiPaintbrush className="ui-glyph" aria-hidden="true" />, email: 'test.peintre@afrione.ci',  role: 'artisan', redirect: '/artisan-space/dashboard' },
+  { label: 'Admin Test',       emoji: <UiShieldCheck className="ui-glyph" aria-hidden="true" />, email: 'test.admin@afrione.ci',    role: 'admin',   redirect: '/admin' },
 ] as const
 
 const CATEGORIES = ['Plomberie', 'Électricité', 'Climatisation', 'Serrurerie'] as const
@@ -41,9 +42,9 @@ type DispatchResult = {
 // Bascule mono-navigateur : après le broadcast, se connecter directement
 // sur un artisan test pour recevoir la mission sans second navigateur.
 const ARTISAN_SWITCH = [
-  { label: 'Plombier',    emoji: '🔧', email: 'test.plombier@afrione.ci' },
-  { label: 'Électricien', emoji: '⚡', email: 'test.elec@afrione.ci' },
-  { label: 'Peintre',     emoji: '🎨', email: 'test.peintre@afrione.ci' },
+  { label: 'Plombier',    emoji: <UiWrench className="ui-glyph" aria-hidden="true" />, email: 'test.plombier@afrione.ci' },
+  { label: 'Électricien', emoji: <UiZap className="ui-glyph" aria-hidden="true" />, email: 'test.elec@afrione.ci' },
+  { label: 'Peintre',     emoji: <UiPaintbrush className="ui-glyph" aria-hidden="true" />, email: 'test.peintre@afrione.ci' },
 ] as const
 
 export default function AdminComptesPage() {
@@ -208,7 +209,7 @@ export default function AdminComptesPage() {
           )}
 
           <p style={{ fontSize: '11px', color: '#8B95A5', marginTop: '12px', lineHeight: 1.6 }}>
-            ⚠️ « Se connecter » remplace votre session admin par le compte test dans cet onglet.
+             « Se connecter » remplace votre session admin par le compte test dans cet onglet.
             Flux mono-navigateur : lancez la mission ci-dessous, puis basculez sur un artisan — vous avez
             120&nbsp;s pour accepter, le dashboard artisan charge l'urgence dès son ouverture.
           </p>
@@ -253,7 +254,7 @@ export default function AdminComptesPage() {
             style={{ padding: '13px 22px', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: launching ? 0.6 : 1 }}>
             {launching
               ? <><div style={{ width: '15px', height: '15px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Broadcast en cours…</>
-              : <>🚨 Créer & broadcaster la mission</>}
+              : <> Créer & broadcaster la mission</>}
           </button>
 
           {/* Résultat */}
@@ -261,14 +262,14 @@ export default function AdminComptesPage() {
             <div style={{ marginTop: '16px', padding: '14px 16px', borderRadius: '14px', background: result.ok ? 'rgba(22,163,74,0.06)' : 'rgba(220,38,38,0.06)', border: `1px solid ${result.ok ? 'rgba(22,163,74,0.25)' : 'rgba(220,38,38,0.25)'}` }}>
               <div style={{ fontWeight: 700, fontSize: '13px', color: result.ok ? '#16a34a' : '#dc2626', marginBottom: '8px' }}>
                 {result.ok
-                  ? `✅ Broadcastée à ${result.count} artisan(s) — ils ont ${result.timeout_seconds ?? 60}s pour accepter`
-                  : `❌ Dispatch échoué : ${result.reason || 'aucun candidat disponible'}`}
+                  ? `Broadcastée à ${result.count} artisan(s) — ils ont ${result.timeout_seconds ?? 60}s pour accepter`
+                  : `Dispatch échoué : ${result.reason || 'aucun candidat disponible'}`}
               </div>
               {result.targets?.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '10px' }}>
                   {result.targets.map(t => (
                     <div key={t.email} style={{ fontSize: '12px', color: 'var(--ui-muted)' }}>
-                      🔔 {t.name} · {t.metier} · <span style={{ fontFamily: 'var(--font-body)' }}>{t.email}</span>
+                      <UiBell className="ui-glyph" aria-hidden="true" /> {t.name} · {t.metier} · <span style={{ fontFamily: 'var(--font-body)' }}>{t.email}</span>
                     </div>
                   ))}
                 </div>

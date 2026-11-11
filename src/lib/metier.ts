@@ -15,19 +15,19 @@ export type CanonicalMetier =
   | 'Menuiserie' | 'Climatisation' | 'Serrurerie' | 'Carrelage'
   | 'Chauffeur' | 'Ménage' | 'Cuisine' | 'Coiffure'
 
-export const CANONICAL_METIERS: { id: CanonicalMetier; label: string; icon: string }[] = [
-  { id: 'Plomberie',     label: 'Plomberie',     icon: '🔧' },
-  { id: 'Électricité',   label: 'Électricité',   icon: '⚡' },
-  { id: 'Maçonnerie',    label: 'Maçonnerie',    icon: '🏗️' },
-  { id: 'Peinture',      label: 'Peinture',      icon: '🎨' },
-  { id: 'Menuiserie',    label: 'Menuiserie',    icon: '🪵' },
-  { id: 'Climatisation', label: 'Climatisation', icon: '❄️' },
-  { id: 'Serrurerie',    label: 'Serrurerie',    icon: '🔑' },
-  { id: 'Carrelage',     label: 'Carrelage',     icon: '🪟' },
-  { id: 'Chauffeur', label: 'Chauffeur', icon: '🚗' },
-  { id: 'Ménage', label: 'Aide ménagère', icon: '🧹' },
-  { id: 'Cuisine', label: 'Cuisinier', icon: '🍳' },
-  { id: 'Coiffure', label: 'Coiffure', icon: '✂️' },
+export const CANONICAL_METIERS: { id: CanonicalMetier; label: string }[] = [
+  { id: 'Plomberie',     label: 'Plomberie' },
+  { id: 'Électricité',   label: 'Électricité' },
+  { id: 'Maçonnerie',    label: 'Maçonnerie' },
+  { id: 'Peinture',      label: 'Peinture' },
+  { id: 'Menuiserie',    label: 'Menuiserie' },
+  { id: 'Climatisation', label: 'Climatisation' },
+  { id: 'Serrurerie',    label: 'Serrurerie' },
+  { id: 'Carrelage',     label: 'Carrelage' },
+  { id: 'Chauffeur', label: 'Chauffeur' },
+  { id: 'Ménage', label: 'Aide ménagère' },
+  { id: 'Cuisine', label: 'Cuisinier' },
+  { id: 'Coiffure', label: 'Coiffure' },
 ]
 
 // Variantes connues (nom du métier, fautes de frappe passées) → catégorie canonique.
@@ -82,11 +82,11 @@ export function normalizeMetier(raw: string | null | undefined): CanonicalMetier
 }
 
 /** Icône + libellé propre pour l'affichage (admin, fiches artisan), quelle que soit la valeur brute stockée. */
-export function metierDisplay(raw: string | null | undefined): { label: string; icon: string; canonical: boolean } {
+export function metierDisplay(raw: string | null | undefined): { label: string; canonical: boolean } {
   const norm = normalizeMetier(raw)
   if (norm) {
     const m = CANONICAL_METIERS.find(x => x.id === norm)!
-    return { label: m.label, icon: m.icon, canonical: raw?.trim() === norm }
+    return { label: m.label, canonical: raw?.trim() === norm }
   }
-  return { label: raw || '—', icon: '❓', canonical: false }
+  return { label: raw || '—', canonical: false }
 }

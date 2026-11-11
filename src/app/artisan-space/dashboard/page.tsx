@@ -1,5 +1,6 @@
 'use client'
 export const dynamic = 'force-dynamic'
+import { Bell as UiBell, Circle as UiCircle, ClipboardList as UiClipboardList, Info as UiInfo, Lightbulb as UiLightbulb, MapPin as UiMapPin, MessageCircle as UiMessageCircle, Siren as UiSiren, Wallet as UiWallet, Zap as UiZap } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -8,6 +9,9 @@ import {
   Edit3, Save, X, Plus, Trash2, MapPin, Briefcase, Upload,
   Image as ImageIcon, MessageCircle, Bell, Building2, Search, LogOut, ClipboardList
 } from 'lucide-react'
+import { DISPATCH_TIMEOUT_SECONDS } from '@/lib/dispatch-window'
+import { systemMessageText } from '@/lib/ui-text'
+import { clientApi } from '@/lib/client-api'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
@@ -40,6 +44,8 @@ type UrgentOffer = {
   total_price: number | null
 }
 
+type StandardRequest = { id: string; category: string | null; quartier: string | null }
+
 export default function ArtisanDashboardPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
@@ -58,6 +64,7 @@ export default function ArtisanDashboardPage() {
   const [saving, setSaving] = useState(false)
 
   // ── Mission urgente en attente ────────────────────────────────────────────
+  const [standardRequests, setStandardRequests] = useState<StandardRequest[]>([])
   const [urgentOffers, setUrgentOffers] = useState<UrgentOffer[]>([])
   const [urgentNow, setUrgentNow] = useState(Date.now)
   const urgentLoadVersion = useRef(0)
@@ -182,7 +189,7 @@ export default function ArtisanDashboardPage() {
         const convos = await Promise.all(activeMissions.map(async (m: any) => {
           const { data: lastMsg } = await supabase
             .from('chat_history')
-            .select('text, created_at, sender_id, read_at')
+            .select('text, created_at, sender_id, read_at, type, sender_type')
             .eq('mission_id', m.id)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -210,7 +217,7 @@ export default function ArtisanDashboardPage() {
             if (['negotiation','en_cours','payment','matching'].includes(newM.status)) {
               setConversations(prev => [{ ...newM, lastMessage: null }, ...prev])
             }
-            toast('🔔 Nouvelle mission reçue !', {
+            toast('Nouvelle mission reçue !', {
               style: { background: '#FFFFFF', color: 'var(--ui-ink)', fontWeight: 600, boxShadow: NEU_SMALL },
               duration: 5000,
             })
@@ -251,6 +258,44 @@ export default function ArtisanDashboardPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!artisan?.id) return
+    let active = true
+    let pending = false
+    const refresh = async () => {
+      if (pending || document.hidden) return
+      pending = true
+      try {
+        const { data, error } = await supabase.from('missions').select('id,category,quartier')
+          .eq('artisan_id', artisan.id).eq('status', 'negotiation')
+          .is('provider_accepted_at', null).order('updated_at', { ascending: false })
+        if (active && !error) setStandardRequests(data ?? [])
+        if (active) void loadUrgentDispatch()
+      } finally {
+        pending = false
+      }
+    }
+    void refresh()
+    const timer = window.setInterval(refresh, 4000)
+    window.addEventListener('focus', refresh)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [artisan?.id, loadUrgentDispatch])
+
+  useEffect(() => {
+    const target = new URLSearchParams(window.location.search).get('offer')
+    if (!target || !urgentOffers.some(offer => offer.mission_id === target)) return
+    const card = document.getElementById(`offer-${target}`)
+    if (card && card.dataset.opened !== 'true') {
+      card.dataset.opened = 'true'
+      card.scrollIntoView({ block: 'center' })
+      card.focus({ preventScroll: true })
+    }
+  }, [urgentOffers])
+
   const hasUrgentOffers = urgentOffers.length > 0
   useEffect(() => {
     if (!hasUrgentOffers) return
@@ -276,7 +321,7 @@ export default function ArtisanDashboardPage() {
         filter: `artisan_id=eq.${artisan.id}`,
       }, () => {
         loadUrgentDispatch()
-        toast('🚨 Mission urgente disponible !', {
+        toast('Mission urgente disponible !', {
           duration: 8000,
           style: { background: '#E85D26', color: 'white', fontWeight: 700 },
         })
@@ -310,7 +355,7 @@ export default function ArtisanDashboardPage() {
     let res: Response
     let data: any
     try {
-      res  = await fetch('/api/dispatch/respond', {
+      res  = await clientApi('/api/dispatch/respond', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ mission_id: missionId, artisan_id: artisan.id, response }),
@@ -334,7 +379,7 @@ export default function ArtisanDashboardPage() {
           const at   = data.taken_by?.at
             ? new Date(data.taken_by.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
             : null
-          toast(`Mission prise par ${name}${at ? ` à ${at}` : ''}`, { icon: '⚡', duration: 6000 })
+          toast(`Mission prise par ${name}${at ? ` à ${at}` : ''}`, { icon: <UiZap className="ui-glyph" aria-hidden="true" />, duration: 6000 })
           closeCard()
           break
         }
@@ -349,7 +394,7 @@ export default function ArtisanDashboardPage() {
           if (!data.retryable) closeCard()
           break
         case 'already_answered':
-          toast(data.error || 'Offre déjà clôturée.', { icon: 'ℹ️' })
+          toast(data.error || 'Offre déjà clôturée.', { icon: <UiInfo className="ui-glyph" aria-hidden="true" /> })
           closeCard()
           break
         // L'artisan est bloqué par SA propre mission en cours, pas par un
@@ -374,7 +419,7 @@ export default function ArtisanDashboardPage() {
 
     if (response === 'accepted') {
       toast.success('Mission acceptée ! Rends-toi chez le client.')
-      router.push(`/warroom/${missionId}`)
+      router.push(`/suivi/${missionId}`)
     } else {
       void loadUrgentDispatch()
       toast(data.refunded ? 'Mission refusée — le client est remboursé.' : 'Mission refusée')
@@ -559,11 +604,11 @@ export default function ArtisanDashboardPage() {
 
   // ── Carte offre urgente — affichée dans Missions ET dans la messagerie ────
   // 60s pour répondre, premier qui accepte prend la mission.
-  const URGENT_WINDOW_MS = 60_000
+  const URGENT_WINDOW_MS = DISPATCH_TIMEOUT_SECONDS * 1000
   const urgentOfferCard = urgentOffers.map(offer => {
     const urgentTimeLeft = Math.max(0, Date.parse(offer.expires_at) - urgentNow)
     return (
-      <div key={offer.id} style={{
+      <div key={offer.id} id={`offer-${offer.mission_id}`} tabIndex={-1} style={{
         marginBottom: '12px',
         background: 'linear-gradient(135deg, #1A0A00, #2D1200)',
         border: '2px solid rgba(232,93,38,0.6)',
@@ -579,7 +624,7 @@ export default function ArtisanDashboardPage() {
           </div>
           <div>
             <div style={{ fontSize: '13px', fontWeight: 800, color: '#E85D26', letterSpacing: '0.08em' }}>MISSION URGENTE</div>
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Premier arrivé, premier servi — 1 minute pour répondre</div>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Le premier artisan qui accepte prend la mission</div>
           </div>
           {/* Countdown */}
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
@@ -611,9 +656,9 @@ export default function ArtisanDashboardPage() {
             {offer.category || 'Intervention'}
           </div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', display: 'flex', gap: '12px' }}>
-            {offer.quartier && <span>📍 {offer.quartier}</span>}
+            {offer.quartier && <span><UiMapPin className="ui-glyph" aria-hidden="true" /> {offer.quartier}</span>}
             {(offer.total_price ?? 0) > 0 && (
-              <span>💰 {offer.total_price?.toLocaleString()} FCFA</span>
+              <span><UiWallet className="ui-glyph" aria-hidden="true" /> {offer.total_price?.toLocaleString()} FCFA</span>
             )}
           </div>
         </div>
@@ -632,7 +677,7 @@ export default function ArtisanDashboardPage() {
             disabled={respondingUrgent}
             style={{ padding: '14px', background: respondingUrgent ? 'rgba(232,93,38,0.3)' : 'linear-gradient(135deg,#E85D26,#ff7043)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '14px', fontWeight: 800, cursor: respondingUrgent ? 'not-allowed' : 'pointer', boxShadow: respondingUrgent ? 'none' : '0 4px 16px rgba(232,93,38,0.45)' }}
           >
-            {respondingUrgent ? '…' : '⚡ Accepter'}
+            {respondingUrgent ? '…' : 'Accepter'}
           </button>
         </div>
       </div>
@@ -692,10 +737,29 @@ export default function ArtisanDashboardPage() {
 
       <div className="page-container" style={{padding:isMobile?'20px 16px 48px':'28px 32px 64px',maxWidth:'896px',position:'relative'}}>
 
+        {standardRequests.length > 0 && (
+          <section aria-label="Demandes à accepter" style={{ display: 'grid', gap: 10, marginBottom: 20 }}>
+            {standardRequests.map(request => (
+              <Link key={request.id} href={`/warroom/${request.id}`} className="card afrione-action" style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: 16, borderLeft: '4px solid #E85D26',
+              }}>
+                <Bell size={20} color="#B7471B" aria-hidden="true" />
+                <span style={{ flex: 1 }}>
+                  <strong>Nouvelle demande Standard</strong>
+                  <span style={{ display: 'block', color: 'var(--ui-muted)', fontSize: 13 }}>
+                    {request.category || 'Intervention'} · {request.quartier || 'Abidjan'}
+                  </span>
+                </span>
+                <span>Ouvrir</span>
+              </Link>
+            ))}
+          </section>
+        )}
+
         {/* Bannière activation notifications push — indispensable pour recevoir les missions urgentes */}
         {(pushStatus === 'default' || pushStatus === 'denied') && (
           <div style={{background:'rgba(232,93,38,0.07)',border:'1.5px solid rgba(232,93,38,0.35)',borderRadius:'16px',padding:'14px 16px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'12px',flexWrap:'wrap'}}>
-            <span style={{fontSize:'22px',flexShrink:0}}>🔔</span>
+            <span style={{fontSize:'22px',flexShrink:0}}><UiBell className="ui-glyph" aria-hidden="true" /></span>
             <div style={{flex:1,minWidth:'200px'}}>
               <div style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>Activez les notifications</div>
               <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'2px'}}>
@@ -723,10 +787,6 @@ export default function ArtisanDashboardPage() {
           </div>
         )}
 
-        {/* Floating orange squares — decorative */}
-        <div style={{ position: 'absolute', top: '6%',  right: '-18px', width: 54, height: 54, background: 'rgba(232,93,38,0.07)', borderRadius: 12, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '45%', left: '-18px',  width: 38, height: 38, border: '2px solid rgba(232,93,38,0.11)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-8deg)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '12%', right: '1%', width: 22, height: 22, background: 'rgba(232,93,38,0.09)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
         {/* Header card */}
         <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'14px',flexWrap:isMobile?'wrap':'nowrap'}}>
           <div
@@ -786,7 +846,7 @@ export default function ArtisanDashboardPage() {
               <>
                 <t.icon size={13} /> {t.label}
                 {t.id === 'messages' && hasUrgentOffers ? (
-                  <span style={{position:'absolute',top:'4px',right:'4px',fontSize:'11px',animation:'urgentPulse 1s ease-in-out infinite'}}>🚨</span>
+                  <span style={{position:'absolute',top:'4px',right:'4px',fontSize:'11px',animation:'urgentPulse 1s ease-in-out infinite'}}><UiSiren className="ui-glyph" aria-hidden="true" /></span>
                 ) : t.id === 'messages' && unreadCount > 0 && (
                   <span className="afrione-gradient" style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',borderRadius:'50%',fontSize:'10px',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -808,7 +868,7 @@ export default function ArtisanDashboardPage() {
           <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
 
             {/* ── Mission urgente en attente ── */}
-            {urgentOfferCard}
+            <div id="offres-urgentes">{urgentOfferCard}</div>
 
             {/* Questionnaire banner — si pas encore soumis */}
             {(questionnaireStatus === null || questionnaireStatus === 'none') && (
@@ -898,7 +958,7 @@ export default function ArtisanDashboardPage() {
                         padding:'8px 14px',color:'white',borderRadius:'10px',
                         fontSize:'12px',fontWeight:700,textDecoration:'none',flexShrink:0,
                       }}>
-                        🚗 Démarrer
+                         Démarrer
                       </Link>
                     </div>
                   )
@@ -908,7 +968,7 @@ export default function ArtisanDashboardPage() {
 
             {missions.length === 0 ? (
               <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'48px',textAlign:'center'}}>
-                <p style={{fontSize:'48px',marginBottom:'16px'}}>📋</p>
+                <p style={{fontSize:'48px',marginBottom:'16px'}}><UiClipboardList className="ui-glyph" aria-hidden="true" /></p>
                 <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucune mission pour l'instant</h3>
                 <p style={{color:'var(--ui-muted)',fontSize:'14px'}}>Les nouvelles missions apparaîtront ici</p>
               </div>
@@ -924,7 +984,7 @@ export default function ArtisanDashboardPage() {
                     background: m.status === 'completed' ? 'rgba(43,107,62,0.1)' : m.status === 'en_cours' ? 'rgba(232,93,38,0.1)' : 'rgba(201,168,76,0.1)',
                     color: m.status === 'completed' ? '#2B6B3E' : m.status === 'en_cours' ? undefined : '#C9A84C',
                   }}>
-                    {m.status === 'completed' ? '✓ Terminée' : m.status === 'en_cours' ? '⚡ En cours' : m.status === 'matching' ? '🔔 Nouvelle demande' : m.status === 'negotiation' ? '💬 En discussion' : m.status}
+                    {m.status === 'completed' ? '✓ Terminée' : m.status === 'en_cours' ? 'En cours' : m.status === 'matching' ? 'Nouvelle demande' : m.status === 'negotiation' ? 'En discussion' : m.status}
                   </span>
                 </div>
                 {m.status === 'matching' && (
@@ -934,7 +994,7 @@ export default function ArtisanDashboardPage() {
                 )}
                 {(m.status === 'negotiation' || m.status === 'matching') && (
                   <Link href={`/warroom/${m.id}`} className="btn-primary" style={{width:'100%',justifyContent:'center',display:'flex',gap:'6px'}}>
-                    💬 Ouvrir le chat & proposer un devis →
+                     Ouvrir le chat & proposer un devis →
                   </Link>
                 )}
                 {m.status === 'scheduled' && (
@@ -944,14 +1004,14 @@ export default function ArtisanDashboardPage() {
                       padding:'10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.3)',
                       borderRadius:'10px',color:'#C9A84C',fontWeight:600,fontSize:'13px',textDecoration:'none',
                     }}>
-                      💬 Chat
+                       Chat
                     </Link>
                     <Link href={`/suivi/${m.id}`} className="afrione-gradient" style={{
                       flex:2,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
                       padding:'10px',borderRadius:'10px',
                       color:'white',fontWeight:700,fontSize:'13px',textDecoration:'none',
                     }}>
-                      🚗 Démarrer le suivi →
+                       Démarrer le suivi →
                     </Link>
                   </div>
                 )}
@@ -961,7 +1021,7 @@ export default function ArtisanDashboardPage() {
                     width:'100%',padding:'10px',borderRadius:'10px',
                     color:'white',fontWeight:700,fontSize:'13px',textDecoration:'none',
                   }}>
-                    🚗 Voir le suivi en direct →
+                     Voir le suivi en direct →
                   </Link>
                 )}
                 {m.status === 'en_cours' && (
@@ -971,7 +1031,7 @@ export default function ArtisanDashboardPage() {
                     border:'1px solid rgba(43,107,62,0.3)',borderRadius:'10px',
                     color:'#2B6B3E',fontWeight:700,fontSize:'13px',textDecoration:'none',
                   }}>
-                    ⚡ Mission en cours — marquer terminée →
+                     Mission en cours — marquer terminée →
                   </Link>
                 )}
                 {m.status === 'completed' && (
@@ -1001,7 +1061,7 @@ export default function ArtisanDashboardPage() {
                 <Link key={c.id} href={`/warroom/${c.id}`} style={{textDecoration:'none'}}>
                   <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px',display:'flex',alignItems:'center',gap:'16px',cursor:'pointer',border: hasUnread ? '2px solid #E85D26' : '1px solid var(--ui-border)',transition:'all 0.2s'}}>
                     <div style={{width:'48px',height:'48px',background:'rgba(232,93,38,0.1)',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
-                      💬
+                      <UiMessageCircle className="ui-glyph" aria-hidden="true" />
                     </div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}}>
@@ -1011,7 +1071,7 @@ export default function ArtisanDashboardPage() {
                         </span>
                       </div>
                       <div style={{fontSize:'13px',color:'var(--ui-muted)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                        {c.lastMessage?.text || 'Nouvelle mission — ' + (c.category || '')}
+                        {c.lastMessage?.text ? (c.lastMessage.type === 'system' || c.lastMessage.sender_type === 'afrione_system' ? systemMessageText(c.lastMessage.text) : c.lastMessage.text) : 'Nouvelle mission — ' + (c.category || '')}
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'6px'}}>
                         <span className="afrione-gradient-text" style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:'rgba(232,93,38,0.1)'}}>{c.status}</span>
@@ -1089,7 +1149,7 @@ export default function ArtisanDashboardPage() {
                   <div style={{fontSize:'16px',fontWeight:700,color:'var(--ui-ink)',fontFamily: 'var(--font-body)'}}>{yearsExp > 0 ? `${yearsExp} ans` : '—'}</div>
                 </div>
                 <div style={{fontSize:'11px',color:'#E85D26',fontWeight:600,textAlign:'right'}}>
-                  🔒 Fixé via questionnaire<br/>
+                   Fixé via questionnaire<br/>
                   <span style={{color:'#9CA3AF',fontWeight:400}}>validé par AfriOne</span>
                 </div>
               </div>
@@ -1209,7 +1269,7 @@ export default function ArtisanDashboardPage() {
                       </div>
                       <div style={{minWidth:0}}>
                         <div style={{fontSize:'14px',fontWeight:700,color:'var(--ui-ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{(pendingRequest.entreprises as any)?.name}</div>
-                        <div style={{fontSize:'11px',color:'#C9A84C',fontWeight:600}}>⏳ En attente de validation</div>
+                        <div style={{fontSize:'11px',color:'#C9A84C',fontWeight:600}}> En attente de validation</div>
                       </div>
                     </div>
                     <button className="afrione-action" onClick={cancelRequest} style={{display:'flex',alignItems:'center',gap:'5px',padding:'7px 12px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',color:'#ef4444',fontSize:'12px',cursor:'pointer',flexShrink:0,fontWeight:600}}>
@@ -1358,7 +1418,7 @@ export default function ArtisanDashboardPage() {
 
             {/* Info box */}
             <div style={{padding:'16px',background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',fontSize:'13px',color:'var(--ui-muted)',lineHeight:'1.6'}}>
-              💡 <strong style={{color:'var(--ui-ink)'}}>Comment fonctionne votre portfolio ?</strong><br/>
+              <UiLightbulb className="ui-glyph" aria-hidden="true" /> <strong style={{color:'var(--ui-ink)'}}>Comment fonctionne votre portfolio ?</strong><br/>
               Les photos "AVANT / APRÈS" que vous prenez à la fin de chaque mission sont automatiquement ajoutées ici.<br/>
               Vous pouvez aussi uploader des photos de missions passées pour enrichir votre profil dès aujourd'hui.
             </div>
@@ -1406,7 +1466,7 @@ export default function ArtisanDashboardPage() {
                 <div>
                   {completedMissions.slice(0, 10).map((m: any, i: number) => (
                     <div key={m.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'14px 20px',borderBottom: i < Math.min(completedMissions.length, 10) - 1 ? '1px solid var(--ui-canvas)' : 'none'}}>
-                      <div style={{width:'36px',height:'36px',background:'rgba(43,107,62,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:'16px'}}>✅</div>
+                      <div style={{width:'36px',height:'36px',background:'rgba(43,107,62,0.1)',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:'16px'}}><UiCircle className="ui-glyph" aria-hidden="true" /></div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontWeight:600,fontSize:'13px',color:'var(--ui-ink)'}}>{m.category || 'Intervention'}</div>
                         <div style={{fontSize:'11px',color:'var(--ui-muted)',marginTop:'2px'}}>

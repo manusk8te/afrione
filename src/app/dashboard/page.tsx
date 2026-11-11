@@ -1,5 +1,6 @@
 'use client'
 export const dynamic = 'force-dynamic'
+import { CheckCircle as UiCheckCircle, ClipboardList as UiClipboardList, CreditCard as UiCreditCard, Wrench as UiWrench } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, ArrowRight, Zap, Calendar, User, Phone, MapPin, Save, Droplets, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Cpu, Wrench, Navigation, MessageCircle } from 'lucide-react'
@@ -88,14 +89,14 @@ export default function DashboardPage() {
 
   const statusConfig: Record<string, { label: string; color: string }> = {
     diagnostic:  { label: 'Diagnostic', color: '#C9A84C' },
-    matching:    { label: '🔔 Nouvelle demande', color: '#E85D26' },
-    negotiation: { label: '💬 En discussion', color: '#C9A84C' },
-    scheduled:   { label: '📅 Programmée', color: '#C9A84C' },
-    en_route:    { label: '🚗 En route', color: '#E85D26' },
-    payment:     { label: '💳 Paiement', color: '#C9A84C' },
-    en_cours:    { label: '⚡ En cours', color: '#2B6B3E' },
-    completed:   { label: '✅ Terminée', color: '#2B6B3E' },
-    disputed:    { label: '⚠️ Litige', color: '#ef4444' },
+    matching:    { label: 'Nouvelle demande', color: '#E85D26' },
+    negotiation: { label: 'En discussion', color: '#C9A84C' },
+    scheduled:   { label: 'Programmée', color: '#C9A84C' },
+    en_route:    { label: 'En route', color: '#E85D26' },
+    payment:     { label: 'Paiement', color: '#C9A84C' },
+    en_cours:    { label: 'En cours', color: '#2B6B3E' },
+    completed:   { label: 'Terminée', color: '#2B6B3E' },
+    disputed:    { label: 'Litige', color: '#ef4444' },
     cancelled:   { label: 'Annulée', color: '#8B95A5' },
   }
 
@@ -114,11 +115,6 @@ export default function DashboardPage() {
       {/* ── Hero orange ── */}
       <section className="afrione-gradient" style={{ position: 'relative', overflow: 'hidden', minHeight: '200px', display: 'flex', alignItems: 'center' }}>
         {/* Floating white squares */}
-        <div style={{ position: 'absolute', top: '22%', left: '4%',  width: 50, height: 50, border: '2px solid rgba(255,255,255,0.2)',   borderRadius: 12, animation: 'floatSquare 5s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', top: '50%', right: '6%',  width: 30, height: 30, background: 'rgba(255,255,255,0.12)', borderRadius: 8,  animation: 'floatSquare 4s ease-in-out infinite 1s' }} />
-        <div style={{ position: 'absolute', top: '28%', right: '20%', width: 18, height: 18, background: 'rgba(255,255,255,0.18)', borderRadius: 5,  animation: 'floatSquareSlow 6s ease-in-out infinite 2s' }} />
-        <div style={{ position: 'absolute', bottom: '22%', left: '20%', width: 58, height: 58, border: '1.5px solid rgba(255,255,255,0.12)', borderRadius: 14, animation: 'floatSquareSlow 7s ease-in-out infinite 0.5s' }} />
-        <div style={{ position: 'absolute', top: '42%', left: '42%',  width: 14, height: 14, background: 'rgba(255,255,255,0.2)',  borderRadius: 4,  animation: 'floatSquareDrift 5s ease-in-out infinite 3s' }} />
         <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: '32px', maxWidth: '896px', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
@@ -126,7 +122,7 @@ export default function DashboardPage() {
                 <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>MON ESPACE</span>
               </div>
               <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 38px)', fontWeight: 800, color: 'white', margin: '0 0 8px' }}>
-                Bonjour {user?.user_metadata?.name?.split(' ')[0] || ''} 👋
+                Bonjour {user?.user_metadata?.name?.split(' ')[0] || ''}
               </h1>
               <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '14px', margin: 0 }}>Suivez vos missions et gérez votre profil</p>
             </div>
@@ -140,22 +136,18 @@ export default function DashboardPage() {
       <div style={{padding:isMobile?'24px 12px 48px':'32px 16px 64px'}}>
         <div className="page-container" style={{maxWidth:'896px',position:'relative'}}>
 
-          {/* Floating orange squares — decorative */}
-          <div style={{ position: 'absolute', top: '6%',  right: '-18px', width: 54, height: 54, background: 'rgba(232,93,38,0.07)', borderRadius: 12, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', top: '45%', left: '-18px',  width: 38, height: 38, border: '2px solid rgba(232,93,38,0.11)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-8deg)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '12%', right: '1%', width: 22, height: 22, background: 'rgba(232,93,38,0.09)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
 
           {/* Stats */}
-          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:'12px',marginBottom:'24px'}}>
+          <div className="dashboard-summary">
             {[
-              { label: 'Missions totales', value: missions.length, icon: '📋' },
-              { label: 'Missions terminées', value: completed.length, icon: '✅' },
-              { label: 'Total dépensé', value: totalSpent > 0 ? `${totalSpent.toLocaleString()} FCFA` : '0 FCFA', icon: '💳' },
+              { label: 'Missions totales', value: missions.length, icon: <UiClipboardList className="ui-glyph" aria-hidden="true" /> },
+              { label: 'Missions terminées', value: completed.length, icon: <UiCheckCircle className="ui-glyph" aria-hidden="true" /> },
+              { label: 'Total dépensé', value: totalSpent > 0 ? `${totalSpent.toLocaleString()} FCFA` : '0 FCFA', icon: <UiCreditCard className="ui-glyph" aria-hidden="true" /> },
             ].map(s => (
-              <div key={s.label} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',textAlign:'center'}}>
-                <div style={{fontSize:'24px',marginBottom:'8px'}}>{s.icon}</div>
-                <div className="font-display" style={{fontSize:'24px',fontWeight:700,color:'var(--ui-ink)'}}>{s.value}</div>
-                <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'4px'}}>{s.label}</div>
+              <div key={s.label} className="card dashboard-summary-card">
+                <div className="dashboard-summary-icon">{s.icon}</div>
+                <div className="font-display dashboard-summary-value">{s.value}</div>
+                <div className="dashboard-summary-label">{s.label}</div>
               </div>
             ))}
           </div>
@@ -163,8 +155,8 @@ export default function DashboardPage() {
           {/* Tabs */}
           <div style={{display:'flex',background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'16px',padding:'4px',marginBottom:'20px',gap:'4px'}}>
             {[
-              { id: 'missions' as const, label: '📋 Mes missions' },
-              { id: 'profil' as const, label: '👤 Mon profil' },
+              { id: 'missions' as const, label: 'Mes missions' },
+              { id: 'profil' as const, label: 'Mon profil' },
             ].map(t => (
               <button className="afrione-action" key={t.id} onClick={() => setTab(t.id)} style={{
                 flex:1,padding:'10px',borderRadius:'12px',border:'none',cursor:'pointer',
@@ -220,8 +212,8 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'24px'}}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'24px'}}>
+              <section className="dashboard-missions card">
+                <div className="dashboard-missions-header">
                   <h2 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)'}}>Mes missions</h2>
                   <Link href="/diagnostic" className="afrione-gradient-text" style={{fontSize:'14px',textDecoration:'none',display:'flex',alignItems:'center',gap:'4px'}}>
                     + Nouvelle <ArrowRight size={14} />
@@ -230,7 +222,7 @@ export default function DashboardPage() {
 
                 {missions.length === 0 ? (
                   <div style={{textAlign:'center',padding:'48px 0'}}>
-                    <div style={{fontSize:'48px',marginBottom:'16px'}}>🔧</div>
+                    <div style={{fontSize:'48px',marginBottom:'16px'}}><UiWrench className="ui-glyph" aria-hidden="true" /></div>
                     <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucune mission pour l'instant</h3>
                     <p style={{color:'var(--ui-muted)',marginBottom:'24px',fontSize:'14px'}}>Décrivez votre premier problème et trouvez un artisan en quelques minutes</p>
                     <Link href="/diagnostic" className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
@@ -243,46 +235,44 @@ export default function DashboardPage() {
                       const isActive = ['negotiation','en_cours','payment','matching','en_route','scheduled'].includes(m.status)
                       const sc = statusConfig[m.status]
                       return (
-                        <div key={m.id} style={{display:'flex',alignItems:isMobile?'flex-start':'center',gap:'12px',padding:'12px 14px',background:'var(--ui-canvas)',borderRadius:'12px',border:isActive?'2px solid rgba(232,93,38,0.25)':m.status==='disputed'?'2px solid rgba(239,68,68,0.3)':'2px solid var(--ui-border)',flexWrap:isMobile?'wrap':'nowrap'}}>
-                          <div style={{width:'44px',height:'44px',background:'#FFFFFF',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0,boxShadow:NEU_SMALL}}>
-                            {(() => { const I = CATEGORY_ICON_MAP[m.category] || Wrench; return <I size={20} color='#E85D26' /> })()}
+                        <article key={m.id} className="dashboard-mission" data-active={isActive} data-status={m.status}>
+                          <div className="dashboard-mission-icon">
+                            {(() => { const Icon = CATEGORY_ICON_MAP[m.category] || Wrench; return <Icon size={20} aria-hidden="true" /> })()}
                           </div>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:600,color:'var(--ui-ink)',fontSize:'14px'}}>{m.category || 'Mission'}</div>
-                            <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'2px'}}>{new Date(m.created_at).toLocaleDateString('fr-FR')}</div>
+                          <div className="dashboard-mission-title">
+                            <strong>{m.category || 'Mission'}</strong>
+                            <time dateTime={m.created_at}>{new Date(m.created_at).toLocaleDateString('fr-FR')}</time>
                           </div>
-                          <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
-                            <span style={{padding:'4px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:600,background:`${sc?.color}20`,color:sc?.color||'var(--ui-muted)'}}>
-                              {sc?.label || m.status}
-                            </span>
+                          <div className="dashboard-mission-meta">
+                            <span className="dashboard-mission-status">{sc?.label || m.status}</span>
                             {m.status === 'en_route' && (
-                              <Link href={`/suivi/${m.id}`} className="btn-primary" style={{padding:'6px 12px',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap',display:'inline-flex',alignItems:'center',gap:'4px'}}>
+                              <Link href={`/suivi/${m.id}`} className="btn-primary dashboard-mission-link">
                                 <Navigation size={12} /> Suivi GPS
                               </Link>
                             )}
                             {isActive && m.status !== 'en_route' && (
-                              <Link href={`/warroom/${m.id}`} className="btn-primary" style={{padding:'6px 12px',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap',display:'inline-flex',alignItems:'center',gap:'4px'}}>
+                              <Link href={`/warroom/${m.id}`} className="btn-primary dashboard-mission-link">
                                 <MessageCircle size={12} /> Chat
                               </Link>
                             )}
                             {m.status === 'completed' && (
-                              <Link className="afrione-action" href={`/warroom/${m.id}`} style={{padding:'6px 12px',background:'rgba(201,168,76,0.15)',color:'#C9A84C',border:'1px solid rgba(201,168,76,0.3)',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
-                                ⭐ Avis
+                              <Link className="afrione-action dashboard-mission-link" href={`/warroom/${m.id}`}>
+                                 Avis
                               </Link>
                             )}
                             {m.status === 'disputed' && (
-                              <Link className="afrione-action" href={`/warroom/${m.id}`} style={{padding:'6px 12px',background:'rgba(239,68,68,0.1)',color:'#ef4444',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'8px',fontSize:'12px',fontWeight:600,textDecoration:'none'}}>
-                                ⚠️ Litige
+                              <Link className="afrione-action dashboard-mission-link" href={`/warroom/${m.id}`}>
+                                 Litige
                               </Link>
                             )}
-                            {m.total_price && <span style={{fontWeight:700,color:'var(--ui-ink)',fontSize:'13px'}}>{m.total_price.toLocaleString()} FCFA</span>}
+                            {m.total_price && <strong className="dashboard-mission-price">{Number(m.total_price).toLocaleString('fr-FR')} FCFA</strong>}
                           </div>
-                        </div>
+                        </article>
                       )
                     })}
                   </div>
                 )}
-              </div>
+              </section>
             </>
           )}
 
@@ -306,7 +296,7 @@ export default function DashboardPage() {
                       <Phone size={13}/> TÉLÉPHONE
                     </label>
                     <div style={{display:'flex',alignItems:'center',border:'1.5px solid var(--ui-border)',borderRadius:'12px',overflow:'hidden',background:'#FFFFFF'}}>
-                      <span style={{padding:'14px 12px',borderRight:'1px solid var(--ui-border)',fontSize:'14px',color:'var(--ui-muted)',flexShrink:0}}>🇨🇮 +225</span>
+                      <span style={{padding:'14px 12px',borderRight:'1px solid var(--ui-border)',fontSize:'14px',color:'var(--ui-muted)',flexShrink:0}}> +225</span>
                       <input className="afrione-field" type="tel" value={profilePhone} onChange={e => setProfilePhone(e.target.value)}
                         placeholder="07 00 00 00 00" style={{flex:1,padding:'14px 12px',border:'none',outline:'none',fontSize:'15px',color:'var(--ui-ink)',background:'transparent'}} />
                     </div>
@@ -342,7 +332,7 @@ export default function DashboardPage() {
               </div>
 
               <div style={{padding:'14px 16px',background:'rgba(232,93,38,0.05)',border:'1px solid rgba(232,93,38,0.15)',borderRadius:'12px',fontSize:'13px',color:'var(--ui-muted)',lineHeight:'1.6'}}>
-                💡 Ces informations sont partagées avec les artisans lors de vos missions pour faciliter la prise de contact.
+                 Ces informations sont partagées avec les artisans lors de vos missions pour faciliter la prise de contact.
               </div>
             </div>
           )}

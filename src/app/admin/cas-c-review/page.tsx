@@ -175,7 +175,7 @@ export default function CasCReviewPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {filtered.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--ui-muted)', fontSize: '14px' }}>
-                  {filter === 'pending' ? '🎉 Aucun Cas C en attente' : 'Aucun Cas C traité'}
+                  {filter === 'pending' ? 'Aucun Cas C en attente' : 'Aucun Cas C traité'}
                 </div>
               )}
               {filtered.map(r => {

@@ -88,6 +88,8 @@ export default function DiagnosticPage() {
   const [result, setResult]           = useState<DiagResult | null>(null)
   const [userId, setUserId]           = useState<string | null>(null)
   const [quartier, setQuartier]       = useState('')
+  const [restored, setRestored] = useState(false)
+  const [restoreError, setRestoreError] = useState('')
   const [loading, setLoading]         = useState(false)
   const [pricing, setPricing]         = useState<PricingData | null>(null)
   const [basePricing, setBasePricing] = useState<PricingData | null>(null)
@@ -143,9 +145,79 @@ export default function DiagnosticPage() {
     setUploading(false)
   }
 
-  useEffect(()=>{const id=new URLSearchParams(window.location.search).get('mission');if(!id)return;let active=true;setLoading(true)
-    clientApi(`/api/diagnostic?mission_id=${encodeURIComponent(id)}`).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);if(active){setResult(d);setText(d.original??'');setQA(d.qa??[]);setPhotos(d.photos??[]);setStep('confirming');setPricingError('');if(d.saved_service_total>0){const t=d.saved_service_total;setPricing({estimate:t,interval:{low:t,high:t},decomp:{labor:null,materials:null,transport:null,premium:null},artisan_percoit:null,applied_estimator:'context_v4',price_context:d.price_context??null})}}}).catch(e=>{if(active)toast.error(e.message)}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}
-  },[])
+  const [preferredArtisan, setPreferredArtisan] = useState<string | null>(null)
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('artisan')
+    if (id && /^[0-9a-f-]{36}$/i.test(id)) setPreferredArtisan(id)
+  }, [])
+
+  const draftKey = userId ? `afrione:diagnostic:${userId}:${preferredArtisan ?? 'direct'}` : null
+
+  useEffect(() => {
+    if (!draftKey) return
+    let active = true
+    const params = new URLSearchParams(window.location.search)
+    let draft: {
+      missionId?: string; text: string; photos: string[]; qa: QA[];
+      currentQ: typeof currentQ; currentAnswer: string; showPrecise: boolean; preciseText: string; refineText: string;
+    } | null = null
+    try { draft = JSON.parse(sessionStorage.getItem(draftKey) || 'null') } catch {}
+    const id = params.get('mission') || draft?.missionId
+
+    if (!id) {
+      if (draft) {
+        setText(draft.text)
+        setPhotos(draft.photos)
+        setQA(draft.qa)
+        setCurrentQ(draft.currentQ)
+        setCurrentAnswer(draft.currentAnswer)
+        setShowPrecise(draft.showPrecise)
+        setPreciseText(draft.preciseText)
+        setStep(draft.currentQ ? 'questioning' : 'input')
+      }
+      setRestored(true)
+      return
+    }
+
+    clientApi(`/api/diagnostic?mission_id=${encodeURIComponent(id)}`)
+      .then(async response => {
+        const saved = await response.json()
+        if (!response.ok) throw Error(saved.error)
+        if (!active) return
+        setResult(saved)
+        setText(saved.original ?? '')
+        setQA(saved.qa ?? [])
+        setPhotos(saved.photos ?? [])
+        setStep('confirming')
+        if (draft?.missionId === id) setRefineText(draft.refineText ?? '')
+        if (saved.saved_service_total > 0) {
+          const total = saved.saved_service_total
+          setPricing({ estimate: total, interval: { low: total, high: total }, decomp: { labor: null, materials: null, transport: null, premium: null }, artisan_percoit: null, applied_estimator: 'context_v4', price_context: saved.price_context ?? null })
+        }
+        if (!params.has('mission')) {
+          params.set('mission', id)
+          window.history.replaceState(null, '', `/diagnostic?${params}`)
+        }
+        setRestored(true)
+      })
+      .catch(error => { if (active) setRestoreError(error.message || 'Réouverture impossible.') })
+    return () => { active = false }
+  }, [draftKey])
+
+  useEffect(() => {
+    if (!restored || !draftKey) return
+    try {
+      sessionStorage.setItem(draftKey, JSON.stringify({
+        missionId: result?.mission_id, text, photos, qa, currentQ, currentAnswer, showPrecise, preciseText, refineText,
+      }))
+    } catch {}
+  }, [restored, draftKey, result?.mission_id, text, photos, qa, currentQ, currentAnswer, showPrecise, preciseText, refineText])
+
+  function keepDiagnosticUrl(missionId: string) {
+    const params = new URLSearchParams(window.location.search)
+    params.set('mission', missionId)
+    window.history.replaceState(null, '', `/diagnostic?${params}`)
+  }
 
   // ── Étape 1 → 2 : lance le diagnostic, reçoit 1ère question ──
   const startDiagnostic = async () => {
@@ -179,11 +251,6 @@ export default function DiagnosticPage() {
     if (!finalAnswer.trim()) return
 
     const newQA: QA[] = [...qa, { question: currentQ!.question, type: currentQ!.type, answer: finalAnswer, fact_key:currentQ!.fact_key }]
-    setQA(newQA)
-    setCurrentAnswer('')
-    setPreciseText('')
-    setShowPrecise(false)
-    setCurrentQ(null)
     setLoading(true)
 
     try {
@@ -198,13 +265,14 @@ export default function DiagnosticPage() {
       if (data.done || isEmpty) {
         await finalizeWithQA(newQA)
       } else {
+        setQA(newQA)
+        setCurrentAnswer('')
+        setPreciseText('')
+        setShowPrecise(false)
         setCurrentQ({ question: data.question, type: data.type, options: data.options, rationale:data.rationale, fact_key:data.fact_key })
         setLoading(false)
       }
     } catch {
-      setQA(qa)
-      setCurrentQ(currentQ)
-      setCurrentAnswer(finalAnswer)
       toast.error('La question suivante est indisponible. Votre réponse est conservée ; réessayez.')
       setLoading(false)
     }
@@ -304,12 +372,15 @@ export default function DiagnosticPage() {
       if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
       const safeResult = { ...data, urgency: safeUrgency(data.urgency) }
       setResult(safeResult)
-      router.replace(`/diagnostic?mission=${safeResult.mission_id}`,{scroll:false})
+      keepDiagnosticUrl(safeResult.mission_id)
+      setQA(finalQA)
+      setCurrentQ(null)
+      setCurrentAnswer('')
       setStep('confirming')
       fetchPricing(safeResult)
     } catch {
       toast.error('Le diagnostic n’a pas pu être enregistré. Réessayez.')
-      setStep('input')
+      setStep(currentQ ? 'questioning' : 'input')
     }
     setLoading(false)
   }
@@ -329,7 +400,8 @@ export default function DiagnosticPage() {
       if(!res.ok)throw Error(data.error || 'La demande n’a pas pu être enregistrée')
       const affine = { ...(result as DiagResult), ...data, mission_status: undefined, urgency: safeUrgency(data.urgency) }
       setResult(affine)
-      router.replace(`/diagnostic?mission=${affine.mission_id}`,{scroll:false})
+      keepDiagnosticUrl(affine.mission_id)
+      setText(enrichedText)
       setRefineText('')
       // Le prix suit le diagnostic. Sans ce recalcul forcé, une précision qui
       // changeait la durée ou les matériaux laissait le montant inchangé.
@@ -350,6 +422,10 @@ export default function DiagnosticPage() {
   const DIAG_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260418_080021_d598092b-c4c2-4e53-8e46-94cf9064cd50.mp4'
 
   // ─────────────────────────────────────────────────────────
+  if (!restored) return <><Navbar /><main style={{ padding: '110px 24px' }}>
+    {restoreError ? <><p role="alert">{restoreError}</p><button onClick={() => window.location.reload()}>Réessayer</button> · <Link href="/diagnostics">Mes diagnostics</Link></> : <p role="status">Ouverture du diagnostic…</p>}
+  </main></>
+
   return (
     <div className="mobile-diagnostic mission-mobile" style={{ minHeight: '100dvh', background: 'var(--ui-canvas)', position: 'relative', color: 'var(--ui-ink)' }}>
       <Navbar />
@@ -632,6 +708,7 @@ export default function DiagnosticPage() {
             <ClientQuote
               key={result.mission_id}
               missionId={result.mission_id}
+              preferredArtisan={preferredArtisan}
               revision={quoteRevision + (pricing?.estimate ?? 0)}
               estimate={pricing?.estimate}
               estimating={pricingLoading}
@@ -694,8 +771,9 @@ export default function DiagnosticPage() {
 
             <div className="diagnostic-result-footer">
               <button className="afrione-action" type="button" onClick={() => {
-                router.replace('/diagnostic', { scroll: false })
+                window.history.replaceState(null, '', preferredArtisan ? `/diagnostic?artisan=${preferredArtisan}` : '/diagnostic')
                 setStep('input'); setResult(null); setQA([]); setPhotos([]); setText('')
+                setCurrentQ(null); setCurrentAnswer(''); setPreciseText(''); setShowPrecise(false); setPricingError(null)
                 setRefineText(''); setPricing(null)
                 window.scrollTo(0, 0)
               }}><RotateCcw size={15} /> Nouveau diagnostic</button>

@@ -1,4 +1,5 @@
 'use client'
+import { Circle as UiCircle } from 'lucide-react'
 import {useRef} from 'react'
 import {clientApi} from '@/lib/client-api'
 import { useState, useEffect, useCallback } from 'react'
@@ -267,7 +268,7 @@ export default function ArtisanProfilePage() {
                 background: 'var(--ui-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: NEU_SMALL,
               }}>
-                {avatarUrl ? <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '40px' }}>👷</span>}
+                {avatarUrl ? <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '40px' }}><UiCircle className="ui-glyph" aria-hidden="true" /></span>}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
@@ -518,7 +519,7 @@ export default function ArtisanProfilePage() {
                   <div style={{ width: '64px', height: '64px', borderRadius: '16px', overflow: 'hidden', background: 'var(--ui-canvas)', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: NEU_SMALL, border: '1.5px solid var(--ui-border)' }}>
                     {avatarUrl
                       ? <img src={avatarUrl} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: '28px' }}>👷</span>
+                      : <span style={{ fontSize: '28px' }}><UiCircle className="ui-glyph" aria-hidden="true" /></span>
                     }
                   </div>
                   <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--ui-ink)' }}>{name}</p>

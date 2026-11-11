@@ -13,7 +13,9 @@ function MatchingContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const missionId = searchParams.get('mission')
+  const preferredArtisan = searchParams.get('artisan')
   const category = searchParams.get('category') || 'Plomberie'
+  const mode = searchParams.get('mode') === 'urgent' ? 'urgent' : 'standard'
 
   const [artisans, setArtisans] = useState<any[]>([])
   const [entreprises, setEntreprises] = useState<any[]>([])
@@ -38,22 +40,27 @@ function MatchingContent() {
           return
         }
         const { data: mission, error } = missionId
-          ? await supabase.from('missions').select('category, quartier, is_test').eq('id', missionId).single()
+          ? await supabase.from('missions').select('category, quartier, is_test, status, artisan_id').eq('id', missionId).single()
           : { data: null, error: null }
         if (error) throw error
+        if (missionId && mission?.artisan_id) {
+          router.replace(`/warroom/${missionId}`)
+          return
+        }
         const resolvedCategory = mission?.category || category
         const quartier = mission?.quartier || requestedQuartier
         const isTest = mission?.is_test === true && session.user.app_metadata.afrione_test === true
         const [candidates, companies] = await Promise.all([
-          listMatchingArtisans(supabase, { category: resolvedCategory, quartier, clientId: session.user.id, isTest, mode: 'standard' }),
+          listMatchingArtisans(supabase, { category: resolvedCategory, quartier, clientId: session.user.id, isTest, mode }),
           isTest ? Promise.resolve({ data: [] }) : supabase.from('entreprises')
             .select('id, name, description, banner_url, logo_url, secteurs, quartiers, artisan_pros(id)')
             .eq('kyc_status', 'approved').eq('is_active', true).contains('secteurs', [resolvedCategory]),
         ])
+        const preferred = candidates.find(candidate => candidate.id === preferredArtisan)
+        const shortlist = preferred ? [preferred, ...candidates.filter(candidate => candidate.id !== preferred.id)].slice(0, 3) : candidates.slice(0, 3)
         if (!active) return
-        const shortlist = candidates.slice(0, 5)
         setArtisans(shortlist)
-        setSelected(previous => shortlist.some(candidate => candidate.id === previous) ? previous : null)
+        setSelected(previous => shortlist.some(candidate => candidate.id === previous) ? previous : preferred?.id ?? null)
         setEntreprises(companies.data ?? [])
         setMissionQuartier(quartier)
         setLoadError(false)
@@ -76,7 +83,7 @@ function MatchingContent() {
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', refreshVisible)
     }
-  }, [category, missionId, router, requestedQuartier])
+  }, [category, missionId, mode, preferredArtisan, router, requestedQuartier])
 
   const confirm = async () => {
     if (!selected) return
@@ -117,23 +124,20 @@ function MatchingContent() {
         <div style={{ position: 'absolute', top: '45%', left: '38%', width: 14, height: 14, background: 'rgba(255,255,255,0.22)', borderRadius: 4, animation: 'floatSquareDrift 5s ease-in-out infinite 3s' }} />
         {/* Content */}
         <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: '32px 32px' }}>
-          <Link href="/diagnostic" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'rgba(255,255,255,0.75)', marginBottom: '14px', textDecoration: 'none' }}>
+          <Link href={missionId ? `/diagnostic?mission=${encodeURIComponent(missionId)}` : "/diagnostic"} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'rgba(255,255,255,0.75)', marginBottom: '14px', textDecoration: 'none' }}>
             <ArrowLeft size={14} /> Retour
           </Link>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px', marginLeft: '12px' }}>
             <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>CHOISIR UN ARTISAN</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Artisans disponibles</h1>
-          <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>Sélectionnés selon votre quartier et votre besoin</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Artisans recommandés</h1>
+          <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>Jusqu’à trois artisans disponibles, classés selon votre besoin et votre quartier</p>
         </div>
       </section>
 
       <div className="pb-16 px-4" style={{ paddingTop: '32px' }}>
         <div className="page-container max-w-3xl" style={{ position: 'relative' }}>
           {/* Orange decorative squares */}
-          <div style={{ position: 'absolute', top: '8%', right: '-16px', width: 56, height: 56, background: 'rgba(232,93,38,0.07)', borderRadius: 12, animation: 'floatSquare 5.5s ease-in-out infinite', transform: 'rotate(15deg)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', top: '40%', left: '-20px', width: 40, height: 40, border: '2px solid rgba(232,93,38,0.12)', borderRadius: 10, animation: 'floatSquareSlow 6s ease-in-out infinite 1.5s', transform: 'rotate(-8deg)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '15%', right: '2%', width: 24, height: 24, background: 'rgba(232,93,38,0.1)', borderRadius: 6, animation: 'floatSquareDrift 4.5s ease-in-out infinite 2.5s', pointerEvents: 'none' }} />
 
           {loading ? (
             <div style={{textAlign:'center',padding:'64px 0'}}>
@@ -147,8 +151,8 @@ function MatchingContent() {
 
               <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucun artisan disponible</h3>
               <p style={{color:'#7A7A6E',fontSize:'14px',marginBottom:'24px'}}>La liste se met à jour automatiquement quand un artisan du métier devient disponible.</p>
-              <Link href="/artisans" className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
-                Voir tous les artisans
+              <Link href={missionId ? `/diagnostic?mission=${encodeURIComponent(missionId)}` : "/artisans"} className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
+                {missionId ? 'Revenir au diagnostic' : 'Voir tous les artisans'}
               </Link>
             </div>
           ) : (
@@ -229,16 +233,18 @@ function MatchingContent() {
 
               <div style={{display:'flex',alignItems:'flex-start',gap:'12px',background:'rgba(43,107,62,0.05)',border:'1px solid rgba(43,107,62,0.2)',borderRadius:'12px',padding:'16px',marginBottom:'24px'}}>
                 <Shield size={16} style={{color:'#2B6B3E',flexShrink:0,marginTop:'2px'}} />
-                <p style={{fontSize:'13px',color:'#7A7A6E'}}>Paiement sécurisé en séquestre Wave jusqu'à la fin des travaux. Remboursement garanti si insatisfait.</p>
+                <p style={{fontSize:'13px',color:'#7A7A6E'}}>Choisissez un artisan pour discuter du besoin. Le paiement Jèko s’ouvre après confirmation du devis.</p>
               </div>
 
+              <div style={{ position: 'sticky', bottom: 0, zIndex: 12, padding: '12px 0 max(12px, env(safe-area-inset-bottom))', background: 'var(--ui-canvas)' }}>
               <button onClick={confirm} disabled={!selected || confirming} className="btn-primary afrione-action"
                 style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',padding:'16px',fontSize:'15px',opacity: (!selected || confirming) ? 0.4 : 1}}>
                 {confirming
                   ? <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Connexion en cours...</>
-                  : <><Zap size={18} /> Contacter cet artisan <ChevronRight size={16} /></>
+                  : <><Zap size={18} /> {selected ? `Contacter ${artisans.find(artisan => artisan.id === selected)?.users?.name || "cet artisan"}` : "Sélectionnez un artisan"} <ChevronRight size={16} /></>
                 }
               </button>
+              </div>
             </>
           )}
           {/* Structures entreprises — si la mission peut nécessiter plusieurs corps */}

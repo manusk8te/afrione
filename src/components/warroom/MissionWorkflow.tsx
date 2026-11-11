@@ -3,6 +3,7 @@ import {useEffect,useState} from 'react'
 import Link from 'next/link'
 import {clientApi} from '@/lib/client-api'
 import toast from 'react-hot-toast'
+import JekoCheckoutButton from '@/components/payment/JekoCheckoutButton'
 const labels:Record<string,string>={diagnostic:'Demande à préciser',matching:'Recherche de prestataire',negotiation:'Accord et devis',payment:'Paiement confirmé',scheduled:'Intervention programmée',en_route:'Prestataire en route',en_cours:'Travaux en cours',pending_validation:'Travaux soumis au client',disputed:'Litige — clôture suspendue',completed:'Mission validée',cancelled:'Mission annulée'}
 export default function MissionWorkflow({missionId,role,onMission}:{missionId:string;role:string;onMission?:(patch:any)=>void}){
  const [data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[error,setError]=useState('')
@@ -16,7 +17,7 @@ export default function MissionWorkflow({missionId,role,onMission}:{missionId:st
   const r=await clientApi('/api/mission/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:missionId,action,quote_revision})});const d=await r.json();if(!r.ok)throw Error(d.error);onMission?.(d.mission);setData((old:any)=>({...old,mission:d.mission}));toast.success('Étape enregistrée')
  }catch(e){toast.error(e instanceof Error?e.message:'Action refusée')}finally{setBusy(false)}}
  const m=data?.mission
- return <section aria-label="Suivi sécurisé de la mission" className="card" style={{marginBottom:16}}>
+ return <section id="paiement-jeko" aria-label="Suivi sécurisé de la mission" className="card" style={{marginBottom:16}}>
  <h2 style={{fontSize:18,marginBottom:10}}>Suivi de la mission</h2>
  {error&&<p role="alert">{error}</p>}{!m&&!error&&<p>Chargement…</p>}
  {m&&<><p>{labels[m.status]||m.status}</p>{m.is_test&&<p style={{color:'#B7471B'}}>MISSION DE TEST — aucun fonds réel ni intervention réelle.</p>}
@@ -25,6 +26,7 @@ export default function MissionWorkflow({missionId,role,onMission}:{missionId:st
  {role==='client'&&m.status==='en_route'&&m.artisan_arrived_at&&<button className="btn-primary afrione-action" disabled={busy} onClick={()=>act('confirm_arrival')}>Je confirme que le prestataire est arrivé</button>}
  {role==='artisan'&&m.status==='en_route'&&m.artisan_arrived_at&&<p>Arrivée déclarée. Attendez la confirmation du client avant de commencer.</p>}
  {role==='client'&&m.status==='negotiation'&&m.is_test&&m.price_confirmed_version&&<button className="afrione-action" disabled={busy} onClick={()=>act('pay_test')}>Simuler le paiement pour tester le suivi</button>}
+ {data.jeko_checkout_enabled&&role==='client'&&m.status==='negotiation'&&!m.is_test&&m.logic_version>=2&&m.provider_accepted_at&&m.price_confirmed_version&&<JekoCheckoutButton missionId={missionId} />}
  {m.status==='disputed'&&<p>Aucune validation automatique pendant le litige. Une décision administrative motivée est nécessaire.</p>}
  {m.status==='completed'&&<p>La mission est validée. Le statut d’un versement réel doit être confirmé séparément par le prestataire de paiement.</p>}
  {['scheduled','en_route','en_cours','pending_validation'].includes(m.status)&&<p><Link href={`/suivi/${missionId}`}>Ouvrir le suivi et les preuves de travaux</Link></p>}

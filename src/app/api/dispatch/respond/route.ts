@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { authenticate } from '@/lib/mission-auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { cancelAndRefund, closeAttempts, DISPATCH_GRACE_SECONDS } from '@/lib/dispatch'
 
@@ -44,6 +45,12 @@ export async function POST(req: NextRequest) {
   if (!['accepted', 'refused'].includes(response)) {
     return fail('bad_request', 'Réponse invalide', 400)
   }
+
+  const identity = await authenticate(req)
+  if (!identity) return fail('bad_request', 'Connexion requise', 401)
+  const { data: profile } = await supabaseAdmin.from('artisan_pros').select('id')
+    .eq('id', artisan_id).eq('user_id', identity.userId).maybeSingle()
+  if (!profile) return fail('bad_request', 'Offre réservée à cet artisan', 403)
 
   // Vérifier que la mission est encore en cours de dispatch
   const { data: mission } = await supabaseAdmin
@@ -114,11 +121,15 @@ export async function POST(req: NextRequest) {
     return fail('expired', 'Délai de réponse dépassé', 410)
   }
 
+  const { data: jeko, error: checkoutError } = await supabaseAdmin.from('jeko_checkouts').select('id')
+    .eq('mission_id', mission_id).eq('status', 'paid').eq('urgent_before_matching', true).maybeSingle()
+  if (checkoutError) return fail('mission_gone', 'Le paiement ne peut pas être vérifié', 503)
+
   if (response === 'refused') {
     const { error: refuseError } = await supabaseAdmin
       .from('dispatch_attempts')
       .update({ response: 'refused', responded_at: new Date().toISOString() })
-      .eq('id', attempt.id)
+      .eq('id', attempt.id).is('response', null)
 
     if (refuseError) {
       console.error('[dispatch/respond] refus non enregistré :', refuseError.message)
@@ -132,6 +143,11 @@ export async function POST(req: NextRequest) {
       .eq('mission_id', mission_id)
       .is('response', null)
 
+    if (jeko) {
+      const { error } = await supabaseAdmin.rpc('stop_paid_urgent_dispatch', { mid: mission_id })
+      if (error) return fail('mission_gone', 'Le suivi sera actualisé automatiquement', 503)
+      return NextResponse.json({ ok: true, refused: true })
+    }
     if (!pending?.length) {
       await cancelAndRefund(mission_id, mission.client_id)
       return NextResponse.json({ ok: true, refused: true, refunded: true })
@@ -146,7 +162,11 @@ export async function POST(req: NextRequest) {
   // sépare les deux requêtes) → incohérence observée en base (dispatch_attempts
   // accepted, mission cancelled, artisan_id null) et message "prise par un
   // autre artisan" alors que personne ne l'a réellement obtenue.
-  const { data: claimed, error: claimError } = await supabaseAdmin
+  const { data: claimed, error: claimError } = jeko
+    ? await supabaseAdmin.rpc('claim_paid_urgent_dispatch', {
+      mid: mission_id, pro: artisan_id, actor: identity.userId, aid: attempt.id,
+    })
+    : await supabaseAdmin
     .from('missions')
     .update({ status: 'en_route', artisan_id: artisan_id })
     .eq('id', mission_id)
@@ -214,6 +234,8 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  if (jeko) return NextResponse.json({ ok: true, accepted: true })
+
   // Confirmer la tentative seulement maintenant que la prise a réussi
   const { error: confirmError } = await supabaseAdmin
     .from('dispatch_attempts')
@@ -268,7 +290,7 @@ export async function POST(req: NextRequest) {
     sender_id:   mission.client_id,
     sender_role: 'system',
     sender_type: 'afrione_system',
-    text:        '✅ Un artisan a accepté ta mission urgente. Il est en route vers toi !',
+    text:        'Un artisan a accepté ta mission urgente. Il est en route vers toi !',
     type:        'system',
   })
 

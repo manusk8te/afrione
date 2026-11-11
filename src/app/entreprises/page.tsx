@@ -1,4 +1,5 @@
 'use client'
+import { Building2 as UiBuilding2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
@@ -89,7 +90,7 @@ export default function EntreprisesPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0' }}>
-              <p style={{ fontSize: '48px', marginBottom: '16px' }}>🏢</p>
+              <p style={{ fontSize: '48px', marginBottom: '16px' }}><UiBuilding2 className="ui-glyph" aria-hidden="true" /></p>
               <h3 className="font-display" style={{ fontSize: '20px', fontWeight: 700, color: 'var(--ui-ink)' }}>Aucune entreprise trouvée</h3>
               <p style={{ color: 'var(--ui-muted)', marginTop: '8px', marginBottom: '24px' }}>
                 {secteur !== 'Tous' ? `Aucune structure en ${secteur} pour l'instant` : 'Aucune structure disponible'}

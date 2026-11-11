@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     sender_id:   mission.client_id,
     sender_role: 'system',
     sender_type: 'afrione_system',
-    text:        '✅ [DEV] Artisan simulé accepté. Mission en route !',
+    text:        '[DEV] Artisan simulé accepté. Mission en route !',
     type:        'system',
   })
 

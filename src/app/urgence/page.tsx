@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
-import { Zap, X, Shield, Clock } from 'lucide-react'
+import { Zap, X, Shield, Clock, Droplets, Snowflake, KeyRound, Wrench } from 'lucide-react'
 import { SENSITIVITY_COEFS, TEMPORAL_COEFS, INSURANCE_AMOUNT } from '@/types/business'
 import toast from 'react-hot-toast'
 
@@ -15,11 +15,11 @@ const syne = { fontFamily: "'Satoshi', sans-serif" }  as const
 const body = { fontFamily: "'Inter', sans-serif" }    as const
 const mono = { fontFamily: "'Tahoma', sans-serif" }   as const
 
-const CATEGORY_ICONS: Record<string, string> = {
-  plomberie:     '🔧',
-  electricite:   '⚡',
-  climatisation: '❄️',
-  serrurerie:    '🔑',
+const CATEGORY_ICONS: Record<string, typeof Wrench> = {
+  plomberie: Droplets,
+  electricite: Zap,
+  climatisation: Snowflake,
+  serrurerie: KeyRound,
 }
 
 type Prestation = {
@@ -91,34 +91,8 @@ export default function UrgencePage() {
 
       if (error || !mission) { toast.error('Erreur création mission'); setLoading(false); return }
 
-      const res = await fetch('/api/wave-checkout', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          mission_id:  mission.id,
-          amount:      price,
-          description: `AfriOne Urgent — ${selected.label}`,
-        }),
-      })
-      const data = await res.json()
-
-      if (data.simulation) {
-        toast('Paiement simulé — recherche d\'un artisan…', { icon: '🧪' })
-        await fetch('/api/dispatch/simulate-pay', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ mission_id: mission.id, amount: price }),
-        })
-        router.push(`/dispatch/${mission.id}`)
-        return
-      }
-
-      if (data.wave_launch_url) {
-        window.location.href = data.wave_launch_url
-      } else {
-        toast.error('Erreur Wave')
-        setLoading(false)
-      }
+      const query = new URLSearchParams({ mission: mission.id, category: selected.category, mode: 'urgent' })
+      router.push(`/matching?${query}`)
     } catch {
       toast.error('Erreur réseau')
       setLoading(false)
@@ -173,7 +147,7 @@ export default function UrgencePage() {
                   onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.boxShadow = NEU_SMALL }}
                 >
                   <div style={{ fontSize: '28px', marginBottom: '10px' }}>
-                    {CATEGORY_ICONS[p.category] ?? '🔧'}
+                    {(() => { const Icon = CATEGORY_ICONS[p.category] || Wrench; return <Icon size={26} aria-hidden="true" /> })()}
                   </div>
                   <div style={{ ...syne, fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)', marginBottom: '4px', lineHeight: 1.3 }}>
                     {p.label}
@@ -314,7 +288,7 @@ export default function UrgencePage() {
               }}>
               {loading
                 ? <><div style={{ width: '18px', height: '18px', border: '2.5px solid rgba(255,255,255,0.4)', borderTop: '2.5px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> Traitement...</>
-                : <><Zap size={20} /> Payer & Trouver un artisan</>
+                : <><Zap size={20} /> Trouver un artisan</>
               }
             </button>
           </div>

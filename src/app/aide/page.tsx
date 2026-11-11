@@ -103,8 +103,8 @@ export default function AidePage() {
           {/* Tab */}
           <div style={{ display: 'flex', background: 'var(--ui-canvas)', border: '1.5px solid var(--ui-border)', borderRadius: '16px', padding: '4px', marginBottom: '32px', boxShadow: 'var(--ui-shadow-inset)' }}>
             {[
-              { id: 'client' as const, label: '🏠 Questions clients' },
-              { id: 'artisan' as const, label: '🔧 Questions artisans' },
+              { id: 'client' as const, label: 'Questions clients' },
+              { id: 'artisan' as const, label: 'Questions artisans' },
             ].map(t => (
               <button className="afrione-action" key={t.id} onClick={() => setTab(t.id)}
                 style={{

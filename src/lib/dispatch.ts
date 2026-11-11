@@ -2,15 +2,12 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { listMatchingArtisans } from '@/lib/artisan-matching'
 import { sendPushToUser } from '@/lib/push'
 
-// Fenêtre de réponse de l'artisan. Configurable pour pouvoir dérouler un test
-// manuel à deux comptes sans courir : 60s suffisent à un artisan déjà sur son
-// dashboard, pas à quelqu'un qui doit encore changer de navigateur. Préfixe
-// NEXT_PUBLIC_ obligatoire — l'écran d'attente client lit la MÊME valeur, et
-// deux compteurs désynchronisés annulent la mission sous les doigts de
-// l'artisan.
-const parsedTimeout = Number(process.env.NEXT_PUBLIC_DISPATCH_TIMEOUT_SECONDS)
-export const DISPATCH_TIMEOUT_SECONDS =
-  Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 60
+import { DISPATCH_TIMEOUT_SECONDS } from '@/lib/dispatch-window'
+
+const configuredRecipients = Number(process.env.DISPATCH_RECIPIENT_LIMIT)
+const recipientLimit = Number.isInteger(configuredRecipients) && configuredRecipients >= 1 && configuredRecipients <= 10
+  ? configuredRecipients
+  : 3
 
 // Marge accordée à un artisan dont la requête d'acceptation part juste avant
 // l'expiration : sans elle, le timer client (même fenêtre de 60s) annule la
@@ -30,12 +27,23 @@ export async function findAllCandidates(missionId: string) {
     supabaseAdmin.from('dispatch_attempts').select('artisan_id').eq('mission_id', missionId),
     listMatchingArtisans(supabaseAdmin, {
       category: mission.category, quartier: mission.quartier || 'Cocody',
-      clientId: mission.client_id, isTest: mission.is_test === true, mode: 'urgent',
+      clientId: mission.client_id, isTest: mission.is_test === true, mode: 'urgent', useCoordinates: true,
     }),
   ])
   if (attemptsError) throw attemptsError
   const tried = new Set(attempts?.map(attempt => attempt.artisan_id))
-  return candidates.filter(candidate => !tried.has(candidate.id))
+  const eligible = candidates.filter(candidate => !tried.has(candidate.id))
+  if (!eligible.length) return []
+  const available = []
+  for (let offset = 0; offset < eligible.length; offset += 100) {
+    const batch = eligible.slice(offset, offset + 100)
+    const { data: busy, error } = await supabaseAdmin.from('missions').select('artisan_id')
+      .in('artisan_id', batch.map(candidate => candidate.id)).in('status', ['en_route', 'en_cours'])
+    if (error) throw error
+    const busyIds = new Set(busy.map(mission => mission.artisan_id))
+    available.push(...batch.filter(candidate => !busyIds.has(candidate.id)))
+  }
+  return available
 }
 
 // ── Clore les tentatives encore ouvertes d'une mission ───────────────────────
@@ -93,18 +101,18 @@ export async function createDispatchAttempt(
 
 // ── Envoyer la notification urgente à un artisan ──────────────────────────────
 
-export async function sendUrgentNotification(userId: string, category: string, timeoutSeconds: number) {
+export async function sendUrgentNotification(userId: string, category: string, timeoutSeconds: number, missionId?: string) {
   const base  = process.env.VERCEL_ENV === 'production'
     ? 'https://www.afrioneapp.com'
     : process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.afrioneapp.com'
-  const url   = `${base}/artisan-space/dashboard`
+  const url = `${base}/artisan-space/dashboard${missionId ? `?offer=${missionId}#offres-urgentes` : ""}`
   const title = 'Nouvelle mission urgente'
   const body  = `${category} — Tu as ${timeoutSeconds} s pour répondre.`
 
   // Web-push direct (même process) — plus de hop HTTP vers /api/push-send qui
   // partait vers la prod quand NEXT_PUBLIC_APP_URL manquait, ni d'appel
   // OneSignal (SDK jamais initialisé côté client → livraison impossible).
-  const result = await sendPushToUser(userId, { title, body, url })
+  const result = await sendPushToUser(userId, { title, body, url, tag: missionId ? `urgent-${missionId}` : undefined, ttlSeconds: timeoutSeconds })
   if (!result.sent) {
     console.warn(`[dispatch] push non délivré à ${userId}: ${result.reason}`)
   }
@@ -139,7 +147,7 @@ export async function cancelAndRefund(missionId: string, clientId: string) {
     sender_id:   clientId,
     sender_role: 'system',
     sender_type: 'afrione_system',
-    text:        '😔 Aucun artisan disponible n\'a pu accepter ta mission urgente. Tu seras remboursé intégralement sous 24h.',
+    text:        'Aucun artisan disponible n\'a pu accepter ta mission urgente. Tu seras remboursé intégralement sous 24h.',
     type:        'system',
   })
 
@@ -205,8 +213,20 @@ export async function startUrgentDispatch(
   }
 
   const notifications = await Promise.allSettled(recipients.map(candidate =>
-    sendUrgentNotification(candidate.user_id, category, timeoutSeconds)
+    sendUrgentNotification(candidate.user_id, category, timeoutSeconds, missionId)
   ))
   const pushSent = notifications.filter(result => result.status === 'fulfilled' && result.value.sent).length
   return { dispatched: true, count: recipients.length, expires_at: expiresAt, push_sent: pushSent }
+}
+
+export async function startPaidUrgentDispatch(missionId: string, category: string) {
+  const candidates = (await findAllCandidates(missionId)).slice(0, recipientLimit)
+  if (!candidates.length) return
+  const expiresAt = new Date(Date.now() + DISPATCH_TIMEOUT_SECONDS * 1000).toISOString()
+  const { data: recipients, error } = await supabaseAdmin.rpc('start_paid_urgent_dispatch', {
+    mid: missionId, candidates: candidates.map(candidate => candidate.id), deadline: expiresAt,
+  })
+  if (error) throw error
+  await Promise.allSettled(candidates.filter(candidate => recipients.includes(candidate.id))
+    .map(candidate => sendUrgentNotification(candidate.user_id, category, DISPATCH_TIMEOUT_SECONDS, missionId)))
 }

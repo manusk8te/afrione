@@ -7,7 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase'
  */
 export async function sendPushToUser(
   userId: string,
-  payload: { title: string; body: string; url?: string },
+  payload: { title: string; body: string; url?: string; tag?: string; ttlSeconds?: number },
 ): Promise<{ sent: boolean; reason?: string }> {
   const vapidPublic  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY
@@ -24,7 +24,7 @@ export async function sendPushToUser(
   if (!data?.subscription) return { sent: false, reason: 'no_subscription' }
 
   try {
-    await webpush.sendNotification(data.subscription, JSON.stringify(payload))
+    await webpush.sendNotification(data.subscription, JSON.stringify(payload), { TTL: payload.ttlSeconds ?? 3600, timeout: 5000 })
     return { sent: true }
   } catch (err: any) {
     // 404/410 = subscription expirée → nettoyer pour re-souscription propre

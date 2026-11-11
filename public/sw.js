@@ -5,6 +5,7 @@ self.addEventListener('push', function(event) {
     icon: '/logo.png',
     badge: '/logo.png',
     data: { url: data.url || '/' },
+    tag: data.tag,
     vibrate: [200, 100, 200],
   }
   event.waitUntil(

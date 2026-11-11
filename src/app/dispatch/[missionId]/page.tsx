@@ -2,14 +2,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { CheckCircle, XCircle, Zap } from 'lucide-react'
+import { clientApi } from '@/lib/client-api'
 import { supabase } from '@/lib/supabase'
 
-// Même variable que le serveur (src/lib/dispatch.ts) : ce compteur décide de
-// l'annulation de la mission, il ne doit jamais être plus court que la fenêtre
-// réellement accordée à l'artisan.
-const parsedTimeout       = Number(process.env.NEXT_PUBLIC_DISPATCH_TIMEOUT_SECONDS)
-const DISPATCH_TIMEOUT_MS =
-  (Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 60) * 1000
+import { DISPATCH_TIMEOUT_SECONDS } from '@/lib/dispatch-window'
+
+const DISPATCH_TIMEOUT_MS = DISPATCH_TIMEOUT_SECONDS * 1000
 // Doit rester aligné sur DISPATCH_GRACE_SECONDS (src/lib/dispatch.ts)
 const DISPATCH_GRACE_MS   = 6_000
 
@@ -27,6 +25,8 @@ export default function DispatchLoadingPage() {
   const [state,       setState]       = useState<State>('searching')
   const [attemptNum,  setAttemptNum]  = useState(1)
   const [timeLeft,    setTimeLeft]    = useState(DISPATCH_TIMEOUT_MS)
+  const [jeko, setJeko] = useState(false)
+  const [syncError, setSyncError] = useState(false)
   const [category,    setCategory]    = useState('')
 
   const timerRef      = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -56,7 +56,7 @@ export default function DispatchLoadingPage() {
   // ── Passer au candidat suivant (timeout côté client) ─────────────────────
   const advanceDispatch = async () => {
     try {
-      const res = await fetch('/api/dispatch/next', {
+      const res = await clientApi('/api/dispatch/next', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ mission_id: missionId }),
@@ -111,6 +111,51 @@ export default function DispatchLoadingPage() {
 
   // ── Init : charger mission + lancer Realtime ──────────────────────────────
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('paid') === 'jeko') {
+      setJeko(true)
+      let active = true
+      let pending = false
+      let deadline = 0
+      let paidChecks = 0
+      const refresh = async () => {
+        if (pending) return
+        pending = true
+        try {
+          const response = await clientApi('/api/dispatch/next', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mission_id: missionId }),
+          })
+          const result = await response.json()
+          if (!response.ok || !result.jeko) throw new Error('Suivi indisponible')
+          if (!active) return
+          setSyncError(false)
+          setCategory(result.category)
+          deadline = result.expiresAt ? Date.parse(result.expiresAt) : 0
+          if (result.assigned) {
+            router.replace(`/suivi/${missionId}`)
+          } else if (result.status === 'dispatching') {
+            paidChecks = 0
+            setState('searching')
+          } else if (++paidChecks >= 3) {
+            setState('failed')
+          }
+        } catch {
+          if (active) setSyncError(true)
+        } finally {
+          pending = false
+        }
+      }
+      void refresh()
+      const poll = setInterval(refresh, 2500)
+      const clock = setInterval(() => setTimeLeft(Math.max(0, deadline - Date.now())), 200)
+      return () => {
+        active = false
+        clearInterval(poll)
+        clearInterval(clock)
+      }
+    }
+
     supabase
       .from('missions')
       .select('status, category, mode')
@@ -146,19 +191,19 @@ export default function DispatchLoadingPage() {
       clearTimers()
       supabase.removeChannel(channel)
     }
-  }, [missionId])
+  }, [missionId, router])
 
   const clearTimers = () => {
     clearInterval(intervalRef.current!)
     clearTimeout(timerRef.current!)
   }
 
-  const pct = timeLeft / DISPATCH_TIMEOUT_MS
+  const pct = Math.min(1, timeLeft / DISPATCH_TIMEOUT_MS)
 
   // ── Redirection après succès ─────────────────────────────────────────────
   useEffect(() => {
     if (state === 'found') {
-      const t = setTimeout(() => router.push(`/warroom/${missionId}`), 2500)
+      const t = setTimeout(() => router.push(`/suivi/${missionId}`), 2500)
       return () => clearTimeout(t)
     }
   }, [state, missionId, router])
@@ -230,7 +275,7 @@ export default function DispatchLoadingPage() {
           </div>
 
           <p style={{ ...body, fontSize: '12px', color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
-            Si personne n'accepte, tu seras remboursé automatiquement
+            {syncError ? 'Connexion interrompue. Le suivi se reconnecte automatiquement.' : 'Le premier artisan qualifié qui accepte est affecté à ta mission.'}
           </p>
         </div>
       )}
@@ -257,12 +302,12 @@ export default function DispatchLoadingPage() {
           </div>
           <h1 style={{ ...syne, fontWeight: 700, fontSize: '26px', color: 'white' }}>Aucun artisan disponible</h1>
           <p style={{ ...body, fontSize: '14px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
-            Tous les artisans disponibles ont été contactés sans succès. Tu seras remboursé intégralement sous 24h.
+            {jeko ? 'Aucun artisan n’a accepté pour le moment. Ton paiement reste enregistré sur la mission.' : 'Aucun artisan n’a accepté cette demande.'}
           </p>
           <button className="afrione-action"
-            onClick={() => router.push('/mode-select?category=' + encodeURIComponent(category))}
+            onClick={() => router.push(jeko ? `/warroom/${missionId}` : '/diagnostics')}
             style={{ padding: '14px 28px', background: '#E85D26', color: 'white', border: 'none', borderRadius: '14px', ...syne, fontWeight: 700, fontSize: '15px', cursor: 'pointer', boxShadow: '0 8px 24px rgba(232,93,38,0.35)' }}>
-            Essayer en mode Standard
+            {jeko ? 'Ouvrir ma mission' : 'Revenir à mes diagnostics'}
           </button>
           <button className="afrione-action"
             onClick={() => router.push('/')}

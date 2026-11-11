@@ -93,7 +93,7 @@ export default function PortefeuillePage() {
                     <div>
                       <label style={{display:'block',fontSize:'12px',fontFamily: 'var(--font-body)',color:'#8B95A5',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'8px'}}>Numéro Wave</label>
                       <div style={{display:'flex',gap:'8px'}}>
-                        <div style={{background:'var(--ui-canvas)',border:'1.5px solid var(--ui-border)',borderRadius:'12px',padding:'12px',fontSize:'14px',fontFamily: 'var(--font-body)',flexShrink:0,color:'var(--ui-ink)',boxShadow:NEU_SMALL}}>🇨🇮 +225</div>
+                        <div style={{background:'var(--ui-canvas)',border:'1.5px solid var(--ui-border)',borderRadius:'12px',padding:'12px',fontSize:'14px',fontFamily: 'var(--font-body)',flexShrink:0,color:'var(--ui-ink)',boxShadow:NEU_SMALL}}> +225</div>
                         <input className="afrione-field" type="tel" value={withdrawPhone} onChange={e => setWithdrawPhone(e.target.value)}
                           placeholder="07 00 00 00 00"
                           style={{flex:1,padding:'12px',border:'1.5px solid var(--ui-border)',borderRadius:'12px',fontFamily: 'var(--font-body)',fontSize:'14px',color:'var(--ui-ink)',outline:'none',background:'#FFFFFF'}} />
