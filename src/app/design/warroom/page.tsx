@@ -36,6 +36,13 @@ export default function WarRoomPreview() {
   const label = STATUSES.find(s => s.value === status)?.label ?? ''
   const hint = nextStepHint(role === 'guest' ? 'client' : role, status)
   const other = role === 'artisan' ? 'Awa Koné (cliente)' : 'Koffi Yao · Plombier'
+  const open_ = () => setOpen(true)
+  const actions: Record<string, Record<string, string>> = {
+    artisan: { negotiation: 'Ouvrir le devis', scheduled: 'Démarrer le suivi', en_cours: 'Photos et clôture' },
+    client: { negotiation: 'Voir le devis et payer', payment: 'Choisir le moment', scheduled: 'Voir le suivi', en_cours: 'Suivre l’intervention', pending_validation: 'Valider les travaux' },
+  }
+  const label_ = actions[role]?.[status]
+  const action = label_ ? { label: label_, onClick: open_ } : null
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1ece6', padding: '12px' }}>
@@ -63,7 +70,7 @@ export default function WarRoomPreview() {
           detailsOpen={open}
           onToggleDetails={() => setOpen(o => !o)}
         >
-          <MissionProgress status={status} role={role} statusLabel={label} hint={hint} />
+          <MissionProgress status={status} role={role} statusLabel={label} hint={hint} action={action} />
         </WarRoomHeader>
 
         {!open && (
@@ -74,6 +81,7 @@ export default function WarRoomPreview() {
             priceLabel="Estimation"
             priceValue="12 500 FCFA"
             hint={hint}
+            action={action}
             onOpen={() => setOpen(true)}
           />
         )}

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Check, ChevronDown, FileText, Phone, Send, Sparkles } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, ChevronRight, FileText, Phone, Send, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -11,6 +11,9 @@ import type { ReactNode } from 'react'
  * ──────────────────────────────────────────────────────────────────────────── */
 
 export type WarRole = 'client' | 'artisan' | 'admin' | 'guest'
+
+/** Action principale pour passer à l'étape suivante. */
+export type NextAction = { label: string; onClick: () => void }
 
 const STEPS = ['Discussion', 'Paiement', 'Intervention', 'Validation', 'Terminé'] as const
 
@@ -36,8 +39,8 @@ export function cleanStatus(label: string) {
 
 /* ── Avancement ───────────────────────────────────────────────────────────── */
 export function MissionProgress({
-  status, role, statusLabel, hint,
-}: { status: string; role: WarRole; statusLabel: string; hint?: string }) {
+  status, role, statusLabel, hint, action,
+}: { status: string; role: WarRole; statusLabel: string; hint?: string; action?: NextAction | null }) {
   const special = status === 'cancelled' || status === 'disputed'
   const index = STATUS_STEP[status] ?? 0
   const roleLabel = ROLE_LABEL[role]
@@ -68,11 +71,20 @@ export function MissionProgress({
         ))}
       </ol>
 
-      {hint && (
-        <p className="wr-hint">
-          <Sparkles size={14} aria-hidden="true" />
-          <span>{hint}</span>
-        </p>
+      {(hint || action) && (
+        <div className="wr-hint">
+          {hint && (
+            <p>
+              <Sparkles size={14} aria-hidden="true" />
+              <span>{hint}</span>
+            </p>
+          )}
+          {action && (
+            <button type="button" className="wr-hint__btn" onClick={action.onClick}>
+              {action.label} <ChevronRight size={16} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
@@ -132,7 +144,7 @@ export function WarRoomHeader({
 
 /* ── Panneau latéral (ordinateur) ─────────────────────────────────────────── */
 export function SummaryCard({
-  title, place, statusLabel, priceLabel, priceValue, hint, onOpen,
+  title, place, statusLabel, priceLabel, priceValue, hint, onOpen, action,
 }: {
   title: string
   place?: string | null
@@ -141,6 +153,7 @@ export function SummaryCard({
   priceValue?: string
   hint?: string
   onOpen: () => void
+  action?: NextAction | null
 }) {
   return (
     <aside className="warroom-overview" aria-label="Résumé de la mission">
@@ -160,6 +173,11 @@ export function SummaryCard({
         <div className="wr-next">
           <p className="wr-eyebrow">Prochaine étape</p>
           <p>{hint}</p>
+          {action && (
+            <button type="button" className="wr-hint__btn" onClick={action.onClick}>
+              {action.label} <ChevronRight size={16} aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
     </aside>

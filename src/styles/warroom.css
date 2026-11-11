@@ -124,18 +124,38 @@
 .wr-progress__bar li[data-tone='danger'] { background: rgba(180, 35, 24, 0.5); }
 .wr-hint {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
   margin: 10px 0 0;
-  padding: 9px 12px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
   background: var(--wr-accent-soft);
   color: var(--wr-accent-ink);
   font-size: 13px;
   font-weight: 550;
   line-height: 1.4;
 }
-.wr-hint svg { flex: none; margin-top: 2px; }
+.wr-hint p { display: flex; align-items: flex-start; gap: 8px; margin: 0; }
+.wr-hint p svg { flex: none; margin-top: 2px; }
+/* Bouton « étape suivante » : la seule action mise en avant dans la War Room. */
+.wr-hint__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--wr-accent);
+  color: #fff;
+  font: 700 14px/1 var(--font-body, Inter, sans-serif);
+  cursor: pointer;
+  transition: background-color 0.15s linear, transform 0.15s ease;
+}
+.wr-hint__btn:hover { background: var(--wr-accent-hover); }
+.wr-hint__btn:active { transform: scale(0.98); }
+.wr-next .wr-hint__btn { width: 100%; margin-top: 12px; }
 
 /* ── Fil de discussion ────────────────────────────────────────────────────── */
 .mobile-warroom .afrione-conversation-thread {

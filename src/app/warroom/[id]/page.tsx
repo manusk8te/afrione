@@ -1209,6 +1209,29 @@ export default function WarRoomPage() {
   }
 
   const statusInfo = STATUS_CONFIG[status] || STATUS_CONFIG.negotiation
+
+  // Étape suivante : UNE action claire selon qui regarde et où en est la mission.
+  const goSuivi = () => router.push(`/suivi/${missionId}`)
+  const nextAction: { label: string; onClick: () => void } | null = !roleReady ? null : (() => {
+    if (role === 'artisan') {
+      if (status === 'matching' || status === 'negotiation') {
+        return standardDiscussion
+          ? { label: needsAcceptance ? 'Accepter la demande' : 'Ouvrir le devis', onClick: () => setShowMissionDetails(true) }
+          : { label: 'Proposer un devis', onClick: openDevis }
+      }
+      if (status === 'scheduled') return { label: 'Démarrer le suivi', onClick: goSuivi }
+      if (status === 'en_route') return { label: 'Suivi en direct', onClick: goSuivi }
+      if (status === 'en_cours') return { label: 'Photos et clôture', onClick: goSuivi }
+    }
+    if (role === 'client') {
+      if ((status === 'matching' || status === 'negotiation') && canPayQuote) return { label: 'Voir le devis et payer', onClick: () => setShowMissionDetails(true) }
+      if (status === 'payment') return { label: 'Choisir le moment', onClick: () => { setSchedMode(null); setShowScheduling(true) } }
+      if (status === 'scheduled') return { label: 'Voir le suivi', onClick: goSuivi }
+      if (status === 'en_route' || status === 'en_cours') return { label: 'Suivre l’intervention', onClick: goSuivi }
+      if (status === 'pending_validation') return { label: 'Valider les travaux', onClick: goSuivi }
+    }
+    return null
+  })()
   // Noms réels via API (bypass RLS) avec fallback sur les joins Supabase
   const artisanName   = participants?.artisan?.name   || mission?.artisan_pros?.users?.name   || 'Artisan'
   const artisanMetier = participants?.artisan?.metier  || mission?.artisan_pros?.metier         || ''
@@ -1345,7 +1368,7 @@ export default function WarRoomPage() {
         onToggleDetails={() => setShowMissionDetails(open => !open)}
       >
         <MissionProgress status={status} role={role} statusLabel={statusInfo.label}
-          hint={roleReady ? nextStepHint(role, status) : undefined} />
+          hint={roleReady ? nextStepHint(role, status) : undefined} action={nextAction} />
       </WarRoomHeader>
 
       {!showMissionDetails && (
@@ -1356,6 +1379,7 @@ export default function WarRoomPage() {
           priceLabel={mission?.price_confirmed_version ? 'Prestation confirmée' : 'Estimation'}
           priceValue={mission?.total_price ? `${Number(mission.total_price).toLocaleString('fr-FR')} FCFA` : undefined}
           hint={roleReady ? nextStepHint(role, status) : undefined}
+          action={nextAction}
           onOpen={() => setShowMissionDetails(true)}
         />
       )}

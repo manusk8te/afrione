@@ -11,6 +11,9 @@ import {
 } from 'lucide-react'
 import { DISPATCH_TIMEOUT_SECONDS } from '@/lib/dispatch-window'
 import { systemMessageText } from '@/lib/ui-text'
+import MissionRow from '@/components/artisan/MissionRow'
+import NotificationBell from '@/components/artisan/NotificationBell'
+import { missionStatus, GROUP_TITLE } from '@/lib/mission-status'
 import { clientApi } from '@/lib/client-api'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -718,74 +721,47 @@ export default function ArtisanDashboardPage() {
         </div>
       </div>
 
-      {/* ── Hero orange ── */}
-      <section className="afrione-gradient" style={{ position: 'relative', overflow: 'hidden', minHeight: '190px', display: 'flex', alignItems: 'center' }}>
-        {/* Floating white squares */}
-        <div style={{ position: 'absolute', top: '22%', left: '4%',  width: 50, height: 50, border: '2px solid rgba(255,255,255,0.2)',   borderRadius: 12, animation: 'floatSquare 5s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', top: '50%', right: '6%',  width: 30, height: 30, background: 'rgba(255,255,255,0.12)', borderRadius: 8,  animation: 'floatSquare 4s ease-in-out infinite 1s' }} />
-        <div style={{ position: 'absolute', top: '28%', right: '20%', width: 18, height: 18, background: 'rgba(255,255,255,0.18)', borderRadius: 5,  animation: 'floatSquareSlow 6s ease-in-out infinite 2s' }} />
-        <div style={{ position: 'absolute', bottom: '22%', left: '20%', width: 58, height: 58, border: '1.5px solid rgba(255,255,255,0.12)', borderRadius: 14, animation: 'floatSquareSlow 7s ease-in-out infinite 0.5s' }} />
-        <div style={{ position: 'absolute', top: '42%', left: '42%',  width: 14, height: 14, background: 'rgba(255,255,255,0.2)',  borderRadius: 4,  animation: 'floatSquareDrift 5s ease-in-out infinite 3s' }} />
-        <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: '32px', maxWidth: '896px', width: '100%' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '20px', padding: '5px 14px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: 'white', letterSpacing: '0.12em', fontFamily: 'var(--font-body)' }}>ESPACE ARTISAN</span>
+      {/* ── En-tête orange compact : titre + cloche de notifications ── */}
+      <section className="afrione-gradient" style={{ position: 'relative', minHeight: '104px', display: 'flex', alignItems: 'center' }}>
+        <div className="page-container" style={{ position: 'relative', zIndex: 10, padding: isMobile ? '22px 16px' : '26px 32px', maxWidth: '896px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div>
+            <p style={{ margin: '0 0 6px', color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em' }}>ESPACE ARTISAN</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: 800, color: 'white', margin: 0 }}>Mon tableau de bord</h1>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 38px)', fontWeight: 800, color: 'white', margin: '0 0 8px' }}>Mon tableau de bord</h1>
-          <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '14px', margin: 0 }}>Missions, planning et statistiques</p>
+          <NotificationBell
+            pushStatus={pushStatus}
+            enabling={enablingPush}
+            onEnablePush={async () => {
+              setEnablingPush(true)
+              const ok = await enablePush()
+              setEnablingPush(false)
+              if (ok) toast.success('Notifications activées !')
+              else toast.error('Permission refusée — activez-les dans les paramètres du navigateur.')
+            }}
+            items={[
+              ...urgentOffers.map(o => ({
+                id: 'urgent-' + o.mission_id,
+                kind: 'urgent' as const,
+                title: 'Mission urgente',
+                subtitle: `${o.category || 'Intervention'} · ${o.quartier || 'Abidjan'}`,
+                onSelect: () => {
+                  setTab('missions')
+                  setTimeout(() => document.getElementById('offres-urgentes')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+                },
+              })),
+              ...standardRequests.map(r => ({
+                id: r.id,
+                kind: 'request' as const,
+                title: 'Nouvelle demande',
+                subtitle: `${r.category || 'Intervention'} · ${r.quartier || 'Abidjan'}`,
+                href: `/warroom/${r.id}`,
+              })),
+            ]}
+          />
         </div>
       </section>
 
       <div className="page-container" style={{padding:isMobile?'20px 16px 48px':'28px 32px 64px',maxWidth:'896px',position:'relative'}}>
-
-        {standardRequests.length > 0 && (
-          <section aria-label="Demandes à accepter" style={{ display: 'grid', gap: 10, marginBottom: 20 }}>
-            {standardRequests.map(request => (
-              <Link key={request.id} href={`/warroom/${request.id}`} className="card afrione-action" style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: 16, borderLeft: '4px solid #E85D26',
-              }}>
-                <Bell size={20} color="#B7471B" aria-hidden="true" />
-                <span style={{ flex: 1 }}>
-                  <strong>Nouvelle demande Standard</strong>
-                  <span style={{ display: 'block', color: 'var(--ui-muted)', fontSize: 13 }}>
-                    {request.category || 'Intervention'} · {request.quartier || 'Abidjan'}
-                  </span>
-                </span>
-                <span>Ouvrir</span>
-              </Link>
-            ))}
-          </section>
-        )}
-
-        {/* Bannière activation notifications push — indispensable pour recevoir les missions urgentes */}
-        {(pushStatus === 'default' || pushStatus === 'denied') && (
-          <div style={{background:'rgba(232,93,38,0.07)',border:'1.5px solid rgba(232,93,38,0.35)',borderRadius:'16px',padding:'14px 16px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'12px',flexWrap:'wrap'}}>
-            <span style={{fontSize:'22px',flexShrink:0}}><UiBell className="ui-glyph" aria-hidden="true" /></span>
-            <div style={{flex:1,minWidth:'200px'}}>
-              <div style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>Activez les notifications</div>
-              <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'2px'}}>
-                {pushStatus === 'denied'
-                  ? 'Notifications bloquées par le navigateur — autorisez-les dans les paramètres du site pour recevoir les missions urgentes.'
-                  : 'Sans elles, vous ne recevrez pas les missions urgentes quand l\'application est fermée.'}
-              </div>
-            </div>
-            {pushStatus === 'default' && (
-              <button
-                onClick={async () => {
-                  setEnablingPush(true)
-                  const ok = await enablePush()
-                  setEnablingPush(false)
-                  if (ok) toast.success('Notifications activées !')
-                  else toast.error('Permission refusée — activez-les dans les paramètres du navigateur.')
-                }}
-                disabled={enablingPush}
-                className="btn-primary afrione-action"
-                style={{padding:'10px 18px',color:'white',border:'none',borderRadius:'12px',fontWeight:700,fontSize:'13px',cursor:'pointer',opacity:enablingPush?0.6:1,flexShrink:0}}
-              >
-                {enablingPush ? 'Activation…' : 'Activer →'}
-              </button>
-            )}
-          </div>
-        )}
 
         {/* Header card */}
         <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'20px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'14px',flexWrap:isMobile?'wrap':'nowrap'}}>
@@ -967,80 +943,42 @@ export default function ArtisanDashboardPage() {
             )}
 
             {missions.length === 0 ? (
-              <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'48px',textAlign:'center'}}>
-                <p style={{fontSize:'48px',marginBottom:'16px'}}><UiClipboardList className="ui-glyph" aria-hidden="true" /></p>
-                <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucune mission pour l'instant</h3>
-                <p style={{color:'var(--ui-muted)',fontSize:'14px'}}>Les nouvelles missions apparaîtront ici</p>
+              <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+                <h3 className="font-display" style={{ fontSize: 20, fontWeight: 700, color: 'var(--ui-ink)', margin: '0 0 8px' }}>Aucune mission pour l’instant</h3>
+                <p style={{ color: 'var(--ui-muted)', fontSize: 14, margin: 0 }}>Les nouvelles missions apparaîtront ici.</p>
               </div>
-            ) : missions.map(m => (
-              <div key={m.id} style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px'}}>
-                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'12px'}}>
-                  <div>
-                    <div style={{fontWeight:600,color:'var(--ui-ink)',fontSize:'15px'}}>{m.users?.name || 'Client'}</div>
-                    <div style={{fontSize:'13px',color:'var(--ui-muted)'}}>{m.category || m.diagnostics?.[0]?.category_detected || '—'} · {m.users?.quartier || m.quartier || 'Abidjan'}</div>
-                  </div>
-                  <span className={m.status === 'en_cours' ? 'afrione-gradient-text' : ''} style={{
-                    fontSize:'11px',padding:'3px 10px',borderRadius:'20px',fontWeight:600,
-                    background: m.status === 'completed' ? 'rgba(43,107,62,0.1)' : m.status === 'en_cours' ? 'rgba(232,93,38,0.1)' : 'rgba(201,168,76,0.1)',
-                    color: m.status === 'completed' ? '#2B6B3E' : m.status === 'en_cours' ? undefined : '#C9A84C',
-                  }}>
-                    {m.status === 'completed' ? '✓ Terminée' : m.status === 'en_cours' ? 'En cours' : m.status === 'matching' ? 'Nouvelle demande' : m.status === 'negotiation' ? 'En discussion' : m.status}
-                  </span>
+            ) : (['todo', 'wait', 'done'] as const).map(group => {
+              const rows = missions.filter(m => missionStatus(m.status).group === group)
+              if (rows.length === 0) return null
+              const list = rows.map(m => {
+                const st = missionStatus(m.status)
+                const when = m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''
+                return (
+                  <MissionRow
+                    key={m.id}
+                    href={st.cta ? st.cta.to(m.id) : `/warroom/${m.id}`}
+                    name={m.users?.name || 'Client'}
+                    subtitle={`${m.category || m.diagnostics?.[0]?.category_detected || '—'} · ${m.users?.quartier || m.quartier || 'Abidjan'}`}
+                    status={m.status}
+                    note={m.status === 'completed' && when ? `Terminée le ${when}` : m.total_price ? `${Number(m.total_price).toLocaleString('fr-FR')} FCFA` : undefined}
+                    action={group === 'todo' || m.status === 'disputed' ? st.cta?.label : undefined}
+                  />
+                )
+              })
+              return group === 'done' ? (
+                <div key={group} className="mgroup">
+                  <details>
+                    <summary className="mgroup__title">{GROUP_TITLE[group]} <span>{rows.length}</span></summary>
+                    <div className="mgroup">{list}</div>
+                  </details>
                 </div>
-                {m.status === 'matching' && (
-                  <div style={{marginBottom:'8px',padding:'10px',background:'rgba(232,93,38,0.06)',borderRadius:'10px',border:'1px dashed rgba(232,93,38,0.3)'}}>
-                    <p style={{fontSize:'13px',color:'var(--ui-muted)',margin:0}}>Nouveau client en attente — ouvrez le chat pour discuter et envoyer un devis.</p>
-                  </div>
-                )}
-                {(m.status === 'negotiation' || m.status === 'matching') && (
-                  <Link href={`/warroom/${m.id}`} className="btn-primary" style={{width:'100%',justifyContent:'center',display:'flex',gap:'6px'}}>
-                     Ouvrir le chat & proposer un devis →
-                  </Link>
-                )}
-                {m.status === 'scheduled' && (
-                  <div style={{display:'flex',gap:'8px'}}>
-                    <Link className="afrione-action" href={`/warroom/${m.id}`} style={{
-                      flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
-                      padding:'10px',background:'rgba(201,168,76,0.08)',border:'1px solid rgba(201,168,76,0.3)',
-                      borderRadius:'10px',color:'#C9A84C',fontWeight:600,fontSize:'13px',textDecoration:'none',
-                    }}>
-                       Chat
-                    </Link>
-                    <Link href={`/suivi/${m.id}`} className="afrione-gradient" style={{
-                      flex:2,display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
-                      padding:'10px',borderRadius:'10px',
-                      color:'white',fontWeight:700,fontSize:'13px',textDecoration:'none',
-                    }}>
-                       Démarrer le suivi →
-                    </Link>
-                  </div>
-                )}
-                {m.status === 'en_route' && (
-                  <Link href={`/suivi/${m.id}`} className="afrione-gradient" style={{
-                    display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
-                    width:'100%',padding:'10px',borderRadius:'10px',
-                    color:'white',fontWeight:700,fontSize:'13px',textDecoration:'none',
-                  }}>
-                     Voir le suivi en direct →
-                  </Link>
-                )}
-                {m.status === 'en_cours' && (
-                  <Link className="afrione-action" href={`/warroom/${m.id}`} style={{
-                    display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',
-                    width:'100%',padding:'10px',background:'rgba(43,107,62,0.1)',
-                    border:'1px solid rgba(43,107,62,0.3)',borderRadius:'10px',
-                    color:'#2B6B3E',fontWeight:700,fontSize:'13px',textDecoration:'none',
-                  }}>
-                     Mission en cours — marquer terminée →
-                  </Link>
-                )}
-                {m.status === 'completed' && (
-                  <div style={{display:'flex',alignItems:'center',gap:'6px',color:'#2B6B3E',fontSize:'13px'}}>
-                    <CheckCircle size={14} /> Mission terminée · {m.completed_at ? new Date(m.completed_at).toLocaleDateString('fr-FR') : ''}
-                  </div>
-                )}
-              </div>
-            ))}
+              ) : (
+                <div key={group} className="mgroup">
+                  <h3 className="mgroup__title">{GROUP_TITLE[group]} <span>{rows.length}</span></h3>
+                  {list}
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -1055,34 +993,57 @@ export default function ArtisanDashboardPage() {
                 <h3 className="font-display" style={{fontSize:'18px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucune conversation</h3>
                 <p style={{color:'var(--ui-muted)',fontSize:'14px'}}>Les messages de vos clients apparaîtront ici</p>
               </div>
-            ) : conversations.map(c => {
-              const hasUnread = c.lastMessage && !c.lastMessage.read_at && c.lastMessage.sender_id !== artisan?.user_id
+            ) : (() => {
+              const isUnread = (c: any) => !!c.lastMessage && !c.lastMessage.read_at && c.lastMessage.sender_id !== artisan?.user_id
+              const stamp = (c: any) => (c.lastMessage ? new Date(c.lastMessage.created_at).getTime() : 0)
+              const sorted = [...conversations].sort((x, y) => stamp(y) - stamp(x))
+              const unread = sorted.filter(isUnread)
+              const read = sorted.filter(c => !isUnread(c))
+              const short = (c: any) => {
+                if (!c.lastMessage) return ''
+                const d = new Date(c.lastMessage.created_at)
+                return d.toDateString() === new Date().toDateString()
+                  ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                  : d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+              }
+              const row = (c: any) => {
+                const st = missionStatus(c.status)
+                const last = c.lastMessage
+                const system = last && (last.type === 'system' || last.sender_type === 'afrione_system')
+                const preview = last?.text
+                  ? (system ? systemMessageText(last.text) : (last.sender_id === artisan?.user_id ? 'Vous : ' : '') + last.text)
+                  : 'Nouvelle mission — ' + (c.category || 'intervention')
+                return (
+                  <MissionRow
+                    key={c.id}
+                    href={`/warroom/${c.id}`}
+                    name={c.users?.name || 'Client'}
+                    subtitle={`${c.category || 'Intervention'} · ${c.users?.quartier || c.quartier || 'Abidjan'}`}
+                    status={c.status}
+                    note={preview}
+                    time={short(c)}
+                    unread={isUnread(c)}
+                    action={st.group === 'todo' ? st.cta?.label : undefined}
+                  />
+                )
+              }
               return (
-                <Link key={c.id} href={`/warroom/${c.id}`} style={{textDecoration:'none'}}>
-                  <div style={{background:'#FFFFFF',boxShadow:NEU_SHADOW,borderRadius:'20px',padding:'16px',display:'flex',alignItems:'center',gap:'16px',cursor:'pointer',border: hasUnread ? '2px solid #E85D26' : '1px solid var(--ui-border)',transition:'all 0.2s'}}>
-                    <div style={{width:'48px',height:'48px',background:'rgba(232,93,38,0.1)',borderRadius:'12px',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'20px',flexShrink:0}}>
-                      <UiMessageCircle className="ui-glyph" aria-hidden="true" />
+                <>
+                  {unread.length > 0 && (
+                    <div className="mgroup">
+                      <h3 className="mgroup__title">Non lus <span>{unread.length}</span></h3>
+                      {unread.map(row)}
                     </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}}>
-                        <span style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>{c.users?.name || 'Client'}</span>
-                        <span style={{fontSize:'11px',color:'var(--ui-muted)',fontFamily: 'var(--font-body)'}}>
-                          {c.lastMessage ? new Date(c.lastMessage.created_at).toLocaleDateString('fr-FR') : ''}
-                        </span>
-                      </div>
-                      <div style={{fontSize:'13px',color:'var(--ui-muted)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                        {c.lastMessage?.text ? (c.lastMessage.type === 'system' || c.lastMessage.sender_type === 'afrione_system' ? systemMessageText(c.lastMessage.text) : c.lastMessage.text) : 'Nouvelle mission — ' + (c.category || '')}
-                      </div>
-                      <div style={{display:'flex',alignItems:'center',gap:'8px',marginTop:'6px'}}>
-                        <span className="afrione-gradient-text" style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:'rgba(232,93,38,0.1)'}}>{c.status}</span>
-                        <span style={{fontSize:'11px',color:'var(--ui-muted)'}}>{c.category || ''}</span>
-                      </div>
+                  )}
+                  {read.length > 0 && (
+                    <div className="mgroup">
+                      <h3 className="mgroup__title">{unread.length ? 'Autres conversations' : 'Conversations'} <span>{read.length}</span></h3>
+                      {read.map(row)}
                     </div>
-                    {hasUnread && <div className="afrione-gradient" style={{width:'10px',height:'10px',borderRadius:'50%',flexShrink:0}} />}
-                  </div>
-                </Link>
+                  )}
+                </>
               )
-            })}
+            })()}
           </div>
         )}
 
