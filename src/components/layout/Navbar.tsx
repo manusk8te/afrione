@@ -71,6 +71,21 @@ export default function Navbar() {
   /* Hero is orange — white text when not scrolled on homepage */
   const onOrange = isHome && !scrolled
 
+  // Zone sous la barre d'état (iPhone) : Safari la colore avec theme-color
+  // ou, à défaut, avec le fond de la page (beige). On l'aligne sur la navbar :
+  // orange sur le hero, blanc ailleurs.
+  useEffect(() => {
+    const color = onOrange ? '#C24A1F' : '#FFFFFF'
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.name = 'theme-color'
+      document.head.appendChild(meta)
+    }
+    meta.content = color
+    document.documentElement.style.backgroundColor = color
+  }, [onOrange])
+
   const isArtisan        = hasArtisanProfile || userRole === 'artisan'
   const isEntrepriseAdmin = userRole === 'entreprise_admin'
   const artisanHref       = hasArtisanProfile ? '/artisan-space/dashboard' : '/artisan-space/register'
@@ -98,7 +113,7 @@ export default function Navbar() {
     <nav className="site-navbar" data-hero={onOrange} style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999,
       transition: 'all 0.35s cubic-bezier(0.16,1,0.3,1)',
-      background:    onOrange ? 'transparent' : 'rgba(255,255,255,0.97)',
+      background:    onOrange ? 'transparent' : '#FFFFFF',
       backdropFilter: scrolled ? 'blur(14px)' : 'none',
       borderBottom:  onOrange ? 'none' : '1px solid var(--ui-border)',
     }}>
