@@ -59,7 +59,7 @@ export default function ArtisanRegisterPage() {
     setError('')
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { router.push('/auth'); return }
+      if (!session) { router.push('/auth?tab=signup&role=artisan&redirect=%2Fartisan-space%2Fregister'); return }
 
       // 1. Upsert dans users (crée la ligne si le trigger n'a pas encore tourné)
       await supabase.from('users').upsert({

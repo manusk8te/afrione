@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { CheckCircle as UiCheckCircle, ClipboardList as UiClipboardList, CreditCard as UiCreditCard, Wrench as UiWrench } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Journey from '@/components/journey/Journey'
 import { Plus, ArrowRight, Zap, Calendar, User, Phone, MapPin, Save, Droplets, Paintbrush, Hammer, Ruler, Wind, Lock, LayoutGrid, Cpu, Wrench, Navigation, MessageCircle } from 'lucide-react'
 import Navbar from '@/components/layout/Navbar'
 import { supabase } from '@/lib/supabase'
@@ -226,13 +227,18 @@ export default function DashboardPage() {
                 </div>
 
                 {missions.length === 0 ? (
-                  <div style={{textAlign:'center',padding:'48px 0'}}>
-                    <div style={{fontSize:'48px',marginBottom:'16px'}}><UiWrench className="ui-glyph" aria-hidden="true" /></div>
-                    <h3 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)',marginBottom:'8px'}}>Aucune mission pour l'instant</h3>
-                    <p style={{color:'var(--ui-muted)',marginBottom:'24px',fontSize:'14px'}}>Décrivez votre premier problème et trouvez un artisan en quelques minutes</p>
-                    <Link href="/diagnostic" className="btn-primary" style={{display:'inline-flex',alignItems:'center',gap:'8px'}}>
-                      <Zap size={16} /> Décrire mon problème
-                    </Link>
+                  <div style={{padding:'4px 0 8px'}}>
+                    <Journey
+                      title="Votre première demande, pas à pas"
+                      intro="Voici comment ça marche. Vous n’avez rien à comprendre d’avance : on vous guide à chaque étape."
+                      steps={[
+                        { id: 'describe', title: 'Décrire votre problème', help: 'Dites ce qui ne va pas, avec une photo si possible. L’assistant AfriOne estime le prix tout de suite.', state: 'current', href: '/diagnostic', cta: 'Décrire mon problème' },
+                        { id: 'choose', title: 'Choisir un artisan', help: 'Vous voyez des artisans vérifiés, leurs avis et leur prix. Vous choisissez.', state: 'todo' },
+                        { id: 'pay', title: 'Payer en toute sécurité', help: 'Votre argent est bloqué en séquestre. L’artisan n’est payé qu’une fois le travail validé.', state: 'todo' },
+                        { id: 'work', title: 'L’artisan intervient', help: 'Vous suivez son arrivée en direct et vous échangez avec lui dans la discussion.', state: 'todo' },
+                        { id: 'validate', title: 'Valider les travaux', help: 'Si tout est bon, vous validez : l’artisan est payé. Sinon, vous pouvez signaler un problème.', state: 'todo' },
+                      ]}
+                    />
                   </div>
                 ) : (
                   <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>

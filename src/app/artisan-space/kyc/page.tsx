@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Journey, { type JourneyStep } from '@/components/journey/Journey'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Upload, CheckCircle, Clock, AlertCircle, Shield, FileText, Camera } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -21,6 +22,8 @@ export default function KYCPage() {
     diplome: useRef<HTMLInputElement>(null),
     photo: useRef<HTMLInputElement>(null),
   }
+
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -46,6 +49,8 @@ export default function KYCPage() {
         .eq('artisan_id', artisanData.id)
         .single()
       setKyc(kycData)
+      const { data: profile } = await supabase.from('users').select('avatar_url').eq('id', session.user.id).single()
+      setAvatarUrl(profile?.avatar_url ?? null)
     }
     init()
   }, [])
@@ -99,6 +104,7 @@ export default function KYCPage() {
       if (field === 'photo') {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) await supabase.from('users').update({ avatar_url: publicUrl }).eq('id', session.user.id)
+        setAvatarUrl(publicUrl)
       }
 
       setMsg('✓ Document uploadé')
@@ -124,11 +130,11 @@ export default function KYCPage() {
   }
 
   const hasDoc = (field: string) => {
+    if (field === 'photo') return !!avatarUrl
     if (!kyc) return false
     if (field === 'cni_front') return !!kyc.cni_front_url
     if (field === 'cni_back') return !!kyc.cni_back_url
     if (field === 'diplome') return (kyc.diploma_urls || []).length > 0
-    if (field === 'photo') return !!kyc.cni_front_url
     return false
   }
 
@@ -161,52 +167,50 @@ export default function KYCPage() {
       <div className="pt-8 pb-16 px-4">
         <div className="max-w-2xl mx-auto">
 
-          {/* Status banner */}
-          <div style={{
-            background: kycStatus === 'approved' ? 'rgba(43,107,62,0.1)' : kycStatus === 'rejected' ? 'rgba(220,38,38,0.1)' : 'rgba(201,168,76,0.1)',
-            border: `1px solid ${kycStatus === 'approved' ? 'rgba(43,107,62,0.3)' : kycStatus === 'rejected' ? 'rgba(220,38,38,0.3)' : 'rgba(201,168,76,0.3)'}`,
-            borderRadius:'16px',padding:'16px',marginBottom:'32px',display:'flex',alignItems:'flex-start',gap:'12px'
-          }}>
-            <Clock size={18} style={{color: kycStatus === 'approved' ? '#2B6B3E' : '#C9A84C',flexShrink:0,marginTop:'2px'}} />
-            <div>
-              <div style={{fontWeight:600,color:'var(--ui-ink)',fontSize:'14px'}}>
-                {kycStatus === 'approved' ? '✓ Profil vérifié' : kycStatus === 'rejected' ? '✗ Documents rejetés' : 'Vérification en attente'}
-              </div>
-              <div style={{fontSize:'12px',color:'var(--ui-muted)',marginTop:'4px'}}>
-                {kycStatus === 'approved'
-                  ? 'Votre identité a été vérifiée. Vous pouvez recevoir des missions.'
-                  : kycStatus === 'rejected'
-                  ? kyc?.rejection_reason || 'Certains documents ont été rejetés. Veuillez les renvoyer.'
-                  : 'Envoyez vos documents pour que notre équipe valide votre profil. Délai : 24-48h ouvrées.'}
-              </div>
-            </div>
-          </div>
-
-          {/* Steps */}
-          <div style={{display:'flex',gap:'8px',marginBottom:'32px'}}>
-            {[
-              { label: 'Documents envoyés', done: allRequired },
-              { label: 'Vérification en cours', done: kycStatus !== 'pending' },
-              { label: 'Profil validé', done: kycStatus === 'approved' },
-            ].map((s, i) => (
-              <div key={s.label} style={{flex:1,textAlign:'center'}}>
-                <div style={{
-                  width:'32px',height:'32px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
-                  margin:'0 auto 8px',fontSize:'13px',
-                  background: s.done ? '#2B6B3E' : '#FFFFFF',
-                  border: s.done ? 'none' : '1px solid var(--ui-border)',
-                  boxShadow: s.done ? 'none' : NEU_SMALL,
-                  color: s.done ? 'white' : 'var(--ui-muted)',
-                }}>
-                  {s.done ? <CheckCircle size={16}/> : i+1}
-                </div>
-                <div style={{fontSize:'11px',color:'var(--ui-muted)'}}>{s.label}</div>
-              </div>
-            ))}
+          {/* Suivi guidé : où j'en suis, quoi faire, où cliquer */}
+          <div style={{marginBottom:'24px'}}>
+            <Journey
+              title="Vérifier votre identité"
+              intro="C’est obligatoire pour apparaître dans l’annuaire et recevoir des missions. Cela prend environ 5 minutes."
+              steps={((): JourneyStep[] => {
+                const missing = docConfig.filter(d => d.required && !hasDoc(d.id)).map(d => d.label)
+                const rejected = kycStatus === 'rejected'
+                const approved = kycStatus === 'approved'
+                return [
+                  {
+                    id: 'docs',
+                    title: 'Envoyer vos documents',
+                    help: 'Prenez en photo votre carte d’identité (recto et verso) et une photo de vous. Le diplôme est facultatif.',
+                    state: rejected ? 'problem' : approved || allRequired ? 'done' : 'current',
+                    status: rejected ? 'Refusé' : approved || allRequired ? 'Envoyés' : missing.length ? `Il manque : ${missing.join(', ')}` : undefined,
+                    href: '#documents',
+                    cta: rejected ? 'Renvoyer mes documents' : 'Envoyer mes documents',
+                  },
+                  {
+                    id: 'review',
+                    title: 'Vérification par AfriOne',
+                    help: 'Notre équipe contrôle vos documents sous 24 à 48 h ouvrées. Vous n’avez rien à faire pendant ce temps.',
+                    state: approved ? 'done' : rejected ? 'problem' : allRequired ? 'waiting' : 'todo',
+                    status: approved ? 'Terminée' : rejected ? (kyc?.rejection_reason || 'Documents à refaire') : allRequired ? 'En cours (24 à 48 h)' : undefined,
+                    href: rejected ? '#documents' : undefined,
+                    cta: 'Corriger mes documents',
+                  },
+                  {
+                    id: 'ok',
+                    title: 'Profil validé',
+                    help: 'Vous apparaissez dans l’annuaire et vous recevez des demandes de clients.',
+                    state: approved ? 'done' : 'todo',
+                    status: approved ? 'Vous êtes en ligne' : undefined,
+                  },
+                ]
+              })()}
+            />
           </div>
 
           {/* Documents */}
-          <div style={{display:'flex',flexDirection:'column',gap:'16px',marginBottom:'32px'}}>
+          <h2 id="documents" style={{fontFamily:'var(--font-display)',fontSize:'18px',fontWeight:700,color:'var(--ui-ink)',margin:'0 0 4px'}}>Vos documents</h2>
+          <p style={{margin:'0 0 14px',color:'var(--ui-muted)',fontSize:'14px',lineHeight:1.45}}>Touchez « Envoyer » à côté de chaque document. Une fois les documents obligatoires envoyés, la vérification démarre toute seule.</p>
+          <div style={{display:'flex',flexDirection:'column',gap:'12px',marginBottom:'24px',scrollMarginTop:'80px'}}>
             {docConfig.map(doc => {
               const uploaded = hasDoc(doc.id)
               const isUploading = uploading === doc.id

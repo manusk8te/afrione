@@ -102,7 +102,6 @@ export default function Navbar() {
   const links = [
     { href: '/artisans',  label: 'Services'       },
     { href: '/diagnostic', label: 'Diagnostic IA' },
-    ...(!isArtisan ? [{ href: '/artisan-space/register', label: 'Devenir artisan' }] : []),
   ]
 
   /* shared pill button — white neumorphic on scrolled, glass on orange */
@@ -145,6 +144,11 @@ export default function Navbar() {
 
           {/* Right side */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {!isMobile && !isArtisan && !loading && (
+              <Link className="afrione-action" href={user ? '/artisan-space/register' : '/auth?tab=signup&role=artisan&redirect=%2Fartisan-space%2Fregister'} style={pillStyle()}>
+                <Wrench size={14} /> Devenir artisan
+              </Link>
+            )}
             {!isMobile && (
               loading ? (
                 <div style={{ width: '80px', height: '36px', background: 'var(--ui-canvas)', borderRadius: '10px', opacity: 0.5 }} />
@@ -272,6 +276,12 @@ export default function Navbar() {
               </Link>
             ))}
             <div style={{ padding: '8px 16px', marginTop: '8px', borderTop: '1px solid var(--ui-border)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {!isArtisan && (
+                <Link className="afrione-action" href={user ? '/artisan-space/register' : '/auth?tab=signup&role=artisan&redirect=%2Fartisan-space%2Fregister'} onClick={() => setMenuOpen(false)}
+                  style={{ display: 'block', padding: '12px', textAlign: 'center', background: '#FFF3EE', color: '#9a3412', borderRadius: '12px', textDecoration: 'none', fontSize: '14px', fontWeight: 700, border: '1.5px solid rgba(194,65,12,0.3)' }}>
+                  Devenir artisan
+                </Link>
+              )}
               {user ? (
                 <>
                   {isEntrepriseAdmin && (

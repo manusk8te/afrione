@@ -626,7 +626,7 @@ export default function HomePage() {
               <p style={{ ...body, fontSize: '15px', color: 'rgba(255,255,255,0.78)', lineHeight: 1.6, marginBottom: '32px', maxWidth: '38ch' }}>
                 Inscription gratuite. Accédez à vos premiers clients et suivez vos missions sur AfriOne.
               </p>
-              <Link className="afrione-action" href="/auth"
+              <Link className="afrione-action" href="/auth?tab=signup&role=artisan&redirect=%2Fartisan-space%2Fregister"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   padding: '13px 28px', background: W, borderRadius: '16px',
@@ -636,7 +636,7 @@ export default function HomePage() {
                 }}
                 onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = NEU_HOVER }}
                 onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = NEU_SHADOW }}>
-                S'inscrire gratuitement <ArrowRight size={15} />
+                Devenir artisan, c’est gratuit <ArrowRight size={15} />
               </Link>
             </div>
 

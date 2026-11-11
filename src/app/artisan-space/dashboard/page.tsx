@@ -14,6 +14,9 @@ import { systemMessageText } from '@/lib/ui-text'
 import MissionRow from '@/components/artisan/MissionRow'
 import NotificationBell from '@/components/artisan/NotificationBell'
 import { missionStatus, GROUP_TITLE } from '@/lib/mission-status'
+import Journey, { type JourneyStep } from '@/components/journey/Journey'
+import SpaceSwitch from '@/components/layout/SpaceSwitch'
+import Brand from '@/components/brand/Brand'
 import { clientApi } from '@/lib/client-api'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -53,6 +56,8 @@ export default function ArtisanDashboardPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
   const [tab, setTab] = useState('missions')
+  const [available, setAvailable] = useState(false)
+  const [kycDocsComplete, setKycDocsComplete] = useState(false)
   useEffect(() => {
     const wanted = new URLSearchParams(window.location.search).get('tab')
     if (wanted && ['missions', 'messages', 'profile', 'portfolio', 'wallet'].includes(wanted)) setTab(wanted)
@@ -304,6 +309,35 @@ export default function ArtisanDashboardPage() {
   }, [urgentOffers])
 
   const hasUrgentOffers = urgentOffers.length > 0
+
+  useEffect(() => {
+    if (artisan) setAvailable(artisan.is_available === true)
+  }, [artisan])
+
+  useEffect(() => {
+    if (!artisan?.id || !currentUserId) return
+    Promise.all([
+      supabase.from('kyc_security').select('cni_front_url, cni_back_url').eq('artisan_id', artisan.id).maybeSingle(),
+      supabase.from('users').select('avatar_url').eq('id', currentUserId).maybeSingle(),
+    ]).then(([kyc, profile]) => {
+      setKycDocsComplete(!!(kyc.data?.cni_front_url && kyc.data?.cni_back_url && profile.data?.avatar_url))
+    })
+  }, [artisan?.id, currentUserId])
+
+  const toggleAvailability = async () => {
+    if (!artisan) return
+    const next = !available
+    setAvailable(next)
+    const { error } = await supabase.from('artisan_pros').update({ is_available: next }).eq('id', artisan.id)
+    if (error) {
+      setAvailable(!next)
+      toast.error('Impossible de changer votre disponibilité. Réessayez.')
+      return
+    }
+    setArtisan((a: any) => ({ ...a, is_available: next }))
+    toast.success(next ? 'Vous êtes disponible : vous recevez les nouvelles demandes.' : 'Vous êtes indisponible : aucune nouvelle demande ne vous sera envoyée.')
+  }
+
   useEffect(() => {
     if (!hasUrgentOffers) return
     const timer = setInterval(() => {
@@ -693,37 +727,29 @@ export default function ArtisanDashboardPage() {
 
   return (
     <div className="min-h-screen mobile-artisan mission-mobile" style={{background:'var(--ui-canvas)'}}>
-      {/* Navbar */}
-      <div style={{background:'#FFFFFF',borderBottom:'1px solid var(--ui-border)',position:'sticky',top:0,zIndex:50,boxShadow:NEU_SMALL}}>
-        <div className="page-container" style={{padding:isMobile?'12px 16px':'16px 32px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <Link href="/" style={{display:'flex',alignItems:'center',gap:'8px',textDecoration:'none'}}>
-            <div className="afrione-gradient" style={{width:'28px',height:'28px',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <Zap size={14} color="white" />
-            </div>
-            <span className="font-display" style={{fontWeight:700,fontSize:'18px',color:'var(--ui-ink)'}}>AFRI<span className="afrione-gradient-text">ONE</span></span>
-          </Link>
-          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
-            {saveMsg && <span style={{fontSize:'12px',color:'#2B6B3E',background:'rgba(43,107,62,0.15)',padding:'4px 12px',borderRadius:'20px'}}>{saveMsg}</span>}
-            <span style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',color:'#2B6B3E',background:'rgba(43,107,62,0.15)',padding:'4px 12px',borderRadius:'20px'}}>
-              <span style={{width:'6px',height:'6px',background:'#2B6B3E',borderRadius:'50%',display:'inline-block'}} />
-              Disponible
-            </span>
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              style={{width:'36px',height:'36px',borderRadius:'50%',overflow:'hidden',cursor:'pointer',border:'2px solid #E85D26',flexShrink:0,background:'var(--ui-canvas)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}
-              title="Changer la photo"
-            >
+      {/* Barre du haut : logo, bascule Client | Artisan, disponibilité, photo */}
+      <header className="artisan-top">
+        <div className="page-container artisan-top__inner">
+          <Link href="/" aria-label="Accueil AfriOne" className="artisan-top__brand"><Brand /></Link>
+          <div className="artisan-top__switch"><SpaceSwitch artisanHref="/artisan-space/dashboard" block={isMobile} /></div>
+          <div className="artisan-top__right">
+            {saveMsg && <span className="artisan-top__saved">{saveMsg}</span>}
+            <button type="button" className="avail" data-on={available} aria-pressed={available} onClick={toggleAvailability}
+              title={available ? 'Cliquez pour devenir indisponible' : 'Cliquez pour recevoir des demandes'}>
+              <span className="avail__dot" aria-hidden="true" />
+              {available ? 'Disponible' : 'Indisponible'}
+            </button>
+            <button type="button" className="artisan-top__avatar" onClick={() => fileInputRef.current?.click()} title="Changer la photo" aria-label="Changer la photo de profil">
               {uploadingAvatar
-                ? <div style={{width:'16px',height:'16px',border:'2px solid rgba(232,93,38,0.3)',borderTop:'2px solid #E85D26',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+                ? <span className="wr-spinner" style={{borderColor:'rgba(194,65,12,0.3)',borderTopColor:'#c2410c'}} />
                 : avatarUrl
-                  ? <img src={avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                  : <span style={{fontWeight:700,fontSize:'14px',color:'var(--ui-ink)'}}>{userName[0].toUpperCase()}</span>
-              }
-            </div>
+                  ? <img src={avatarUrl} alt="" />
+                  : <span>{userName[0].toUpperCase()}</span>}
+            </button>
             <input ref={fileInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleAvatarUpload} />
           </div>
         </div>
-      </div>
+      </header>
 
       {/* ── En-tête orange compact : titre + cloche de notifications ── */}
       <section className="afrione-gradient" style={{ position: 'relative', minHeight: '104px', display: 'flex', alignItems: 'center' }}>
@@ -850,54 +876,45 @@ export default function ArtisanDashboardPage() {
             {/* ── Mission urgente en attente ── */}
             <div id="offres-urgentes">{urgentOfferCard}</div>
 
-            {/* Questionnaire banner — si pas encore soumis */}
-            {(questionnaireStatus === null || questionnaireStatus === 'none') && (
-              <Link href="/artisan-space/questionnaire" style={{ textDecoration: 'none' }}>
-                <div style={{
-                  background: 'rgba(232,93,38,0.05)', border: '1.5px dashed rgba(232,93,38,0.35)',
-                  borderRadius: '16px', padding: '16px 20px',
-                  display: 'flex', alignItems: 'center', gap: '14px',
-                  cursor: 'pointer', transition: 'all 0.15s',
-                }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(232,93,38,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ClipboardList size={20} color="#E85D26" />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#E85D26', marginBottom: '3px' }}>
-                      Complétez votre questionnaire artisan
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--ui-muted)', lineHeight: 1.5 }}>
-                      Renseignez vos tarifs, zones et matériaux pour optimiser votre visibilité et vos devis AfriOne.
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '20px', color: '#E85D26', fontWeight: 700, flexShrink: 0 }}>→</div>
-                </div>
-              </Link>
-            )}
-
-            {questionnaireStatus === 'pending' && (
-              <div style={{
-                background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.25)',
-                borderRadius: '14px', padding: '12px 16px',
-                display: 'flex', alignItems: 'center', gap: '12px',
-              }}>
-                <ClipboardList size={16} color="#C9A84C" />
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#C9A84C' }}>Questionnaire en cours de validation</span>
-                  <span style={{ fontSize: '12px', color: 'var(--ui-muted)', marginLeft: '8px' }}>— sous 24-48h</span>
-                </div>
-              </div>
-            )}
-
-            {questionnaireStatus === 'approved' && (
-              <div style={{
-                background: 'rgba(43,107,62,0.06)', border: '1px solid rgba(43,107,62,0.2)',
-                borderRadius: '14px', padding: '12px 16px',
-                display: 'flex', alignItems: 'center', gap: '12px',
-              }}>
-                <CheckCircle size={16} color="#2B6B3E" />
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#2B6B3E' }}>Questionnaire validé — profil optimisé</span>
-              </div>
+            {/* Parcours d'inscription : visible tant que le profil n'est pas complet */}
+            {(artisan?.kyc_status !== 'approved' || questionnaireStatus !== 'approved') && (
+              <Journey
+                title="Terminer votre inscription"
+                intro="Quelques étapes pour apparaître dans l’annuaire et recevoir des clients."
+                steps={((): JourneyStep[] => {
+                  const kyc = artisan?.kyc_status
+                  const kycDone = kyc === 'approved'
+                  const kycState = kycDone ? 'done' : kyc === 'rejected' ? 'problem' : kycDocsComplete ? 'waiting' : 'current'
+                  const q = questionnaireStatus
+                  const qState = q === 'approved' ? 'done' : q === 'pending' ? 'waiting' : q === 'rejected' ? 'problem' : (kycState === 'current' || kycState === 'problem' ? 'todo' : 'current')
+                  return [
+                    { id: 'account', title: 'Compte créé', help: '', state: 'done', status: 'Terminé' },
+                    { id: 'profile', title: 'Métier et zone choisis', help: '', state: 'done', status: 'Terminé' },
+                    {
+                      id: 'kyc', title: 'Vérifier votre identité',
+                      help: 'Envoyez votre carte d’identité (recto et verso) et une photo de vous. C’est obligatoire pour recevoir des missions.',
+                      state: kycState,
+                      status: kycDone ? 'Identité vérifiée' : kyc === 'rejected' ? 'Documents refusés' : kycDocsComplete ? 'En vérification (24 à 48 h)' : 'À faire',
+                      href: '/artisan-space/kyc',
+                      cta: kyc === 'rejected' ? 'Renvoyer mes documents' : 'Envoyer mes documents',
+                    },
+                    {
+                      id: 'questionnaire', title: 'Remplir le questionnaire',
+                      help: 'Vos tarifs, vos zones et votre matériel. Cela permet de calculer des devis justes pour vos clients.',
+                      state: qState,
+                      status: q === 'approved' ? 'Validé' : q === 'pending' ? 'En vérification (24 à 48 h)' : q === 'rejected' ? 'À corriger' : 'À faire',
+                      href: '/artisan-space/questionnaire',
+                      cta: q === 'rejected' ? 'Corriger mon questionnaire' : 'Remplir le questionnaire',
+                    },
+                    {
+                      id: 'online', title: 'Recevoir des clients',
+                      help: 'Une fois votre identité vérifiée, vous êtes visible dans l’annuaire. Passez « Disponible » en haut de la page pour recevoir des demandes.',
+                      state: kycDone ? 'done' : 'todo',
+                      status: kycDone ? (available ? 'Vous êtes en ligne' : 'Passez en « Disponible »') : undefined,
+                    },
+                  ]
+                })()}
+              />
             )}
 
             {/* Agenda — interventions programmées */}

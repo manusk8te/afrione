@@ -103,7 +103,8 @@ function AuthContent() {
   const params = useSearchParams()
   const redirectTo = safeAuthRedirect(params.get('redirect'))
 
-  const [tab, setTab]           = useState<'login' | 'signup'>('login')
+  const [tab, setTab]           = useState<'login' | 'signup'>(params.get('tab') === 'signup' ? 'signup' : 'login')
+  const [role, setRole]         = useState<'client' | 'artisan'>(params.get('role') === 'artisan' ? 'artisan' : 'client')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -188,12 +189,12 @@ function AuthContent() {
         password,
         options: {
           data: { full_name: `${firstName} ${lastName}`.trim() },
-          emailRedirectTo: authEmailUrl('/auth'),
+          emailRedirectTo: authEmailUrl('/auth') + (role === 'artisan' ? '?redirect=%2Fartisan-space%2Fregister' : ''),
         },
       })
       if (error) throw error
       if (data.session) {
-        router.replace(redirectTo)
+        router.replace(role === 'artisan' ? '/artisan-space/register' : redirectTo)
         return
       }
       setPassword('')
@@ -343,6 +344,26 @@ function AuthContent() {
             style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
           >
             {tab === 'signup' && (
+              <fieldset style={{ border: 0, margin: 0, padding: 0, display: 'grid', gap: 8 }}>
+                <legend style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 8 }}>Vous êtes…</legend>
+                {([
+                  { id: 'client', title: 'Je cherche un artisan', text: 'Décrire mon problème et recevoir un prix clair.' },
+                  { id: 'artisan', title: 'Je suis artisan', text: 'Trouver des clients et gérer mes missions.' },
+                ] as const).map(r => (
+                  <label key={r.id} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 14, cursor: 'pointer',
+                    border: `1.5px solid ${role === r.id ? ACTION : FIELD_LINE}`, background: role === r.id ? '#fff1e8' : '#fff',
+                  }}>
+                    <input type="radio" name="role" value={r.id} checked={role === r.id} onChange={() => setRole(r.id)} style={{ marginTop: 3, accentColor: ACTION }} />
+                    <span>
+                      <span style={{ display: 'block', fontSize: 15, fontWeight: 700, color: INK }}>{r.title}</span>
+                      <span style={{ display: 'block', fontSize: 13, color: MUTED, marginTop: 2 }}>{r.text}</span>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
+            {tab === 'signup' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <InputGroup label="Prénom" placeholder="Kouassi" value={firstName} onChange={setFirstName} />
                 <InputGroup label="Nom" placeholder="Aya" value={lastName} onChange={setLastName} />
@@ -412,7 +433,7 @@ function AuthContent() {
               onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
             >
               {loading && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-              {tab === 'login' ? 'Se connecter' : 'Créer mon compte'}
+              {tab === 'login' ? 'Se connecter' : role === 'artisan' ? 'Créer mon compte artisan' : 'Créer mon compte'}
             </button>
           </form>
 

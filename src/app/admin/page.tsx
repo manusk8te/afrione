@@ -291,6 +291,49 @@ export default function AdminDashboard() {
                   </button>
                 )}
 
+                {/* Parcours des artisans : à quelle étape ils sont, ce qui attend l'équipe AfriOne */}
+                {(() => {
+                  const docs = (k: any) => { const d = k.kyc_security?.[0]; return !!(d?.cni_front_url && d?.cni_back_url) }
+                  const pendingAll = kycAll.filter(k => k.kyc_status === 'pending')
+                  const toReview = pendingAll.filter(docs).length
+                  const noDocs = pendingAll.length - toReview
+                  const rejected = kycAll.filter(k => k.kyc_status === 'rejected').length
+                  const approved = kycAll.filter(k => k.kyc_status === 'approved').length
+                  const qPending = questionnaires.filter(q => q.status === 'pending').length
+                  const stages: { label: string; value: number; text: string; todo: boolean; go?: () => void; cta?: string }[] = [
+                    { label: 'Inscrits sans documents', value: noDocs, text: 'Ont créé leur profil mais n’ont pas encore envoyé leur carte d’identité. Rien à faire de votre côté.', todo: false },
+                    { label: 'Documents à vérifier', value: toReview, text: 'CNI envoyée : à valider ou refuser. C’est la file d’attente principale.', todo: toReview > 0, go: () => { setKycFilter('pending'); setTab('kyc') }, cta: 'Vérifier les documents' },
+                    { label: 'Documents refusés', value: rejected, text: 'L’artisan a été prévenu et doit renvoyer ses documents.', todo: false },
+                    { label: 'Identité validée', value: approved, text: 'Visibles dans l’annuaire et peuvent recevoir des missions.', todo: false },
+                    { label: 'Questionnaires à valider', value: qPending, text: 'Tarifs, zones et matériel déclarés par l’artisan : à relire avant d’alimenter les devis.', todo: qPending > 0, go: () => { setQuestionnaireFilter('pending'); setTab('questionnaire') }, cta: 'Relire les questionnaires' },
+                  ]
+                  const todoCount = stages.filter(x => x.todo).length
+                  return (
+                    <section style={{ background: '#fff', border: '1px solid var(--ui-border)', borderRadius: '20px', padding: '20px' }}>
+                      <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: 'var(--ui-ink)' }}>Parcours des artisans</h2>
+                      <p style={{ margin: '4px 0 16px', fontSize: '13px', color: 'var(--ui-muted)', lineHeight: 1.5 }}>
+                        Inscription, puis carte d’identité (KYC), puis questionnaire. {todoCount ? `${todoCount} file${todoCount > 1 ? 's' : ''} à traiter ci-dessous.` : 'Rien à traiter pour le moment.'}
+                      </p>
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {stages.map((st, i) => (
+                          <div key={st.label} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 14px', borderRadius: '14px', background: st.todo ? '#fff1e8' : 'var(--ui-canvas)', border: st.todo ? '1px solid rgba(194,65,12,0.3)' : '1px solid transparent', flexWrap: 'wrap' }}>
+                            <span style={{ width: 28, height: 28, borderRadius: 999, display: 'grid', placeItems: 'center', background: st.todo ? '#c2410c' : '#e9e1d9', color: st.todo ? '#fff' : '#4a3d33', fontWeight: 700, fontSize: 13 }}>{i + 1}</span>
+                            <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+                              <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--ui-ink)' }}>{st.label} <span style={{ color: st.todo ? '#9a3412' : 'var(--ui-muted)' }}>· {st.value}</span></div>
+                              <div style={{ fontSize: '12.5px', color: 'var(--ui-muted)', marginTop: 2, lineHeight: 1.45 }}>{st.text}</div>
+                            </div>
+                            {st.go && st.todo && (
+                              <button type="button" className="afrione-action" onClick={st.go} style={{ minHeight: 40, padding: '0 16px', border: 0, borderRadius: 999, background: '#c2410c', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                                {st.cta} →
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )
+                })()}
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
                   {[
                     { label: 'Total missions',  value: stats.missions,                icon: Activity,   color: '#E85D26' },

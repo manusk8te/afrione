@@ -281,3 +281,114 @@
   background: #fff;
   box-shadow: 0 1px 2px rgba(60, 35, 20, 0.04);
 }
+
+/* ── Suivi guidé (parcours artisan, KYC, premier pas client) ───────────────── */
+.journey {
+  padding: 20px;
+  border: 1px solid rgba(110, 72, 44, 0.12);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(60, 35, 20, 0.04);
+  color: #1f1611;
+}
+.journey__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.journey__title { margin: 0; font: 700 18px/1.2 var(--font-display, Satoshi, sans-serif); letter-spacing: -0.01em; }
+.journey__intro { margin: 4px 0 0; color: #65564b; font-size: 14px; line-height: 1.45; }
+.journey__count { flex: none; padding: 4px 10px; border-radius: 999px; background: #fff1e8; color: #9a3412; font: 700 12px/1 var(--font-body, Inter, sans-serif); }
+.journey__bar { height: 6px; margin: 14px 0 0; border-radius: 999px; background: rgba(110, 72, 44, 0.14); overflow: hidden; }
+.journey__bar span { display: block; height: 100%; border-radius: inherit; background: #c2410c; transition: width 0.4s ease; }
+
+.journey__next { margin: 16px 0 0; padding: 16px; border-radius: 18px; background: #fff1e8; }
+.journey__next[data-state='problem'] { background: #fdecea; }
+.journey__next[data-state='waiting'] { background: #fff4d6; }
+.journey__eyebrow { margin: 0; color: #9a3412; font: 700 11.5px/1 var(--font-body, Inter, sans-serif); letter-spacing: 0.08em; text-transform: uppercase; }
+.journey__next[data-state='problem'] .journey__eyebrow { color: #b42318; }
+.journey__next[data-state='waiting'] .journey__eyebrow { color: #6b4a00; }
+.journey__nexttitle { margin: 8px 0 0; font: 700 17px/1.25 var(--font-display, Satoshi, sans-serif); }
+.journey__nexthelp { margin: 6px 0 0; color: #4a3d33; font-size: 14px; line-height: 1.5; }
+.journey__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 14px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: #c2410c;
+  color: #fff;
+  font: 700 15px/1 var(--font-body, Inter, sans-serif);
+  text-decoration: none;
+  transition: background-color 0.15s linear;
+}
+.journey__btn:hover { background: #a5370a; }
+.journey__btn svg { animation: journey-nudge 1.6s ease-in-out infinite; }
+@keyframes journey-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+.journey__btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.35); }
+.journey__wait { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; color: #6b4a00; font-size: 13.5px; line-height: 1.45; }
+.journey__wait svg { flex: none; margin-top: 2px; }
+
+.journey__list { display: grid; gap: 0; margin: 16px 0 0; padding: 0; list-style: none; }
+.journey__item { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid rgba(110, 72, 44, 0.1); }
+.journey__item:first-child { border-top: 0; }
+.journey__marker {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid rgba(110, 72, 44, 0.3);
+  border-radius: 999px;
+  color: #65564b;
+  font: 700 13px/1 var(--font-body, Inter, sans-serif);
+}
+.journey__item[data-state='done'] .journey__marker { background: #1f6b3a; border-color: #1f6b3a; color: #fff; }
+.journey__item[data-state='current'] .journey__marker { background: #c2410c; border-color: #c2410c; color: #fff; }
+.journey__item[data-state='waiting'] .journey__marker { background: #fff4d6; border-color: #b7791f; color: #6b4a00; }
+.journey__item[data-state='problem'] .journey__marker { background: #fdecea; border-color: #b42318; color: #b42318; }
+.journey__body { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.journey__row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.journey__row strong { font-size: 15px; }
+.journey__item[data-state='todo'] .journey__row strong { color: #65564b; font-weight: 600; }
+.journey__status { padding: 2px 9px; border-radius: 999px; background: #f1ece6; color: #4a3d33; font-size: 12px; font-weight: 650; }
+.journey__item[data-state='done'] .journey__status { background: #e7f4ea; color: #1f6b3a; }
+.journey__item[data-state='waiting'] .journey__status { background: #fff4d6; color: #6b4a00; }
+.journey__item[data-state='problem'] .journey__status { background: #fdecea; color: #b42318; }
+.journey__here { color: #c2410c; font-size: 13px; font-weight: 700; }
+.journey__help { color: #65564b; font-size: 13.5px; line-height: 1.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  .journey__btn svg { animation: none; }
+  .journey__bar span { transition: none; }
+}
+
+/* ── Barre du haut de l'espace artisan ─────────────────────────────────────── */
+.artisan-top { position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid rgba(110, 72, 44, 0.12); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); padding-top: env(safe-area-inset-top); }
+.artisan-top__inner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 16px; max-width: 896px; }
+.artisan-top__brand { text-decoration: none; }
+.artisan-top__switch { margin-inline: auto; }
+.artisan-top__right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.artisan-top__saved { padding: 4px 12px; border-radius: 999px; background: #e7f4ea; color: #1f6b3a; font-size: 12px; font-weight: 600; }
+.avail {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(110, 72, 44, 0.2);
+  border-radius: 999px;
+  background: #fff;
+  color: #4a3d33;
+  font: 700 13px/1 var(--font-body, Inter, sans-serif);
+  cursor: pointer;
+}
+.avail[data-on='true'] { background: #e7f4ea; border-color: rgba(31, 107, 58, 0.35); color: #1f6b3a; }
+.avail__dot { width: 8px; height: 8px; border-radius: 999px; background: #8a7a6e; }
+.avail[data-on='true'] .avail__dot { background: #1f6b3a; }
+.avail:focus-visible, .artisan-top__avatar:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.3); }
+.artisan-top__avatar { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 2px solid #c2410c; border-radius: 999px; background: #fff; overflow: hidden; cursor: pointer; font-weight: 700; color: #1f1611; }
+.artisan-top__avatar img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 640px) {
+  .artisan-top__switch { order: 3; flex: 1 1 100%; margin: 0; }
+}
