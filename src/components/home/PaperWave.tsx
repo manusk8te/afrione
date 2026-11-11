@@ -87,7 +87,7 @@ export default function PaperWave({ src, position, tone, index, active = false }
       const stretch = 0.012 * amp          // étirement vertical
       const light = 0.075 * amp            // ombre / lumière
       const k = (Math.PI * 2 * 0.85) / W   // ~0.85 vague sur la largeur
-      const w = t * 0.0014 + index * 0.9   // vitesse + décalage par carte
+      const w = t * 0.0034 + index * 0.9   // vitesse + décalage par carte
       const step = Math.max(2, Math.round(dpr)) // colonnes de ~1px CSS
 
       ctx.clearRect(0, 0, W, H)
