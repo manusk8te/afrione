@@ -1,0 +1,349 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * War Room — design
+ *
+ * Principes : blanc glacé et calme, une seule couleur d'action (orange profond),
+ * le contenu avant la décoration. Le flou n'est utilisé que sur l'en-tête, la
+ * zone de saisie et le panneau latéral, qui flottent au-dessus du fil.
+ * Chargé après globals.css : les sélecteurs à deux classes l'emportent.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+.mobile-warroom.afrione-conversation {
+  --wr-ink: #1f1611;
+  --wr-muted: #65564b;           /* ≥ 6:1 sur blanc */
+  --wr-line: rgba(110, 72, 44, 0.12);
+  --wr-line-strong: rgba(110, 72, 44, 0.22);
+  --wr-accent: #c2410c;          /* texte blanc dessus : 5.2:1 */
+  --wr-accent-hover: #a5370a;
+  --wr-accent-ink: #9a3412;
+  --wr-accent-soft: #fff1e8;
+  --wr-surface: rgba(255, 255, 255, 0.86);
+  --wr-card: #ffffff;
+  --wr-ok: #1f6b3a;
+  --wr-danger: #b42318;
+  --wr-shadow: 0 1px 2px rgba(60, 35, 20, 0.05), 0 10px 28px rgba(60, 35, 20, 0.07);
+  --wr-ring: 0 0 0 3px rgba(194, 65, 12, 0.28);
+  --wr-head-h: 124px;
+
+  color: var(--wr-ink);
+  background-color: #faf8f5 !important;
+  background-image:
+    radial-gradient(900px 420px at 88% -8%, rgba(232, 93, 38, 0.1), transparent 62%),
+    radial-gradient(760px 420px at -6% 104%, rgba(255, 181, 71, 0.12), transparent 60%) !important;
+  border-color: var(--wr-line);
+  box-shadow: 0 24px 64px rgba(60, 35, 20, 0.1);
+}
+
+/* ── En-tête ──────────────────────────────────────────────────────────────── */
+.mobile-warroom .afrione-conversation-header {
+  background: var(--wr-surface);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border-bottom: 1px solid var(--wr-line);
+  box-shadow: none;
+  padding-top: env(safe-area-inset-top);
+}
+.mobile-warroom .warroom-header-content { min-height: 68px; gap: 10px; }
+.mobile-warroom .warroom-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid var(--wr-line);
+  border-radius: 999px;
+  background: var(--wr-card);
+  color: var(--wr-ink);
+  cursor: pointer;
+  transition: background-color 0.15s linear, border-color 0.15s linear;
+}
+.mobile-warroom .warroom-icon-button:hover { background: var(--wr-accent-soft); border-color: var(--wr-line-strong); }
+.mobile-warroom .warroom-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--wr-accent-soft);
+  color: var(--wr-accent-ink);
+  font: 700 15px/1 var(--font-display, Satoshi, sans-serif);
+  border: 1px solid var(--wr-line);
+}
+.mobile-warroom .warroom-participant-name {
+  color: var(--wr-ink);
+  font: 700 17px/1.2 var(--font-display, Satoshi, sans-serif);
+  letter-spacing: -0.015em;
+}
+.mobile-warroom .warroom-participant-status { color: var(--wr-muted); font-size: 12.5px; }
+.mobile-warroom .warroom-participant-status i { background: var(--wr-accent); }
+.mobile-warroom .afrione-conversation-details-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--wr-line-strong);
+  border-radius: 999px;
+  background: var(--wr-card);
+  color: var(--wr-accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s linear;
+}
+.mobile-warroom .afrione-conversation-details-button:hover { background: var(--wr-accent-soft); }
+.mobile-warroom .afrione-conversation-details-button svg { transition: transform 0.2s ease; }
+.mobile-warroom .afrione-conversation-details-button[aria-expanded='true'] { background: var(--wr-accent-soft); }
+.mobile-warroom .afrione-conversation-details-button[aria-expanded='true'] svg { transform: rotate(180deg); }
+
+.mobile-warroom :is(a, button, input):focus-visible { outline: none; box-shadow: var(--wr-ring); }
+
+/* ── Avancement ───────────────────────────────────────────────────────────── */
+.wr-progress { padding: 4px clamp(12px, 3vw, 32px) 12px; }
+.wr-progress__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 24px; }
+.wr-progress__label { font-size: 13px; color: var(--wr-muted); }
+.wr-progress__label strong { color: var(--wr-ink); font-weight: 700; }
+.wr-progress__label strong[data-tone='danger'] { color: var(--wr-danger); }
+.wr-role {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--wr-line);
+  border-radius: 999px;
+  background: var(--wr-card);
+  color: var(--wr-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wr-role[data-role='artisan'] { background: var(--wr-accent-soft); color: var(--wr-accent-ink); border-color: rgba(194, 65, 12, 0.22); }
+.wr-progress__bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
+.wr-progress__bar li { height: 5px; border-radius: 999px; background: rgba(110, 72, 44, 0.14); }
+.wr-progress__bar li[data-state='done'] { background: var(--wr-accent); }
+.wr-progress__bar li[data-state='current'] { background: var(--wr-accent); box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.16); }
+.wr-progress__bar li[data-tone='danger'] { background: rgba(180, 35, 24, 0.5); }
+.wr-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--wr-accent-soft);
+  color: var(--wr-accent-ink);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.4;
+}
+.wr-hint svg { flex: none; margin-top: 2px; }
+
+/* ── Fil de discussion ────────────────────────────────────────────────────── */
+.mobile-warroom .afrione-conversation-thread {
+  background: transparent !important;
+  background-image: none !important;
+  padding: 18px clamp(14px, 4vw, 32px);
+}
+.mobile-warroom .afrione-chat-bubble {
+  max-width: min(80%, 520px);
+  padding: 10px 14px 7px;
+  border: 1px solid var(--wr-line);
+  border-radius: 18px 18px 18px 6px;
+  background: var(--wr-card);
+  color: var(--wr-ink);
+  box-shadow: 0 1px 2px rgba(60, 35, 20, 0.04);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.mobile-warroom .afrione-chat-row--own .afrione-chat-bubble {
+  border-color: transparent;
+  border-radius: 18px 18px 6px 18px;
+  background: var(--wr-accent);
+  color: #fff;
+}
+.mobile-warroom .afrione-chat-bubble time { margin-top: 3px; color: var(--wr-muted); font-size: 11px; }
+.mobile-warroom .afrione-chat-row--own .afrione-chat-bubble time { color: rgba(255, 255, 255, 0.82); }
+
+.wr-note-row { display: flex; justify-content: center; padding: 6px 0; }
+.wr-note {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+  max-width: 92%;
+  padding: 6px 14px;
+  border: 1px solid var(--wr-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--wr-muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: center;
+}
+.wr-note[data-afrione] { border-radius: 16px; background: var(--wr-card); color: var(--wr-ink); font-size: 13px; padding: 9px 14px; }
+.wr-note[data-severity='warning'] { border-color: rgba(194, 65, 12, 0.35); }
+.wr-note[data-severity='critical'] { border-color: rgba(180, 35, 24, 0.45); }
+.wr-note__seal { display: inline-flex; align-items: center; gap: 4px; color: var(--wr-accent-ink); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.wr-note time { font-size: 11px; opacity: 0.8; }
+
+.mobile-warroom .warroom-thread-empty { color: var(--wr-muted); }
+.mobile-warroom .warroom-raised-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--wr-line);
+  border-radius: 14px;
+  background: var(--wr-card);
+  color: var(--wr-accent-ink);
+  box-shadow: none;
+}
+
+/* ── Zone de saisie ───────────────────────────────────────────────────────── */
+.mobile-warroom .warroom-composer {
+  padding: 10px clamp(12px, 3vw, 28px) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--wr-line);
+  background: var(--wr-surface);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: none;
+}
+.wr-composer { display: flex; align-items: center; gap: 10px; }
+.wr-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid var(--wr-line-strong);
+  border-radius: 999px;
+  background: var(--wr-card);
+  color: var(--wr-ink);
+  font: 400 16px/1.2 var(--font-body, Inter, sans-serif); /* 16px : pas de zoom auto sur iPhone */
+  transition: box-shadow 0.15s linear, border-color 0.15s linear;
+}
+.wr-input::placeholder { color: #7d6d61; }
+.wr-input:focus { outline: none; border-color: rgba(194, 65, 12, 0.5); box-shadow: var(--wr-ring); }
+.wr-send {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--wr-accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.15s linear, transform 0.15s ease, opacity 0.15s linear;
+}
+.wr-send:hover:not(:disabled) { background: var(--wr-accent-hover); }
+.wr-send:active:not(:disabled) { transform: scale(0.95); }
+.wr-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.wr-send[data-status='sent'] { background: var(--wr-ok); opacity: 1; }
+.wr-spinner { width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.35); border-top-color: #fff; border-radius: 50%; animation: wr-spin 0.8s linear infinite; }
+@keyframes wr-spin { to { transform: rotate(360deg); } }
+
+/* ── Devis et suivi (panneau) ─────────────────────────────────────────────── */
+.mobile-warroom .afrione-conversation-details {
+  background: var(--wr-card);
+  border-bottom: 1px solid var(--wr-line);
+}
+.mobile-warroom .warroom-quote-card {
+  border: 1px solid var(--wr-line);
+  border-radius: 18px;
+  background: var(--wr-card);
+  box-shadow: var(--wr-shadow);
+}
+.mobile-warroom .warroom-quote-card header { color: var(--wr-accent-ink); }
+.mobile-warroom .warroom-quote-final { border-color: rgba(194, 65, 12, 0.35); }
+.mobile-warroom .warroom-quote-total strong { color: var(--wr-accent-ink); }
+.mobile-warroom .warroom-quote-status[data-status='pending'] { background: #fff3dc; color: #7a3d0a; }
+.mobile-warroom .warroom-quote-status[data-status='included'] { background: #e7f4ea; color: var(--wr-ok); }
+.mobile-warroom .warroom-quote-toolbar button,
+.mobile-warroom .warroom-quote-actions button:not(.btn-primary) {
+  border: 1px solid var(--wr-line-strong);
+  border-radius: 999px;
+  background: var(--wr-card);
+  color: var(--wr-ink);
+  box-shadow: none;
+}
+
+/* ── Panneau latéral (ordinateur) ─────────────────────────────────────────── */
+.wr-eyebrow { margin: 0; color: var(--wr-muted); font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.wr-place { margin: 2px 0 0; }
+.wr-facts { display: grid; gap: 0; margin: 16px 0 0; }
+.wr-facts > div { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid var(--wr-line); font-size: 14px; }
+.wr-facts dt { color: var(--wr-muted); }
+.wr-facts dd { margin: 0; color: var(--wr-ink); font-weight: 650; text-align: right; }
+.wr-next { margin-top: 14px; padding: 14px 16px; border-radius: 16px; background: var(--wr-accent-soft); color: var(--wr-accent-ink); }
+.wr-next p:last-child { margin: 6px 0 0; font-size: 14px; font-weight: 550; line-height: 1.45; }
+.wr-next .wr-eyebrow { color: var(--wr-accent-ink); }
+
+@media (min-width: 920px) {
+  .mobile-warroom.afrione-conversation { border-radius: 28px; max-width: 1220px; }
+  .mobile-warroom .warroom-overview,
+  .mobile-warroom .afrione-conversation-details {
+    inset: var(--wr-head-h) 0 0 auto;
+    padding: 20px;
+    border-inline-start: 1px solid var(--wr-line);
+    background: rgba(255, 255, 255, 0.58);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
+  }
+  .mobile-warroom .afrione-conversation-details { background: var(--wr-card); }
+  .mobile-warroom .warroom-overview-card {
+    padding: 22px;
+    border: 1px solid var(--wr-line);
+    border-radius: 20px;
+    background: var(--wr-card);
+    box-shadow: var(--wr-shadow);
+  }
+  .mobile-warroom .warroom-overview-card h2 { margin: 4px 0 0; color: var(--wr-ink); font-size: 24px; }
+  .mobile-warroom .warroom-overview-card p { color: var(--wr-muted); }
+  .mobile-warroom .warroom-overview-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 14px;
+    padding: 0 16px;
+    border: 1px solid var(--wr-line-strong);
+    border-radius: 999px;
+    background: var(--wr-card);
+    color: var(--wr-accent-ink);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mobile-warroom .warroom-overview-action:hover { background: var(--wr-accent-soft); }
+  /* Hauteur fixe : le panneau latéral est positionné sous cette zone. */
+  .wr-progress { height: calc(var(--wr-head-h) - 68px); }
+  .wr-progress .wr-hint { display: none; } /* la prochaine étape est dans le panneau */
+}
+@media (max-width: 919px) {
+  .mobile-warroom .warroom-overview { display: none; }
+}
+.wr-short { display: none; }
+@media (max-width: 480px) {
+  .mobile-warroom .warroom-header-content { padding-inline: 10px; gap: 6px; }
+  .mobile-warroom .warroom-icon-button, .mobile-warroom .warroom-avatar { width: 38px; height: 38px; min-height: 38px; }
+  .mobile-warroom .warroom-participant-name { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-warroom .warroom-participant-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-warroom .afrione-conversation-details-button { padding: 0 11px; gap: 4px; font-size: 12.5px; }
+  .wr-long { display: none; }
+  .wr-short { display: inline; }
+  .wr-role { font-size: 11px; padding: 2px 8px; }
+}
+@media (max-width: 400px) {
+  .mobile-warroom .warroom-avatar { display: none; }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mobile-warroom .afrione-conversation-header,
+  .mobile-warroom .warroom-composer { background: #fff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wr-spinner { animation-duration: 2s; }
+  .mobile-warroom .afrione-conversation-details-button svg { transition: none; }
+}

@@ -17,6 +17,7 @@ import {
   type MissionRole, type MissionAction,
 } from '@/lib/mission-roles'
 import { parseDuree } from '@/lib/duration'
+import { WarRoomHeader, MissionProgress, SummaryCard, ChatBubble, SystemNote, Composer } from '@/components/warroom/ui'
 import toast from 'react-hot-toast'
 
 // Postgres refuse certaines écritures sur missions pour des raisons métier
@@ -151,13 +152,8 @@ export default function WarRoomPage() {
   const [showCounterProposal, setShowCounterProposal] = useState(false)
   const [counterAmount, setCounterAmount]             = useState('')
 
-  // Modal paiement Wave (avant scheduling)
-  const [showPayment, setShowPayment]       = useState(false)
-  const [payStep, setPayStep]               = useState<'form'|'processing'|'success'>('form')
   const [agreementRefresh,setAgreementRefresh]=useState(0)
   const mergeWorkflowMission=useCallback((patch:any)=>setMission((previous:any)=>({...previous,...patch})),[])
-  const [pendingAmount, setPendingAmount]   = useState(0)
-  const [wavePhone, setWavePhone]           = useState('')
 
   // Modal scheduling (après acceptation devis)
   const [showScheduling, setShowScheduling] = useState(false)
@@ -735,27 +731,6 @@ export default function WarRoomPage() {
     toast('Confirmez la dernière proposition dans le bloc Périmètre et accord, puis ouvrez le devis actualisé.')
   }
 
-  // Paiement Wave confirmé → escrow + scheduling
-  const confirmPayment = async () => {
-    if (!guard('pay_mission')) return
-    setPayStep('processing')
-    try {
-      const response=await clientApi('/api/payment', {
-        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mission_id:missionId,amount:pendingAmount}),
-      })
-      const payment=await response.json()
-      if(!response.ok || !payment.simulation || !payment.receipt)throw Error(payment.error || 'Simulation non confirmée')
-      setShowPayment(false)
-      router.push(`/payment/success?mission=${missionId}`)
-    } catch(error) {toast.error(error instanceof Error ? error.message : 'Simulation indisponible');setPayStep('form')}
-  }
-
-  // Après succès paiement → ouvrir scheduling
-  const afterPayment = () => {
-    setShowPayment(false)
-    setShowScheduling(true)
-    setSchedMode(null)
-  }
 
   // Le client confirme le rendez-vous ; le prestataire déclarera son départ.
   // Le statut, le message système et la notification sont posés par l'API,
@@ -1277,221 +1252,6 @@ export default function WarRoomPage() {
   return (
     <div className="mobile-warroom mission-mobile afrione-conversation" style={{display:'flex',flexDirection:'column',height:'100dvh',background:'var(--ui-canvas)'}}>
 
-      {/* ─── MODAL WAVE PAIEMENT (couleurs officielles Wave CI) ──── */}
-      {showPayment && (
-        <div style={{position:'fixed',inset:0,zIndex:9999,background:'#0A0B2E',display:'flex',flexDirection:'column'}}>
-
-          {/* Bandeau MODE DÉMO — permanent, toutes étapes confondues.
-              Cet écran reproduisait l'application Wave (fausse barre de statut
-              « 9:41 », logo W, « Chiffrement TLS 1.3 », reçu) alors qu'aucun
-              encaissement n'a lieu. Remplacé par une identité AfriOne
-              explicite. */}
-          <div style={{flexShrink:0,padding:'14px 20px 0'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'9px',padding:'11px 13px',background:'rgba(201,168,76,0.14)',border:'1px solid rgba(201,168,76,0.45)',borderRadius:'12px'}}>
-              <span style={{fontSize:'15px',flexShrink:0}}><UiFlaskConical className="ui-glyph" aria-hidden="true" /></span>
-              <div style={{flex:1,fontSize:'11.5px',color:'#E8D9A8',lineHeight:1.45,fontWeight:600}}>
-                MODE DÉMO — aucun paiement réel n'est effectué et aucun montant n'est débité.
-              </div>
-            </div>
-          </div>
-
-          {/* Header AfriOne */}
-          <div style={{display:'flex',alignItems:'center',padding:'16px 20px 20px',gap:'16px',flexShrink:0}}>
-            {payStep === 'form' && (
-              <button className="afrione-action afrione-action--icon" onClick={() => setShowPayment(false)} style={{background:'rgba(255,255,255,0.07)',border:'none',borderRadius:'50%',width:'36px',height:'36px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'white',fontSize:'18px',flexShrink:0}}>
-                ←
-              </button>
-            )}
-            <div style={{flex:1,display:'flex',alignItems:'center',gap:'10px'}}>
-              <div style={{
-                width:'38px',height:'38px',borderRadius:'10px',flexShrink:0,
-                background:'linear-gradient(135deg,#E85D26,#ff7043)',
-                display:'flex',alignItems:'center',justifyContent:'center',
-                boxShadow:'0 4px 16px rgba(232,93,38,0.35)',
-              }}>
-                <Zap size={19} color="white" />
-              </div>
-              <div>
-                <div style={{color:'white',fontWeight:800,fontSize:'16px',letterSpacing:'-0.3px'}}>AfriOne — Paiement</div>
-                <div style={{color:'rgba(255,255,255,0.4)',fontSize:'11px'}}>Escrow · démonstration</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Corps */}
-          <div style={{flex:1,overflowY:'auto',padding:'0 20px 32px'}}>
-
-            {/* ── ÉTAPE 1 : Formulaire ── */}
-            {payStep === 'form' && (
-              <div>
-                {/* Bénéficiaire */}
-                <div style={{background:'var(--ui-canvas)',border:'1px solid rgba(0,0,0,0.1)',borderRadius:'16px',padding:'14px 18px',marginBottom:'8px',display:'flex',alignItems:'center',gap:'14px'}}>
-                  <div style={{width:'42px',height:'42px',borderRadius:'11px',background:'linear-gradient(135deg,#E85D26,#F87900)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <Zap size={18} color="white" />
-                  </div>
-                  <div>
-                    <div style={{color:'#8B95A5',fontSize:'10px',letterSpacing:'0.08em',marginBottom:'2px',textTransform:'uppercase'}}>Bénéficiaire</div>
-                    <div style={{color:'#1A1A1A',fontWeight:700,fontSize:'14px'}}>AfriOne — Mission Escrow</div>
-                    <div style={{color:'var(--ui-muted)',fontSize:'11px'}}>Fonds libérés à la fin de la mission</div>
-                  </div>
-                </div>
-
-                {/* Montant — style Wave : grand, blanc, centré */}
-                <div style={{textAlign:'center',padding:'28px 0 20px'}}>
-                  <div style={{color:'rgba(255,255,255,0.35)',fontSize:'11px',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'12px'}}>Montant total</div>
-                  <div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:'8px'}}>
-                    <span style={{color:'white',fontSize:'56px',fontWeight:900,letterSpacing:'-2px',lineHeight:1,fontFamily: 'var(--font-body)'}}>
-                      {pendingAmount.toLocaleString()}
-                    </span>
-                    <span style={{color:'#E85D26',fontSize:'18px',fontWeight:700}}>FCFA</span>
-                  </div>
-                </div>
-
-                {/* Séparateur */}
-                <div style={{height:'1px',background:'var(--ui-canvas)',margin:'0 0 20px'}} />
-
-                {/* Numéro saisi */}
-                <div style={{marginBottom:'12px'}}>
-                  <div style={{color:'rgba(255,255,255,0.4)',fontSize:'10px',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'10px'}}>Votre numéro mobile money</div>
-                  <div style={{
-                    display:'flex',alignItems:'center',
-                    background:'var(--ui-canvas)',
-                    border:`1.5px solid ${wavePhone.trim() ? '#E85D26' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius:'14px',overflow:'hidden',
-                    transition:'border-color 0.2s',
-                  }}>
-                    <div style={{padding:'15px 16px',borderRight:'1px solid rgba(0,0,0,0.1)',fontSize:'14px',color:'var(--ui-muted)',whiteSpace:'nowrap',flexShrink:0}}>
-                       +225
-                    </div>
-                    <input className="afrione-field"
-                      type="tel"
-                      inputMode="numeric"
-                      placeholder="07 00 00 00 00"
-                      value={wavePhone}
-                      onChange={e => setWavePhone(e.target.value)}
-                      style={{
-                        flex:1,padding:'15px 16px',background:'transparent',
-                        border:'none',outline:'none',fontSize:'17px',
-                        color:'#1A1A1A',fontFamily: 'var(--font-body)',letterSpacing:'0.06em',
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Info escrow — orange Wave */}
-                <div style={{padding:'12px 14px',background:'rgba(248,121,0,0.08)',border:'1px solid rgba(248,121,0,0.2)',borderRadius:'12px',display:'flex',gap:'10px',alignItems:'flex-start',marginBottom:'24px'}}>
-                  <span style={{fontSize:'15px',flexShrink:0}}><UiLockKeyhole className="ui-glyph" aria-hidden="true" /></span>
-                  <div style={{fontSize:'12px',color:'rgba(255,255,255,0.45)',lineHeight:'1.6'}}>
-                    Les fonds sont sécurisés par AfriOne et transférés à l'artisan uniquement après validation de la mission.
-                  </div>
-                </div>
-
-                {/* Bouton — gradient bleu officiel Wave */}
-                <button className="afrione-action"
-                  onClick={confirmPayment}
-                  disabled={false}
-                  style={{
-                    width:'100%',padding:'18px',
-                    background: wavePhone.trim()
-                      ? 'linear-gradient(135deg,#E85D26,#ff7043)'
-                      : 'rgba(255,255,255,0.08)',
-                    color:'white',border:'none',borderRadius:'16px',
-                    fontSize:'16px',fontWeight:800,letterSpacing:'-0.2px',
-                    cursor: wavePhone.trim() ? 'pointer' : 'default',
-                    boxShadow: wavePhone.trim() ? '0 8px 28px rgba(232,93,38,0.45)' : 'none',
-                    transition:'all 0.2s',
-                  }}
-                >
-                  Simuler le paiement
-                </button>
-
-                <div style={{textAlign:'center',marginTop:'14px',fontSize:'11px',color:'rgba(255,255,255,0.2)'}}>
-                  Démonstration — l'encaissement Wave n'est pas encore activé
-                </div>
-              </div>
-            )}
-
-            {/* ── ÉTAPE 2 : Processing ── */}
-            {payStep === 'processing' && (
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'320px',gap:'24px'}}>
-                <div style={{position:'relative',width:'80px',height:'80px'}}>
-                  <div style={{position:'absolute',inset:0,border:'3px solid rgba(232,93,38,0.12)',borderRadius:'50%'}} />
-                  <div style={{position:'absolute',inset:0,border:'3px solid transparent',borderTopColor:'#E85D26',borderRadius:'50%',animation:'spin 0.85s linear infinite'}} />
-                  <div style={{position:'absolute',inset:'10px',background:'linear-gradient(135deg,#E85D26,#ff7043)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px rgba(232,93,38,0.3)'}}>
-                    <Zap size={22} color="white" />
-                  </div>
-                </div>
-                <div style={{textAlign:'center'}}>
-                  <div style={{color:'white',fontWeight:700,fontSize:'18px',marginBottom:'8px'}}>Simulation en cours…</div>
-                  <div style={{color:'rgba(255,255,255,0.35)',fontSize:'13px'}}>Aucun montant nʼest débité</div>
-                </div>
-                <div style={{display:'flex',gap:'8px'}}>
-                  {[0,1,2].map(i => (
-                    <div key={i} style={{width:'7px',height:'7px',borderRadius:'50%',background:'#E85D26',opacity: 0.4,animation:`pulse 1.2s ease-in-out ${i*0.35}s infinite`}} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── ÉTAPE 3 : Succès ── */}
-            {payStep === 'success' && (
-              <div style={{display:'flex',flexDirection:'column',alignItems:'center',paddingTop:'16px'}}>
-                {/* Cercle succès — cyan Wave */}
-                <div style={{
-                  width:'90px',height:'90px',borderRadius:'50%',
-                  background:'linear-gradient(135deg,#E85D26,#ff7043)',
-                  display:'flex',alignItems:'center',justifyContent:'center',
-                  marginBottom:'20px',
-                  boxShadow:'0 0 0 14px rgba(232,93,38,0.07), 0 0 0 28px rgba(232,93,38,0.03)',
-                }}>
-                  <CheckCircle size={46} color="white" strokeWidth={2.5} />
-                </div>
-
-                <div style={{color:'white',fontSize:'24px',fontWeight:900,marginBottom:'4px',letterSpacing:'-0.5px'}}>Paiement simulé</div>
-                <div style={{color:'rgba(255,255,255,0.4)',fontSize:'13px',marginBottom:'28px'}}>Aucun montant nʼa été débité</div>
-
-                {/* Reçu style Wave */}
-                <div style={{width:'100%',background:'var(--ui-canvas)',border:'1px solid rgba(0,0,0,0.1)',borderRadius:'20px',overflow:'hidden',marginBottom:'20px'}}>
-                  <div style={{padding:'18px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Montant</span>
-                    <span style={{color:'#1A1A1A',fontWeight:900,fontSize:'20px',fontFamily: 'var(--font-body)'}}>{pendingAmount.toLocaleString()} <span style={{fontSize:'13px',color:'#E85D26',fontWeight:700}}>FCFA</span></span>
-                  </div>
-                  <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Bénéficiaire</span>
-                    <span style={{color:'var(--ui-ink)',fontSize:'13px',fontWeight:600}}>AfriOne Escrow (démo)</span>
-                  </div>
-                  <div style={{padding:'14px 20px',borderBottom:'1px solid rgba(0,0,0,0.08)',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Numéro saisi</span>
-                    <span style={{color:'var(--ui-ink)',fontSize:'13px',fontFamily: 'var(--font-body)'}}>+225 {wavePhone}</span>
-                  </div>
-                  <div style={{padding:'14px 20px',display:'flex',justifyContent:'space-between'}}>
-                    <span style={{color:'#8B95A5',fontSize:'12px'}}>Statut</span>
-                    <span style={{color:'#E85D26',fontSize:'13px',fontWeight:700}}> Démo — non encaissé</span>
-                  </div>
-                </div>
-
-                <button className="afrione-action"
-                  onClick={afterPayment}
-                  style={{
-                    width:'100%',padding:'18px',
-                    background:'linear-gradient(135deg,#E85D26,#ff7043)',
-                    color:'white',border:'none',borderRadius:'16px',
-                    fontSize:'16px',fontWeight:800,cursor:'pointer',
-                    boxShadow:'0 8px 28px rgba(232,93,38,0.4)',
-                    letterSpacing:'-0.2px',
-                  }}
-                >
-                  Choisir le moment d'intervention →
-                </button>
-                <div style={{textAlign:'center',marginTop:'12px',fontSize:'11px',color:'rgba(255,255,255,0.2)'}}>
-                  Réf · {missionId.slice(0,8).toUpperCase()}
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
-      )}
       {/* ──────────────────────────────────────────────────────────── */}
 
       {/* ─── MODAL SCHEDULING ─────────────────────────────────────── */}
@@ -1571,47 +1331,33 @@ export default function WarRoomPage() {
       )}
       {/* ──────────────────────────────────────────────────────────── */}
 
-      <header className="afrione-conversation-header">
-        <div className="warroom-header-content">
-          <Link className="warroom-icon-button" href={isArtisan ? '/artisan-space/dashboard' : '/dashboard'} aria-label="Retour aux missions">
-            <ArrowLeft size={19} />
-          </Link>
-          <div className="warroom-avatar" aria-hidden="true">
-            {otherAvatar ? <img src={otherAvatar} alt="" /> : String(otherName || '').trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase()}
-          </div>
-          <div className="warroom-participant">
-            <div className="warroom-participant-name">{loading ? 'Conversation' : otherName}</div>
-            <div className="warroom-participant-status"><i />{statusInfo.label.replace(/^[^\w\s]*\s*/, '')}</div>
-          </div>
-          {allow('view_other_phone') && !isArtisan && artisanPhone && (
-            <a className="warroom-icon-button" href={`tel:${artisanPhone}`} aria-label={`Appeler ${artisanName}`}><Phone size={17} /></a>
-          )}
-          {allow('view_diagnostic') && diagData && (
-            <button type="button" className="warroom-icon-button afrione-action afrione-action--icon" aria-label="Ouvrir le diagnostic"
-              onClick={() => setShowDiagPanel(open => !open)} aria-expanded={showDiagPanel}><FileText size={18} /></button>
-          )}
-          <button type="button" className="afrione-action afrione-conversation-details-button"
-            aria-expanded={showMissionDetails} aria-controls="conversation-mission-details"
-            onClick={() => setShowMissionDetails(open => !open)}>
-            <span>Devis et suivi</span><ChevronDown size={15} aria-hidden="true" />
-          </button>
-        </div>
-      </header>
+      <WarRoomHeader
+        backHref={isArtisan ? '/artisan-space/dashboard' : '/dashboard'}
+        name={loading ? 'Conversation' : otherName}
+        avatar={otherAvatar}
+        statusLabel={statusInfo.label}
+        phone={allow('view_other_phone') && !isArtisan && artisanPhone ? artisanPhone : null}
+        phoneLabel={`Appeler ${artisanName}`}
+        showDiagnostic={allow('view_diagnostic') && !!diagData}
+        diagnosticOpen={showDiagPanel}
+        onToggleDiagnostic={() => setShowDiagPanel(open => !open)}
+        detailsOpen={showMissionDetails}
+        onToggleDetails={() => setShowMissionDetails(open => !open)}
+      >
+        <MissionProgress status={status} role={role} statusLabel={statusInfo.label}
+          hint={roleReady ? nextStepHint(role, status) : undefined} />
+      </WarRoomHeader>
 
       {!showMissionDetails && (
-        <aside className="warroom-overview" aria-label="Résumé de la mission">
-          <div className="warroom-overview-card">
-            <span className="warroom-raised-icon"><Wrench size={22} strokeWidth={1.75} /></span>
-            <h2>{mission?.category || 'Votre intervention'}</h2>
-            {mission?.quartier && <p>{mission.quartier}</p>}
-            <div className="warroom-overview-status"><span>Statut</span><strong>{statusInfo.label.replace(/^[^\w\s]*\s*/, '')}</strong></div>
-            {!!mission?.total_price && <div className="warroom-overview-status"><span>{mission.price_confirmed_version ? 'Prestation confirmée' : 'Estimation'}</span><strong>{Number(mission.total_price).toLocaleString('fr-FR')} FCFA</strong></div>}
-            <button type="button" className="warroom-overview-action" onClick={() => setShowMissionDetails(true)}>
-              Ouvrir le devis et le suivi <ChevronDown size={16} />
-            </button>
-          </div>
-          {roleReady && <p className="warroom-overview-hint">{nextStepHint(role, status)}</p>}
-        </aside>
+        <SummaryCard
+          title={mission?.category || 'Votre intervention'}
+          place={mission?.quartier}
+          statusLabel={statusInfo.label}
+          priceLabel={mission?.price_confirmed_version ? 'Prestation confirmée' : 'Estimation'}
+          priceValue={mission?.total_price ? `${Number(mission.total_price).toLocaleString('fr-FR')} FCFA` : undefined}
+          hint={roleReady ? nextStepHint(role, status) : undefined}
+          onOpen={() => setShowMissionDetails(true)}
+        />
       )}
 
 
@@ -2168,51 +1914,19 @@ export default function WarRoomPage() {
               )
             }
 
-            // Message AfriOne System — centré, fond orange, logo + italique
+            // Message AfriOne : une ligne discrète avec le sceau AfriOne.
             if (msg.sender_type === 'afrione_system' || (msg.type === 'system' && msg.sender_type === 'afrione_system')) {
-              const severity = msg.metadata?.severity ?? 'info'
-              const borderColor = severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#E85D26' : '#C9A84C'
               return (
-                <div key={msg.id} style={{ display: 'flex', justifyContent: 'center', padding: '10px 16px' }}>
-                  <div style={{
-                    maxWidth: '88%',
-                    background: 'rgba(232,93,38,0.06)',
-                    border: `1px solid ${borderColor}33`,
-                    borderRadius: '16px',
-                    padding: '10px 16px',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '10px',
-                  }}>
-                    {/* Logo AfriOne */}
-                    <div style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '8px', background: 'linear-gradient(135deg, #E85D26, #ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}>
-                      <Zap size={13} color="white" />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '9px', fontWeight: 700, color: '#E85D26', letterSpacing: '0.1em', fontFamily: 'var(--font-body)', marginBottom: '4px' }}>
-                        AFRIONE
-                      </div>
-                      <p style={{ fontSize: '13px', color: 'var(--ui-ink)', fontStyle: 'italic', margin: 0, lineHeight: 1.5 }}>
-                        {systemMessageText(msg.text)}
-                      </p>
-                      <div style={{ fontSize: '10px', color: '#8B95A5', marginTop: '4px', fontFamily: 'var(--font-body)' }}>
-                        {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <SystemNote key={msg.id} afrione severity={msg.metadata?.severity ?? 'info'}
+                  text={systemMessageText(msg.text)}
+                  time={new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} />
               )
             }
 
             // Message système — centré neutre
+            // Message système — une ligne neutre.
             if (msg.type === 'system') {
-              return (
-                <div key={msg.id} style={{textAlign:'center',padding:'8px 0'}}>
-                  <span style={{fontSize:'12px',color:'var(--ui-muted)',background:'rgba(122,122,110,0.1)',padding:'6px 14px',borderRadius:'20px',display:'inline-block'}}>
-                    {systemMessageText(msg.text)}
-                  </span>
-                </div>
-              )
+              return <SystemNote key={msg.id} text={systemMessageText(msg.text)} />
             }
 
             // Photos de chantier
@@ -2676,14 +2390,8 @@ export default function WarRoomPage() {
             }
 
             return (
-              <div key={msg.id} className={`afrione-chat-row${isMe ? ' afrione-chat-row--own' : ''}`}>
-                <div className="afrione-chat-bubble">
-                  <span>{msg.text}</span>
-                  <time dateTime={msg.created_at}>
-                    {new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                  </time>
-                </div>
-              </div>
+              <ChatBubble key={msg.id} own={isMe} text={msg.text} iso={msg.created_at}
+                time={new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} />
             )
           })}
           {standardDiscussion && roleReady && (
@@ -3008,25 +2716,7 @@ export default function WarRoomPage() {
                   : !discussionEnabled ? "Sans discussion libre : utilisez les devis et rectificatifs ci-dessus." : "La conversation est close pour cette mission."}
               </div>
             ) : (
-            <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
-              <input type="text" value={input} onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
-                maxLength={4000} placeholder="Votre message…" aria-label="Votre message" className="input afrione-field afrione-conversation-input" style={{flex:1,minWidth:0}} />
-              <button aria-label="Envoyer le message" onClick={send} disabled={loading || !input.trim() || sendStatus !== 'idle'} className="btn-primary afrione-action afrione-action--icon warroom-send-button"
-                style={{
-                  width:'44px',height:'44px',color:'white',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:'none',flexShrink:0,
-                  cursor:(!input.trim()||sendStatus!=='idle')?'not-allowed':'pointer',
-                  opacity:(input.trim()&&sendStatus==='idle')||sendStatus!=='idle'?1:0.4,
-                  background: sendStatus==='sent' ? '#2B6B3E' : undefined,
-                  transition:'background 0.2s',
-                }}>
-                {sendStatus === 'sending'
-                  ? <div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
-                  : sendStatus === 'sent'
-                  ? <CheckCircle size={18} />
-                  : <Send size={18} />}
-              </button>
-            </div>
+            <Composer value={input} onChange={setInput} onSend={send} status={sendStatus} loading={loading} />
             )}
           </div>
         </div>
