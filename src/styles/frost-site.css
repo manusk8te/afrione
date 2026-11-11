@@ -98,7 +98,7 @@
 .home-trade-card__shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(5, 9, 13, 0) 38%, rgba(5, 9, 13, 0.58) 100%);
+  background: none;
   transition: opacity 0.45s var(--frost-ease);
 }
 .home-trade-card:hover .home-trade-card__shade { opacity: 0.55; }
@@ -115,11 +115,8 @@
   min-height: 48px;
   padding: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  -webkit-backdrop-filter: blur(14px) saturate(170%);
-  backdrop-filter: blur(14px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 16px rgba(5, 9, 13, 0.16);
+  background: rgba(10, 14, 20, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.7);
 }
 .home-trade-card__knob {
   position: relative;
@@ -147,7 +144,7 @@
 .home-trade-card__label {
   overflow: hidden;
   color: #fff;
-  text-shadow: 0 1px 10px rgba(5, 9, 13, 0.45);
+  text-shadow: 0 1px 2px rgba(5, 9, 13, 0.35);
   font-family: var(--font-display);
   font-size: clamp(14px, 1.5vw, 18px);
   font-weight: 750;
@@ -163,9 +160,6 @@
   .home-trade-card__band { left: 6px; right: 6px; bottom: 6px; min-height: 42px; padding: 5px; gap: 8px; }
   .home-trade-card__knob { width: 32px; height: 32px; }
   .home-trade-card__label { font-size: 13px; }
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .home-trade-card__band { background: rgba(5, 9, 13, 0.45); }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-trade-card:hover .home-trade-card__knob { animation: none; }
