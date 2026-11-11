@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
 import Navbar from '@/components/layout/Navbar'
 import Brand from '@/components/brand/Brand'
+import TradeCard from '@/components/home/TradeCard'
 import {
   ArrowRight, Shield, Zap, Star, CheckCircle, ChevronRight, Building2,
   Droplets, Hammer, Paintbrush, Ruler, Wind, Lock, LayoutGrid,
@@ -253,48 +254,16 @@ export default function HomePage() {
             </motion.h2>
 
             <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-5">
-              {SERVICES.map(({ label, metier, photo, position, tone }) => (
+              {SERVICES.map(({ label, metier, photo, position, tone }, i) => (
                 <motion.div key={label} variants={fadeUp}>
-                  <Link href={`/artisans?metier=${encodeURIComponent(metier)}`}
-                    className="home-trade-card"
-                    aria-label={label}
-                    style={{
-                      display: 'block', position: 'relative',
-                      textDecoration: 'none', cursor: 'pointer',
-                      background: '#101820', borderRadius: '22px',
-                      overflow: 'hidden', aspectRatio: '1 / 1',
-                      boxShadow: NEU_SHADOW,
-                      transition: 'box-shadow 0.3s ease-out, transform 0.3s ease-out',
-                    }}
-                    onMouseEnter={e => {
-                      const el = e.currentTarget as HTMLElement
-                      el.style.boxShadow = NEU_HOVER
-                      el.style.transform = 'translateY(-3px)'
-                      const img = el.querySelector('img') as HTMLImageElement | null
-                      if (img) img.style.transform = 'scale(1.07)'
-                    }}
-                    onMouseLeave={e => {
-                      const el = e.currentTarget as HTMLElement
-                      el.style.boxShadow = NEU_SHADOW
-                      el.style.transform = ''
-                      const img = el.querySelector('img') as HTMLImageElement | null
-                      if (img) img.style.transform = 'scale(1)'
-                    }}>
-
-                    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '22px' }}>
-                      <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, filter: tone, transition: 'transform 0.55s ease-out, filter 0.3s ease-out' }} />
-                      <div className="home-trade-card__shade" />
-                    </div>
-
-                    <div className="home-trade-card__band">
-                      <span className="home-trade-card__label">{label}</span>
-                    </div>
-
-                    <span className="home-trade-arrow" aria-hidden="true">
-                      <ArrowRight size={18} />
-                    </span>
-
-                  </Link>
+                  <TradeCard
+                    href={`/artisans?metier=${encodeURIComponent(metier)}`}
+                    label={label}
+                    photo={photo}
+                    position={position}
+                    tone={tone}
+                    index={i}
+                  />
                 </motion.div>
               ))}
             </motion.div>
