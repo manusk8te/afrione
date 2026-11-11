@@ -58,6 +58,7 @@ export default function ArtisanDashboardPage() {
   const [tab, setTab] = useState('missions')
   const [available, setAvailable] = useState(false)
   const [kycDocsComplete, setKycDocsComplete] = useState(false)
+  const [kycSubmitted, setKycSubmitted] = useState(false)
   useEffect(() => {
     const wanted = new URLSearchParams(window.location.search).get('tab')
     if (wanted && ['missions', 'messages', 'profile', 'portfolio', 'wallet'].includes(wanted)) setTab(wanted)
@@ -317,10 +318,11 @@ export default function ArtisanDashboardPage() {
   useEffect(() => {
     if (!artisan?.id || !currentUserId) return
     Promise.all([
-      supabase.from('kyc_security').select('cni_front_url, cni_back_url').eq('artisan_id', artisan.id).maybeSingle(),
+      supabase.from('kyc_security').select('cni_front_url, cni_back_url, submitted_at').eq('artisan_id', artisan.id).maybeSingle(),
       supabase.from('users').select('avatar_url').eq('id', currentUserId).maybeSingle(),
     ]).then(([kyc, profile]) => {
       setKycDocsComplete(!!(kyc.data?.cni_front_url && kyc.data?.cni_back_url && profile.data?.avatar_url))
+      setKycSubmitted(!!kyc.data?.submitted_at)
     })
   }, [artisan?.id, currentUserId])
 
@@ -884,7 +886,7 @@ export default function ArtisanDashboardPage() {
                 steps={((): JourneyStep[] => {
                   const kyc = artisan?.kyc_status
                   const kycDone = kyc === 'approved'
-                  const kycState = kycDone ? 'done' : kyc === 'rejected' ? 'problem' : kycDocsComplete ? 'waiting' : 'current'
+                  const kycState = kycDone ? 'done' : kyc === 'rejected' ? 'problem' : kycSubmitted ? 'waiting' : 'current'
                   const q = questionnaireStatus
                   const qState = q === 'approved' ? 'done' : q === 'pending' ? 'waiting' : q === 'rejected' ? 'problem' : (kycState === 'current' || kycState === 'problem' ? 'todo' : 'current')
                   return [
@@ -894,9 +896,9 @@ export default function ArtisanDashboardPage() {
                       id: 'kyc', title: 'Vérifier votre identité',
                       help: 'Envoyez votre carte d’identité (recto et verso) et une photo de vous. C’est obligatoire pour recevoir des missions.',
                       state: kycState,
-                      status: kycDone ? 'Identité vérifiée' : kyc === 'rejected' ? 'Documents refusés' : kycDocsComplete ? 'En vérification (24 à 48 h)' : 'À faire',
-                      href: '/artisan-space/kyc',
-                      cta: kyc === 'rejected' ? 'Renvoyer mes documents' : 'Envoyer mes documents',
+                      status: kycDone ? 'Identité vérifiée' : kyc === 'rejected' ? 'Documents refusés' : kycSubmitted ? 'En vérification (24 à 48 h)' : kycDocsComplete ? 'À envoyer pour vérification' : 'À faire',
+                      href: kycDocsComplete && !kycSubmitted && kyc !== 'rejected' ? '/artisan-space/kyc#submit' : '/artisan-space/kyc',
+                      cta: kyc === 'rejected' ? 'Renvoyer mes documents' : kycDocsComplete && !kycSubmitted ? 'Envoyer pour vérification' : 'Envoyer mes documents',
                     },
                     {
                       id: 'questionnaire', title: 'Remplir le questionnaire',

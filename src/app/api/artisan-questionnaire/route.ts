@@ -110,6 +110,9 @@ export async function POST(req: NextRequest) {
     tools_description,
   } = body
 
+  // La carte d'identité et le diplôme viennent de la vérification d'identité : on ne les redemande plus.
+  const { data: kycRow } = await supabaseAdmin.from('kyc_security').select('cni_front_url, cni_back_url, diploma_urls').eq('artisan_id', artisan.id).maybeSingle()
+
   // Upsert (artisan_id is unique)
   const { data, error } = await supabaseAdmin
     .from('artisan_questionnaire_submissions')
@@ -119,8 +122,8 @@ export async function POST(req: NextRequest) {
         status: 'pending',
         submitted_at: new Date().toISOString(),
         experience_years:    experience_years    ?? null,
-        has_id_card:         has_id_card         ?? false,
-        has_training_cert:   has_training_cert   ?? false,
+        has_id_card:         !!(kycRow?.cni_front_url && kycRow?.cni_back_url),
+        has_training_cert:   (kycRow?.diploma_urls?.length ?? 0) > 0,
         zones_travail:       zones_travail        ?? [],
         intervention_types:  intervention_types  ?? [],
         transport_moyen:     transport_moyen      ?? null,

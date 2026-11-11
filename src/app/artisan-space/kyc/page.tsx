@@ -123,10 +123,13 @@ export default function KYCPage() {
   const submit = async () => {
     if (!kyc || !artisan) return
     setSubmitting(true)
-    await supabase.from('kyc_security').update({ status: 'pending' }).eq('id', kyc.id)
+    const sentAt = new Date().toISOString()
+    await supabase.from('kyc_security').update({ status: 'pending', submitted_at: sentAt, rejection_reason: null }).eq('id', kyc.id)
     await supabase.from('artisan_pros').update({ kyc_status: 'pending' }).eq('id', artisan.id)
+    setKyc((k: any) => ({ ...k, status: 'pending', submitted_at: sentAt, rejection_reason: null }))
+    setArtisan((a: any) => ({ ...a, kyc_status: 'pending' }))
     setSubmitting(false)
-    setMsg('Documents soumis ! En attente de validation (24-48h)')
+    setMsg('Documents envoyés ! Vérification sous 24 à 48 h.')
   }
 
   const hasDoc = (field: string) => {
@@ -147,6 +150,7 @@ export default function KYCPage() {
 
   const allRequired = docConfig.filter(d => d.required).every(d => hasDoc(d.id))
   const kycStatus = artisan?.kyc_status || 'pending'
+  const submitted = kycStatus === 'pending' && !!kyc?.submitted_at
 
   return (
     <div className="min-h-screen" style={{background:'var(--ui-canvas)'}}>
@@ -190,10 +194,10 @@ export default function KYCPage() {
                     id: 'review',
                     title: 'Vérification par AfriOne',
                     help: 'Notre équipe contrôle vos documents sous 24 à 48 h ouvrées. Vous n’avez rien à faire pendant ce temps.',
-                    state: approved ? 'done' : rejected ? 'problem' : allRequired ? 'waiting' : 'todo',
-                    status: approved ? 'Terminée' : rejected ? (kyc?.rejection_reason || 'Documents à refaire') : allRequired ? 'En cours (24 à 48 h)' : undefined,
-                    href: rejected ? '#documents' : undefined,
-                    cta: 'Corriger mes documents',
+                    state: approved ? 'done' : rejected ? 'problem' : submitted ? 'waiting' : allRequired ? 'current' : 'todo',
+                    status: approved ? 'Terminée' : rejected ? (kyc?.rejection_reason || 'Documents à refaire') : submitted ? 'En cours (24 à 48 h)' : allRequired ? 'À envoyer' : undefined,
+                    href: rejected ? '#documents' : allRequired && !submitted ? '#submit' : undefined,
+                    cta: rejected ? 'Corriger mes documents' : 'Envoyer pour vérification',
                   },
                   {
                     id: 'ok',
@@ -260,8 +264,9 @@ export default function KYCPage() {
           </div>
 
           <button
+            id="submit"
             onClick={submit}
-            disabled={!allRequired || submitting || kycStatus === 'approved'}
+            disabled={!allRequired || submitting || kycStatus === 'approved' || submitted}
             className={(allRequired && kycStatus !== 'approved' ? 'afrione-gradient' : '') + ' afrione-action'}
             style={{
               width:'100%',padding:'16px',borderRadius:'12px',border:'none',cursor: allRequired ? 'pointer' : 'not-allowed',
@@ -274,7 +279,8 @@ export default function KYCPage() {
               ? <><div style={{width:'16px',height:'16px',border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid white',borderRadius:'50%',animation:'spin 1s linear infinite'}} /> Envoi...</>
               : kycStatus === 'approved'
               ? '✓ Déjà vérifié'
-              : allRequired ? 'Soumettre pour vérification' : 'Envoyez tous les documents obligatoires'
+              : submitted ? '✓ Envoyé : vérification en cours'
+              : allRequired ? 'Envoyer pour vérification' : 'Envoyez tous les documents obligatoires'
             }
           </button>
         </div>

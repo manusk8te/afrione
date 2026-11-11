@@ -1,3 +1,4 @@
+import { sendPushToUser } from '@/lib/push'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/admin-auth'
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (type === 'kyc' || type === 'artisans') {
     const { data, error } = await supabaseAdmin
       .from('artisan_pros')
-      .select('id, metier, kyc_status, created_at, is_available, users!artisan_pros_user_id_fkey(name, email, avatar_url), kyc_security(id, cni_front_url, cni_back_url, diploma_urls, status, reviewed_at)')
+      .select('id, metier, kyc_status, created_at, is_available, users!artisan_pros_user_id_fkey(name, email, avatar_url), kyc_security(id, submitted_at, cni_front_url, cni_back_url, diploma_urls, status, reviewed_at)')
       .order('created_at', { ascending: false })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json(data)
@@ -90,6 +91,14 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ error: 'type requis: kyc | artisans | missions | transactions | stats | litiges | entreprises' }, { status: 400 })
 }
 
+/** Prévient l'artisan (notification push si activée). Sans effet bloquant. */
+async function notifyArtisan(artisanId: string, title: string, body: string) {
+  try {
+    const { data } = await supabaseAdmin.from('artisan_pros').select('user_id').eq('id', artisanId).maybeSingle()
+    if (data?.user_id) await sendPushToUser(data.user_id, { title, body, url: '/artisan-space/dashboard' })
+  } catch { /* la notification est un plus : le statut reste visible dans l'application */ }
+}
+
 // POST /api/admin/data  { action, artisanId, kycId?, favor? }
 export async function POST(req: NextRequest) {
   const access=await requireAdmin(req);if(!access.ok)return access.res
@@ -97,14 +106,18 @@ export async function POST(req: NextRequest) {
   const { action, artisanId, kycId, missionId, favor, adminId } = body
 
   if (action === 'approve_kyc') {
-    if (kycId) await supabaseAdmin.from('kyc_security').update({ status: 'approved', reviewed_at: new Date().toISOString() }).eq('id', kycId)
+    if (kycId) await supabaseAdmin.from('kyc_security').update({ status: 'approved', reviewed_at: new Date().toISOString(), rejection_reason: null }).eq('id', kycId)
     await supabaseAdmin.from('artisan_pros').update({ kyc_status: 'approved', is_available: true }).eq('id', artisanId)
+    await notifyArtisan(artisanId, 'Identité vérifiée', 'Vous êtes visible dans l’annuaire et vous pouvez recevoir des demandes.')
     return NextResponse.json({ ok: true })
   }
 
   if (action === 'reject_kyc') {
-    if (kycId) await supabaseAdmin.from('kyc_security').update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', kycId)
+    const reason = String(body.reason || '').trim().slice(0, 300)
+    if (reason.length < 3) return NextResponse.json({ error: 'Indiquez le motif du refus : l’artisan le verra.' }, { status: 400 })
+    if (kycId) await supabaseAdmin.from('kyc_security').update({ status: 'rejected', reviewed_at: new Date().toISOString(), rejection_reason: reason }).eq('id', kycId)
     await supabaseAdmin.from('artisan_pros').update({ kyc_status: 'rejected', is_available: false }).eq('id', artisanId)
+    await notifyArtisan(artisanId, 'Documents à renvoyer', reason)
     return NextResponse.json({ ok: true })
   }
 

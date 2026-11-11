@@ -51,7 +51,7 @@ export default function Journey({ title, intro, steps }: { title: string; intro?
           )}
           {next.state === 'waiting' && (
             <p className="journey__wait">
-              <Clock size={15} aria-hidden="true" /> Rien à faire pour le moment. Vous serez prévenu par une notification (la cloche en haut à droite).
+              <Clock size={15} aria-hidden="true" /> Rien à faire pour le moment. Revenez sur cette page : elle se met à jour dès que c’est validé. Activez les notifications (la cloche en haut à droite) pour être prévenu.
             </p>
           )}
         </div>

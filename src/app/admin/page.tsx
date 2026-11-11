@@ -188,9 +188,13 @@ export default function AdminDashboard() {
     loadAll()
   }
 
+  const [kycReason, setKycReason] = useState<Record<string, string>>({})
   const rejectKyc = async (artisanId: string, kycId?: string) => {
-    await adminAction({ action: 'reject_kyc', artisanId, kycId })
-    flash('✗ Artisan rejeté')
+    const reason = (kycReason[artisanId] || '').trim()
+    if (reason.length < 3) { flash('Indiquez le motif du refus : l’artisan le verra.'); return }
+    const res = await adminAction({ action: 'reject_kyc', artisanId, kycId, reason })
+    if (res && 'ok' in res && !res.ok) { flash('Refus impossible : réessayez.'); return }
+    flash('✗ Artisan refusé : il a été prévenu')
     loadAll()
   }
 
@@ -295,14 +299,14 @@ export default function AdminDashboard() {
                 {(() => {
                   const docs = (k: any) => { const d = k.kyc_security?.[0]; return !!(d?.cni_front_url && d?.cni_back_url) }
                   const pendingAll = kycAll.filter(k => k.kyc_status === 'pending')
-                  const toReview = pendingAll.filter(docs).length
+                  const toReview = pendingAll.filter(k => !!k.kyc_security?.[0]?.submitted_at).length
                   const noDocs = pendingAll.length - toReview
                   const rejected = kycAll.filter(k => k.kyc_status === 'rejected').length
                   const approved = kycAll.filter(k => k.kyc_status === 'approved').length
                   const qPending = questionnaires.filter(q => q.status === 'pending').length
                   const stages: { label: string; value: number; text: string; todo: boolean; go?: () => void; cta?: string }[] = [
-                    { label: 'Inscrits sans documents', value: noDocs, text: 'Ont créé leur profil mais n’ont pas encore envoyé leur carte d’identité. Rien à faire de votre côté.', todo: false },
-                    { label: 'Documents à vérifier', value: toReview, text: 'CNI envoyée : à valider ou refuser. C’est la file d’attente principale.', todo: toReview > 0, go: () => { setKycFilter('pending'); setTab('kyc') }, cta: 'Vérifier les documents' },
+                    { label: 'Inscrits, dossier non envoyé', value: noDocs, text: 'Ont créé leur profil mais n’ont pas encore envoyé leurs documents. Rien à faire de votre côté.', todo: false },
+                    { label: 'Documents à vérifier', value: toReview, text: 'Dossier envoyé par l’artisan : à approuver ou à refuser avec un motif. C’est la file principale.', todo: toReview > 0, go: () => { setKycFilter('pending'); setTab('kyc') }, cta: 'Vérifier les documents' },
                     { label: 'Documents refusés', value: rejected, text: 'L’artisan a été prévenu et doit renvoyer ses documents.', todo: false },
                     { label: 'Identité validée', value: approved, text: 'Visibles dans l’annuaire et peuvent recevoir des missions.', todo: false },
                     { label: 'Questionnaires à valider', value: qPending, text: 'Tarifs, zones et matériel déclarés par l’artisan : à relire avant d’alimenter les devis.', todo: qPending > 0, go: () => { setQuestionnaireFilter('pending'); setTab('questionnaire') }, cta: 'Relire les questionnaires' },
@@ -339,7 +343,7 @@ export default function AdminDashboard() {
                     { label: 'Total missions',  value: stats.missions,                icon: Activity,   color: '#E85D26' },
                     { label: 'Artisans actifs', value: stats.artisans,                icon: Users,      color: '#2B6B3E' },
                     { label: 'CA total (FCFA)', value: stats.revenue.toLocaleString(), icon: DollarSign, color: '#C9A84C' },
-                    { label: 'KYC en attente',  value: kycAll.filter(k => k.kyc_status === 'pending').length, icon: Shield, color: 'var(--ui-muted)' },
+                    { label: 'KYC en attente',  value: kycAll.filter(k => k.kyc_status === 'pending' && !!k.kyc_security?.[0]?.submitted_at).length, icon: Shield, color: 'var(--ui-muted)' },
                   ].map(k => (
                     <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '20px', boxShadow: NEU_SMALL }}>
                       <k.icon size={20} style={{ color: k.color, marginBottom: '12px' }} />
@@ -437,10 +441,10 @@ export default function AdminDashboard() {
                   <div style={{ background: '#FFFFFF', border: '1px solid var(--ui-border)', borderRadius: '16px', padding: '24px', boxShadow: NEU_SMALL }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                       <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ui-ink)' }}>KYC en attente</h2>
-                      <span style={{ fontSize: '11px', color: '#E85D26', background: 'rgba(232,93,38,0.1)', padding: '3px 10px', borderRadius: '20px' }}>{kycAll.filter(k => k.kyc_status === 'pending').length} en attente</span>
+                      <span style={{ fontSize: '11px', color: '#E85D26', background: 'rgba(232,93,38,0.1)', padding: '3px 10px', borderRadius: '20px' }}>{kycAll.filter(k => k.kyc_status === 'pending' && !!k.kyc_security?.[0]?.submitted_at).length} en attente</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {kycAll.filter(k => k.kyc_status === 'pending').slice(0, 5).map(k => (
+                      {kycAll.filter(k => k.kyc_status === 'pending' && !!k.kyc_security?.[0]?.submitted_at).slice(0, 5).map(k => (
                         <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'var(--ui-canvas)', borderRadius: '10px', border: '1px solid var(--ui-border)' }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--ui-ink)' }}>{k.users?.name || '—'}</div>
@@ -456,7 +460,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ))}
-                      {kycAll.filter(k => k.kyc_status === 'pending').length === 0 && <p style={{ fontSize: '13px', color: 'var(--ui-muted)', textAlign: 'center', padding: '24px 0' }}>Aucun KYC en attente </p>}
+                      {kycAll.filter(k => k.kyc_status === 'pending' && !!k.kyc_security?.[0]?.submitted_at).length === 0 && <p style={{ fontSize: '13px', color: 'var(--ui-muted)', textAlign: 'center', padding: '24px 0' }}>Aucun KYC en attente </p>}
                     </div>
                   </div>
                 </div>
@@ -704,7 +708,7 @@ export default function AdminDashboard() {
 
             {/* ===== KYC ===== */}
             {tab === 'kyc' && (() => {
-              const pending  = kycAll.filter(k => k.kyc_status === 'pending')
+              const pending  = kycAll.filter(k => k.kyc_status === 'pending' && !!k.kyc_security?.[0]?.submitted_at)
               const approved = kycAll.filter(k => k.kyc_status === 'approved')
               const rejected = kycAll.filter(k => k.kyc_status === 'rejected')
               const shown    = kycFilter === 'pending' ? pending : kycFilter === 'approved' ? approved : rejected
@@ -815,6 +819,9 @@ export default function AdminDashboard() {
                             <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignSelf: 'center', flexWrap: 'wrap' }}>
                               {k.kyc_status === 'pending' && (
                                 <>
+                                  <input value={kycReason[k.id] || ''} onChange={e => setKycReason(m => ({ ...m, [k.id]: e.target.value }))}
+                                    placeholder="Motif si refus (ex. photo floue) : l’artisan le verra" aria-label="Motif du refus"
+                                    style={{ flex: '1 1 100%', minHeight: 38, padding: '0 12px', border: '1px solid var(--ui-border)', borderRadius: 10, fontSize: 13 }} />
                                   <button className="afrione-action" onClick={() => approveKyc(k.id, kycDoc?.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'rgba(43,107,62,0.1)', border: '1px solid rgba(43,107,62,0.3)', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#2B6B3E' }}>
                                     <CheckCircle size={13} /> Approuver
                                   </button>
