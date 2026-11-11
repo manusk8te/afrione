@@ -227,12 +227,6 @@ export default function HomePage() {
 
       {/* ━━━━ CAPABILITIES / SERVICES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <section style={{ background: W2, padding: '0 0 96px', position: 'relative', overflow: 'hidden' }}>
-        <img
-          aria-hidden="true"
-          src="/afrione-logo-official.png"
-          alt=""
-          className="afrione-orbit-logo"
-        />
         <div className="page-container" style={{ position: 'relative', zIndex: 1 }}>
           <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
 

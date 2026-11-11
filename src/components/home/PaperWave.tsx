@@ -61,7 +61,7 @@ export default function PaperWave({ src, position, tone, index, active = false }
     const prepare = () => {
       if (!img.complete || !img.naturalWidth || !W) return
       const iw = img.naturalWidth, ih = img.naturalHeight
-      const margin = 1.08 // marge pour que la vague ne découvre jamais les bords
+      const margin = 1.14 // marge pour que la vague ne découvre jamais les bords
       const scale = Math.max(W / iw, H / ih) * margin
       const dw = Math.round(iw * scale), dh = Math.round(ih * scale)
       ox = (W - dw) * posX
@@ -80,28 +80,33 @@ export default function PaperWave({ src, position, tone, index, active = false }
       if (!src2 || !W) return
       const dh = src2.height
 
-      const target = activeRef.current ? 1.8 : 1
+      const target = activeRef.current ? 1.7 : 1
       amp += (target - amp) * 0.08
 
-      const A = 2.6 * dpr * amp            // montée/descente (px)
-      const stretch = 0.012 * amp          // étirement vertical
       const light = 0.075 * amp            // ombre / lumière
       const k = (Math.PI * 2 * 0.85) / W   // ~0.85 vague sur la largeur
       const w = t * 0.0034 + index * 0.9   // vitesse + décalage par carte
       const step = Math.max(2, Math.round(dpr)) // colonnes de ~1px CSS
+      const left = Math.round(ox)
+      const top = Math.round(oy)
+      // Amplitude limitée à la marge disponible en haut et en bas : la photo ne
+      // découvre jamais le fond de la carte.
+      const slack = Math.max(0, Math.min(-top, dh + top - H))
+      const A = Math.min(3.4 * dpr * amp, slack)
 
+      // Chaque colonne est recopiée telle quelle (1 pixel source = 1 pixel écran),
+      // seulement décalée verticalement de façon entière : aucun rééchantillonnage,
+      // donc aucune perte de netteté.
+      ctx.imageSmoothingEnabled = false
       ctx.clearRect(0, 0, W, H)
       for (let x = 0; x < W; x += step) {
-        const ph = x * k - w
-        const sy = 1 + stretch * Math.cos(ph)
-        const colH = dh * sy
-        const y = oy + A * Math.sin(ph) - (colH - dh) / 2
-        ctx.drawImage(src2, x - ox, 0, step, dh, x, y, step + 0.5, colH)
+        const y = top + Math.round(A * Math.sin(x * k - w))
+        ctx.drawImage(src2, x - left, 0, step, dh, x, y, step, dh)
       }
       for (let x = 0; x < W; x += step) {
         const a = light * Math.cos(x * k - w)
         ctx.fillStyle = a > 0 ? `rgba(255,255,255,${a.toFixed(3)})` : `rgba(10,14,20,${(-a).toFixed(3)})`
-        ctx.fillRect(x, 0, step + 0.5, H)
+        ctx.fillRect(x, 0, step, H)
       }
     }
 

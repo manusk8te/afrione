@@ -93,7 +93,7 @@
 .home-trade-card__shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 45%, rgba(5, 9, 13, 0.18) 100%);
+  background: linear-gradient(180deg, rgba(5, 9, 13, 0) 38%, rgba(5, 9, 13, 0.58) 100%);
   transition: opacity 0.45s var(--frost-ease);
 }
 .home-trade-card:hover .home-trade-card__shade { opacity: 0.55; }
@@ -110,11 +110,11 @@
   min-height: 48px;
   padding: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: inset 0 1px 0 var(--frost-highlight), 0 6px 18px rgba(5, 9, 13, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  backdrop-filter: blur(14px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 16px rgba(5, 9, 13, 0.16);
 }
 .home-trade-card__knob {
   position: relative;
@@ -125,9 +125,9 @@
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  background: var(--smoke-light-ink);
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(120, 40, 10, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: #fff;
+  color: var(--smoke-light-ink);
+  box-shadow: 0 2px 8px rgba(5, 9, 13, 0.25);
   cursor: grab;
   touch-action: none;
   transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -141,7 +141,8 @@
 }
 .home-trade-card__label {
   overflow: hidden;
-  color: var(--frost-ink);
+  color: #fff;
+  text-shadow: 0 1px 10px rgba(5, 9, 13, 0.45);
   font-family: var(--font-display);
   font-size: clamp(14px, 1.5vw, 18px);
   font-weight: 750;
@@ -159,7 +160,7 @@
   .home-trade-card__label { font-size: 13px; }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .home-trade-card__band { background: var(--frost-bg-strong); }
+  .home-trade-card__band { background: rgba(5, 9, 13, 0.45); }
 }
 @media (prefers-reduced-motion: reduce) {
   .home-trade-card:hover .home-trade-card__knob { animation: none; }
