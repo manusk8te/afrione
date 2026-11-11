@@ -255,6 +255,14 @@ export default function ArtisanProfilePage() {
 
       <div style={{ paddingTop: '80px', paddingBottom: '64px' }}>
 
+        {/* Un artisan qui ouvre sa propre fiche : il la voit comme un client la voit. */}
+        {!!currentUserId && currentUserId === artisan.user_id && (
+          <div className="owner-banner">
+            <span><strong>C’est votre fiche publique.</strong> Voici ce que voient les clients.</span>
+            <Link href="/artisan-space/dashboard">Retour à mon espace artisan</Link>
+          </div>
+        )}
+
         {/* Hero blanc/neumorphique */}
         <div style={{ background: '#FFFFFF', borderBottom: '1.5px solid var(--ui-border)', boxShadow: 'var(--ui-shadow-soft)' }}>
           <div className="page-container" style={{ padding: isMobile ? '16px' : '32px', maxWidth: '896px' }}>
@@ -293,7 +301,7 @@ export default function ArtisanProfilePage() {
                     ))}
                   </div>
                   <span className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--ui-ink)' }}>{rating > 0 ? rating.toFixed(1) : '—'}</span>
-                  <span style={{ fontSize: '13px', color: 'var(--ui-muted)' }}>({artisan.rating_count || 0} avis)</span>
+                  <span style={{ fontSize: '13px', color: 'var(--ui-muted)' }}>({Math.max(artisan.rating_count || 0, reviews.length)} avis)</span>
                 </div>
               </div>
             </div>
@@ -534,13 +542,14 @@ export default function ArtisanProfilePage() {
                   {[
                     { icon: Clock, text: `Réponse en ${artisan.response_time_min || 30} min` },
                     { icon: ThumbsUp, text: `${artisan.success_rate || 0}% de satisfaction` },
-                    { icon: Shield, text: 'Paiement sécurisé via Wave' },
+                    { icon: Shield, text: 'Paiement sécurisé via Jèko' },
                   ].map(item => (
                     <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--ui-muted)' }}>
                       <item.icon size={14} style={{ color: '#2B6B3E', flexShrink: 0 }} /> {item.text}
                     </div>
                   ))}
                 </div>
+                {!(currentUserId && currentUserId === artisan.user_id) && <>
                 {(!artisan.is_test || (testMissionId && artisan.is_available)) && <button onClick={handleReserver} disabled={reserving} className={(reserving ? '' : 'btn-primary') + ' afrione-action'} style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   padding: '14px', background: reserving ? 'var(--ui-border)' : undefined, color: reserving ? 'var(--ui-muted)' : 'white',
@@ -570,6 +579,7 @@ export default function ArtisanProfilePage() {
                   </button>
                 </div>
                 )}
+                </>}
               </div>
             </div>
           </div>

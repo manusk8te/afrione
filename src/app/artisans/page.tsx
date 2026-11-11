@@ -98,7 +98,7 @@ function ArtisansDirectory() {
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 800, color: 'white', margin: '0 0 10px', textShadow: '0 2px 20px rgba(0,0,0,0.1)' }}>Trouvez votre artisan</h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '15px', margin: 0 }}>
-            {loading ? 'Chargement...' : loadError ? 'Annuaire indisponible' : `${filtered.length - demoCount} profils professionnels à Abidjan${demoCount ? ` · ${demoCount} profils de test` : ''}`}
+            {loading ? 'Chargement...' : loadError ? 'Annuaire indisponible' : `${filtered.length - demoCount} profils professionnels à Abidjan${demoCount ? ` · ${demoCount} profils de démonstration` : ''}`}
           </p>
         </div>
       </section>
@@ -223,10 +223,10 @@ function ArtisansDirectory() {
                         </div>
                         {a.entreprises && (
                           <div style={{ marginBottom: '10px' }}>
-                            <Link className="afrione-action" href={`/entreprise-space/dashboard?id=${a.entreprises.id}`} onClick={e => e.stopPropagation()}
+                            <span
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', padding: '3px 10px', borderRadius: '12px', textDecoration: 'none', fontWeight: 600 }}>
                               <Building2 size={10} /> {a.entreprises.name}
-                            </Link>
+                            </span>
                           </div>
                         )}
 

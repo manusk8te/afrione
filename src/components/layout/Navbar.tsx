@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Brand from '@/components/brand/Brand'
+import SpaceSwitch from '@/components/layout/SpaceSwitch'
 import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2, Bell } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -175,11 +176,7 @@ export default function Navbar() {
                     </button>
                   )}
 
-                  {isArtisan && (
-                    <Link className="afrione-action" href={artisanHref} style={{ ...pillStyle(true), color: 'white', background: '#E85D26', boxShadow: '0 4px 16px rgba(232,93,38,0.35)', border: 'none' }}>
-                      <Wrench size={14} /> Espace Artisan
-                    </Link>
-                  )}
+                  {isArtisan && <SpaceSwitch artisanHref={artisanHref} onOrange={onOrange} />}
 
                   {userRole === 'admin' && (
                     <Link className="afrione-action" href="/admin" style={{ ...pillStyle(), color: '#C9A84C' }}>
@@ -281,16 +278,11 @@ export default function Navbar() {
                       Espace Entreprise
                     </Link>
                   )}
-                  {isArtisan && (
-                    <Link className="afrione-action" href={artisanHref} onClick={() => setMenuOpen(false)}
-                      style={{ display: 'block', padding: '12px', textAlign: 'center', background: '#E85D26', color: 'white', borderRadius: '12px', textDecoration: 'none', fontSize: '14px', fontWeight: 700, boxShadow: '0 4px 16px rgba(232,93,38,0.3)' }}>
-                      Espace Artisan
-                    </Link>
-                  )}
-                  <Link className="afrione-action" href="/dashboard" onClick={() => setMenuOpen(false)}
+                  {isArtisan && <SpaceSwitch artisanHref={artisanHref} block onNavigate={() => setMenuOpen(false)} />}
+                  {!isArtisan && <Link className="afrione-action" href="/dashboard" onClick={() => setMenuOpen(false)}
                     style={{ display: 'block', padding: '12px', textAlign: 'center', background: '#FFFFFF', color: 'var(--ui-ink)', borderRadius: '12px', textDecoration: 'none', fontSize: '14px', fontWeight: 600, boxShadow: NEU_SM }}>
                     Espace Client
-                  </Link>
+                  </Link>}
                   {userRole === 'admin' && (
                     <Link className="afrione-action" href="/admin" onClick={() => setMenuOpen(false)}
                       style={{ display: 'block', padding: '12px', textAlign: 'center', background: '#FFFFFF', color: '#C9A84C', borderRadius: '12px', textDecoration: 'none', fontSize: '14px', fontWeight: 600, boxShadow: NEU_SM }}>

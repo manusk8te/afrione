@@ -9,7 +9,11 @@ import toast from 'react-hot-toast'
 import { safeAuthRedirect } from '@/lib/auth-recovery'
 
 const ORANGE = '#E85D26'
-const BRAND_GRAY = '#1A1A1A'
+const HERO_PILL = '#1A1A1A'   // pastilles d'étapes sur le panneau orange
+const ACTION = '#c2410c'      // boutons et liens : texte blanc dessus ≥ 5:1
+const INK = '#1f1611'
+const MUTED = '#65564b'
+const FIELD_LINE = '#d6cbc1'
 
 function authEmailUrl(path: '/auth' | '/auth/reset') {
   const origin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -34,7 +38,7 @@ function StepItem({ number, text, active }: { number: number; text: string; acti
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '10px 16px', borderRadius: 999,
-      background: active ? ORANGE : BRAND_GRAY,
+      background: active ? ORANGE : HERO_PILL,
       border: active ? `1px solid ${ORANGE}` : 'none',
       transition: 'all 0.3s',
     }}>
@@ -66,7 +70,7 @@ function InputGroup({
   const inputId = useId()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label htmlFor={inputId} style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>{label}</label>
+      <label htmlFor={inputId} style={{ fontSize: 13, fontWeight: 600, color: INK }}>{label}</label>
       <div style={{ position: 'relative' }}>
         <input className="afrione-field"
           id={inputId}
@@ -76,13 +80,13 @@ function InputGroup({
           placeholder={placeholder}
           required
           style={{
-            width: '100%', height: 44, padding: '0 44px 0 16px',
-            borderRadius: 12, border: 'none', outline: 'none',
-            background: BRAND_GRAY, color: '#fff', fontSize: 14,
+            width: '100%', height: 48, padding: '0 44px 0 16px',
+            borderRadius: 12, border: `1px solid ${FIELD_LINE}`, outline: 'none',
+            background: '#fff', color: INK, fontSize: 16,
             boxSizing: 'border-box',
           }}
-          onFocus={e => (e.currentTarget.style.boxShadow = `0 0 0 2px ${ORANGE}55`)}
-          onBlur={e => (e.currentTarget.style.boxShadow = 'none')}
+          onFocus={e => { e.currentTarget.style.boxShadow = `0 0 0 3px rgba(194,65,12,0.28)`; e.currentTarget.style.borderColor = ACTION }}
+          onBlur={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = FIELD_LINE }}
         />
         {rightEl && (
           <div style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)' }}>
@@ -229,7 +233,7 @@ function AuthContent() {
   return (
     <main style={{
       display: 'flex', minHeight: '100vh', width: '100%',
-      background: '#000', padding: 8, boxSizing: 'border-box',
+      background: '#faf8f5', padding: 8, boxSizing: 'border-box',
       fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
     }}>
 
@@ -238,7 +242,7 @@ function AuthContent() {
         display: 'none',
         position: 'relative', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'flex-end', paddingBottom: 128, paddingLeft: 48, paddingRight: 48,
-        borderRadius: 24, overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.7)',
+        borderRadius: 24, overflow: 'hidden', boxShadow: '0 20px 50px rgba(60,35,20,0.18)',
         width: '52%', flexShrink: 0,
       }}
         className="lg-hero"
@@ -293,16 +297,16 @@ function AuthContent() {
           style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 32 }}
         >
           {/* Mobile logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="mobile-logo">
+          <div className="mobile-logo afrione-gradient" style={{ alignItems: 'center', padding: '22px 22px', borderRadius: 22 }}>
             <Brand inverse />
           </div>
 
           {/* Header */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 500, letterSpacing: '-0.03em', color: '#fff', margin: 0 }}>
+            <h2 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: INK, margin: 0 }}>
               {tab === 'login' ? 'Bon retour ' : 'Créer un profil'}
             </h2>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+            <p style={{ fontSize: 14, color: MUTED, margin: 0 }}>
               {tab === 'login'
                 ? 'Connectez-vous pour accéder à votre espace.'
                 : 'Entrez vos informations pour commencer.'}
@@ -312,15 +316,15 @@ function AuthContent() {
           {/* Tab switcher */}
           <div style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4,
-            background: BRAND_GRAY, padding: 4, borderRadius: 12,
+            background: '#efe9e2', padding: 4, borderRadius: 14,
           }}>
             {(['login', 'signup'] as const).map(t => (
               <button className="afrione-action" key={t} onClick={() => setTab(t)} style={{
                 padding: '10px 0', borderRadius: 9, border: 'none', cursor: 'pointer',
                 fontWeight: 600, fontSize: 13, transition: 'all 0.2s',
-                background: tab === t ? ORANGE : 'transparent',
-                color: tab === t ? '#fff' : 'rgba(255,255,255,0.4)',
-                boxShadow: tab === t ? `0 3px 12px ${ORANGE}55` : 'none',
+                background: tab === t ? ACTION : 'transparent',
+                color: tab === t ? '#fff' : MUTED,
+                boxShadow: tab === t ? '0 3px 12px rgba(194,65,12,0.28)' : 'none',
                 fontFamily: 'inherit',
               }}>
                 {t === 'login' ? 'Connexion' : 'Inscription'}
@@ -329,7 +333,7 @@ function AuthContent() {
           </div>
 
           {authError && (
-            <p role="alert" style={{ color: '#fca5a5', fontSize: 14, margin: 0 }}>
+            <p role="alert" style={{ color: '#b42318', fontSize: 14, fontWeight: 550, margin: 0 }}>
               {authError}
             </p>
           )}
@@ -346,13 +350,13 @@ function AuthContent() {
             )}
 
             {recoverySent && (
-              <div role="status" style={{ padding: 14, border: '1px solid #E85D26', borderRadius: 12, color: '#fff', fontSize: 13, lineHeight: 1.6 }}>
+              <div role="status" style={{ padding: 14, border: '1px solid rgba(194,65,12,0.35)', background: '#fff1e8', borderRadius: 12, color: INK, fontSize: 13, lineHeight: 1.6 }}>
                 Si cette adresse correspond à un compte, un email « AfriOne — Code de récupération » a été envoyé. Vérifiez les spams et utilisez uniquement le dernier email reçu.
-                <a href="/auth/reset" style={{ display: 'block', color: '#FFAA80', marginTop: 8 }}>J’ai reçu un code : le saisir ici</a>
+                <a href="/auth/reset" style={{ display: 'block', color: '#9a3412', fontWeight: 600, marginTop: 8 }}>J’ai reçu un code : le saisir ici</a>
               </div>
             )}
             {tab === 'login' && confirmationNotice && (
-              <p role="status" style={{ padding: 14, border: '1px solid #E85D26', borderRadius: 12, color: '#fff', fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+              <p role="status" style={{ padding: 14, border: '1px solid rgba(194,65,12,0.35)', background: '#fff1e8', borderRadius: 12, color: INK, fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                 {confirmationNotice}
               </p>
             )}
@@ -368,25 +372,25 @@ function AuthContent() {
                 onChange={setPassword}
                 rightEl={
                   <button className="afrione-action" type="button" onClick={() => setShowPw(v => !v)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.3)', padding: 0, display: 'flex' }}>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: MUTED, padding: 0, display: 'flex' }}>
                     {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 }
               />
               {tab === 'login' && (
                 <button className="afrione-action" type="button" disabled={loading} onClick={handleResendConfirmation}
-                  style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: ORANGE, fontSize: 13, cursor: 'pointer' }}>
+                  style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: ACTION, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                   Renvoyer le lien de confirmation
                 </button>
               )}
               {tab === 'login' && (
                 <button className="afrione-action" type="button" disabled={loading} onClick={handlePasswordRecovery}
-                  style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: ORANGE, fontSize: 13, cursor: 'pointer' }}>
+                  style={{ alignSelf: 'flex-end', background: 'none', border: 'none', color: ACTION, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                   Mot de passe oublié ?
                 </button>
               )}
               {tab === 'signup' && (
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', paddingLeft: 4 }}>
+                <span style={{ fontSize: 12, color: MUTED, paddingLeft: 4 }}>
                   Minimum 8 caractères requis.
                 </span>
               )}
@@ -395,10 +399,10 @@ function AuthContent() {
             <button className="afrione-action"
               type="submit" disabled={loading}
               style={{
-                marginTop: 8, width: '100%', height: 52, borderRadius: 12, border: 'none',
-                background: loading ? 'rgba(255,255,255,0.2)' : ORANGE,
+                marginTop: 8, width: '100%', height: 52, borderRadius: 999, border: 'none',
+                background: loading ? '#d6cbc1' : ACTION,
                 color: '#fff', fontWeight: 600, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: loading ? 'none' : `0 4px 20px ${ORANGE}55`,
+                boxShadow: loading ? 'none' : '0 6px 18px rgba(194,65,12,0.28)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 transition: 'all 0.2s', fontFamily: 'inherit',
               }}
@@ -413,12 +417,12 @@ function AuthContent() {
           </form>
 
           {/* Footer */}
-          <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.3)', margin: 0 }}>
+          <p style={{ textAlign: 'center', fontSize: 14, color: MUTED, margin: 0 }}>
             {tab === 'login' ? (
               <>Pas encore de compte ?{' '}
                 <button className="afrione-action" onClick={() => setTab('signup')} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: ORANGE, fontWeight: 600, fontSize: 13, padding: 0, fontFamily: 'inherit',
+                  color: ACTION, fontWeight: 700, fontSize: 14, padding: 0, fontFamily: 'inherit',
                 }}>
                   S&apos;inscrire
                 </button>
@@ -427,7 +431,7 @@ function AuthContent() {
               <>Déjà membre ?{' '}
                 <button className="afrione-action" onClick={() => setTab('login')} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: ORANGE, fontWeight: 600, fontSize: 13, padding: 0, fontFamily: 'inherit',
+                  color: ACTION, fontWeight: 700, fontSize: 14, padding: 0, fontFamily: 'inherit',
                 }}>
                   Se connecter
                 </button>
@@ -439,7 +443,7 @@ function AuthContent() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        input::placeholder { color: rgba(255,255,255,0.2) !important; }
+        input::placeholder { color: #7d6d61 !important; }
         .lg-hero { display: none; }
         .mobile-logo { display: flex; }
         @media (min-width: 1024px) {
