@@ -11,7 +11,6 @@ type Props = {
   label: string
   photo: string
   position: string
-  tone: string
   /** Décale la vague d'une carte à l'autre. */
   index: number
 }
@@ -21,13 +20,13 @@ const UNLOCK_AT = 0.72   // part de la piste à parcourir pour valider le glisse
 
 /**
  * Carte métier de l'accueil.
- * - La photo ondule comme une feuille de papier (canvas, net en Retina).
+ * - La photo se tord doucement comme une feuille (WebGL, net en Retina / 4K).
  *   L'ondulation s'accentue au survol ou à l'appui.
  * - Glisser la flèche de gauche à droite ouvre la liste des artisans,
  *   comme « déverrouiller » un iPhone. Un tap ou Entrée marche aussi.
  * - Aucune transformation 3D sur la carte : texte et flèche restent nets.
  */
-export default function TradeCard({ href, label, photo, position, tone, index }: Props) {
+export default function TradeCard({ href, label, photo, position, index }: Props) {
   const router = useRouter()
   const bandRef = useRef<HTMLDivElement>(null)
   const drag = useRef<{ startX: number; max: number; moved: boolean } | null>(null)
@@ -95,7 +94,7 @@ export default function TradeCard({ href, label, photo, position, tone, index }:
       }}
     >
       <div className="home-trade-card__media">
-        <PaperWave src={photo} position={position} tone={tone} index={index} active={active} />
+        <PaperWave src={photo} position={position} index={index} active={active} />
         <div className="home-trade-card__shade" />
       </div>
 

@@ -88,7 +88,12 @@
 
 /* Photo : dessinée nette dans un canvas qui ondule (PaperWave). */
 .home-trade-card__media { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
-.paper-wave { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.paper-wave, .paper-wave__fallback { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Image de secours : même cadrage que le rendu WebGL (zoom 10 %). */
+.paper-wave__fallback { object-fit: cover; transform: scale(1.1); }
+/* Le canvas ne s'affiche qu'une fois la première image dessinée. */
+.paper-wave { visibility: hidden; }
+.paper-wave[data-ready='true'] { visibility: visible; }
 /* Voile givré léger (sans flou) pour l'effet glacé, plus clair en haut. */
 .home-trade-card__shade {
   position: absolute;

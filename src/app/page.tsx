@@ -248,14 +248,13 @@ export default function HomePage() {
             </motion.h2>
 
             <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-5">
-              {SERVICES.map(({ label, metier, photo, position, tone }, i) => (
+              {SERVICES.map(({ label, metier, photo, position }, i) => (
                 <motion.div key={label} variants={fadeUp}>
                   <TradeCard
                     href={`/artisans?metier=${encodeURIComponent(metier)}`}
                     label={label}
                     photo={photo}
                     position={position}
-                    tone={tone}
                     index={i}
                   />
                 </motion.div>
