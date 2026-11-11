@@ -215,9 +215,14 @@ export default function DashboardPage() {
               <section className="dashboard-missions card">
                 <div className="dashboard-missions-header">
                   <h2 className="font-display" style={{fontSize:'20px',fontWeight:700,color:'var(--ui-ink)'}}>Mes missions</h2>
-                  <Link href="/diagnostic" className="afrione-gradient-text" style={{fontSize:'14px',textDecoration:'none',display:'flex',alignItems:'center',gap:'4px'}}>
-                    + Nouvelle <ArrowRight size={14} />
-                  </Link>
+                  <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+                    <Link href="/diagnostics" style={{fontSize:'14px',fontWeight:600,color:'#9a3412',textDecoration:'none'}}>
+                      Mes diagnostics
+                    </Link>
+                    <Link href="/diagnostic" className="afrione-gradient-text" style={{fontSize:'14px',textDecoration:'none',display:'flex',alignItems:'center',gap:'4px'}}>
+                      + Nouvelle <ArrowRight size={14} />
+                    </Link>
+                  </div>
                 </div>
 
                 {missions.length === 0 ? (

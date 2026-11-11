@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Brand from '@/components/brand/Brand'
 import SpaceSwitch from '@/components/layout/SpaceSwitch'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, X, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2, Bell } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, Wrench, ShieldCheck, Building2, Bell, FileText } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { supabase } from '@/lib/supabase'
@@ -214,6 +214,7 @@ export default function Navbar() {
                         </div>
                         {[
                           { href: '/dashboard',                  label: 'Espace Client',    show: true,             color: 'var(--ui-ink)' },
+                          { href: '/diagnostics',                label: 'Mes diagnostics',  show: true,             color: 'var(--ui-ink)' },
                           { href: '/entreprise-space/dashboard',  label: 'Espace Entreprise', show: isEntrepriseAdmin, color: '#E85D26' },
                           { href: '/admin',                       label: 'Panel Admin',      show: userRole==='admin', color: '#C9A84C' },
                         ].filter(i => i.show).map(item => (
@@ -222,6 +223,7 @@ export default function Navbar() {
                             onMouseEnter={e => (e.currentTarget.style.background = 'var(--ui-canvas)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                             {item.label === 'Espace Client'    && <LayoutDashboard size={14} />}
+                            {item.label === 'Mes diagnostics'  && <FileText size={14} />}
                             {item.label === 'Espace Entreprise' && <Building2 size={14} />}
                             {item.label === 'Panel Admin'       && <ShieldCheck size={14} />}
                             {item.label}
@@ -283,6 +285,10 @@ export default function Navbar() {
                     style={{ display: 'block', padding: '12px', textAlign: 'center', background: '#FFFFFF', color: 'var(--ui-ink)', borderRadius: '12px', textDecoration: 'none', fontSize: '14px', fontWeight: 600, boxShadow: NEU_SM }}>
                     Espace Client
                   </Link>}
+                  <Link className="afrione-action" href="/diagnostics" onClick={() => setMenuOpen(false)}
+                    style={{ display: 'block', padding: '12px', textAlign: 'center', background: '#FFFFFF', color: 'var(--ui-ink)', borderRadius: '12px', textDecoration: 'none', fontSize: '14px', fontWeight: 600, border: '2px solid var(--ui-border)' }}>
+                    Mes diagnostics
+                  </Link>
                   {userRole === 'admin' && (
                     <Link className="afrione-action" href="/admin" onClick={() => setMenuOpen(false)}
                       style={{ display: 'block', padding: '12px', textAlign: 'center', background: '#FFFFFF', color: '#C9A84C', borderRadius: '12px', textDecoration: 'none', fontSize: '14px', fontWeight: 600, boxShadow: NEU_SM }}>
