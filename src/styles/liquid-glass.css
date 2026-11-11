@@ -30,10 +30,6 @@
   --glass-shadow: 0 24px 60px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.12);
   --glass-shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.1);
 
-  --mesh-1: #e85d26;
-  --mesh-2: #ffb547;
-  --mesh-3: #c94f8a;
-
   --glass-overlay: rgba(10, 10, 20, 0.35);
   --glass-overlay-blur: 6px;
 
@@ -73,6 +69,11 @@
   --accent-active: #8c2f08;
   --on-accent: #ffffff;
   --accent-brand: #e85d26;    /* décor uniquement : fonds, blobs, icônes */
+  --accent-ink: #9a3412;      /* texte orange sur blanc : 7:1 */
+  --light-btn-bg: #ffffff;
+  --light-btn-bg-hover: #fff7f2;
+  --light-btn-bg-active: #ffece2;
+  --light-btn-shadow: 0 1px 2px rgba(80, 20, 0, 0.15);
   --ring: 0 0 0 2px var(--glass-ring-gap, #fff), 0 0 0 4px var(--accent);
   --page-bg: #fbf6f1;
   --danger: #b42318;
@@ -129,34 +130,23 @@
   .glass, .glass--strong, .glass--subtle { background: var(--glass-fallback); }
 }
 
-/* ── Fond maillé (2-3 blobs flous) ─────────────────────────────────────────── */
-.liquid-mesh {
-  position: relative;
-  min-height: 100vh;
-  background: var(--page-bg);
-  overflow: hidden;
+/* ── Sur fond coloré (le dégradé orange animé du site) ─────────────────────
+ * Le fond reste celui du site (.afrione-gradient). Sur l'orange, le verre est
+ * « fumé » : une teinte brune légère au lieu de blanc, pour que le texte blanc
+ * reste lisible (≈ 5:1) sans éclaircir ni délaver le dégradé.
+ * ──────────────────────────────────────────────────────────────────────── */
+.on-color {
+  --glass-bg: rgba(90, 25, 0, 0.18);
+  --glass-bg-strong: rgba(90, 25, 0, 0.3);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-highlight: rgba(255, 255, 255, 0.35);
+  --glass-specular: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 12px 32px rgba(80, 20, 0, 0.18), 0 1px 3px rgba(80, 20, 0, 0.12);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.92);
+  --glass-ring-gap: #b03010;
+  color: var(--text-primary);
 }
-.liquid-mesh__blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(70px);
-  opacity: 0.55; /* ≥ 4.5:1 pour --text-secondary posé sur un blob */
-  pointer-events: none;
-  will-change: transform;
-}
-.liquid-mesh__blob--1 { width: 46vmax; height: 46vmax; top: -12vmax; left: -10vmax; background: var(--mesh-1); animation: lg-drift-1 22s ease-in-out infinite alternate; }
-.liquid-mesh__blob--2 { width: 38vmax; height: 38vmax; top: 18vmax; right: -12vmax; background: var(--mesh-2); animation: lg-drift-2 26s ease-in-out infinite alternate; }
-.liquid-mesh__blob--3 { width: 34vmax; height: 34vmax; bottom: -14vmax; left: 22vmax; background: var(--mesh-3); opacity: 0.4; animation: lg-drift-3 30s ease-in-out infinite alternate; }
-.liquid-mesh__content { position: relative; z-index: 1; }
-
-@media (prefers-color-scheme: dark) {
-  .liquid-mesh__blob { opacity: 0.55; }
-  .liquid-mesh__blob--3 { opacity: 0.35; }
-}
-
-@keyframes lg-drift-1 { to { transform: translate(8vmax, 6vmax) scale(1.08); } }
-@keyframes lg-drift-2 { to { transform: translate(-10vmax, 4vmax) scale(0.94); } }
-@keyframes lg-drift-3 { to { transform: translate(6vmax, -8vmax) scale(1.1); } }
 
 /* ── Boutons (base commune ; le composant Button arrive à l'étape 2) ─────── */
 .lg-btn {
@@ -193,6 +183,11 @@
 }
 .lg-btn--glass:hover { background: var(--glass-bg-strong); }
 .lg-btn--glass:focus-visible { box-shadow: var(--ring), inset 0 1px 0 var(--glass-highlight); }
+
+/* Bouton plein blanc : l'action principale posée sur l'orange (#9a3412 sur blanc ≈ 7:1) */
+.lg-btn--light { background: var(--light-btn-bg); color: var(--accent-ink); box-shadow: var(--light-btn-shadow); }
+.lg-btn--light:hover { background: var(--light-btn-bg-hover); }
+.lg-btn--light:active { background: var(--light-btn-bg-active); }
 
 /* Bouton rond (fermer, icônes) */
 .lg-icon-btn {
@@ -276,7 +271,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .liquid-mesh__blob { animation: none; }
   .lg-btn, .lg-icon-btn { transition: background-color var(--glass-dur) linear; }
   .lg-btn:hover, .lg-btn:active, .lg-icon-btn:hover, .lg-icon-btn:active { transform: none; }
 }

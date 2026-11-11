@@ -1,56 +1,88 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldCheck, Trash2, Wallet } from 'lucide-react'
+import { ArrowRight, ChevronRight, ShieldCheck, Trash2, Wallet, Droplets, Zap, Hammer, Paintbrush } from 'lucide-react'
 import { Modal } from '@/components/glass/Modal'
 
 type Demo = 'payment' | 'delete' | 'info' | null
+
+const TRADES = [
+  { Icon: Droplets, label: 'Plomberie' },
+  { Icon: Zap, label: 'Électricité' },
+  { Icon: Hammer, label: 'Maçonnerie' },
+  { Icon: Paintbrush, label: 'Peinture' },
+]
+
+const label: React.CSSProperties = { fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', opacity: 0.85, marginBottom: 10 }
 
 export default function DesignPage() {
   const [open, setOpen] = useState<Demo>(null)
   const close = (o: boolean) => !o && setOpen(null)
 
   return (
-    <main className="liquid liquid-mesh">
-      <div className="liquid-mesh__blob liquid-mesh__blob--1" aria-hidden="true" />
-      <div className="liquid-mesh__blob liquid-mesh__blob--2" aria-hidden="true" />
-      <div className="liquid-mesh__blob liquid-mesh__blob--3" aria-hidden="true" />
-
-      <div className="liquid-mesh__content" style={{ maxWidth: 960, margin: '0 auto', padding: '48px 16px 96px' }}>
-        <header className="glass" style={{ borderRadius: 'var(--glass-radius-md)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <strong style={{ font: '700 18px/1 var(--font-display, Satoshi, sans-serif)' }}>AfriOne · Liquid Glass</strong>
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Étape 1 : tokens, matériau, Modal</span>
+    <main className="liquid" style={{ background: 'var(--page-bg)', minHeight: '100vh' }}>
+      {/* Le vrai fond de l'accueil : même classe, rien de recréé. */}
+      <section className="afrione-gradient on-color" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <header className="glass" style={{ margin: '16px', borderRadius: 'var(--glass-radius-md)', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <strong style={{ font: '700 18px/1 var(--font-display, Satoshi, sans-serif)' }}>AfriOne</strong>
+          <span style={{ fontSize: 13 }}>Navbar en verre fumé</span>
         </header>
 
-        <section style={{ marginTop: 40 }}>
-          <h1 style={{ font: '800 clamp(32px, 6vw, 52px)/1.05 var(--font-display, Satoshi, sans-serif)', letterSpacing: '-0.02em', margin: 0 }}>
-            Le verre sur ton orange
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px 16px' }}>
+          <h1 style={{ font: '700 clamp(40px, 7vw, 84px)/0.9 var(--font-display, Satoshi, sans-serif)', letterSpacing: '-0.04em', maxWidth: '16ch', margin: '0 0 24px' }}>
+            Trouvez le bon artisan au bon prix
           </h1>
-          <p style={{ marginTop: 12, maxWidth: 560, fontSize: 16, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-            Ouvre les modales pour tester l&apos;animation, le clavier (Tab, Échap) et le rendu en clair et en sombre.
+          <p style={{ maxWidth: '52ch', fontSize: 16, lineHeight: 1.65, margin: '0 0 36px', color: 'var(--text-secondary)' }}>
+            Même fond animé que l&apos;accueil. Seuls les boutons et la navbar changent.
           </p>
-        </section>
 
-        <section style={{ marginTop: 28, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          <button className="lg-btn lg-btn--primary" onClick={() => setOpen('payment')}>Modal paiement</button>
-          <button className="lg-btn lg-btn--glass" onClick={() => setOpen('delete')}>Modal suppression</button>
-          <button className="lg-btn lg-btn--glass" onClick={() => setOpen('info')}>Modal simple</button>
-          <button className="lg-btn lg-btn--primary" disabled>Désactivé</button>
-        </section>
-
-        <section style={{ marginTop: 40, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-          {[
-            { cls: 'glass', name: '.glass', note: 'Nav, toasts, popovers' },
-            { cls: 'glass glass--strong', name: '.glass--strong', note: 'Modales, texte long' },
-            { cls: 'glass glass--subtle', name: '.glass--subtle', note: 'Cartes flottantes' },
-          ].map(s => (
-            <div key={s.name} className={s.cls} style={{ borderRadius: 'var(--glass-radius-md)', padding: 22, minHeight: 130 }}>
-              <code style={{ fontSize: 14, fontWeight: 600 }}>{s.name}</code>
-              <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-secondary)' }}>{s.note}</p>
+          <div style={{ display: 'grid', gap: 28, width: 'min(100%, 560px)' }}>
+            <div>
+              <div style={label}>Aujourd&apos;hui</div>
+              <div className="home-hero-actions" style={{ justifyContent: 'center' }}>
+                <a className="home-hero-action home-hero-action-primary" href="#" onClick={e => e.preventDefault()}>
+                  Décrire mon problème <ArrowRight size={16} aria-hidden="true" />
+                </a>
+                <a className="home-hero-action" href="#" onClick={e => e.preventDefault()}>
+                  Voir les artisans <ChevronRight size={16} aria-hidden="true" />
+                </a>
+              </div>
             </div>
-          ))}
-        </section>
-      </div>
+
+            <div>
+              <div style={label}>Proposé</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                <button className="lg-btn lg-btn--light" onClick={() => setOpen('payment')}>
+                  Décrire mon problème <ArrowRight size={16} aria-hidden="true" />
+                </button>
+                <button className="lg-btn lg-btn--glass" onClick={() => setOpen('info')}>
+                  Voir les artisans <ChevronRight size={16} aria-hidden="true" />
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 16 }}>
+                {TRADES.map(({ Icon, label: l }) => (
+                  <button key={l} className="lg-btn lg-btn--glass" style={{ minHeight: 38, padding: '0 14px', fontSize: 13 }}>
+                    <Icon size={15} aria-hidden="true" /> {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section claire, comme le reste du site : pas de verre ici. */}
+      <section style={{ maxWidth: 960, margin: '0 auto', padding: '56px 16px 96px' }}>
+        <h2 style={{ font: '700 28px/1.1 var(--font-display, Satoshi, sans-serif)', margin: 0 }}>Modales</h2>
+        <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 15 }}>
+          Le verre n&apos;apparaît que sur ce qui flotte. Le contenu de la page reste net et lisible.
+        </p>
+        <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          <button className="lg-btn lg-btn--primary" onClick={() => setOpen('payment')}>Modal paiement</button>
+          <button className="lg-btn lg-btn--primary" onClick={() => setOpen('delete')}>Modal suppression</button>
+          <button className="lg-btn lg-btn--primary" disabled>Désactivé</button>
+        </div>
+      </section>
 
       <Modal
         open={open === 'payment'}
