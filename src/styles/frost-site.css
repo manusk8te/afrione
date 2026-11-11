@@ -1,0 +1,163 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Verre givré — application au site
+ *
+ * Chargé après globals.css. Pour retirer un niveau, supprimer son bloc ;
+ * pour tout retirer, enlever l'import dans src/app/layout.tsx.
+ *
+ *  Niveau 1  haut de l'accueil : boutons + puces métiers en verre fumé
+ *  Niveau 2  cartes métiers : bande givrée sous le nom du métier
+ *  Niveau 3  War Room + cartes des pages intérieures : « blanc glacé »
+ *
+ * Le flou (backdrop-filter) n'est utilisé que là où quelque chose passe
+ * vraiment derrière (dégradé orange, photo). Ailleurs, le « blanc glacé »
+ * est un traitement de surface : blanc translucide, liseré clair en haut,
+ * bordure douce. Pas de reflet en dégradé, pas de halo.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Verre fumé, posé sur le dégradé orange */
+  --smoke-bg: rgba(90, 25, 0, 0.2);
+  --smoke-bg-hover: rgba(90, 25, 0, 0.3);
+  --smoke-border: rgba(255, 255, 255, 0.36);
+  --smoke-highlight: rgba(255, 255, 255, 0.32);
+  --smoke-light-bg: rgba(255, 255, 255, 0.92);
+  --smoke-light-bg-hover: rgba(255, 255, 255, 1);
+  --smoke-light-ink: #a63815;
+
+  /* Blanc glacé */
+  --frost-bg: rgba(255, 255, 255, 0.82);
+  --frost-bg-strong: rgba(255, 255, 255, 0.9);
+  --frost-band: rgba(255, 255, 255, 0.8);
+  --frost-ink: #1f1611;
+  --frost-border: rgba(110, 72, 44, 0.12);
+  --frost-highlight: rgba(255, 255, 255, 0.95);
+  --frost-shadow: 0 1px 2px rgba(60, 35, 20, 0.05), 0 10px 28px rgba(60, 35, 20, 0.07);
+
+  --frost-blur: 14px;
+  --frost-radius-band: 14px;
+  --frost-dur: 200ms;
+  --frost-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --frost-ring: 0 0 0 2px #fff, 0 0 0 4px #c2410c;
+}
+@media (max-width: 768px) {
+  :root { --frost-blur: 10px; }
+}
+
+/* ── Niveau 1 · Haut de l'accueil ─────────────────────────────────────────── */
+.home-hero-action,
+.home-trade-link {
+  background: var(--smoke-bg);
+  border-color: var(--smoke-border);
+  -webkit-backdrop-filter: blur(var(--frost-blur)) saturate(140%);
+  backdrop-filter: blur(var(--frost-blur)) saturate(140%);
+  box-shadow: inset 0 1px 0 var(--smoke-highlight);
+  transition:
+    background-color var(--frost-dur) var(--frost-ease),
+    transform var(--frost-dur) var(--frost-ease);
+}
+.home-hero-action:hover,
+.home-trade-link:hover {
+  background: var(--smoke-bg-hover);
+  transform: translateY(-1px);
+}
+.home-hero-action:active,
+.home-trade-link:active { transform: scale(0.97); }
+
+.home-hero-action-primary {
+  background: var(--smoke-light-bg);
+  color: var(--smoke-light-ink);
+  border-color: var(--frost-highlight);
+  box-shadow: inset 0 1px 0 var(--frost-highlight), 0 1px 2px rgba(80, 20, 0, 0.15);
+}
+.home-hero-action-primary:hover { background: var(--smoke-light-bg-hover); }
+
+/* ── Niveau 2 · Cartes métiers ────────────────────────────────────────────── */
+.home-trade-card__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 9, 13, 0) 40%, rgba(5, 9, 13, 0.28) 100%);
+}
+.home-trade-card__band {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 52px 0 14px;
+  border-radius: var(--frost-radius-band);
+  background: var(--frost-band);
+  -webkit-backdrop-filter: blur(var(--frost-blur)) saturate(140%);
+  backdrop-filter: blur(var(--frost-blur)) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 1px 0 var(--frost-highlight), 0 4px 14px rgba(5, 9, 13, 0.12);
+}
+.home-trade-card__label {
+  overflow: hidden;
+  color: var(--frost-ink);
+  font-family: var(--font-display);
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-trade-card .home-trade-arrow {
+  right: 14px;
+  bottom: 14px;
+  width: 36px;
+  height: 36px;
+  background: var(--smoke-light-ink);
+  color: #fff;
+  z-index: 1;
+}
+.home-trade-card:focus-visible { outline: none; box-shadow: var(--frost-ring) !important; }
+@media (max-width: 640px) {
+  .home-trade-card__band { left: 6px; right: 6px; bottom: 6px; min-height: 42px; padding: 0 44px 0 11px; border-radius: 12px; }
+  .home-trade-card .home-trade-arrow { right: 11px; bottom: 11px; width: 30px; height: 30px; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .home-trade-card__band { background: var(--frost-bg-strong); }
+}
+
+/* ── Niveau 3 · Blanc glacé : War Room ────────────────────────────────────── */
+.afrione-conversation-header,
+.warroom-composer {
+  background: var(--frost-bg);
+  box-shadow: inset 0 1px 0 var(--frost-highlight), 0 6px 20px rgba(60, 35, 20, 0.05);
+}
+.afrione-conversation-header { border-bottom-color: var(--frost-border); }
+.warroom-composer { border-top-color: var(--frost-border); }
+
+.afrione-conversation .afrione-conversation-input {
+  background: var(--frost-bg-strong);
+  border-color: var(--frost-border);
+  box-shadow: inset 0 1px 0 var(--frost-highlight);
+  transition: border-color var(--frost-dur) var(--frost-ease), box-shadow var(--frost-dur) var(--frost-ease);
+}
+.afrione-conversation .afrione-conversation-input:focus {
+  border-color: rgba(194, 65, 12, 0.45);
+  box-shadow: inset 0 1px 0 var(--frost-highlight), 0 0 0 3px rgba(194, 65, 12, 0.12);
+}
+
+@media (min-width: 920px) {
+  .warroom-overview-card {
+    background: var(--frost-bg);
+    border-color: var(--frost-border);
+    box-shadow: inset 0 1px 0 var(--frost-highlight), var(--frost-shadow);
+  }
+}
+
+/* ── Niveau 3 · Cartes des pages intérieures ──────────────────────────────── */
+.card {
+  background: var(--frost-bg-strong);
+  border-color: var(--frost-border);
+  box-shadow: inset 0 1px 0 var(--frost-highlight), var(--frost-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-action, .home-trade-link { transition: background-color var(--frost-dur) linear; }
+  .home-hero-action:hover, .home-trade-link:hover,
+  .home-hero-action:active, .home-trade-link:active { transform: none; }
+}

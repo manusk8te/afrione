@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import '@/styles/frost-site.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/contexts/AuthContext'
 import DevPanel from '@/components/dev/DevPanel'

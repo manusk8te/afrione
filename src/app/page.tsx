@@ -256,6 +256,8 @@ export default function HomePage() {
               {SERVICES.map(({ label, metier, photo, position, tone }) => (
                 <motion.div key={label} variants={fadeUp}>
                   <Link href={`/artisans?metier=${encodeURIComponent(metier)}`}
+                    className="home-trade-card"
+                    aria-label={label}
                     style={{
                       display: 'block', position: 'relative',
                       textDecoration: 'none', cursor: 'pointer',
@@ -281,14 +283,11 @@ export default function HomePage() {
 
                     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '22px' }}>
                       <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, filter: tone, transition: 'transform 0.55s ease-out, filter 0.3s ease-out' }} />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(5,9,13,0.58) 0%, rgba(5,9,13,0.46) 52%, rgba(5,9,13,0.82) 100%)', transition: 'background 0.3s ease' }} />
+                      <div className="home-trade-card__shade" />
                     </div>
 
-                    <div style={{ position: 'absolute', inset: '14px 6px 48px', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
-                      <div>
-                        <div style={{ ...syne, fontWeight: 750, fontSize: 'clamp(16px, 2vw, 28px)', color: 'white', letterSpacing: '-0.035em', textShadow: '0 2px 18px rgba(0,0,0,0.48)' }}>{label}</div>
-                        <div style={{ width: '28px', height: '2px', borderRadius: '99px', background: '#F06A2A', margin: '10px auto 0' }} />
-                      </div>
+                    <div className="home-trade-card__band">
+                      <span className="home-trade-card__label">{label}</span>
                     </div>
 
                     <span className="home-trade-arrow" aria-hidden="true">
