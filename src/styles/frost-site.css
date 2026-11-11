@@ -74,14 +74,18 @@
 /* ── Niveau 2 · Cartes métiers ────────────────────────────────────────────── */
 /* Oscillation lente de « feuille » : quelques degrés, décalée par carte. */
 .home-trade-card__leaf {
-  perspective: 900px;
-  animation: trade-leaf 7s ease-in-out infinite alternate;
+  animation: trade-leaf 6s ease-in-out infinite alternate;
   transform-origin: 50% 0%;
+  will-change: transform;
 }
+/* La perspective doit être dans la transformation elle-même : posée en
+   propriété sur le même élément, elle ne s'applique qu'aux enfants et la
+   rotation restait plate (donc invisible). */
 @keyframes trade-leaf {
-  0%   { transform: rotateX(0deg) rotateY(0deg) translateY(0); }
-  50%  { transform: rotateX(1.6deg) rotateY(-1.4deg) translateY(-2px); }
-  100% { transform: rotateX(-0.8deg) rotateY(1.2deg) translateY(1px); }
+  0%   { transform: perspective(700px) rotateX(0deg)    rotateY(0deg)    translateY(0); }
+  35%  { transform: perspective(700px) rotateX(3.2deg)  rotateY(-3.6deg) translateY(-4px); }
+  70%  { transform: perspective(700px) rotateX(-1.6deg) rotateY(2.8deg)  translateY(1px); }
+  100% { transform: perspective(700px) rotateX(1.4deg)  rotateY(3.8deg)  translateY(-2px); }
 }
 
 .home-trade-card {

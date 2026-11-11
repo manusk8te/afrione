@@ -68,15 +68,28 @@ export default function TradeCard({ href, label, photo, position, tone, index }:
     }
   }
 
-  /* ── Inclinaison 3D (souris uniquement) ─────────────────────────────── */
-  const onCardMove = (e: PointerEvent<HTMLAnchorElement>) => {
-    if (e.pointerType !== 'mouse' || dragging) return
+  /* ── Inclinaison 3D : suit la souris, ou le doigt tant qu'il appuie ──── */
+  const pressed = useRef(false)
+  const tiltFrom = (e: PointerEvent<HTMLAnchorElement>, strength: number) => {
     const r = e.currentTarget.getBoundingClientRect()
     const px = (e.clientX - r.left) / r.width
     const py = (e.clientY - r.top) / r.height
-    setTilt({ rx: (0.5 - py) * 7, ry: (px - 0.5) * 9 })
+    setTilt({ rx: (0.5 - py) * 7 * strength, ry: (px - 0.5) * 9 * strength })
   }
-  const onCardLeave = () => setTilt({ rx: 0, ry: 0 })
+  const onCardDown = (e: PointerEvent<HTMLAnchorElement>) => {
+    if (e.pointerType === 'mouse') return
+    pressed.current = true
+    tiltFrom(e, 1.3)
+  }
+  const onCardMove = (e: PointerEvent<HTMLAnchorElement>) => {
+    if (dragging) return
+    if (e.pointerType === 'mouse') tiltFrom(e, 1)
+    else if (pressed.current) tiltFrom(e, 1.3)
+  }
+  const onCardLeave = () => {
+    pressed.current = false
+    setTilt({ rx: 0, ry: 0 })
+  }
 
   const progress = drag.current?.max ? x / drag.current.max : 0
 
@@ -87,7 +100,10 @@ export default function TradeCard({ href, label, photo, position, tone, index }:
         className="home-trade-card"
         aria-label={`Voir les artisans : ${label}`}
         data-dragging={dragging || undefined}
+        onPointerDown={onCardDown}
         onPointerMove={onCardMove}
+        onPointerUp={onCardLeave}
+        onPointerCancel={onCardLeave}
         onPointerLeave={onCardLeave}
         onClick={e => {
           if (suppressClick.current) {
